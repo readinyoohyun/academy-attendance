@@ -1,0 +1,2676 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학원 출결 관리 시스템 (Google Sheets Sync)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="glass-panel" style="border-radius: 0 0 16px 16px;">
+    <h1>🏫 학원 출결 관리 <span>Live Sync</span></h1>
+    
+    <!-- Tab Controls -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-view="view-dashboard">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        출결 현황판
+      </button>
+      <button class="tab-btn" data-view="view-crm">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        학생 종합 프로필 (CRM)
+      </button>
+      <button class="tab-btn" data-view="view-sheet">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        구글 시트 에디터
+      </button>
+      <button class="tab-btn" data-view="view-guide">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        설정 및 연동 가이드
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Content Areas -->
+  <main>
+
+    <!-- VIEW 1: ATTENDANCE DASHBOARD -->
+    <div id="view-dashboard" class="view-content active">
+      <div class="dashboard-grid">
+        
+        <!-- Sidebar: Filter & Capacity -->
+        <section class="sidebar-panel glass-panel">
+          <h2 class="panel-title">수업 일정 선택</h2>
+          
+          <!-- Auto Select Mode Switch -->
+          <div class="form-group">
+            <label class="switch-container">
+              <span class="switch">
+                <input type="checkbox" id="autoTimeSwitch">
+                <span class="slider"></span>
+              </span>
+              <span style="font-size: 0.9rem;">현재 실시간 자동 선택</span>
+            </label>
+          </div>
+
+          <!-- Day Selector -->
+          <div class="form-group">
+            <label for="selectDay">수업 요일</label>
+            <select id="selectDay" class="select-custom">
+              <option value="월요일">월요일</option>
+              <option value="화요일">화요일</option>
+              <option value="수요일">수요일</option>
+              <option value="목요일">목요일</option>
+              <option value="금요일">금요일</option>
+              <option value="토요일">토요일</option>
+              <option value="일요일">일요일</option>
+            </select>
+          </div>
+
+          <!-- Time Selector (Hidden, handled by daily timeline view) -->
+          <div class="form-group" style="display:none;">
+            <label for="selectTime">수업 시작 시간</label>
+            <select id="selectTime" class="select-custom">
+              <option value="10:00">10:00</option>
+              <option value="10:30">10:30</option>
+              <option value="11:00">11:00</option>
+              <option value="11:30">11:30</option>
+              <option value="12:00">12:00</option>
+              <option value="12:30">12:30</option>
+              <option value="13:00">13:00</option>
+              <option value="13:30">13:30</option>
+              <option value="14:00">14:00</option>
+              <option value="14:30">14:30</option>
+              <option value="15:00">15:00</option>
+              <option value="15:30">15:30</option>
+              <option value="16:00">16:00</option>
+              <option value="16:30">16:30</option>
+              <option value="17:00">17:00</option>
+              <option value="17:30">17:30</option>
+              <option value="18:00">18:00</option>
+              <option value="18:30">18:30</option>
+              <option value="19:00">19:00</option>
+              <option value="19:30">19:30</option>
+              <option value="20:00">20:00</option>
+              <option value="20:30">20:30</option>
+            </select>
+          </div>
+
+          <!-- Quick Schedule Selector Links -->
+          <div class="form-group" style="margin-top: 0.5rem;">
+            <label>등록된 수업 일정 바로가기</label>
+            <div id="quickScheduleList" class="schedule-quick-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Capacity Panel (Hidden from sidebar, displayed in each time slot header) -->
+          <div class="capacity-widget" style="display:none;">
+            <div class="capacity-item">
+              <span class="capacity-label">초등 저학년 (1~3학년)</span>
+              <span id="lowerCountText" class="capacity-value">0 / 10 명</span>
+            </div>
+            <div class="capacity-progress-bar">
+              <div id="lowerProgressBar" class="capacity-progress" style="width: 0%"></div>
+            </div>
+            <div class="capacity-item" style="margin-top: 0.4rem;">
+              <span class="capacity-label">초등 고학년 (4~6학년)</span>
+              <span id="upperCountText" class="capacity-value">0 / 10 명</span>
+            </div>
+            <div class="capacity-progress-bar">
+              <div id="upperProgressBar" class="capacity-progress" style="width: 0%"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Board: Student Cards Grid -->
+        <section class="dashboard-board glass-panel">
+          <!-- Real-time Attendance Status Summary Bar -->
+          <div id="dashboardStatusSummaryBar" class="status-summary-bar" style="display: flex; justify-content: space-around; align-items: center; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--panel-border); padding: 0.8rem 1rem; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); gap: 0.5rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#d97706;"></span>
+              <span>수업대기: <span id="summaryStandbyCount" style="color: #d97706; font-weight: 700;">0</span>명</span>
+            </div>
+            <div style="border-left: 1px solid var(--panel-border); height: 12px;"></div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#059669;"></span>
+              <span>수업중: <span id="summaryInClassCount" style="color: #059669; font-weight: 700;">0</span>명</span>
+            </div>
+            <div style="border-left: 1px solid var(--panel-border); height: 12px;"></div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#475569;"></span>
+              <span>수업완료: <span id="summaryCompletedCount" style="color: #475569; font-weight: 700;">0</span>명</span>
+            </div>
+            <div style="border-left: 1px solid var(--panel-border); height: 12px;"></div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#dc2626;"></span>
+              <span>결석: <span id="summaryAbsentCount" style="color: #dc2626; font-weight: 700;">0</span>명</span>
+            </div>
+            <div style="border-left: 1px solid var(--panel-border); height: 12px;"></div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#db2777;"></span>
+              <span>보강대기: <span id="summaryMakeupCount" style="color: #db2777; font-weight: 700;">0</span>명</span>
+            </div>
+            <div style="border-left: 1px solid var(--panel-border); height: 12px;"></div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#718096;"></span>
+              <span>휴강: <span id="summaryCancelledCount" style="color: #718096; font-weight: 700;">0</span>명</span>
+            </div>
+          </div>
+          <div class="board-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <h2 id="selectedTimeIndicator" class="board-time-indicator">요일 전체 수업 현황</h2>
+              <div id="headerCapacityWarning"></div>
+            </div>
+            <div class="action-buttons">
+              <button class="btn-primary" id="btnAddStudent">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                학생 등록
+              </button>
+            </div>
+          </div>
+
+          <!-- Timeline Container for All Time Slots of the day -->
+          <div id="timeSlotsContainer" class="time-slots-container" style="display: flex; flex-direction: column; gap: 2rem; overflow-y: auto; max-height: 70vh; padding-right: 0.5rem;">
+            <!-- Dynamically populated with time-slot sections -->
+          </div>
+          
+          <!-- Attendance Guide / Color Code Description -->
+          <div style="margin-top: auto; display: flex; gap: 1rem; flex-wrap: wrap; padding-top: 1.5rem; border-top: 1px solid var(--panel-border); font-size: 0.85rem; color: var(--text-secondary);">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-regular);"></span>
+              <span>초록 버튼: 정규 수업 (대기 상태)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-makeup);"></span>
+              <span>분홍 버튼: 보강 학생 (완료 시 시트에 자동 반영)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-absent);"></span>
+              <span>빨간 버튼: 시트 결석 상태 (클릭 시 토글 가능)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-completed);"></span>
+              <span>회색 체크: 출석/보강 완료 상태</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- VIEW 4: CRM PORTAL -->
+    <div id="view-crm" class="view-content">
+      <div class="crm-container">
+        
+        <!-- Search & Student Select Panel -->
+        <div class="glass-panel crm-search-panel" style="padding: 1.5rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; position: relative;">
+          <div style="flex: 1; position: relative;">
+            <label for="crmSearchInput" style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem; font-weight: 500;">👤 학생 이름으로 종합 정보 조회</label>
+            <div style="position: relative;">
+              <input type="text" id="crmSearchInput" class="input-custom" placeholder="조회할 학생 이름을 입력하세요... (예: 강성모)" autocomplete="off">
+              <div id="crmAutocompleteList" class="autocomplete-items" style="display: none;"></div>
+            </div>
+          </div>
+          <button class="btn-primary" id="btnCrmSearch" style="height: 46px; margin-top: 1.4rem;">검색</button>
+        </div>
+
+        <!-- CRM Dashboard (Visible only when a student is selected) -->
+        <div id="crmDashboard" class="crm-dashboard-layout" style="display: none;">
+          
+          <!-- Top Row: Student Profile Overview Card -->
+          <div class="glass-panel profile-card" style="padding: 1.5rem; margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, var(--panel-bg) 100%);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h2 id="crmStudentName" style="font-family: var(--font-title); font-size: 1.8rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 0.6rem;">
+                  학생이름 <span id="crmStudentGrade" style="font-size: 0.95rem; font-weight: 400; background: rgba(255, 255, 255, 0.1); padding: 0.2rem 0.6rem; border-radius: 20px; color: var(--text-primary);">학년</span>
+                </h2>
+                <p id="crmStudentSchedule" style="color: var(--text-secondary); margin-top: 0.4rem; font-size: 0.95rem;">수업 일정: 월요일 15:00, 화요일 16:00 | 수수료/시수: 주 2회</p>
+              </div>
+              
+              <!-- Quick Stats Summary -->
+              <div style="display: flex; gap: 1.5rem;">
+                <div style="text-align: center;">
+                  <span style="display: block; font-size: 0.8rem; color: var(--text-muted);">이번 달 출석률</span>
+                  <strong id="crmAttendanceRateText" style="font-size: 1.5rem; color: var(--color-regular);">92%</strong>
+                </div>
+                <div style="text-align: center; border-left: 1px solid var(--panel-border); padding-left: 1.5rem;">
+                  <span style="display: block; font-size: 0.8rem; color: var(--text-muted);">학습 중인 교재</span>
+                  <strong id="crmActiveTextbookCount" style="font-size: 1.5rem; color: #f59e0b;">1권</strong>
+                </div>
+                <div style="text-align: center; border-left: 1px solid var(--panel-border); padding-left: 1.5rem;">
+                  <span style="display: block; font-size: 0.8rem; color: var(--text-muted);">평가/분석 기록</span>
+                  <strong id="crmAnalysisCount" style="font-size: 1.5rem; color: var(--color-makeup);">3건</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Grid: Left Column (Attendance & Textbooks), Right Column (Analytics Reports) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
+            
+            <!-- Left Side Grid Column -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+              
+              <!-- SECTION A: ATTENDANCE HISTORY -->
+              <div class="glass-panel" style="padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem;">
+                  <h3 style="font-family: var(--font-title); font-size: 1.1rem; color: var(--accent); font-weight: 600;">📅 출결 현황 & 누적 기록</h3>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <button id="btnCrmAddMakeup" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--color-makeup); border-color: rgba(236,72,153,0.3)">보강 등록</button>
+                    <button id="btnCrmMarkAbsent" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--color-absent); border-color: rgba(239,68,68,0.3)">결석 등록</button>
+                  </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; background: var(--box-bg); padding: 1rem; border-radius: 10px;">
+                  <div>
+                    <span style="display:block; font-size: 0.8rem; color: var(--text-muted);">출석 / 결석 / 보강완료 건수</span>
+                    <span id="crmAttendanceCounts" style="font-size: 0.95rem; font-weight: 500;">출석 12회, 결석 2회, 보강 1회</span>
+                  </div>
+                  <div>
+                    <span style="display:block; font-size: 0.8rem; color: var(--text-muted);">보강 대기 일정</span>
+                    <span id="crmMakeupPendingText" style="font-size: 0.95rem; font-weight: 600; color: var(--color-makeup);">없음</span>
+                  </div>
+                </div>
+
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">최근 출결 타임라인</div>
+                <div style="max-height: 180px; overflow-y: auto; border: 1px solid var(--panel-border); border-radius: 8px; background: var(--box-bg);">
+                  <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                    <thead>
+                      <tr style="background: var(--tab-bg); border-bottom: 1px solid var(--panel-border);">
+                        <th style="padding: 0.5rem 0.8rem;">날짜</th>
+                        <th style="padding: 0.5rem 0.8rem;">시간</th>
+                        <th style="padding: 0.5rem 0.8rem; text-align: center;">상태</th>
+                      </tr>
+                    </thead>
+                    <tbody id="crmAttendanceListBody">
+                      <!-- Dynamically populated -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- SECTION B: TEXTBOOK 진도 관리 -->
+              <div class="glass-panel" style="padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem;">
+                  <h3 style="font-family: var(--font-title); font-size: 1.1rem; color: var(--accent); font-weight: 600;">📚 교재 학습 진도 현황</h3>
+                  <button id="btnCrmAddTextbook" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">+ 교재 등록</button>
+                </div>
+
+                <div id="crmTextbookContainer" style="display: flex; flex-direction: column; gap: 1rem; max-height: 380px; overflow-y: auto; padding-right: 0.2rem;">
+                  <!-- Textbook cards dynamically loaded -->
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right Side Grid Column -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+              
+              <!-- SECTION C: ACADEMIC ANALYSIS / EVALUATIONS -->
+              <div class="glass-panel" style="padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; cursor: pointer;" onclick="toggleCrmSection('crmEvaluationList')">
+                  <h3 style="font-family: var(--font-title); font-size: 1.1rem; color: var(--accent); font-weight: 600; display: flex; align-items: center;">📊 학업 평가 & 상담 기록 <span class="section-toggle-arrow" id="arrow-crmEvaluationList">▼</span></h3>
+                  <button id="btnCrmAddEvaluation" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--color-makeup); border-color: rgba(236,72,153,0.3)" onclick="event.stopPropagation()">+ 평가 추가</button>
+                </div>
+
+                <div id="crmEvaluationList" style="display: flex; flex-direction: column; gap: 1rem; max-height: 250px; overflow-y: auto; padding-right: 0.2rem;">
+                  <!-- Analytics records dynamically loaded -->
+                </div>
+              </div>
+
+              <!-- SECTION D: MEMBER ANALYSIS & LEVEL MANAGEMENT -->
+              <div class="glass-panel" style="padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; cursor: pointer;" onclick="toggleCrmSection('crmMemberAnalysisContent')">
+                  <h3 style="font-family: var(--font-title); font-size: 1.1rem; color: var(--accent); font-weight: 600; display: flex; align-items: center;">👤 회원 종합 분석 & 세부 레벨 <span class="section-toggle-arrow" id="arrow-crmMemberAnalysisContent">▼</span></h3>
+                </div>
+                
+                <div id="crmMemberAnalysisContent" class="crm-member-analysis-form" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                  
+                  <!-- Accordion Control Buttons -->
+                  <div class="crm-accordion-controls">
+                    <button type="button" class="btn-accordion-control" id="btnCrmExpandAll">전체 펼치기</button>
+                    <button type="button" class="btn-accordion-control" id="btnCrmCollapseAll">전체 접기</button>
+                  </div>
+
+                  <!-- 1. 등록일 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberRegDate">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">📅 등록일</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberRegDate">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberRegDate" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 150px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberRegDate" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberRegDate" class="input-custom" rows="2" style="resize:vertical; padding:0.4rem;" placeholder="예: 25.01.02"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 2. 학생 ID -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberStudentId">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">👤 학생 ID</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberStudentId">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberStudentId" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 150px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberStudentId" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberStudentId" class="input-custom" rows="2" style="resize:vertical; padding:0.4rem;" placeholder="예: snr123"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 3. 독서 방법 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberReadMethod">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">📖 독서 방법</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberReadMethod">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberReadMethod" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 150px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberReadMethod" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberReadMethod" class="input-custom" rows="2" style="resize:vertical; padding:0.4rem;" placeholder="예: 1월 3:N"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 4. 분석지 발송 여부 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberAnalysisSent">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">✉️ 분석지 발송 여부</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberAnalysisSent">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberAnalysisSent" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 150px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberAnalysisSent" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberAnalysisSent" class="input-custom" rows="2" style="resize:vertical; padding:0.4rem;" placeholder="예: 발송완료"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 5. 교과지수/레벨업/진로검사 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberLevelUp">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">📈 교과지수 / 레벨 / 진로</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberLevelUp">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberLevelUp" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 180px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberLevelUp" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberLevelUp" class="input-custom" rows="3" style="resize:vertical; padding:0.4rem;" placeholder="예: 교과-30% 진단분기1월 3-1"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 6. 레벨 일시변동 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberLevelChange">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">🔄 레벨 일시변동</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberLevelChange">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberLevelChange" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 150px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberLevelChange" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberLevelChange" class="input-custom" rows="2" style="resize:vertical; padding:0.4rem;" placeholder="예: 3-1"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 7. 훈민정음 / 글쓰기 교재 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberGrammarDone">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">✏️ 훈민정음 / 글쓰기 교재</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberGrammarDone">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberGrammarDone" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 180px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberGrammarDone" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberGrammarDone" class="input-custom" rows="3" style="resize:vertical; padding:0.4rem;" placeholder="예: 훈민정음 3-1완"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 8. 읽트/독트 시작일,마침일 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberReadingTest">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">📋 읽트 / 독트 일정</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberReadingTest">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberReadingTest" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 180px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberReadingTest" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberReadingTest" class="input-custom" rows="3" style="resize:vertical; padding:0.4rem;" placeholder="예: 1234(2/9)"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 9. 목표달성 스티커판 / 명예의 전당 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberBookPlan">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">🏆 목표달성 스티커판 / 명예</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberBookPlan">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberBookPlan" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 180px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberBookPlan" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberBookPlan" class="input-custom" rows="3" style="resize:vertical; padding:0.4rem;" placeholder="목표 달성 세부 내용 입력"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 10. 상담 / 채널 이력 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberConsultation">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">💬 상담 / 채널 이력</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberConsultation">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberConsultation" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 180px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberConsultation" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberConsultation" class="input-custom" rows="3" style="resize:vertical; padding:0.4rem;" placeholder="최근 입회/채널 상담 요약"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 11. 학생 특이사항 / 리드인 코칭 방향 / 글쓰기 방향 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberNotes">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">🔍 학생 특이사항 & 코칭 방향</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberNotes">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberNotes" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 200px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberNotes" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberNotes" class="input-custom" rows="4" style="resize:vertical; padding:0.4rem;" placeholder="학생 세부 코칭 가이드 기입..."></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 12. 진도 관리 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberProgress">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">📊 진도 관리</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberProgress">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberProgress" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 200px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberProgress" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberProgress" class="input-custom" rows="4" style="resize:vertical; padding:0.4rem;" placeholder="예: 25.1/8 3-1사랑으로세계인류치료한 50"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 13. 학부모 연락처 -->
+                  <div class="crm-accordion-item" id="accordion-crmMemberPhone">
+                    <button type="button" class="crm-accordion-header">
+                      <span class="crm-accordion-label">📞 학부모 연락처</span>
+                      <span class="crm-accordion-preview" id="preview-crmMemberPhone">비어 있음</span>
+                      <span class="crm-accordion-arrow">▼</span>
+                    </button>
+                    <div class="crm-accordion-content">
+                      <div class="crm-accordion-display-box" id="display-box-crmMemberPhone" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 100px; overflow-y: auto;"></div>
+                      <div class="form-group">
+                        <label for="crmMemberPhone" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
+                        <textarea id="crmMemberPhone" class="input-custom" rows="2" style="resize:vertical; padding:0.4rem;" placeholder="예: 010-1234-5678"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button id="btnCrmSaveMemberAnalysis" class="btn-primary" style="width: 100%; margin-top: 0.5rem; background: var(--color-regular); border-color: rgba(16,185,129,0.3);">💾 회원 종합 분석 저장</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION E: DAILY LESSON LOGS & ATTITUDE TIMELINE -->
+          <div class="glass-panel" style="padding: 1.5rem; margin-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem;">
+              <h3 style="font-family: var(--font-title); font-size: 1.15rem; color: var(--accent); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                📝 일일 수업 일지 & 태도 히스토리
+              </h3>
+            </div>
+            
+            <div class="timeline-container" id="crmTimelineContainer">
+              <!-- Timeline items will be rendered dynamically here -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Empty CRM State Placeholder -->
+        <div id="crmPlaceholder" class="glass-panel" style="padding: 4rem 2rem; text-align: center; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+          <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <p style="font-size: 1rem; font-weight: 500;">조회하고자 하는 학생 이름을 입력해 주세요.</p>
+          <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 400px; line-height: 1.5;">조회하면 출결 상태 통계는 물론 교재 종류별(문학, 비문학, 어휘, 독해, 국어) 진도 상태와 학습 분석표 기록을 한눈에 확인할 수 있습니다.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VIEW 2: GOOGLE SHEETS SIMULATOR -->
+    <div id="view-sheet" class="view-content">
+      <div id="sheetSimulatorContainer">
+        <!-- Spreadsheet component will render here -->
+      </div>
+    </div>
+
+    <!-- VIEW 3: INTEGRATION GUIDE & GAS CODE -->
+    <div id="view-guide" class="view-content">
+      <div class="guide-container glass-panel">
+        <h2 class="panel-title" style="font-size: 1.4rem;">실제 구글 스프레드시트와 실시간 연동하기</h2>
+
+        <!-- SMS Notification Settings Panel -->
+        <div class="guide-step" style="border-bottom: 1px solid var(--panel-border); padding-bottom: 2rem; margin-bottom: 2rem;">
+          <h3 style="font-family: var(--font-title); font-size: 1.2rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+            💬 등하원 안심 문자 발송 설정 (무료)
+          </h3>
+          <p style="color: var(--text-secondary); line-height: 1.5; font-size: 0.9rem; margin-bottom: 1.2rem;">
+            학생이 등원(수업 시작) 또는 하원(수업 완료) 시 학부모 연락처로 문자 메시지를 보냅니다. 스마트폰 요금제 무제한 문자를 활용하므로 <strong>비용은 100% 무료</strong>입니다.
+          </p>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; flex-wrap: wrap;">
+            <div>
+              <div class="form-group">
+                <label for="smsModeSelect" style="font-weight:600; display:block; margin-bottom:0.4rem; color: var(--accent);">문자 발송 방식</label>
+                <select id="smsModeSelect" class="select-custom">
+                  <option value="none">사용 안 함 (SMS 비활성화)</option>
+                  <option value="click" selected>원클릭 모바일 문자 발송 (기본 추천)</option>
+                  <option value="auto">안드로이드 게이트웨이 자동 발송 (Textbee 연동)</option>
+                </select>
+                <small style="display:block; color:var(--text-muted); margin-top:0.4rem; line-height:1.4;">
+                  * <strong>원클릭 문자</strong>: 태블릿/폰의 기본 문자앱을 열어 pre-fill합니다. 설정 필요 없이 가장 안전합니다.<br>
+                  * <strong>자동 발송</strong>: 안드로이드 공기계에 Textbee 앱을 깔아 무인 상태로 자동 발송합니다.
+                </small>
+              </div>
+              
+              <div id="smsGatewaySettings" style="display: none; margin-top: 1rem; border-top: 1px dashed var(--panel-border); padding-top: 1rem;">
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                  <label for="smsGatewayApiKey" style="font-size:0.8rem; font-weight:600;">Textbee API Key</label>
+                  <input type="text" id="smsGatewayApiKey" class="input-custom" placeholder="API Key를 입력하세요 (from textbee.dev)">
+                </div>
+                <div class="form-group">
+                  <label for="smsGatewayDeviceId" style="font-size:0.8rem; font-weight:600;">Textbee Device ID</label>
+                  <input type="text" id="smsGatewayDeviceId" class="input-custom" placeholder="Device ID를 입력하세요">
+                </div>
+                <small style="display:block; color:var(--text-muted); margin-top:0.4rem;">
+                  * 상세 설정 방법은 아래의 설명 가이드를 참고하세요.
+                </small>
+              </div>
+            </div>
+            
+            <div>
+              <div class="form-group" style="margin-bottom: 0.8rem;">
+                <label for="smsTemplateIn" style="font-weight:600; color: var(--accent);">등원 문자 템플릿</label>
+                <textarea id="smsTemplateIn" class="input-custom" rows="2" style="font-size: 0.85rem; padding: 0.5rem; background: var(--input-bg); border-radius: 8px;">{name}학생이 유현리드인 한그루역사학원에 {time}에 등원하여 수업중입니다.</textarea>
+              </div>
+              <div class="form-group">
+                <label for="smsTemplateOut" style="font-weight:600; color: var(--accent);">하원 문자 템플릿</label>
+                <textarea id="smsTemplateOut" class="input-custom" rows="2" style="font-size: 0.85rem; padding: 0.5rem; background: var(--input-bg); border-radius: 8px;">{name}학생이 유현리드인 한그루역사학원에 {time}에 수업을 마치고 하원하였습니다.</textarea>
+              </div>
+              <small style="display:block; color:var(--text-muted); line-height:1.4; margin-top:0.4rem;">
+                * <code>{name}</code>은 학생 이름으로, <code>{time}</code>은 현재 등원/하원 시간(예: 15:02)으로 치환되어 전송됩니다.
+              </small>
+            </div>
+          </div>
+          
+          <button id="btnSaveSmsSettings" class="btn-primary" style="margin-top: 1.2rem; background: var(--accent); border-color: rgba(99, 102, 241, 0.3);">💾 문자 발송 설정 저장</button>
+        </div>
+
+        <p style="color: var(--text-secondary); line-height: 1.6;">
+          본 출결 관리 시스템은 아래의 <strong>구글 앱스 스크립트(Google Apps Script, GAS)</strong>를 사용해 실제 구글 스프레드시트와 실시간 연동이 가능합니다.<br>
+          스프레드시트에 데이터를 추가하면 출결 앱에 즉시 뜨고, 출결 앱에서 출석/결석/보강완료를 누르면 스프레드시트에 실시간으로 기록됩니다.
+        </p>
+
+        <!-- Connection setup step-by-step -->
+        <div class="guide-step">
+          <h3><span>1</span> 구글 스프레드시트 분석 완료</h3>
+          <p>
+            공유해주신 스프레드시트 구조(첫 번째 행 헤더 기준)에 맞춰 연동 스크립트를 재설계했습니다.<br>
+            - <strong>첫 번째 행의 열 구성</strong>(B열: 학년, C열: 이름, D열: 수업 시수, E~J열: 월~토 시작시간, K열: 특이사항, L열: 결석)을 완벽히 매핑합니다.<br>
+            - 보강 관리를 위한 **AE열(보강일시)** 및 **AF열(보강완료)**은 아래 코드가 실행될 때 시트에 **자동으로 생성**되므로 기존 시트를 수정하실 필요가 없습니다.
+          </p>
+        </div>
+
+        <div class="guide-step">
+          <h3><span>2</span> 구글 앱스 스크립트(Apps Script) 작성 및 배포</h3>
+          <p>
+            1. 구글 스프레드시트 상단 메뉴에서 <strong>[확장 프로그램] &gt; [Apps Script]</strong>를 클릭합니다.<br>
+            2. 기본 코드를 지우고 아래의 스크립트 코드를 복사하여 붙여넣습니다.<br>
+            3. 상단의 <strong>[배포] &gt; [새 배포]</strong>를 누르고 유형을 <strong>[웹 앱]</strong>으로 선택합니다.<br>
+            4. 액세스 권한을 <strong>[모든 사용자(Anyone)]</strong>로 설정하여 배포한 후, 생성된 <strong>웹 앱 URL</strong>을 복사합니다.
+          </p>
+          
+          <!-- Code Block with Copy feature -->
+          <div class="code-block-wrapper">
+            <div class="code-header">
+              <span class="code-lang">Google Apps Script (code.js)</span>
+              <button class="btn-copy" data-target="gasCodeBlock">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                코드 복사
+              </button>
+            </div>
+            <pre class="code-content" id="gasCodeBlock">
+function doGet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. 전체 시간표 (students)
+  var sheetStudents = ss.getSheetByName("전체 시간표");
+  var studentsData = [];
+  if (sheetStudents) {
+    var lastRow = sheetStudents.getLastRow();
+    if (lastRow > 1) {
+      // Ensure makeup cols
+      if (sheetStudents.getRange("AE1").getValue() !== "보강일시") sheetStudents.getRange("AE1").setValue("보강일시");
+      if (sheetStudents.getRange("AF1").getValue() !== "보강완료") sheetStudents.getRange("AF1").setValue("보강완료");
+      
+      var range = sheetStudents.getRange(2, 1, lastRow - 1, 32);
+      var data = range.getDisplayValues();
+      var studentMap = {};
+      var keywords = ["국어", "세계사", "한국사", "독서", "문해력", "내신", "초등", "중등", "특강"];
+      
+      for (var i = 0; i < data.length; i++) {
+        var rowNum = 2 + i;
+        var name = String(data[i][2] || "").trim();
+        if (!name) continue;
+        
+        var lowerName = name.toLowerCase();
+        var isGroupClass = false;
+        for (var k = 0; k < keywords.length; k++) {
+          if (lowerName.indexOf(keywords[k]) !== -1) {
+            isGroupClass = true;
+            break;
+          }
+        }
+        if (isGroupClass || name.length > 8) continue;
+        
+        var grade = String(data[i][1] || "").trim();
+        var classes = String(data[i][3] || "").trim();
+        var notes = String(data[i][10] || "").trim(); // Col K (index 10) 특이사항
+        var absentDates = String(data[i][11] || "").trim(); // Col L (index 11)
+        var makeupDate = String(data[i][30] || "").trim(); // Col AE (index 30)
+        var makeupCompleted = String(data[i][31] || "").trim(); // Col AF (index 31)
+        
+        var times = {
+          "월요일": String(data[i][4] || "").trim(),
+          "화요일": String(data[i][5] || "").trim(),
+          "수요일": String(data[i][6] || "").trim(),
+          "목요일": String(data[i][7] || "").trim(),
+          "금요일": String(data[i][8] || "").trim(),
+          "토요일": String(data[i][9] || "").trim(),
+          "일요일": ""
+        };
+        
+        studentsData.push({
+          id: "row_" + rowNum,
+          row: rowNum,
+          grade: grade,
+          name: name,
+          classes: classes,
+          times: times,
+          notes: notes,
+          absentDates: absentDates,
+          makeupDate: makeupDate,
+          makeupCompleted: makeupCompleted
+        });
+      }
+    }
+  }
+
+  // 2. 오늘 출석부 (dailyLogs)
+  var sheetDaily = ss.getSheetByName("오늘 출석부");
+  var dailyLogsData = [];
+  if (sheetDaily) {
+    var lastRow = sheetDaily.getLastRow();
+    if (lastRow > 1) {
+      var range = sheetDaily.getRange(2, 1, lastRow - 1, 12); // Read 12 columns
+      var data = range.getDisplayValues();
+      for (var i = 0; i < data.length; i++) {
+        var name = String(data[i][2] || "").trim();
+        if (!name) continue;
+        dailyLogsData.push({
+          id: "daily_" + (2 + i),
+          row: 2 + i,
+          date: String(data[i][0] || ""),
+          time: String(data[i][1] || ""),
+          name: name,
+          notes: String(data[i][3] || ""), // Col D (notes)
+          status: String(data[i][4] || "대기").trim(), // Col E (status)
+          inTime: String(data[i][5] || ""), // Col F (inTime)
+          reason: String(data[i][6] || ""), // Col G (reason)
+          number: String(data[i][7] || ""), // Col H (number)
+          event: String(data[i][8] || ""), // Col I (event)
+          grammarDone: String(data[i][9] || ""), // Col J (진단글쓰기/특별수업)
+          contents: String(data[i][10] || "") // Col K (수업내용 및 특이사항)
+        });
+      }
+    }
+  }
+
+  // 3. 문해력교재관리 (textbooks)
+  var sheetTextbooks = ss.getSheetByName("문해력교재관리");
+  var textbooksData = [];
+  if (sheetTextbooks) {
+    var lastRow = sheetTextbooks.getLastRow();
+    if (lastRow > 1) {
+      var range = sheetTextbooks.getRange(2, 1, lastRow - 1, 22);
+      var data = range.getDisplayValues();
+      for (var i = 0; i < data.length; i++) {
+        var name = String(data[i][1] || "").trim();
+        if (!name) continue;
+        textbooksData.push({
+          id: "textbook_" + (2 + i),
+          row: 2 + i,
+          grade: String(data[i][0] || ""),
+          name: name,
+          nonfictionTitle: String(data[i][2] || ""),
+          nonfictionStart: String(data[i][3] || ""),
+          nonfictionEnd: String(data[i][4] || ""),
+          nonfictionAccuracy: String(data[i][5] || ""),
+          literatureTitle: String(data[i][6] || ""),
+          literatureStart: String(data[i][7] || ""),
+          literatureEnd: String(data[i][8] || ""),
+          literatureAccuracy: String(data[i][9] || ""),
+          vocabTitle: String(data[i][10] || ""),
+          vocabStart: String(data[i][11] || ""),
+          vocabEnd: String(data[i][12] || ""),
+          vocabAccuracy: String(data[i][13] || ""),
+          complexTitle: String(data[i][14] || ""),
+          complexStart: String(data[i][15] || ""),
+          complexEnd: String(data[i][16] || ""),
+          complexAccuracy: String(data[i][17] || ""),
+          readaloudTitle: String(data[i][18] || ""),
+          readaloudStart: String(data[i][19] || ""),
+          readaloudEnd: String(data[i][20] || ""),
+          readaloudAccuracy: String(data[i][21] || "")
+        });
+      }
+    }
+  }
+
+  // 4. 상담내용/리포트발송/채널발송 (consultations)
+  var sheetConsult = ss.getSheetByName("상담내용/리포트발송/채널발송");
+  var consultationsData = [];
+  if (sheetConsult) {
+    var lastRow = sheetConsult.getLastRow();
+    if (lastRow > 1) {
+      var range = sheetConsult.getRange(2, 1, lastRow - 1, 6); // Read 6 columns
+      var data = range.getDisplayValues();
+      for (var i = 0; i < data.length; i++) {
+        var name = String(data[i][1] || "").trim(); // Col B is name now
+        if (!name) continue;
+        consultationsData.push({
+          id: "consultation_" + (2 + i),
+          row: 2 + i,
+          grade: String(data[i][0] || ""), // Col A is grade
+          name: name,
+          period: String(data[i][2] || ""), // Col C
+          author: String(data[i][3] || ""), // Col D
+          content: String(data[i][4] || ""), // Col E
+          needs: String(data[i][5] || "") // Col F
+        });
+      }
+    }
+  }
+
+  // 5. 회원 분석/레벨변동/전화상담 (memberAnalysis)
+  var sheetMember = ss.getSheetByName("회원 분석/레벨변동/전화상담");
+  var memberAnalysisData = [];
+  if (sheetMember) {
+    var lastRow = sheetMember.getLastRow();
+    if (lastRow > 1) {
+      var range = sheetMember.getRange(2, 1, lastRow - 1, 16);
+      var data = range.getDisplayValues();
+      for (var i = 0; i < data.length; i++) {
+        var name = String(data[i][1] || "").trim();
+        if (!name) continue;
+        memberAnalysisData.push({
+          id: "member_" + (2 + i),
+          row: 2 + i,
+          num: String(data[i][0] || ""),
+          name: name,
+          grade: String(data[i][2] || ""),
+          regDate: String(data[i][3] || ""),
+          consultation: String(data[i][4] || ""),
+          notes: String(data[i][5] || ""),
+          progress: String(data[i][6] || ""),
+          levelUp: String(data[i][7] || ""),
+          levelChange: String(data[i][8] || ""),
+          grammarDone: String(data[i][9] || ""),
+          readingTest: String(data[i][10] || ""),
+          bookPlan: String(data[i][11] || ""),
+          analysisSent: String(data[i][12] || ""),
+          readMethod: String(data[i][13] || ""),
+          studentId: String(data[i][14] || ""),
+          phone: String(data[i][15] || "")
+        });
+      }
+    }
+  }
+
+  // 6. 누적출결데이터 (attendanceLogs)
+  var attendanceLogsData = []; // Removed sheet query since it is no longer used
+
+  // 7. 누적일일수업관리 (accumulatedLogs)
+  var sheetAccumulated = ss.getSheetByName("누적일일수업관리");
+  var accumulatedLogsData = [];
+  if (sheetAccumulated) {
+    var lastRow = sheetAccumulated.getLastRow();
+    if (lastRow > 1) {
+      var range = sheetAccumulated.getRange(2, 1, lastRow - 1, 11);
+      var data = range.getDisplayValues();
+      for (var i = 0; i < data.length; i++) {
+        var name = String(data[i][2] || "").trim();
+        if (!name) continue;
+        accumulatedLogsData.push({
+          date: String(data[i][0] || ""),
+          time: String(data[i][1] || ""),
+          name: name,
+          notes: String(data[i][3] || ""),
+          status: String(data[i][4] || ""),
+          inTime: String(data[i][5] || ""),
+          reason: String(data[i][6] || ""),
+          number: String(data[i][7] || ""),
+          event: String(data[i][8] || ""),
+          grammarDone: String(data[i][9] || ""), // Col J (진단글쓰기/특별수업)
+          contents: String(data[i][10] || "") // Col K (수업내용 및 특이사항)
+        });
+      }
+    }
+  }
+
+  var responseObj = {
+    students: studentsData,
+    dailyLogs: dailyLogsData,
+    textbooks: textbooksData,
+    consultations: consultationsData,
+    memberAnalysis: memberAnalysisData,
+    attendanceLogs: attendanceLogsData,
+    accumulatedLogs: accumulatedLogsData
+  };
+
+  return ContentService.createTextOutput(JSON.stringify(responseObj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function processSingleUpdate(ss, tab, row, field, value) {
+  if (tab === "students" || tab === "전체 시간표") {
+    var sheet = ss.getSheetByName("전체 시간표");
+    if (field === "absentDates") {
+      sheet.getRange(row, 12).setValue(value);
+    } else if (field === "makeupCompleted") {
+      sheet.getRange(row, 32).setValue(value);
+    } else if (field === "makeupDate") {
+      sheet.getRange(row, 31).setValue(value);
+    } else if (field === "grade") {
+      sheet.getRange(row, 2).setValue(value);
+    } else if (field === "name") {
+      sheet.getRange(row, 3).setValue(value);
+    } else if (field === "classes") {
+      sheet.getRange(row, 4).setValue(value);
+    } else if (field === "times") {
+      var timesObj = JSON.parse(value);
+      var dayCols = { "월요일": 5, "화요일": 6, "수요일": 7, "목요일": 8, "금요일": 9, "토요일": 10 };
+      for (var dName in dayCols) {
+        if (timesObj[dName] !== undefined) {
+          sheet.getRange(row, dayCols[dName]).setValue(timesObj[dName]);
+        }
+      }
+    }
+  } else if (tab === "textbooks" || tab === "문해력교재관리") {
+    var sheet = ss.getSheetByName("문해력교재관리");
+    var cols = {
+      grade: 1, name: 2,
+      nonfictionTitle: 3, nonfictionStart: 4, nonfictionEnd: 5, nonfictionAccuracy: 6,
+      literatureTitle: 7, literatureStart: 8, literatureEnd: 9, literatureAccuracy: 10,
+      vocabTitle: 11, vocabStart: 12, vocabEnd: 13, vocabAccuracy: 14,
+      complexTitle: 15, complexStart: 16, complexEnd: 17, complexAccuracy: 18,
+      readaloudTitle: 19, readaloudStart: 20, readaloudEnd: 21, readaloudAccuracy: 22
+    };
+    var col = cols[field];
+    if (col) {
+      sheet.getRange(row, col).setValue(value);
+    }
+  } else if (tab === "consultations" || tab === "상담내용/리포트발송/채널발송") {
+    var sheet = ss.getSheetByName("상담내용/리포트발송/채널발송");
+    var cols = {
+      grade: 1, name: 2, period: 3, author: 4, content: 5, needs: 6
+    };
+    var col = cols[field];
+    if (col) {
+      sheet.getRange(row, col).setValue(value);
+    }
+  } else if (tab === "memberAnalysis" || tab === "회원 분석/레벨변동/전화상담") {
+    var sheet = ss.getSheetByName("회원 분석/레벨변동/전화상담");
+    if (field === "15" || field === 15 || field === "P") {
+      field = "phone";
+    }
+    var cols = {
+      num: 1, name: 2, grade: 3, regDate: 4, consultation: 5, notes: 6,
+      progress: 7, levelUp: 8, levelChange: 9, grammarDone: 10,
+      readingTest: 11, bookPlan: 12, analysisSent: 13, readMethod: 14, studentId: 15,
+      phone: 16
+    };
+    var col = cols[field];
+    if (col) {
+      var cell = sheet.getRange(row, col);
+      cell.setValue(value);
+      if (col === 7 || col === 10) {
+        applyRichTextStyling(cell, value);
+      } else {
+        var checkVal = String(value).trim();
+        if (col === 8 && (checkVal.indexOf("코스업") !== -1 || checkVal.indexOf("레벨업") !== -1 || checkVal.indexOf("진로검사") !== -1)) {
+          cell.setFontColor("#2563eb");
+          cell.setFontWeight("bold");
+        } else {
+          cell.setFontColor(null);
+          cell.setFontWeight(null);
+        }
+      }
+    }
+  } else if (tab === "dailyLogs" || tab === "오늘 출석부") {
+    var sheet = ss.getSheetByName("오늘 출석부");
+    var cols = {
+      date: 1, time: 2, name: 3, notes: 4, status: 5, inTime: 6, reason: 7,
+      number: 8, event: 9, grammarDone: 10, contents: 11
+    };
+    var col = cols[field];
+    if (col) {
+      sheet.getRange(row, col).setValue(value);
+      if (field === "number" || field === "event" || field === "grammarDone" || field === "contents") {
+        accumulateDailyEventToMemberAnalysis(sheet, row);
+      }
+    }
+  }
+}
+
+function doPost(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  try {
+    var postData = JSON.parse(e.postData.contents);
+    
+    if (postData.action === "update") {
+      processSingleUpdate(ss, postData.tab || "students", parseInt(postData.row), postData.field, postData.value);
+      return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } 
+    else if (postData.action === "batchUpdate") {
+      var updates = postData.updates || [];
+      for (var i = 0; i < updates.length; i++) {
+        var u = updates[i];
+        processSingleUpdate(ss, u.tab || "students", parseInt(u.row), u.field, u.value);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } 
+    
+    else if (postData.action === "add") {
+      var sheet = ss.getSheetByName("전체 시간표");
+      var lastRow = sheet.getLastRow();
+      var nextRow = lastRow + 1;
+      
+      sheet.getRange(nextRow, 1).setValue(nextRow - 1);
+      sheet.getRange(nextRow, 2).setValue(postData.grade);
+      sheet.getRange(nextRow, 3).setValue(postData.name);
+      sheet.getRange(nextRow, 4).setValue(postData.classes || "");
+      
+      var dayCols = { "월요일": 5, "화요일": 6, "수요일": 7, "목요일": 8, "금요일": 9, "토요일": 10 };
+      var col = dayCols[postData.day];
+      if (col) {
+        sheet.getRange(nextRow, col).setValue(postData.startTime);
+      }
+      
+      if (postData.makeupDate) {
+        sheet.getRange(nextRow, 31).setValue(postData.makeupDate);
+        sheet.getRange(nextRow, 32).setValue("대기");
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", row: nextRow }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    else if (postData.action === "addDailyLog") {
+      var sheet = ss.getSheetByName("오늘 출석부");
+      if (!sheet) {
+        sheet = ss.insertSheet("오늘 출석부");
+        sheet.appendRow([
+          "날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유",
+          "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
+        ]);
+      }
+      var lastRow = sheet.getLastRow();
+      var nextRow = lastRow + 1;
+      
+      sheet.getRange(nextRow, 1).setValue(postData.date); // 날짜요일
+      sheet.getRange(nextRow, 2).setValue(postData.time); // 시간
+      sheet.getRange(nextRow, 3).setValue(postData.name); // 이름
+      sheet.getRange(nextRow, 4).setValue(postData.notes || ""); // 특이사항
+      sheet.getRange(nextRow, 5).setValue(postData.status || "대기"); // 등원여부
+      sheet.getRange(nextRow, 6).setValue(postData.inTime || ""); // 등원시간
+      sheet.getRange(nextRow, 7).setValue(postData.reason || ""); // 보강결석사유
+      sheet.getRange(nextRow, 8).setValue(postData.number || "");
+      sheet.getRange(nextRow, 9).setValue(postData.event || "");
+      sheet.getRange(nextRow, 10).setValue(postData.grammarDone || "");
+      sheet.getRange(nextRow, 11).setValue(postData.contents || "");
+      
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", row: nextRow }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    else if (postData.action === "addTextbook") {
+      var sheet = ss.getSheetByName("문해력교재관리");
+      if (!sheet) {
+        sheet = ss.insertSheet("문해력교재관리");
+        sheet.appendRow([
+          "학년", "이름", 
+          "비문학 교재명", "시작일", "마침일", "정답률", 
+          "문학교재명", "시작일", "마침일", "정답률", 
+          "어휘 교재명", "시작일", "마침일", "정답률", 
+          "복합 교재명", "시작일", "마침일", "정답률"
+        ]);
+      }
+      
+      var lastRow = sheet.getLastRow();
+      var data = lastRow > 1 ? sheet.getRange(2, 2, lastRow - 1, 1).getValues() : [];
+      var foundRow = -1;
+      for (var i = 0; i < data.length; i++) {
+        if (String(data[i][0]).trim() === postData.name.trim()) {
+          foundRow = 2 + i;
+          break;
+        }
+      }
+      
+      var targetRow = foundRow !== -1 ? foundRow : (lastRow + 1);
+      
+      if (foundRow === -1) {
+        sheet.getRange(targetRow, 1).setValue(postData.grade || "");
+        sheet.getRange(targetRow, 2).setValue(postData.name);
+      }
+      
+      var categoryCols = {
+        "비문학": 3,
+        "문학": 7,
+        "어휘": 11,
+        "복합": 15,
+        "음독": 19
+      };
+      
+      var startCol = categoryCols[postData.category];
+      if (startCol) {
+        sheet.getRange(targetRow, startCol).setValue(postData.title || "");
+        sheet.getRange(targetRow, startCol + 1).setValue(postData.startDate || "");
+        sheet.getRange(targetRow, startCol + 2).setValue(postData.endDate || "");
+        sheet.getRange(targetRow, startCol + 3).setValue(postData.accuracy || "");
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", row: targetRow }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    else if (postData.action === "addConsultation") {
+      var sheet = ss.getSheetByName("상담내용/리포트발송/채널발송");
+      if (!sheet) {
+        sheet = ss.insertSheet("상담내용/리포트발송/채널발송");
+        sheet.appendRow(["학년", "이름", "작성기간", "작성인", "상담내용 / 분석지 / 채널 보냄", "부모님의 need / 학생 특이사항"]);
+      }
+      var lastRow = sheet.getLastRow();
+      var nextRow = lastRow + 1;
+      sheet.getRange(nextRow, 1).setValue(postData.grade || "");
+      sheet.getRange(nextRow, 2).setValue(postData.name);
+      sheet.getRange(nextRow, 3).setValue(postData.period);
+      sheet.getRange(nextRow, 4).setValue(postData.author);
+      sheet.getRange(nextRow, 5).setValue(postData.content);
+      sheet.getRange(nextRow, 6).setValue(postData.needs || "");
+      
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", row: nextRow }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    else if (postData.action === "addAttendanceLog") {
+      var sheet = ss.getSheetByName("누적출결데이터");
+      if (!sheet) {
+        sheet = ss.insertSheet("누적출결데이터");
+        sheet.appendRow(["타임스탬프", "이름", "날짜", "요일", "시간", "출결상태"]);
+      }
+      var lastRow = sheet.getLastRow();
+      var nextRow = lastRow + 1;
+      sheet.getRange(nextRow, 1).setValue(postData.timestamp);
+      sheet.getRange(nextRow, 2).setValue(postData.name);
+      sheet.getRange(nextRow, 3).setValue(postData.date);
+      sheet.getRange(nextRow, 4).setValue(postData.day);
+      sheet.getRange(nextRow, 5).setValue(postData.time);
+      sheet.getRange(nextRow, 6).setValue(postData.status);
+      
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", row: nextRow }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    else if (postData.action === "deleteRow") {
+      var tab = postData.tab;
+      var row = parseInt(postData.row);
+      var tabName = "";
+      if (tab === "textbooks") tabName = "문해력교재관리";
+      else if (tab === "consultations") tabName = "상담내용/리포트발송/채널발송";
+      else if (tab === "memberAnalysis") tabName = "회원 분석/레벨변동/전화상담";
+      else if (tab === "dailyLogs") tabName = "오늘 출석부";
+      else if (tab === "students") tabName = "전체 시간표";
+      else if (tab === "accumulatedLogs") tabName = "누적일일수업관리";
+      
+      if (tabName) {
+        var sheet = ss.getSheetByName(tabName);
+        if (sheet && row > 1 && row <= sheet.getLastRow()) {
+          sheet.deleteRow(row);
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// 학년 순위를 계산하는 헬퍼 함수 (초1~6 -> 중1~3 -> 고1~3 순서 정렬용)
+function getGradeRank(gradeStr) {
+  if (!gradeStr) return 99;
+  var match = gradeStr.match(/(초|중|고|대|유)?\s*(\d+)/);
+  var type = match ? match[1] : "";
+  var num = match ? parseInt(match[2], 10) : 0;
+  
+  var typeScore = 0;
+  if (type === "초") typeScore = 10;
+  else if (type === "중") typeScore = 20;
+  else if (type === "고") typeScore = 30;
+  else typeScore = 40;
+  
+  return typeScore + num;
+}
+
+// 매일 오전 6시 자동 실행용 일일 출석부 자동 생성 함수 (기존 기록 백업 후 초기화)
+function generateDailyAttendance() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetStudents = ss.getSheetByName("전체 시간표");
+  if (!sheetStudents) return;
+  
+  var sheetDaily = ss.getSheetByName("오늘 출석부");
+  if (!sheetDaily) {
+    sheetDaily = ss.insertSheet("오늘 출석부");
+    sheetDaily.appendRow([
+      "날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유",
+      "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
+    ]);
+  }
+  
+  // 1. 기존 '오늘 출석부' 데이터를 '누적일일수업관리'로 백업
+  var lastRowDaily = sheetDaily.getLastRow();
+  
+  // 드롭다운(Data Validation) 유효성 검사 룰 백업 (2행 기준)
+  var validationE2 = lastRowDaily >= 2 ? sheetDaily.getRange("E2").getDataValidation() : null;
+  var validationH2 = lastRowDaily >= 2 ? sheetDaily.getRange("H2").getDataValidation() : null;
+  var validationI2 = lastRowDaily >= 2 ? sheetDaily.getRange("I2").getDataValidation() : null;
+  
+  if (lastRowDaily > 1) {
+    var sheetAccumulated = ss.getSheetByName("누적일일수업관리");
+    if (!sheetAccumulated) {
+      sheetAccumulated = ss.insertSheet("누적일일수업관리");
+      sheetAccumulated.appendRow([
+        "날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유",
+        "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
+      ]);
+    }
+    var dailyRange = sheetDaily.getRange(2, 1, lastRowDaily - 1, 11);
+    var dailyValues = dailyRange.getValues();
+    var dailyRichTexts = dailyRange.getRichTextValues();
+    
+    // Prepend to cumulative sheet: insert rows right below the header (at row 2)
+    sheetAccumulated.insertRowsBefore(2, dailyValues.length);
+    var destRange = sheetAccumulated.getRange(2, 1, dailyValues.length, 11);
+    destRange.setValues(dailyValues);
+    try {
+      destRange.setRichTextValues(dailyRichTexts);
+    } catch(e) {}
+    
+    // 백업 후 기존 데이터 행을 완전히 삭제하지 않고 값(Text)만 초기화!
+    // 이렇게 함으로써 구글 시트에 기설정된 드롭다운(데이터 유효성 검사)이 2행 이하 전체 셀에 안전하게 보존됩니다.
+    dailyRange.clearContent();
+  }
+  
+  // 2. 오늘의 요일에 맞는 학생들을 추출하여 채우기
+  var today = new Date();
+  var WEEKDAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+  var todayDayName = WEEKDAYS[today.getDay()];
+  
+  var m = today.getMonth() + 1;
+  var d = today.getDate();
+  var dayShort = todayDayName.substring(0, 1);
+  var dateStr = m + "/" + d + dayShort;
+  var dateDot = m + "." + d;
+  var dateSlash = m + "/" + d;
+  
+  var lastRowSt = sheetStudents.getLastRow();
+  if (lastRowSt < 2) return;
+  
+  var studentsData = sheetStudents.getRange(2, 1, lastRowSt - 1, 32).getDisplayValues();
+  var dailyLogsToAdd = [];
+  
+  for (var i = 0; i < studentsData.length; i++) {
+    var name = String(studentsData[i][2] || "").trim();
+    if (!name) continue;
+    
+    var keywords = ["국어", "세계사", "한국사", "독서", "문해력", "내신", "초등", "중등", "특강"];
+    var isGroup = false;
+    for (var k = 0; k < keywords.length; k++) {
+      if (name.indexOf(keywords[k]) !== -1) {
+        isGroup = true;
+        break;
+      }
+    }
+    if (isGroup || name.length > 8) continue;
+    
+    var grade = String(studentsData[i][1] || "").trim(); // 학년 추가 (정리 정렬을 위함)
+    var notes = String(studentsData[i][10] || "").trim(); // Col K (index 10) 특이사항
+    var absentDates = String(studentsData[i][11] || "").trim().replace(/\s+/g, '');
+    var makeupDateStr = String(studentsData[i][30] || "").trim();
+    var makeupCompleted = String(studentsData[i][31] || "").trim();
+    
+    var times = {
+      "월요일": String(studentsData[i][4] || "").trim(),
+      "화요일": String(studentsData[i][5] || "").trim(),
+      "수요일": String(studentsData[i][6] || "").trim(),
+      "목요일": String(studentsData[i][7] || "").trim(),
+      "금요일": String(studentsData[i][8] || "").trim(),
+      "토요일": String(studentsData[i][9] || "").trim()
+    };
+    
+    var isAbsentToday = absentDates.indexOf(dateSlash) !== -1 || absentDates.indexOf(dateDot) !== -1;
+    var isMakeupToday = false;
+    var makeupTime = "";
+    if (makeupDateStr) {
+      try {
+        var cleanStr = makeupDateStr.replace(/-/g, '/');
+        var makeupDateObj = new Date(cleanStr);
+        if (!isNaN(makeupDateObj.getTime())) {
+          var mm = makeupDateObj.getMonth() + 1;
+          var dd = makeupDateObj.getDate();
+          if (mm === m && dd === d) {
+            isMakeupToday = true;
+            makeupTime = String(makeupDateObj.getHours()).padStart(2, '0') + ":" + String(makeupDateObj.getMinutes()).padStart(2, '0');
+          }
+        }
+      } catch (e) {}
+    }
+    
+    var regTime = times[todayDayName] || "";
+    
+    if (isMakeupToday && makeupCompleted !== "완료") {
+      dailyLogsToAdd.push({
+        time: makeupTime,
+        name: name,
+        grade: grade,
+        status: "대기",
+        reason: "보강 수업",
+        notes: notes
+      });
+    } else if (regTime && !makeupDateStr) {
+      var parts = regTime.split(/[,/; ]+/);
+      for (var p = 0; p < parts.length; p++) {
+        var t = parts[p].trim();
+        if (t) {
+          dailyLogsToAdd.push({
+            time: t,
+            name: name,
+            grade: grade,
+            status: isAbsentToday ? "결석" : "대기",
+            reason: isAbsentToday ? "정규 결석" : "",
+            notes: notes
+          });
+        }
+      }
+    }
+  }
+  
+  // 1. 시간 오름차순 -> 2. 같은 시간이면 학년 오름차순 -> 3. 동일 학년이면 이름 오름차순 정렬
+  dailyLogsToAdd.sort(function(a, b) {
+    var timeComp = a.time.localeCompare(b.time);
+    if (timeComp !== 0) return timeComp;
+    
+    var rankA = getGradeRank(a.grade);
+    var rankB = getGradeRank(b.grade);
+    if (rankA !== rankB) return rankA - rankB;
+    
+    return a.name.localeCompare(b.name);
+  });
+  
+  // 데이터 밀어넣기
+  if (dailyLogsToAdd.length > 0) {
+    var writeRange = sheetDaily.getRange(2, 1, dailyLogsToAdd.length, 11);
+    var writeValues = [];
+    for (var j = 0; j < dailyLogsToAdd.length; j++) {
+      writeValues.push([
+        dateStr, // 날짜요일 (A)
+        dailyLogsToAdd[j].time, // 시간 (B)
+        dailyLogsToAdd[j].name, // 이름 (C)
+        dailyLogsToAdd[j].notes, // 특이사항 (D)
+        dailyLogsToAdd[j].status, // 등원여부 (E)
+        "", // 등원시간 (F)
+        dailyLogsToAdd[j].reason, // 보강결석사유 (G)
+        "", // 숫자 (H)
+        "", // 이벤트 (I)
+        "", // 진단글쓰기/특별수업 (J)
+        ""  // 수업내용 및 특이사항 (K)
+      ]);
+    }
+    writeRange.setValues(writeValues);
+    
+    // 비워진 칸(드롭다운 유효성 검사)이 2행 기준보다 늘어난 경우, 드롭다운 룰을 하단 셀까지 동적 복사 적용
+    if (validationE2) {
+      sheetDaily.getRange(2, 5, dailyLogsToAdd.length, 1).setDataValidation(validationE2);
+    }
+    if (validationH2) {
+      sheetDaily.getRange(2, 8, dailyLogsToAdd.length, 1).setDataValidation(validationH2);
+    }
+    if (validationI2) {
+      sheetDaily.getRange(2, 9, dailyLogsToAdd.length, 1).setDataValidation(validationI2);
+    }
+  }
+}
+
+// 전체 시간표를 기반으로 요일별/시간대별/학년별(초등저, 초등고, 중등, 한국사) visual 주간 시간표 보드를 자동 생성하는 함수
+function generateWeeklyTimetable() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetStudents = ss.getSheetByName("전체 시간표");
+  if (!sheetStudents) return;
+  var lastRowSt = sheetStudents.getLastRow();
+  if (lastRowSt < 2) return;
+  
+  var studentsData = sheetStudents.getRange(2, 1, lastRowSt - 1, 32).getDisplayValues();
+  
+  var sheetWeekly = ss.getSheetByName("주간 시간표");
+  if (sheetWeekly) {
+    sheetWeekly.clear();
+    sheetWeekly.clearFormats();
+  } else {
+    sheetWeekly = ss.insertSheet("주간 시간표");
+  }
+  sheetWeekly.setHiddenGridlines(false);
+  
+  var WEEKDAYS = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+  var CATEGORIES = ['초등저', '초등고', '중등', '한국사'];
+  
+  var timetableMap = {};
+  var timesSet = {};
+  
+  var standardSlots = ["13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30"];
+  standardSlots.forEach(function(slot) {
+    timesSet[slot] = true;
+  });
+  
+  function normalizeTimeSlot(timeStr) {
+    if (!timeStr) return null;
+    var match = timeStr.match(/(\d{1,2})\s*:\s*(\d{2})/);
+    if (!match) return null;
+    var hr = parseInt(match[1], 10);
+    var min = parseInt(match[2], 10);
+    if (isNaN(hr) || isNaN(min)) return null;
+    if (min >= 0 && min < 30) {
+      min = 0;
+    } else {
+      min = 30;
+    }
+    return String(hr).padStart(2, '0') + ":" + String(min).padStart(2, '0');
+  }
+  
+  function getCategory(grade, classes, name) {
+    var isHistory = (classes.indexOf("한국사") !== -1 || classes.indexOf("세계사") !== -1 || classes.indexOf("역사") !== -1 || name.indexOf("한국사") !== -1 || name.indexOf("세계사") !== -1 || name.indexOf("역사") !== -1);
+    if (isHistory) return "한국사";
+    
+    if (grade.indexOf("초1") !== -1 || grade.indexOf("초2") !== -1 || grade.indexOf("초3") !== -1 || grade.indexOf("1학년") !== -1 || grade.indexOf("2학년") !== -1 || grade.indexOf("3학년") !== -1) {
+      return "초등저";
+    }
+    if (grade.indexOf("초4") !== -1 || grade.indexOf("초5") !== -1 || grade.indexOf("초6") !== -1 || grade.indexOf("4학년") !== -1 || grade.indexOf("5학년") !== -1 || grade.indexOf("6학년") !== -1) {
+      return "초등고";
+    }
+    if (grade.indexOf("중") !== -1 || grade.indexOf("고") !== -1) {
+      return "중등";
+    }
+    var numMatch = grade.match(/\d+/);
+    if (numMatch) {
+      var num = parseInt(numMatch[0], 10);
+      if (num <= 3) return "초등저";
+      if (num <= 6) return "초등고";
+    }
+    return "초등저";
+  }
+  
+  for (var i = 0; i < studentsData.length; i++) {
+    var name = String(studentsData[i][2] || "").trim();
+    var grade = String(studentsData[i][1] || "").trim();
+    var classes = String(studentsData[i][3] || "").trim();
+    if (!name) continue;
+    
+    var keywords = ["국어", "세계사", "한국사", "독서", "문해력", "내신", "초등", "중등", "특강"];
+    var isGroup = false;
+    for (var k = 0; k < keywords.length; k++) {
+      if (name.indexOf(keywords[k]) !== -1) {
+        isGroup = true;
+        break;
+      }
+    }
+    if (isGroup || name.length > 8) continue;
+    
+    var cat = getCategory(grade, classes, name);
+    
+    var dayCols = { "월요일": 4, "화요일": 5, "수요일": 6, "목요일": 7, "금요일": 8, "토요일": 9 };
+    for (var dName in dayCols) {
+      var timeCell = String(studentsData[i][dayCols[dName]] || "").trim();
+      if (!timeCell) continue;
+      
+      var timeParts = timeCell.split(/[,/; ]+/);
+      for (var tp = 0; tp < timeParts.length; tp++) {
+        var rawTime = timeParts[tp].trim();
+        if (!rawTime) continue;
+        
+        var normalized = normalizeTimeSlot(rawTime);
+        if (normalized) {
+          timesSet[normalized] = true;
+          
+          var key = dName + "_" + normalized + "_" + cat;
+          if (!timetableMap[key]) {
+            timetableMap[key] = [];
+          }
+          timetableMap[key].push({
+            name: name,
+            grade: grade,
+            classes: classes
+          });
+        }
+      }
+    }
+  }
+  
+  // 요일별/시간대별/카테고리별 학생 목록을 학년 순 -> 이름 순으로 정렬
+  for (var key in timetableMap) {
+    timetableMap[key].sort(function(a, b) {
+      var rankA = getGradeRank(a.grade);
+      var rankB = getGradeRank(b.grade);
+      if (rankA !== rankB) return rankA - rankB;
+      return a.name.localeCompare(b.name);
+    });
+  }
+  
+  var sortedTimes = Object.keys(timesSet).sort();
+  var grid = [];
+  
+  var titleRow = [];
+  for (var c = 0; c < 30; c++) {
+    titleRow.push(c === 0 ? "♣ 주간 시간표 (학생 정원 파악 보드) - 정원 12명 제한" : "");
+  }
+  grid.push(titleRow);
+  
+  var dayRow = ["시간"];
+  WEEKDAYS.forEach(function(day) {
+    dayRow.push(day);
+    dayRow.push("");
+    dayRow.push("");
+    dayRow.push("");
+    dayRow.push("");
+  });
+  dayRow.pop();
+  grid.push(dayRow);
+  
+  var catRow = [""];
+  WEEKDAYS.forEach(function(day) {
+    catRow.push("초등저");
+    catRow.push("초등고");
+    catRow.push("중등");
+    catRow.push("한국사");
+    catRow.push("");
+  });
+  catRow.pop();
+  grid.push(catRow);
+  
+  var dayOffsets = { "월요일": 1, "화요일": 6, "수요일": 11, "목요일": 16, "금요일": 21, "토요일": 26 };
+  var catOffsets = { "초등저": 0, "초등고": 1, "중등": 2, "한국사": 3 };
+  
+  var mergesToApply = [];
+  var cellColorStyles = []; // elements: {row: 1-based, col: 1-based, bg: ..., fg: ...}
+  var warningStyles = []; // elements: {row: 1-based, numRows: ..., val: ...}
+  
+  var currentRowIdx = 4; // 1-based row index for grid rows
+  
+  sortedTimes.forEach(function(timeSlot) {
+    // 1. 해당 시간대의 모든 요일/카테고리 중 최대 학생 수 구하기 (그만큼 행 생성)
+    var maxRowsForSlot = 1;
+    WEEKDAYS.forEach(function(day) {
+      CATEGORIES.forEach(function(cat) {
+        var key = day + "_" + timeSlot + "_" + cat;
+        var students = timetableMap[key] || [];
+        if (students.length > maxRowsForSlot) {
+          maxRowsForSlot = students.length;
+        }
+      });
+    });
+    
+    // 2. 최대 학생 수만큼 행(Row) 생성하여 셀마다 학생 1명씩 배치
+    for (var r = 0; r < maxRowsForSlot; r++) {
+      var row = [r === 0 ? timeSlot : ""];
+      for (var c = 1; c < 30; c++) {
+        row.push("");
+      }
+      
+      WEEKDAYS.forEach(function(day) {
+        var dayOffset = dayOffsets[day];
+        CATEGORIES.forEach(function(cat) {
+          var key = day + "_" + timeSlot + "_" + cat;
+          var students = timetableMap[key] || [];
+          if (students[r]) {
+            var s = students[r];
+            row[dayOffset + catOffsets[cat]] = s.name + "(" + s.grade + ")";
+            
+            // 수강과목 키워드별 파스텔 컬러 지정 (한국사/문해력/내신/특강 등)
+            var classesStr = String(s.classes || "").toLowerCase();
+            var nameStr = String(s.name || "").toLowerCase();
+            var bg = "#ecfdf5"; // 기본 연녹색 (일반)
+            var fg = "#065f46";
+            
+            if (cat === "한국사" || classesStr.indexOf("한국사") !== -1 || classesStr.indexOf("세계사") !== -1 || classesStr.indexOf("역사") !== -1 || nameStr.indexOf("한국사") !== -1 || nameStr.indexOf("세계사") !== -1 || nameStr.indexOf("역사") !== -1) {
+              bg = "#fef3c7"; // 연주황 (역사)
+              fg = "#92400e";
+            } else if (classesStr.indexOf("문해력") !== -1 || classesStr.indexOf("독서") !== -1 || classesStr.indexOf("국어") !== -1 || nameStr.indexOf("문해력") !== -1 || nameStr.indexOf("독서") !== -1 || nameStr.indexOf("국어") !== -1) {
+              bg = "#dbeafe"; // 연파랑 (문해력)
+              fg = "#1e40af";
+            } else if (classesStr.indexOf("내신") !== -1 || classesStr.indexOf("시험") !== -1 || nameStr.indexOf("내신") !== -1 || nameStr.indexOf("시험") !== -1) {
+              bg = "#f3e8ff"; // 연보라 (내신)
+              fg = "#6b21a8";
+            } else if (classesStr.indexOf("특강") !== -1 || nameStr.indexOf("특강") !== -1) {
+              bg = "#fce7f3"; // 연분홍 (특강)
+              fg = "#9d174d";
+            }
+            
+            cellColorStyles.push({
+              row: currentRowIdx,
+              col: dayOffset + catOffsets[cat] + 1,
+              bg: bg,
+              fg: fg
+            });
+          }
+        });
+      });
+      grid.push(row);
+      currentRowIdx++;
+    }
+    
+    // 시간 컬럼 A열 병합 정보 기록
+    if (maxRowsForSlot > 1) {
+      mergesToApply.push({
+        row: currentRowIdx - maxRowsForSlot,
+        col: 1,
+        numRows: maxRowsForSlot,
+        numCols: 1
+      });
+    }
+    
+    // 3. 정원 초과 계산 (한 시간대 당일 총원 > 12)
+    var warnings = [];
+    var exceedDayIndices = [];
+    WEEKDAYS.forEach(function(day, dayIdx) {
+      var totalInSlot = 0;
+      CATEGORIES.forEach(function(cat) {
+        var key = day + "_" + timeSlot + "_" + cat;
+        var students = timetableMap[key] || [];
+        totalInSlot += students.length;
+      });
+      
+      if (totalInSlot > 12) {
+        warnings.push(day.substring(0, 1) + ":" + totalInSlot + "명");
+        exceedDayIndices.push(dayIdx);
+      }
+    });
+    
+    if (warnings.length > 0) {
+      var warningRow = currentRowIdx - maxRowsForSlot;
+      warningStyles.push({
+        row: warningRow,
+        numRows: maxRowsForSlot,
+        val: timeSlot + " (" + warnings.join(", ") + ")"
+      });
+      
+      // 초과한 요일의 4개 열 전체 행 영역을 연한 빨간색 경고 색상으로 오버라이드
+      exceedDayIndices.forEach(function(dayIdx) {
+        var startCol = 2 + dayIdx * 5; // 1-based col
+        for (var rIdx = currentRowIdx - maxRowsForSlot; rIdx < currentRowIdx; rIdx++) {
+          for (var colIdx = startCol; colIdx < startCol + 4; colIdx++) {
+            cellColorStyles.push({
+              row: rIdx,
+              col: colIdx,
+              bg: "#ffe4e6", // 경고용 연한 빨간색
+              fg: null // 글자색은 학생 과목 고유색을 유지할 수 있도록 null 처리
+            });
+          }
+        }
+      });
+    }
+  });
+  
+  // 전체 범위에 그리드 값 채우기
+  var range = sheetWeekly.getRange(1, 1, grid.length, 30);
+  range.setValues(grid);
+  
+  // 1. 헤더/기본 스타일 채우기
+  sheetWeekly.getRange(1, 1, 1, 30).merge().setFontSize(13).setFontWeight("bold").setBackground("#f1f5f9").setFontColor("#1e293b").setHorizontalAlignment("left").setWrap(false);
+  
+  WEEKDAYS.forEach(function(day, index) {
+    var col = 2 + index * 5;
+    sheetWeekly.getRange(2, col, 1, 4).merge().setFontWeight("bold").setHorizontalAlignment("center");
+  });
+  
+  var pastelColors = ["#e0f2fe", "#f0fdf4", "#fff7ed", "#fdf2f8", "#ecfdf5", "#f5f3ff"];
+  WEEKDAYS.forEach(function(day, index) {
+    var col = 2 + index * 5;
+    var color = pastelColors[index % pastelColors.length];
+    
+    sheetWeekly.getRange(2, col, 1, 4).setBackground(color).setFontColor("#0f172a");
+    sheetWeekly.getRange(3, col, 1, 4).setBackground(color).setFontColor("#334155").setFontStyle("italic").setFontSize(9).setHorizontalAlignment("center");
+  });
+  
+  // 2. 바디 영역 벌크 색상 배열 초기화 및 적용 (Apps Script 실행 속도 극대화)
+  var totalBodyRows = grid.length - 3;
+  var backgrounds = [];
+  var fontColors = [];
+  
+  for (var r = 0; r < totalBodyRows; r++) {
+    var bgRow = [];
+    var fgRow = [];
+    for (var c = 0; c < 30; c++) {
+      if (c === 0) {
+        bgRow.push("#f8fafc"); // 시간 컬럼
+        fgRow.push("#64748b");
+      } else if (c % 5 === 0) {
+        bgRow.push("#f1f5f9"); // 구분 스페이서 열
+        fgRow.push("#64748b");
+      } else {
+        bgRow.push("#ffffff"); // 빈 셀
+        fgRow.push("#334155");
+      }
+    }
+    backgrounds.push(bgRow);
+    fontColors.push(fgRow);
+  }
+  
+  // 3. 기록된 학생 개별 셀 및 경고 셀 스타일 덮어쓰기
+  cellColorStyles.forEach(function(style) {
+    var rIdx = style.row - 4; // 0-indexed body row
+    var cIdx = style.col - 1; // 0-indexed column
+    if (rIdx >= 0 && rIdx < totalBodyRows && cIdx >= 0 && cIdx < 30) {
+      if (style.bg) backgrounds[rIdx][cIdx] = style.bg;
+      if (style.fg) fontColors[rIdx][cIdx] = style.fg;
+    }
+  });
+  
+  // 경고 표시 셀 A열 오버라이드
+  warningStyles.forEach(function(w) {
+    var rIdx = w.row - 4;
+    if (rIdx >= 0 && rIdx < totalBodyRows) {
+      for (var k = 0; k < w.numRows; k++) {
+        backgrounds[rIdx + k][0] = "#fee2e2";
+        fontColors[rIdx + k][0] = "#991b1b";
+      }
+    }
+  });
+  
+  // 벌크로 시트 서식 적용 (단 1번의 API 호출)
+  var bodyRange = sheetWeekly.getRange(4, 1, totalBodyRows, 30);
+  bodyRange.setBackgrounds(backgrounds);
+  bodyRange.setFontColors(fontColors);
+  
+  // 4. 시간 컬럼 병합 및 경고 텍스트 주입
+  mergesToApply.forEach(function(m) {
+    try {
+      sheetWeekly.getRange(m.row, m.col, m.numRows, m.numCols).merge();
+    } catch(e) {}
+  });
+  
+  warningStyles.forEach(function(w) {
+    sheetWeekly.getRange(w.row, 1).setValue(w.val);
+  });
+  
+  // 5. 열 넓이 및 정렬 서식 마무리
+  for (var index = 0; index < 5; index++) {
+    var col = 6 + index * 5;
+    sheetWeekly.setColumnWidth(col, 15);
+  }
+  
+  sheetWeekly.setColumnWidth(1, 140);
+  for (var index = 0; index < 6; index++) {
+    var colStart = 2 + index * 5;
+    for (var cOffset = 0; cOffset < 4; cOffset++) {
+      sheetWeekly.setColumnWidth(colStart + cOffset, 95);
+    }
+  }
+  
+  // 정렬 및 테두리선
+  sheetWeekly.getRange(4, 1, totalBodyRows, 1).setVerticalAlignment("middle").setHorizontalAlignment("center").setFontWeight("bold");
+  var contentRange = sheetWeekly.getRange(4, 2, totalBodyRows, 29);
+  contentRange.setWrap(true).setVerticalAlignment("middle").setHorizontalAlignment("center").setFontSize(9);
+  
+  sheetWeekly.getRange(2, 1, grid.length - 1, 30).setBorder(true, true, true, true, true, true, "#e2e8f0", SpreadsheetApp.BorderStyle.SOLID);
+}
+
+// 최초 1회 실행하여 필요한 시트 탭들과 헤더 열 구성을 자동으로 생성해 주는 함수
+function setupSheetsAndHeaders() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  var sheetStudents = ss.getSheetByName("전체 시간표");
+  if (sheetStudents) {
+    if (sheetStudents.getRange("AE1").getValue() !== "보강일시") sheetStudents.getRange("AE1").setValue("보강일시");
+    if (sheetStudents.getRange("AF1").getValue() !== "보강완료") sheetStudents.getRange("AF1").setValue("보강완료");
+  }
+  
+  // 오늘 출석부 셋업
+  var sheetDaily = ss.getSheetByName("오늘 출석부");
+  if (!sheetDaily) {
+    sheetDaily = ss.insertSheet("오늘 출석부");
+  }
+  sheetDaily.getRange(1, 1, 1, 11).setValues([["날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유", "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"]]);
+  
+  // 누적일일수업관리 셋업
+  var sheetAccumulated = ss.getSheetByName("누적일일수업관리");
+  if (!sheetAccumulated) {
+    sheetAccumulated = ss.insertSheet("누적일일수업관리");
+  }
+  sheetAccumulated.getRange(1, 1, 1, 11).setValues([["날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유", "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"]]);
+  
+  var sheetTextbooks = ss.getSheetByName("문해력교재관리");
+  if (!sheetTextbooks) {
+    sheetTextbooks = ss.insertSheet("문해력교재관리");
+    sheetTextbooks.appendRow([
+      "학년", "이름", 
+      "비문학 교재명", "시작일", "마침일", "정답율/다음교재", 
+      "문학 교재명", "시작일", "마침일", "정답율/다음교재", 
+      "어휘", "시작일", "마침일", "정답율/다음교재", 
+      "복합", "시작일", "마침일", "정답율/다음교재",
+      "음독 교재", "시작일", "마침일", "다음교재"
+    ]);
+  }
+  
+  var sheetConsult = ss.getSheetByName("상담내용/리포트발송/채널발송");
+  if (!sheetConsult) {
+    sheetConsult = ss.insertSheet("상담내용/리포트발송/채널발송");
+  }
+  // 헤더 덮어쓰기 (A~F)
+  sheetConsult.getRange(1, 1, 1, 6).setValues([["학년", "이름", "작성기간", "작성인", "상담내용 / 분석지 / 채널 보냄", "부모님의 need / 학생 특이사항"]]);
+  
+  var sheetMember = ss.getSheetByName("회원 분석/레벨변동/전화상담");
+  if (!sheetMember) {
+    sheetMember = ss.insertSheet("회원 분석/레벨변동/전화상담");
+    sheetMember.appendRow([
+      "순번", "이름", "학년", "등록일", "상담/채널", "학생 특이 사항\n리드인 코칭 방향\n글쓰기 방향",
+      "진도 관리\n(날짜. 제목. 진단점수)", "교과지수 / 로켓\n코스업 / 레벨업\n진로검사", "레벨\n일시변동",
+      "훈민정음 /\n글쓰기 교재", "읽트 /독트\n시작일,마침일 기록", "목표달성\n스티커판\n명예의 전당",
+      "분석지 발송", "독서\n방법", "아이디"
+    ]);
+  }
+  
+  var sheetLogs = ss.getSheetByName("누적출결데이터");
+  if (sheetLogs) {
+    try {
+      ss.deleteSheet(sheetLogs);
+    } catch(e) {}
+  }
+}
+
+// B3 검색 학생을 기준으로 매칭 행 수량만큼 수식을 계산해 밀어내는 동적 한명 검색 시트 생성 함수
+function createSingleSearchSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("한명 검색");
+  if (sheet) {
+    sheet.clear();
+    sheet.clearFormats();
+  } else {
+    sheet = ss.insertSheet("한명 검색");
+  }
+  
+  sheet.setHiddenGridlines(false);
+  
+  sheet.getRange("A3").setValue("학생 이름");
+  sheet.getRange("B3").setValue("신나라");
+  sheet.getRange("C3").setValue("← 여기에 이름을 입력하고 Enter를 누르시면 아래 영역들이 자동으로 콕 찝어 통합 조회됩니다.");
+  
+  sheet.getRange("A3").setFontWeight("bold").setBackground("#f1f3f4");
+  sheet.getRange("B3").setFontWeight("bold").setBackground("#e8f0fe").setHorizontalAlignment("center").setBorder(true, true, true, true, false, false, "#1a73e8", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  sheet.getRange("C3").setFontColor("#80868b").setFontStyle("italic");
+  
+  // 열 너비 조절
+  sheet.setColumnWidths(1, 18, 110);
+  sheet.setColumnWidth(1, 60);   // 순번 / 학년 / 이름
+  sheet.setColumnWidth(2, 90);   // 이름
+  sheet.setColumnWidth(5, 130);  // 상담/채널 등
+  sheet.setColumnWidth(6, 250);  // 학생 특이사항 / 부모님 need 등
+  sheet.setColumnWidth(7, 200);  // 진도 관리 / 문학교재명
+  sheet.setColumnWidth(11, 130); // 읽트/독트 등
+  sheet.setColumnWidth(15, 130); // 복합교재명 / 아이디 등
+  
+  // 초기 로드 빌드
+  updateSingleSearchSheetLayout(sheet, "신나라");
+}
+
+// 검색어 입력 시 호출되어 동적으로 셀 간격을 조정해주는 함수
+function updateSingleSearchSheetLayout(sheet, studentName) {
+  if (!sheet) return;
+  
+  // 1. 5행 이하 모든 데이터 및 서식 초기화
+  var lastRow = sheet.getLastRow();
+  if (lastRow >= 5) {
+    sheet.getRange(5, 1, lastRow - 4, 26).clear();
+    sheet.getRange(5, 1, lastRow - 4, 26).clearFormat();
+  }
+  
+  // 2. 각 데이터 시트에서 검색 학생의 매칭 행 수 계산 (최소 1행 확보)
+  var memberRows = countMatchingRows("회원 분석/레벨변동/전화상담", 2, studentName);
+  if (memberRows === 0) memberRows = 1;
+  
+  var textbookRows = countMatchingRows("문해력교재관리", 2, studentName);
+  if (textbookRows === 0) textbookRows = 1;
+  
+  // 3. 섹션 1: 회원 종합 분석 및 레벨 관리 배치
+  sheet.getRange("A5").setValue("🟢 1. 회원 종합 분석 및 레벨 관리");
+  sheet.getRange("A5").setBackground("#e6f4ea").setFontColor("#137333").setFontWeight("bold").setFontSize(11);
+  
+  var header1 = [
+    "순번", "이름", "학년", "등록일", "상담/채널", "학생 특이 사항\n리드인 코칭 방향\n글쓰기 방향", 
+    "진도 관리\n(날짜. 제목. 진단점수)", "교과지수 / 로켓\n코스업 / 레벨업\n진로검사", "레벨\n일시변동", 
+    "훈민정음 /\n글쓰기 교재", "읽트 /독트\n시작일,마침일 기록", "목표달성\n스티커판\n명예의 전당", 
+    "분석지 발송", "독서\n방법", "아이디"
+  ];
+  sheet.getRange(6, 1, 1, 15).setValues([header1]);
+  sheet.getRange("A6:O6").setFontWeight("bold").setBackground("#f8f9fa").setHorizontalAlignment("center").setVerticalAlignment("middle");
+  sheet.getRange("A7").setFormula("=IFERROR(FILTER('회원 분석/레벨변동/전화상담'!A2:O, TRIM('회원 분석/레벨변동/전화상담'!B2:B) = TRIM(B3)), \"검색된 학생이 없습니다.\")");
+  
+  // 4. 섹션 2: 문해력 교재 관리 현황 계산 및 배치
+  var sec2TitleRow = 8 + memberRows;
+  var sec2HeaderRow = 9 + memberRows;
+  var sec2DataRow = 10 + memberRows;
+  
+  sheet.getRange(sec2TitleRow, 1).setValue("🟠 2. 문해력 교재 관리 현황");
+  sheet.getRange(sec2TitleRow, 1).setBackground("#fef7e0").setFontColor("#b06000").setFontWeight("bold").setFontSize(11);
+  
+  var header2 = [
+    "학년", "이름", "비문학 교재명", "시작일", "마침일", "정답률", 
+    "문학교재명", "시작일", "마침일", "정답률", 
+    "어휘 교재명", "시작일", "마침일", "정답률", 
+    "복합 교재명", "시작일", "마침일", "정답률"
+  ];
+  sheet.getRange(sec2HeaderRow, 1, 1, 18).setValues([header2]);
+  sheet.getRange(sec2HeaderRow, 1, 1, 18).setFontWeight("bold").setBackground("#f8f9fa").setHorizontalAlignment("center").setVerticalAlignment("middle");
+  sheet.getRange(sec2DataRow, 1).setFormula("=IFERROR(FILTER('문해력교재관리'!A2:R, TRIM('문해력교재관리'!B2:B) = TRIM(B3)), \"등록된 교재가 없습니다.\")");
+  
+  // 5. 섹션 3: 상담 및 리포트 발송 기록 계산 및 배치
+  var sec3TitleRow = 11 + memberRows + textbookRows;
+  var sec3HeaderRow = 12 + memberRows + textbookRows;
+  var sec3DataRow = 13 + memberRows + textbookRows;
+  
+  sheet.getRange(sec3TitleRow, 1).setValue("🔵 3. 상담 및 리포트 발송 기록");
+  sheet.getRange(sec3TitleRow, 1).setBackground("#e8f0fe").setFontColor("#1a73e8").setFontWeight("bold").setFontSize(11);
+  
+  var header3 = [
+    "학년", "이름", "작성기간", "작성인", "상담내용 / 분석지 / 채널 보냄 / 발송 완료 노란색 표시", "부모님의 need / 학생 특이사항"
+  ];
+  sheet.getRange(sec3HeaderRow, 1, 1, 6).setValues([header3]);
+  sheet.getRange(sec3HeaderRow, 1, 1, 6).setFontWeight("bold").setBackground("#f8f9fa").setHorizontalAlignment("center").setVerticalAlignment("middle");
+  
+  // 이름이 B열에 있으므로 FILTER의 기준을 B열로 설정
+  sheet.getRange(sec3DataRow, 1).setFormula("=IFERROR(FILTER('상담내용/리포트발송/채널발송'!A2:F, TRIM('상담내용/리포트발송/채널발송'!B2:B) = TRIM(B3)), \"등록된 상담 기록이 없습니다.\")");
+  
+  // 기본 서식 폰트 설정
+  sheet.getRange(5, 1, sec3DataRow - 5 + 20, 20).setFontFamily("Malgun Gothic");
+}
+
+// 특정 시트의 이름 컬럼에서 학생 매칭 행수를 구하는 헬퍼 함수
+function countMatchingRows(sheetName, nameColIdx, studentName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return 0;
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+  var data = sheet.getRange(2, nameColIdx, lastRow - 1, 1).getValues();
+  var count = 0;
+  var target = String(studentName || "").trim().toLowerCase();
+  for (var i = 0; i < data.length; i++) {
+    if (String(data[i][0]).trim().toLowerCase() === target) {
+      count++;
+    }
+  }
+  return count;
+}
+
+// 오늘 출석부의 숫자(H열/8열), 이벤트(I열/9열) 또는 진단/글쓰기(J열/10열) 입력 시 회원 분석 시트로 자동 누적 기록하는 함수
+function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetMember = ss.getSheetByName("회원 분석/레벨변동/전화상담");
+  if (!sheetMember) return;
+
+  var rowValues = sheetDaily.getRange(rowNumber, 1, 1, 11).getValues()[0];
+  var dateStr = String(rowValues[0] || "").trim(); // Col A
+  var name = String(rowValues[2] || "").trim(); // Col C
+  var numVal = String(rowValues[7] || "").trim(); // Col H
+  var eventVal = String(rowValues[8] || "").trim(); // Col I
+  var grammarDoneVal = String(rowValues[9] || "").trim(); // Col J (진단글쓰기/특별수업)
+  var contentsVal = String(rowValues[10] || "").trim(); // Col K (수업내용 및 특이사항)
+
+  if (!name) return;
+
+  // Auto-populate today's date in Col A if empty
+  if (!dateStr && (numVal || eventVal || grammarDoneVal || contentsVal)) {
+    var today = new Date();
+    var weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+    var todayDay = weekdays[today.getDay()];
+    dateStr = (today.getMonth() + 1) + "/" + today.getDate() + todayDay;
+    sheetDaily.getRange(rowNumber, 1).setValue(dateStr);
+  }
+
+  var memberLastRow = sheetMember.getLastRow();
+  if (memberLastRow < 2) return;
+  var memberNames = sheetMember.getRange(2, 2, memberLastRow - 1, 1).getValues();
+  var memberRowIndex = -1;
+  for (var i = 0; i < memberNames.length; i++) {
+    if (String(memberNames[i][0]).trim() === name) {
+      memberRowIndex = 2 + i;
+      break;
+    }
+  }
+
+  if (memberRowIndex === -1) return;
+
+  var mdMatch = dateStr.match(/(\d+\/\d+)/);
+  var dateFormatted = "";
+  if (mdMatch) {
+    dateFormatted = mdMatch[1];
+  } else {
+    var today = new Date();
+    dateFormatted = (today.getMonth() + 1) + "/" + today.getDate();
+  }
+  
+  var yy = "26";
+  try {
+    var yearVal = new Date().getFullYear();
+    yy = String(yearVal).substring(2);
+  } catch(err) {}
+  var eventDatePrefix = yy + "." + dateFormatted;
+
+  // Parse multi-line / comma-separated / semicolon-separated entries
+  var splitRegex = /[\n,;]+/;
+  var numLines = numVal ? numVal.split(splitRegex).map(function(s) { return s.trim(); }).filter(Boolean) : [];
+  var eventLines = eventVal ? eventVal.split(splitRegex).map(function(s) { return s.trim(); }).filter(Boolean) : [];
+  var grammarLines = grammarDoneVal ? grammarDoneVal.split(splitRegex).map(function(s) { return s.trim(); }).filter(Boolean) : [];
+
+  var maxLen = Math.max(numLines.length, eventLines.length);
+
+  var groupMap = {
+    6: [],
+    7: [],
+    8: [],
+    10: [],
+    11: [],
+    12: []
+  };
+
+  // Parse contents (Col K) into groupMap[6]
+  var contentsLines = contentsVal ? contentsVal.split(/[\r\n]+/).map(function(s) { return s.trim(); }).filter(Boolean) : [];
+  for (var cIdx = 0; cIdx < contentsLines.length; cIdx++) {
+    groupMap[6].push(eventDatePrefix + " " + contentsLines[cIdx]);
+  }
+
+  for (var idx = 0; idx < maxLen; idx++) {
+    var num = numLines[idx] || "";
+    var ev = eventLines[idx] || "";
+    if (!num && !ev) continue;
+
+    var textToAppend = eventDatePrefix;
+    if (num) textToAppend += " " + num;
+    if (ev) textToAppend += " " + ev;
+
+    var targetCol = 8; // Default Col H
+    var lowerEvent = ev.toLowerCase();
+    
+    if (lowerEvent.indexOf("코스업") !== -1 || lowerEvent.indexOf("레벨업") !== -1 || lowerEvent.indexOf("진로검사") !== -1) {
+      targetCol = 8;
+    } else if (lowerEvent.indexOf("진단") !== -1 || lowerEvent.indexOf("진도") !== -1) {
+      targetCol = 7;
+    } else if (lowerEvent.indexOf("훈민정음") !== -1 || lowerEvent.indexOf("한자") !== -1 || lowerEvent.indexOf("교재") !== -1) {
+      targetCol = 10;
+    } else if (lowerEvent.indexOf("독서계획표") !== -1 || lowerEvent.indexOf("친구") !== -1 || lowerEvent.indexOf("탐험가") !== -1 || lowerEvent.indexOf("고수") !== -1 || lowerEvent.indexOf("챔피언") !== -1 || lowerEvent.indexOf("마스터") !== -1 || lowerEvent.indexOf("달성") !== -1 || lowerEvent.indexOf("스티커") !== -1) {
+      targetCol = 12;
+    } else if (lowerEvent.indexOf("읽트") !== -1 || lowerEvent.indexOf("독트") !== -1 || lowerEvent.indexOf("읽기") !== -1 || lowerEvent.indexOf("독서") !== -1) {
+      targetCol = 11;
+    } else {
+      targetCol = 8;
+    }
+
+    groupMap[targetCol].push(textToAppend);
+  }
+
+  // Parse Column J (grammarDone) items
+  for (var g = 0; g < grammarLines.length; g++) {
+    var item = grammarLines[g];
+    var isCompletion = (item.indexOf("글완") !== -1 || item.indexOf("글쓰기완") !== -1 || item.indexOf("완료") !== -1);
+    var hasDigit = /\d+/.test(item);
+
+    if (isCompletion) {
+      // Find existing book line in progress (Col G / Column 7) of memberAnalysis and append " 글완"
+      var cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+      var progressCell = sheetMember.getRange(memberRowIndex, 7);
+      var currentProgress = String(progressCell.getValue() || "").trim();
+      if (currentProgress) {
+        var lines = currentProgress.split("\n");
+        var found = false;
+        var cleanBookNoSpaces = cleanBook.replace(/\s+/g, "").toLowerCase();
+        for (var lIdx = 0; lIdx < lines.length; lIdx++) {
+          var lineNoSpaces = lines[lIdx].replace(/\s+/g, "").toLowerCase();
+          if (cleanBookNoSpaces && lineNoSpaces.indexOf(cleanBookNoSpaces) !== -1) {
+            found = true;
+            if (lines[lIdx].indexOf("글완") === -1 && lines[lIdx].indexOf("글쓰기완") === -1 && lines[lIdx].indexOf("완료") === -1) {
+              lines[lIdx] = lines[lIdx] + " 글완";
+            }
+          }
+        }
+        if (!found && !cleanBookNoSpaces && lines.length > 0) {
+          var lastLine = lines[lines.length - 1];
+          if (lastLine.indexOf("글완") === -1 && lastLine.indexOf("글쓰기완") === -1 && lastLine.indexOf("완료") === -1) {
+            lines[lines.length - 1] = lastLine + " 글완";
+          }
+        }
+        progressCell.setValue(lines.join("\n"));
+      }
+    } else if (hasDigit) {
+      // Prepend date if not present
+      var datePattern = /^\d+[\./]\d+/;
+      var textToAppend = "";
+      if (datePattern.test(item)) {
+        if (/^\d+\/\d+/.test(item)) {
+          textToAppend = yy + "." + item;
+        } else {
+          textToAppend = item;
+        }
+      } else {
+        textToAppend = eventDatePrefix + " " + item;
+      }
+      groupMap[7].push(textToAppend);
+    }
+  }
+
+  var targetCols = [6, 7, 8, 10, 11, 12];
+  for (var c = 0; c < targetCols.length; c++) {
+    var colNum = targetCols[c];
+    var cell = sheetMember.getRange(memberRowIndex, colNum);
+    var currentContent = String(cell.getValue() || "").trim();
+    var lines = currentContent ? currentContent.split("\n") : [];
+    
+    var filteredLines = [];
+    for (var l = 0; l < lines.length; l++) {
+      if (lines[l].trim().indexOf(eventDatePrefix) !== 0) {
+        filteredLines.push(lines[l]);
+      }
+    }
+
+    var newEventsToday = groupMap[colNum];
+    for (var n = 0; n < newEventsToday.length; n++) {
+      filteredLines.push(newEventsToday[n]);
+    }
+
+    var newContent = filteredLines.join("\n");
+    
+    if (colNum === 7 || colNum === 10) {
+      if (currentContent !== newContent.trim()) {
+        cell.setValue(newContent);
+        currentContent = newContent;
+      }
+      applyRichTextStyling(cell, currentContent);
+    } else {
+      if (currentContent !== newContent.trim()) {
+        cell.setValue(newContent);
+        currentContent = newContent;
+      }
+      var checkVal = String(cell.getValue() || "").trim();
+      if (colNum === 8 && (checkVal.indexOf("코스업") !== -1 || checkVal.indexOf("레벨업") !== -1 || checkVal.indexOf("진로검사") !== -1)) {
+        cell.setFontColor("#2563eb");
+        cell.setFontWeight("bold");
+      } else {
+        cell.setFontColor(null);
+        cell.setFontWeight(null);
+      }
+    }
+  }
+}
+
+// Google Sheets mixed text color styling function (completed books styled blue and bold line-by-line)
+function applyRichTextStyling(cell, text) {
+  if (!text) {
+    cell.setValue("");
+    cell.setFontColor(null);
+    cell.setFontWeight(null);
+    return;
+  }
+  
+  // Normalize newlines to prevent indexing mismatch
+  text = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  
+  // Clear cell-level formatting first so it doesn't affect the entire cell
+  cell.setFontColor(null);
+  cell.setFontWeight(null);
+
+  var lines = text.split("\n");
+  var builder = SpreadsheetApp.newRichTextValue().setText(text);
+  
+  var blueStyle = SpreadsheetApp.newTextStyle()
+    .setForegroundColor("#2563eb")
+    .setBold(true)
+    .build();
+    
+  var currentIndex = 0;
+  var hasStyledLine = false;
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var lineLength = line.length;
+    try {
+      if (line.indexOf("글완") !== -1 || line.indexOf("글쓰기완") !== -1 || line.indexOf("완료") !== -1 || line.indexOf("표현활동") !== -1) {
+        builder.setTextStyle(currentIndex, currentIndex + lineLength, blueStyle);
+        hasStyledLine = true;
+      }
+    } catch (e) {
+      // Fail-safe check
+    }
+    currentIndex += lineLength + 1; // +1 for the newline
+  }
+  
+  try {
+    if (hasStyledLine) {
+      cell.setRichTextValue(builder.build());
+    } else {
+      cell.setValue(text);
+    }
+  } catch (e) {
+    cell.setValue(text);
+  }
+}
+
+
+// B3 셀 입력 수정 시 자동 레이아웃 조정 및 오늘 출석부 편집 시 이벤트 누적 트리거
+function onEdit(e) {
+  if (!e) return;
+  var range = e.range;
+  var sheet = range.getSheet();
+  var sheetName = sheet.getName();
+  
+  if (sheetName === "한명 검색" && range.getA1Notation() === "B3") {
+    var studentName = String(range.getValue()).trim();
+    updateSingleSearchSheetLayout(sheet, studentName);
+  }
+  
+  if (sheetName === "오늘 출석부") {
+    var startCol = range.getColumn();
+    var endCol = range.getLastColumn();
+    if (startCol <= 10 && endCol >= 8) {
+      var startRow = range.getRow();
+      var endRow = range.getLastRow();
+      for (var r = startRow; r <= endRow; r++) {
+        if (r > 1) {
+          accumulateDailyEventToMemberAnalysis(sheet, r);
+        }
+      }
+    }
+  }
+}
+
+// 상단 스프레드시트 메뉴 트리거 설정
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu("♣ 학원 연동 메뉴")
+    .addItem("1. 오늘 출석부 생성 (기존 기록 누적 백업)", "generateDailyAttendance")
+    .addItem("2. 주간 시간표 보드 생성", "generateWeeklyTimetable")
+    .addItem("3. 연동 시트 초기 셋업", "setupSheetsAndHeaders")
+    .addItem("4. 한명 검색 시트 만들기", "createSingleSearchSheet")
+    .addToUi();
+}
+            </pre>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <h3><span>3</span> 배포된 API Webhook URL 앱에 입력</h3>
+          <p>
+            배포한 구글 앱스 스크립트의 <strong>웹 앱 URL</strong>을 아래에 입력하고 저장을 누르면, 이제 출결 앱에서 일어나는 모든 상태 변경(출결 버튼 클릭, 시트 수정, 신규 학생 등록)이 실제 연결된 구글 스프레드시트로 실시간 전달 및 자동 기록됩니다!
+          </p>
+          <div class="url-input-section">
+            <div class="form-group">
+              <label for="inputGasUrl">구글 Apps Script 웹 앱 API URL</label>
+              <input type="url" id="inputGasUrl" class="input-custom" placeholder="https://script.google.com/macros/s/.../exec">
+            </div>
+            <button class="btn-primary" id="btnSaveGasUrl" style="height: 45px;">URL 저장</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: ADD STUDENT FORM -->
+  <div class="modal-overlay" id="modalAddStudent">
+    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3);">
+      
+      <div class="modal-header">
+        <h3 class="modal-title">📝 신규 학생 수업 일정 등록</h3>
+        <button class="modal-close" id="btnCloseModal">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="formAddStudent" class="modal-form">
+        <!-- Name -->
+        <div class="form-group">
+          <label for="inputName">학생 이름</label>
+          <input type="text" id="inputName" class="input-custom" placeholder="이름을 입력하세요" required>
+        </div>
+
+        <!-- Grade -->
+        <div class="form-group">
+          <label for="inputGrade">학년</label>
+          <select id="inputGrade" class="select-custom">
+            <option value="초1">초등 1학년 (저학년)</option>
+            <option value="초2">초등 2학년 (저학년)</option>
+            <option value="초3">초등 3학년 (저학년)</option>
+            <option value="초4">초등 4학년 (고학년)</option>
+            <option value="초5">초등 5학년 (고학년)</option>
+            <option value="초6">초등 6학년 (고학년)</option>
+          </select>
+        </div>
+
+        <!-- Reg Day & Time -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+          <div class="form-group">
+            <label for="inputRegDay">정규 요일</label>
+            <select id="inputRegDay" class="select-custom">
+              <option value="월요일">월요일</option>
+              <option value="화요일">화요일</option>
+              <option value="수요일">수요일</option>
+              <option value="목요일">목요일</option>
+              <option value="금요일">금요일</option>
+              <option value="토요일">토요일</option>
+              <option value="일요일">일요일</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inputRegTime">정규 시작 시간</label>
+            <select id="inputRegTime" class="select-custom">
+              <option value="10:00">10:00</option>
+              <option value="10:30">10:30</option>
+              <option value="11:00">11:00</option>
+              <option value="11:30">11:30</option>
+              <option value="12:00">12:00</option>
+              <option value="12:30">12:30</option>
+              <option value="13:00">13:00</option>
+              <option value="13:30">13:30</option>
+              <option value="14:00">14:00</option>
+              <option value="14:30">14:30</option>
+              <option value="15:00">15:00</option>
+              <option value="15:30">15:30</option>
+              <option value="16:00">16:00</option>
+              <option value="16:30">16:30</option>
+              <option value="17:00">17:00</option>
+              <option value="17:30">17:30</option>
+              <option value="18:00">18:00</option>
+              <option value="18:30">18:30</option>
+              <option value="19:00">19:00</option>
+              <option value="19:30">19:30</option>
+              <option value="20:00">20:00</option>
+              <option value="20:30">20:30</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Duration & Classes per month -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+          <div class="form-group">
+            <label for="inputDuration">수업수행시간(분)</label>
+            <input type="number" id="inputDuration" class="input-custom" value="60" min="10" max="300" step="10">
+          </div>
+          <div class="form-group">
+            <label for="inputClasses">한달 수업 수(회)</label>
+            <input type="number" id="inputClasses" class="input-custom" value="8" min="1" max="31">
+          </div>
+        </div>
+
+        <!-- Optional Makeup Date -->
+        <div class="form-group">
+          <label for="inputMakeupDate">보강 일정 (선택사항)</label>
+          <input type="text" id="inputMakeupDate" class="input-custom" placeholder="예: 2026-06-18 15:00">
+          <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.2rem;">
+            * 보강일을 입력하면 해당 요일/시간 출결 현황판에 분홍색 보강 버튼으로 등장합니다.
+          </small>
+        </div>
+
+        <!-- Footer buttons -->
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelModal">취소</button>
+          <button type="submit" class="btn-primary">수업 등록</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- MODAL: ADD TEXTBOOK -->
+  <div class="modal-overlay" id="modalAddTextbook">
+    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3); max-width: 480px;">
+      
+      <div class="modal-header">
+        <h3 class="modal-title">📚 신규 교재 등록</h3>
+        <button class="modal-close" id="btnCloseTextbookModal">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="formAddTextbook" class="modal-form">
+        <input type="hidden" id="textbookStudentName">
+        
+        <!-- Category -->
+        <div class="form-group">
+          <label for="selectTextbookCategory">교재 종류</label>
+          <select id="selectTextbookCategory" class="select-custom" required>
+            <option value="비문학">비문학</option>
+            <option value="문학">문학</option>
+            <option value="어휘">어휘</option>
+            <option value="복합">복합</option>
+            <option value="음독">음독</option>
+          </select>
+        </div>
+
+        <!-- Title -->
+        <div class="form-group">
+          <label for="inputTextbookTitle">교재명</label>
+          <input type="text" id="inputTextbookTitle" class="input-custom" placeholder="예: 비문학 처음 세계사 1" required>
+        </div>
+
+        <!-- Performance / Evaluation Details -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+          <div class="form-group">
+            <label for="inputTextbookAccuracy">정답률 (%)</label>
+            <input type="text" id="inputTextbookAccuracy" class="input-custom" placeholder="예: 85%" value="80%">
+          </div>
+          <div class="form-group">
+            <label for="inputTextbookStartDate">학습 시작일</label>
+            <input type="date" id="inputTextbookStartDate" class="input-custom" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelTextbookModal">취소</button>
+          <button type="submit" class="btn-primary">교재 등록</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT CRM TEXTBOOK -->
+  <div class="modal-overlay" id="modalEditCrmTextbook">
+    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3); max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">📚 교재 정보 수정</h3>
+        <button class="modal-close" id="btnCloseEditCrmTextbookModal">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="formEditCrmTextbook" class="modal-form">
+        <input type="hidden" id="editCrmTextbookRow">
+        <input type="hidden" id="editCrmTextbookKey">
+        
+        <div class="form-group">
+          <label>카테고리</label>
+          <input type="text" id="editCrmTextbookCategoryDisplay" class="input-custom" readonly style="background: rgba(0,0,0,0.03); color: var(--text-muted);">
+        </div>
+        
+        <div class="form-group">
+          <label for="editCrmTextbookTitle">교재명</label>
+          <input type="text" id="editCrmTextbookTitle" class="input-custom" required>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+          <div class="form-group">
+            <label for="editCrmTextbookStartDate">시작일</label>
+            <input type="date" id="editCrmTextbookStartDate" class="input-custom" required>
+          </div>
+          <div class="form-group">
+            <label for="editCrmTextbookEndDate">마침일</label>
+            <input type="date" id="editCrmTextbookEndDate" class="input-custom">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="editCrmTextbookAccuracy">정답률 / 다음교재</label>
+          <input type="text" id="editCrmTextbookAccuracy" class="input-custom" placeholder="예: 85% 또는 다음교재명">
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelEditCrmTextbookModal">취소</button>
+          <button type="submit" class="btn-primary">수정 완료</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD EVALUATION -->
+  <div class="modal-overlay" id="modalAddEvaluation">
+    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3); max-width: 480px;">
+      
+      <div class="modal-header">
+        <h3 class="modal-title">📊 상담 / 분석 / 전송 기록 추가</h3>
+        <button class="modal-close" id="btnCloseEvaluationModal">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="formAddEvaluation" class="modal-form">
+        <input type="hidden" id="evaluationStudentName">
+        
+        <!-- Period & Author -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+          <div class="form-group">
+            <label for="inputEvaluationPeriod">작성기간</label>
+            <input type="text" id="inputEvaluationPeriod" class="input-custom" placeholder="예: 2026-06 또는 6/18" required>
+          </div>
+          <div class="form-group">
+            <label for="inputEvaluationAuthor">작성인</label>
+            <input type="text" id="inputEvaluationAuthor" class="input-custom" value="김원장" required>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="form-group">
+          <label for="inputEvaluationContent">상담내용 / 분석지 / 채널 보냄</label>
+          <textarea id="inputEvaluationContent" class="input-custom" rows="3" placeholder="상담 및 분석 결과 기입..." required style="resize: none;"></textarea>
+        </div>
+
+        <!-- Previous Content -->
+        <div class="form-group">
+          <label for="inputEvaluationPrevContent">이전 분석 내용</label>
+          <textarea id="inputEvaluationPrevContent" class="input-custom" rows="2" placeholder="이전 성취 내역 및 관찰 피드백..." style="resize: none;"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelEvaluationModal">취소</button>
+          <button type="submit" class="btn-primary">기록 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD CRM ATTENDANCE -->
+  <div class="modal-overlay" id="modalAddCrmAttendance">
+    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3); max-width: 400px;">
+      
+      <div class="modal-header">
+        <h3 class="modal-title" id="crmAttendanceModalTitle">📅 출결 일정 등록</h3>
+        <button class="modal-close" id="btnCloseCrmAttendanceModal">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="formAddCrmAttendance" class="modal-form">
+        <input type="hidden" id="crmAttendanceStudentName">
+        <input type="hidden" id="crmAttendanceType"> <!-- 'makeup' or 'absence' -->
+        
+        <div class="form-group" id="crmAttendanceDateGroup">
+          <label for="inputCrmAttendanceDate" id="crmAttendanceDateLabel">날짜 선택</label>
+          <input type="date" id="inputCrmAttendanceDate" class="input-custom" required>
+        </div>
+
+        <div class="form-group" id="crmAttendanceTimeGroup">
+          <label for="inputCrmAttendanceTime">시간 선택</label>
+          <select id="inputCrmAttendanceTime" class="select-custom">
+            <option value="10:00">10:00</option>
+            <option value="10:30">10:30</option>
+            <option value="11:00">11:00</option>
+            <option value="11:30">11:30</option>
+            <option value="12:00">12:00</option>
+            <option value="12:30">12:30</option>
+            <option value="13:00">13:00</option>
+            <option value="13:30">13:30</option>
+            <option value="14:00">14:00</option>
+            <option value="14:30">14:30</option>
+            <option value="15:00">15:00</option>
+            <option value="15:30">15:30</option>
+            <option value="16:00">16:00</option>
+            <option value="16:30">16:30</option>
+            <option value="17:00">17:00</option>
+            <option value="17:30">17:30</option>
+            <option value="18:00">18:00</option>
+            <option value="18:30">18:30</option>
+            <option value="19:00">19:00</option>
+            <option value="19:30">19:30</option>
+            <option value="20:00">20:00</option>
+            <option value="20:30">20:30</option>
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelCrmAttendanceModal">취소</button>
+          <button type="submit" class="btn-primary">등록</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: LARGE VIEW EVALUATION -->
+  <div class="modal-overlay" id="modalLargeView">
+    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3); max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="largeViewTitle">📝 기록 상세 보기</h3>
+        <button class="modal-close" id="btnCloseLargeViewModal">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="large-view-modal-content">
+        <div id="largeViewContentArea">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" id="btnConfirmLargeViewModal" style="width: 100%;">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SMS PREVIEW -->
+  <div class="modal-overlay" id="modalSmsPreview">
+    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3); max-width: 450px;">
+      <div class="modal-header">
+        <h3 class="modal-title">📖 다음 교재 준비 안내 문자 발송</h3>
+        <button class="modal-close" id="btnCloseSmsPreviewModal">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="formSmsPreview">
+        <div class="form-group">
+          <label for="smsPreviewPhone">수신인 번호 (학부모)</label>
+          <input type="text" id="smsPreviewPhone" class="input-custom" required>
+        </div>
+        <div class="form-group">
+          <label for="smsPreviewText">문자 메시지 내용</label>
+          <textarea id="smsPreviewText" class="input-custom" rows="6" style="resize: vertical;" required></textarea>
+        </div>
+        <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+          <button type="button" class="btn-secondary" id="btnCancelSmsPreviewModal">취소</button>
+          <button type="submit" class="btn-primary" id="btnSendSmsPreview">문자 발송</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="sheet-sim.js"></script>
+  <script src="api.js"></script>
+  <script src="sms-manager.js"></script>
+  <script src="crm-manager.js"></script>
+  <script src="dashboard-manager.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
