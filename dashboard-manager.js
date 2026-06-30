@@ -265,7 +265,7 @@ class DashboardManager {
           let typeClass = "regular";
           let statusLabel = "대기";
           const parsedMakeup = student.makeupDate ? parseMakeupDate(student.makeupDate) : null;
-          const isMakeupToday = parsedMakeup && parsedMakeup.day === this.selectedDay && (parsedMakeup.isWeekly || parsedMakeup.formattedSlash === targetDates.slashFormat || parsedMakeup.formattedDot === targetDates.dotFormat) && parsedMakeup.time === timeStr;
+          const isMakeup = parsedMakeup && parsedMakeup.day === this.selectedDay && (parsedMakeup.isWeekly || parsedMakeup.formattedSlash === targetDates.slashFormat || parsedMakeup.formattedDot === targetDates.dotFormat) && parsedMakeup.time === timeStr;
           
           let isAbsent = false;
           if (student.absentDates) {

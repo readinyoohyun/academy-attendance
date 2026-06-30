@@ -288,20 +288,18 @@ class CRMManager {
           studentRow[fields.start] = startDate;
           studentRow[fields.end] = "";
           studentRow[fields.accuracy] = accuracy;
+
+          const updates = [
+            { tab: "textbooks", row: studentRow.row, field: fields.title, value: title },
+            { tab: "textbooks", row: studentRow.row, field: fields.start, value: startDate },
+            { tab: "textbooks", row: studentRow.row, field: fields.end, value: "" },
+            { tab: "textbooks", row: studentRow.row, field: fields.accuracy, value: accuracy }
+          ];
+          this.app.api.updateBatchInGoogleSheets(updates);
         }
         this.app.saveState();
         this.app.sheetSim.setData(this.app.state);
         this.loadCrmStudent(name);
-        
-        this.app.api.addTextbookToGoogleSheets({
-          name: name,
-          grade: studentRow.grade,
-          category: cat,
-          title: title,
-          startDate: startDate,
-          endDate: "",
-          accuracy: accuracy
-        });
       } else {
         const nextRow = this.app.state.textbooks.length > 0 ? Math.max(...this.app.state.textbooks.map(t => t.row)) + 1 : 2;
         studentRow = {
@@ -514,6 +512,49 @@ class CRMManager {
       document.getElementById("modalAddCrmAttendance").classList.remove("active");
       document.getElementById("formAddCrmAttendance").reset();
     };
+    // Close edit textbook modals
+    const closeEditCrmTextbook = () => document.getElementById("modalEditCrmTextbook").classList.remove("active");
+    const elCloseModal = document.getElementById("btnCloseEditCrmTextbookModal");
+    if (elCloseModal) elCloseModal.onclick = closeEditCrmTextbook;
+    const elCancelModal = document.getElementById("btnCancelEditCrmTextbookModal");
+    if (elCancelModal) elCancelModal.onclick = closeEditCrmTextbook;
+
+    // Submit edit textbook
+    const formEditTextbook = document.getElementById("formEditCrmTextbook");
+    if (formEditTextbook) {
+      formEditTextbook.onsubmit = (e) => {
+        e.preventDefault();
+        const rowNum = parseInt(document.getElementById("editCrmTextbookRow").value);
+        const key = document.getElementById("editCrmTextbookKey").value;
+        const title = document.getElementById("editCrmTextbookTitle").value.trim();
+        const startDate = document.getElementById("editCrmTextbookStartDate").value;
+        const endDate = document.getElementById("editCrmTextbookEndDate").value;
+        const accuracy = document.getElementById("editCrmTextbookAccuracy").value.trim();
+
+        const studentRow = this.app.state.textbooks.find(b => b.row === rowNum) || 
+                           this.app.state.textbooks.find(b => b.name.replace(/\s+/g, '') === this.currentCrmStudentName.replace(/\s+/g, ''));
+        if (studentRow) {
+          studentRow[`${key}Title`] = title;
+          studentRow[`${key}Start`] = startDate;
+          studentRow[`${key}End`] = endDate;
+          studentRow[`${key}Accuracy`] = accuracy;
+
+          // Update spreadsheet
+          const updates = [
+            { tab: "textbooks", row: studentRow.row, field: `${key}Title`, value: title },
+            { tab: "textbooks", row: studentRow.row, field: `${key}Start`, value: startDate },
+            { tab: "textbooks", row: studentRow.row, field: `${key}End`, value: endDate },
+            { tab: "textbooks", row: studentRow.row, field: `${key}Accuracy`, value: accuracy }
+          ];
+          this.app.api.updateBatchInGoogleSheets(updates);
+
+          this.app.saveState();
+          this.app.sheetSim.setData(this.app.state);
+          this.loadCrmStudent(this.currentCrmStudentName);
+        }
+        closeEditCrmTextbook();
+      };
+    }
 
     this.initCrmAccordions();
   }

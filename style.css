@@ -722,8 +722,7 @@ main {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--panel-bg);
-  backdrop-filter: blur(8px);
+  background: var(--box-bg);
   color: var(--text-secondary);
   font-weight: 600;
   padding: 1rem 0.8rem;
@@ -1800,4 +1799,69 @@ th.resizing {
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
   z-index: 10;
   position: relative;
+}
+
+/* 4. Resizing columns handles style */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background-color: transparent;
+  transition: background-color 0.2s;
+  z-index: 101;
+}
+
+.resize-handle:hover,
+th.resizing .resize-handle {
+  background-color: var(--accent);
+}
+
+/* 5. Scrollbar inside Large View modal */
+.large-view-modal-content {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 0.5rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.02);
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+}
+
+.large-view-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.large-view-modal-content::-webkit-scrollbar-thumb {
+  background-color: var(--accent);
+  border-radius: 3px;
+}
+
+/* 6. Responsive scaling and preventing button wraps */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px !important;
+  }
+  .btn-primary, .btn-secondary, button {
+    padding: 0.45rem 0.7rem !important;
+    font-size: 0.82rem !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+  }
+  .sheet-tabs {
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+  }
+  .sheet-tab-item {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.8rem !important;
+    white-space: nowrap !important;
+  }
+  .student-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+  }
 }
