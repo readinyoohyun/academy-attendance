@@ -1023,7 +1023,17 @@ function processSingleUpdate(ss, tab, row, field, value) {
     };
     var col = cols[field];
     if (col) {
-      sheet.getRange(row, col).setValue(value);
+      var cell = sheet.getRange(row, col);
+      try {
+        cell.setValue(value);
+      } catch (err) {
+        if (field === "status") {
+          cell.clearDataValidations();
+          cell.setValue(value);
+        } else {
+          throw err;
+        }
+      }
       if (field === "number" || field === "event" || field === "grammarDone" || field === "contents") {
         accumulateDailyEventToMemberAnalysis(sheet, row);
       }

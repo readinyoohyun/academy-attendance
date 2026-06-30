@@ -159,7 +159,7 @@ class SheetSimulator {
         </div>
 
         <!-- Sheet Table Wrapper -->
-        <div class="sheet-table-wrapper" style="border: none; background: transparent; padding: 0;">
+        <div class="sheet-table-wrapper" style="border: none; background: transparent; padding: 0; max-height: 480px; overflow-y: scroll; overflow-x: auto; display: block;">
           ${this.activeTab === "한명 검색" ? this.renderDecoupledSingleSearch(capacities) : `
           <table class="sheet-table">
             <thead>
@@ -1027,6 +1027,7 @@ class SheetSimulator {
             const width = startWidth + (e.pageX - startX);
             if (width > 50) {
               col.style.width = width + "px";
+              col.style.minWidth = width + "px";
             }
           };
           const onMouseUp = () => {
