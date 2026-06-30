@@ -702,6 +702,8 @@ main {
 
 .sheet-table-wrapper {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 65vh;
   border-radius: 12px;
   border: 1px solid var(--panel-border);
   background: var(--box-bg);
@@ -716,7 +718,11 @@ main {
 }
 
 .sheet-table th {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   background: var(--panel-bg);
+  backdrop-filter: blur(8px);
   color: var(--text-secondary);
   font-weight: 600;
   padding: 1rem 0.8rem;
@@ -1764,4 +1770,31 @@ th {
 
 th.resizing {
   border-right: 2px solid var(--accent);
+}
+
+/* Sheet Simulator Textarea auto-expanding cell styling */
+.sheet-table td textarea {
+  height: 32px;
+  min-height: 32px;
+  resize: vertical;
+  transition: height 0.2s ease, background-color 0.2s, border-color 0.2s;
+  overflow-y: hidden;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.4rem;
+  width: 100%;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-main);
+}
+
+.sheet-table td textarea:focus {
+  height: 120px !important;
+  background-color: var(--input-bg) !important;
+  border-color: var(--accent) !important;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  z-index: 10;
+  position: relative;
 }

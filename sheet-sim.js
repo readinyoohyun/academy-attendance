@@ -415,7 +415,7 @@ class SheetSimulator {
               <td><input type="text" class="sheet-input-date" value="${this.escapeHtml(row.date)}" style="width: 80px;"></td>
               <td><input type="text" class="sheet-input-time" value="${this.escapeHtml(row.time)}" style="width: 60px; text-align:center;"></td>
               <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 90px; font-weight:600;"></td>
-              <td><input type="text" class="sheet-input-notes" value="${this.escapeHtml(row.notes || '')}" style="width: 150px;"></td>
+              <td><textarea class="sheet-input-notes" style="width: 150px;">${this.escapeHtml(row.notes || '')}</textarea></td>
               <td>
                 <select class="sheet-select-status" style="width: 80px;">
                   <option value="대기" ${this.getNormalizedStatus(row.status) === '대기' ? 'selected' : ''}>대기</option>
@@ -426,11 +426,11 @@ class SheetSimulator {
                 </select>
               </td>
               <td><input type="text" class="sheet-input-in-time" value="${this.escapeHtml(row.inTime || '')}" placeholder="HH:MM" style="width: 65px; text-align:center;"></td>
-              <td><input type="text" class="sheet-input-reason" value="${this.escapeHtml(row.reason || '')}" style="width: 120px;"></td>
+              <td><textarea class="sheet-input-reason" style="width: 120px;">${this.escapeHtml(row.reason || '')}</textarea></td>
               <td><input type="text" class="sheet-input-number" value="${this.escapeHtml(row.number || '')}" style="width: 60px; text-align:center;"></td>
               <td><input type="text" class="sheet-input-event" value="${this.escapeHtml(row.event || '')}" style="width: 100px;"></td>
-              <td><input type="text" class="sheet-input-grammarDone" value="${this.escapeHtml(row.grammarDone || row.specialClass || '')}" style="width: 150px; ${this.getConditionalStyle(row.grammarDone || row.specialClass, 'grammarDone')}"></td>
-              <td><input type="text" class="sheet-input-contents" value="${this.escapeHtml(row.contents || '')}" style="width: 200px;"></td>
+              <td><textarea class="sheet-input-grammarDone" style="width: 150px; ${this.getConditionalStyle(row.grammarDone || row.specialClass, 'grammarDone')}">${this.escapeHtml(row.grammarDone || row.specialClass || '')}</textarea></td>
+              <td><textarea class="sheet-input-contents" style="width: 200px;">${this.escapeHtml(row.contents || '')}</textarea></td>
               <td><button class="btn-delete-row" data-id="${row.id}">🗑️</button></td>
             </tr>
           `;

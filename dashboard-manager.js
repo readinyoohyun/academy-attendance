@@ -89,7 +89,7 @@ class DashboardManager {
 
       // Check if student has a daily log for this time slot today with active status (not standby)
       const hasLog = this.app.state.dailyLogs.some(l => 
-        l.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
+        (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
         (l.date || '').trim() === dailyLogDateStr.trim() &&
         (l.time || '').trim() === timeStr.trim() &&
         l.status && l.status !== '대기'
@@ -101,7 +101,7 @@ class DashboardManager {
           return true;
         }
         // If they have a log but are not scheduled on this day/time, check if another student with the same name IS scheduled.
-        const sameNameStudents = this.app.state.students.filter(s => s.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
+        const sameNameStudents = this.app.state.students.filter(s => (s.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
         const anyScheduled = sameNameStudents.some(s => {
           const sMakeup = s.makeupDate ? parseMakeupDate(s.makeupDate) : null;
           const sIsMakeup = sMakeup && sMakeup.day === this.selectedDay && sMakeup.time === timeStr;
@@ -271,7 +271,7 @@ class DashboardManager {
           }
 
           const dailyLog = this.app.state.dailyLogs.find(l => 
-            l.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
+            (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
             (l.time || '').trim() === timeStr.trim() &&
             (l.date || '').trim() === dailyLogDateStr.trim()
           );
@@ -317,7 +317,7 @@ class DashboardManager {
             }
           }
 
-          const memberRecForPhoneOnCard = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
+          const memberRecForPhoneOnCard = this.app.state.memberAnalysis.find(m => (m.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
           const parentPhoneOnCard = memberRecForPhoneOnCard ? (memberRecForPhoneOnCard.phone || "").trim() : "";
 
           card.className = `student-card glass-panel ${typeClass}`;
@@ -386,11 +386,6 @@ class DashboardManager {
               </div>
             `;
           }
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            </div>
-          `;
 
           card.addEventListener("click", (e) => {
             if (e.target.classList.contains("btn-absent-quick")) {
@@ -613,11 +608,11 @@ class DashboardManager {
     }
 
     // Look up parent's phone number from memberAnalysis
-    const memberRecForPhone = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
+    const memberRecForPhone = this.app.state.memberAnalysis.find(m => (m.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
     const parentPhoneVal = memberRecForPhone ? (memberRecForPhone.phone || "").trim() : "";
 
     dailyLog = this.app.state.dailyLogs.find(log => 
-      log.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
+      (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
       log.time.trim() === activeTime.trim() && 
       (log.date || '').trim() === dailyLogDateStr.trim()
     );
@@ -714,11 +709,11 @@ class DashboardManager {
     const shortDay = this.selectedDay.substring(0, 1);
     const dailyLogDateStr = `${targetDates.slashFormat}${shortDay}`;
     
-    const memberRecForPhone = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
+    const memberRecForPhone = this.app.state.memberAnalysis.find(m => (m.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
     const parentPhoneVal = memberRecForPhone ? (memberRecForPhone.phone || "").trim() : "";
 
     let dailyLog = this.app.state.dailyLogs.find(log => 
-      log.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
+      (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
       (log.date || '').trim() === dailyLogDateStr.trim() &&
       (log.time || '').trim() === activeTime.trim()
     );
@@ -773,11 +768,11 @@ class DashboardManager {
     const shortDay = this.selectedDay.substring(0, 1);
     const dailyLogDateStr = `${targetDates.slashFormat}${shortDay}`;
     
-    const memberRecForPhone = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
+    const memberRecForPhone = this.app.state.memberAnalysis.find(m => (m.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
     const parentPhoneVal = memberRecForPhone ? (memberRecForPhone.phone || "").trim() : "";
 
     let dailyLog = this.app.state.dailyLogs.find(log => 
-      log.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
+      (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
       (log.date || '').trim() === dailyLogDateStr.trim() &&
       (log.time || '').trim() === activeTime.trim()
     );
