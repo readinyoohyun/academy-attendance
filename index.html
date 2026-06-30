@@ -189,14 +189,18 @@
           </div>
           
           <!-- Attendance Guide / Color Code Description -->
-          <div style="margin-top: auto; display: flex; gap: 1rem; flex-wrap: wrap; padding-top: 1.5rem; border-top: 1px solid var(--panel-border); font-size: 0.85rem; color: var(--text-secondary);">
+          <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
             <div style="display: flex; align-items: center; gap: 0.4rem;">
-              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-regular);"></span>
-              <span>초록 버튼: 정규 수업 (대기 상태)</span>
+              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-regular-bg);"></span>
+              <span>노란 버튼: 정규 수업 (대기 상태)</span>
             </div>
             <div style="display: flex; align-items: center; gap: 0.4rem;">
-              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-makeup);"></span>
-              <span>분홍 버튼: 보강 학생 (완료 시 시트에 자동 반영)</span>
+              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-inclass-bg);"></span>
+              <span>초록 버튼: 수업중 상태</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-makeup-bg);"></span>
+              <span>분홍 버튼: 보강 학생 (대기 상태)</span>
             </div>
             <div style="display: flex; align-items: center; gap: 0.4rem;">
               <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-absent);"></span>
@@ -270,7 +274,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem;">
                   <h3 style="font-family: var(--font-title); font-size: 1.1rem; color: var(--accent); font-weight: 600;">📅 출결 현황 & 누적 기록</h3>
                   <div style="display: flex; gap: 0.5rem;">
-                    <button id="btnCrmAddMakeup" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--color-makeup); border-color: rgba(236,72,153,0.3)">보강 등록</button>
+                    <button id="btnCrmAddMakeup" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--color-makeup-bg); border-color: rgba(236,72,153,0.3)">보강 등록</button>
                     <button id="btnCrmMarkAbsent" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--color-absent); border-color: rgba(239,68,68,0.3)">결석 등록</button>
                   </div>
                 </div>

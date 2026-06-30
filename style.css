@@ -19,7 +19,7 @@
   
   /* Status Colors (Optimized for light mode contrast) */
   --color-regular: #ffffff; /* White text on yellow */
-  --color-regular-bg: #d97706; /* Solid Amber/Yellow */
+  --color-regular-bg: #ca8a04; /* Solid Yellow */
   --color-regular-border: transparent;
   
   --color-makeup: #ffffff; /* White text on pink */
@@ -712,7 +712,8 @@ main {
 .sheet-table {
   width: max-content;
   min-width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: left;
   font-size: 0.9rem;
 }
@@ -727,12 +728,12 @@ main {
   font-weight: 600;
   padding: 1rem 0.8rem;
   border-bottom: 2px solid var(--panel-border);
+  border-right: 1px solid var(--panel-border);
   font-family: var(--font-title);
   white-space: nowrap;
 }
 
 .sheet-table tr {
-  border-bottom: 1px solid var(--panel-border);
   transition: var(--transition);
 }
 
@@ -744,6 +745,8 @@ main {
   padding: 0.8rem;
   color: var(--text-primary);
   white-space: nowrap;
+  border-bottom: 1px solid var(--panel-border);
+  border-right: 1px solid var(--panel-border);
 }
 
 .sheet-table td input, .sheet-table td select, .sheet-table td textarea {

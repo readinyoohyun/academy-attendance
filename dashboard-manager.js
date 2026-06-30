@@ -65,7 +65,8 @@ class DashboardManager {
       let isMakeupTodayAndTime = false;
       if (student.makeupDate) {
         const parsed = parseMakeupDate(student.makeupDate);
-        if (parsed && parsed.day === this.selectedDay && parsed.time === timeStr) {
+        const isDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
+        if (parsed && parsed.day === this.selectedDay && parsed.time === timeStr && isDateMatch) {
           isMakeupTodayAndTime = true;
         }
       }
@@ -82,7 +83,8 @@ class DashboardManager {
       let hasMakeupToday = false;
       if (student.makeupDate) {
         const parsed = parseMakeupDate(student.makeupDate);
-        if (parsed && parsed.day === this.selectedDay) {
+        const isDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
+        if (parsed && parsed.day === this.selectedDay && isDateMatch) {
           hasMakeupToday = true;
         }
       }
@@ -104,7 +106,7 @@ class DashboardManager {
         const sameNameStudents = this.app.state.students.filter(s => (s.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
         const anyScheduled = sameNameStudents.some(s => {
           const sMakeup = s.makeupDate ? parseMakeupDate(s.makeupDate) : null;
-          const sIsMakeup = sMakeup && sMakeup.day === this.selectedDay && sMakeup.time === timeStr;
+          const sIsMakeup = sMakeup && sMakeup.day === this.selectedDay && sMakeup.time === timeStr && (sMakeup.isWeekly || sMakeup.formattedSlash === dates.slashFormat || sMakeup.formattedDot === dates.dotFormat);
           const sRegTime = s.times && s.times[this.selectedDay];
           let sIsRegActive = false;
           if (sRegTime) {
@@ -114,7 +116,8 @@ class DashboardManager {
           let sHasMakeupToday = false;
           if (s.makeupDate) {
             const parsed = parseMakeupDate(s.makeupDate);
-            if (parsed && parsed.day === this.selectedDay) {
+            const sIsDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
+            if (parsed && parsed.day === this.selectedDay && sIsDateMatch) {
               sHasMakeupToday = true;
             }
           }
@@ -154,7 +157,7 @@ class DashboardManager {
       }
       if (st.makeupDate) {
         const parsed = parseMakeupDate(st.makeupDate);
-        if (parsed && parsed.day === this.selectedDay) {
+        if (parsed && parsed.day === this.selectedDay && (parsed.isWeekly || parsed.formattedSlash === targetDates.slashFormat || parsed.formattedDot === targetDates.dotFormat)) {
           activeTimesSet.add(parsed.time.trim());
         }
       }
@@ -262,7 +265,7 @@ class DashboardManager {
           let typeClass = "regular";
           let statusLabel = "대기";
           const parsedMakeup = student.makeupDate ? parseMakeupDate(student.makeupDate) : null;
-          const isMakeup = parsedMakeup && parsedMakeup.day === this.selectedDay && parsedMakeup.time === timeStr;
+          const isMakeupToday = parsedMakeup && parsedMakeup.day === this.selectedDay && (parsedMakeup.isWeekly || parsedMakeup.formattedSlash === targetDates.slashFormat || parsedMakeup.formattedDot === targetDates.dotFormat) && parsedMakeup.time === timeStr;
           
           let isAbsent = false;
           if (student.absentDates) {
@@ -847,7 +850,7 @@ class DashboardManager {
       }
       if (st.makeupDate) {
         const parsed = parseMakeupDate(st.makeupDate);
-        if (parsed && parsed.day === this.selectedDay) {
+        if (parsed && parsed.day === this.selectedDay && (parsed.isWeekly || parsed.formattedSlash === targetDates.slashFormat || parsed.formattedDot === targetDates.dotFormat)) {
           activeTimesSet.add(parsed.time.trim());
         }
       }
@@ -863,7 +866,7 @@ class DashboardManager {
       const activeStudents = this.getActiveStudentsForTime(timeStr);
       activeStudents.forEach(student => {
         const parsedMakeup = student.makeupDate ? parseMakeupDate(student.makeupDate) : null;
-        const isMakeup = parsedMakeup && parsedMakeup.day === this.selectedDay && parsedMakeup.time === timeStr;
+        const isMakeup = parsedMakeup && parsedMakeup.day === this.selectedDay && parsedMakeup.time === timeStr && (parsedMakeup.isWeekly || parsedMakeup.formattedSlash === targetDates.slashFormat || parsedMakeup.formattedDot === targetDates.dotFormat);
         
         let isAbsent = false;
         if (student.absentDates) {

@@ -195,7 +195,7 @@ function parseMakeupDate(makeupStr) {
     const cleanStr = makeupStr.trim();
     const simpleMatch = cleanStr.match(/^([가-힣]{3})\s+(\d{2}:\d{2})$/);
     if (simpleMatch) {
-      return { day: simpleMatch[1], time: simpleMatch[2] };
+      return { day: simpleMatch[1], time: simpleMatch[2], isWeekly: true };
     }
     
     const d = new Date(cleanStr.replace(/-/g, '/'));
@@ -203,7 +203,15 @@ function parseMakeupDate(makeupStr) {
       const day = WEEKDAYS[d.getDay()];
       const hours = String(d.getHours()).padStart(2, '0');
       const minutes = String(d.getMinutes()).padStart(2, '0');
-      return { day, time: `${hours}:${minutes}` };
+      const month = d.getMonth() + 1;
+      const date = d.getDate();
+      return { 
+        day, 
+        time: `${hours}:${minutes}`, 
+        isWeekly: false,
+        formattedSlash: `${month}/${date}`,
+        formattedDot: `${month}.${date}`
+      };
     }
   } catch (e) {
     console.error("Error parsing makeup date: ", makeupStr, e);

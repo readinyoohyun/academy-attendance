@@ -259,7 +259,7 @@ class SheetSimulator {
             <th>학년 (A)</th>
             <th>이름 (B)</th>
             <th>작성기간 (C)</th>
-            <th>작성인 (D)</th>
+            <th style="width: 80px;">작성인 (D)</th>
             <th>상담내용 / 분석지 / 채널 보냄 (E)</th>
             <th>부모님의 need / 학생 특이사항 (F)</th>
             <th>동작</th>
@@ -363,7 +363,7 @@ class SheetSimulator {
               <td class="row-num-col" style="text-align:center; font-weight:600;">${row.row}</td>
               <td>
                 <select class="sheet-input-grade" style="width: 70px;">
-                  ${['초1', '초2', '초3', '초4', '초5', '초6', '중1', '중2', '중3', '고1', '고2', '고3', '기타'].map(g => `
+                  ${['초등 1', '초등 2', '초등 3', '초등 4', '초등 5', '초등 6', '중등 1', '중등 2', '중등 3', '고등 1', '고등 2', '고등 3', '기타'].map(g => `
                     <option value="${g}" ${row.grade === g ? 'selected' : ''}>${g}</option>
                   `).join('')}
                 </select>
@@ -452,8 +452,8 @@ class SheetSimulator {
           <tr data-id="${row.id}">
             <td class="row-num-col" style="text-align:center; font-weight:600;">${row.row}</td>
             <td>
-              <select class="sheet-input-grade" style="width: 60px;">
-                ${['초1', '초2', '초3', '초4', '초5', '초6', '중1', '중2', '중3', '고1', '고2', '고3', '기타'].map(g => `
+              <select class="sheet-input-grade" style="width: 80px;">
+                ${['초등 1', '초등 2', '초등 3', '초등 4', '초등 5', '초등 6', '중등 1', '중등 2', '중등 3', '고등 1', '고등 2', '고등 3', '기타'].map(g => `
                   <option value="${g}" ${row.grade === g ? 'selected' : ''}>${g}</option>
                 `).join('')}
               </select>
@@ -506,14 +506,14 @@ class SheetSimulator {
             <td class="row-num-col" style="text-align:center; font-weight:600;">${row.row}</td>
             <td>
               <select class="sheet-input-grade" style="width: 80px;">
-                ${['초1', '초2', '초3', '초4', '초5', '초6', '중1', '중2', '중3', '고1', '고2', '고3', '기타'].map(g => `
+                ${['초등 1', '초등 2', '초등 3', '초등 4', '초등 5', '초등 6', '중등 1', '중등 2', '중등 3', '고등 1', '고등 2', '고등 3', '기타'].map(g => `
                   <option value="${g}" ${row.grade === g ? 'selected' : ''}>${g}</option>
                 `).join('')}
               </select>
             </td>
             <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 100px; font-weight:600;"></td>
             <td><input type="text" class="sheet-input-period" value="${this.escapeHtml(row.period || '')}" style="width: 100px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-author" value="${this.escapeHtml(row.author || '')}" style="width: 100px;"></td>
+            <td><input type="text" class="sheet-input-author" value="${this.escapeHtml(row.author || '')}" style="width: 70px; text-align:center;"></td>
             <td><textarea class="sheet-input-content" style="width: 350px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.content || '')}</textarea></td>
             <td><textarea class="sheet-input-needs" style="width: 300px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.needs || '')}</textarea></td>
             <td><button class="btn-delete-row" data-id="${row.id}">🗑️</button></td>
@@ -533,8 +533,8 @@ class SheetSimulator {
             <td><input type="text" class="sheet-input-num" value="${this.escapeHtml(row.num || '')}" style="width: 50px; text-align:center; ${this.getConditionalStyle(row.num)}"></td>
             <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 90px; font-weight:600; ${this.getConditionalStyle(row.name)}"></td>
             <td>
-              <select class="sheet-input-grade" style="width: 70px; ${this.getConditionalStyle(row.grade)}">
-                ${['초1', '초2', '초3', '초4', '초5', '초6', '중1', '중2', '중3', '고1', '고2', '고3', '기타'].map(g => `
+              <select class="sheet-input-grade" style="width: 80px; ${this.getConditionalStyle(row.grade)}">
+                ${['초등 1', '초등 2', '초등 3', '초등 4', '초등 5', '초등 6', '중등 1', '중등 2', '중등 3', '고등 1', '고등 2', '고등 3', '기타'].map(g => `
                   <option value="${g}" ${row.grade === g ? 'selected' : ''}>${g}</option>
                 `).join('')}
               </select>
