@@ -89,7 +89,7 @@ class DashboardManager {
 
       // Check if student has a daily log for this time slot today with active status (not standby)
       const hasLog = this.app.state.dailyLogs.some(l => 
-        l.name.trim() === student.name.trim() && 
+        l.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
         (l.date || '').trim() === dailyLogDateStr.trim() &&
         (l.time || '').trim() === timeStr.trim() &&
         l.status && l.status !== '대기'
@@ -101,7 +101,7 @@ class DashboardManager {
           return true;
         }
         // If they have a log but are not scheduled on this day/time, check if another student with the same name IS scheduled.
-        const sameNameStudents = this.app.state.students.filter(s => s.name.trim() === student.name.trim());
+        const sameNameStudents = this.app.state.students.filter(s => s.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
         const anyScheduled = sameNameStudents.some(s => {
           const sMakeup = s.makeupDate ? parseMakeupDate(s.makeupDate) : null;
           const sIsMakeup = sMakeup && sMakeup.day === this.selectedDay && sMakeup.time === timeStr;
@@ -271,7 +271,7 @@ class DashboardManager {
           }
 
           const dailyLog = this.app.state.dailyLogs.find(l => 
-            l.name.trim() === student.name.trim() && 
+            l.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
             (l.time || '').trim() === timeStr.trim() &&
             (l.date || '').trim() === dailyLogDateStr.trim()
           );
@@ -317,7 +317,7 @@ class DashboardManager {
             }
           }
 
-          const memberRecForPhoneOnCard = this.app.state.memberAnalysis.find(m => m.name.trim() === student.name.trim());
+          const memberRecForPhoneOnCard = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
           const parentPhoneOnCard = memberRecForPhoneOnCard ? (memberRecForPhoneOnCard.phone || "").trim() : "";
 
           card.className = `student-card glass-panel ${typeClass}`;
@@ -350,34 +350,42 @@ class DashboardManager {
             }
           }
 
-          card.innerHTML = `
-            <div class="card-header">
-              <span class="student-name">${this.escapeHtml(student.name)}</span>
-              <div style="display:flex; align-items:center; gap:0.3rem;">
-                <span class="student-grade">${student.grade}</span>
-                <span class="badge-time" style="background:rgba(99,102,241,0.1); color:var(--accent); border:1px solid rgba(99,102,241,0.2); padding:0.1rem 0.35rem; border-radius:4px; font-size:0.7rem; font-weight:600;">${timeStr}</span>
+          if (typeClass === 'regular' || typeClass === 'makeup') {
+            card.innerHTML = `
+              <div class="card-header" style="justify-content: center; height: 100%; display: flex; align-items: center; padding: 1.2rem 0;">
+                <span class="student-name" style="font-size: 1.4rem; font-weight: 700; text-align: center; color: #ffffff; width: 100%; word-break: keep-all;">${this.escapeHtml(student.name)}</span>
               </div>
-            </div>
-            <div class="card-meta">
-              <div class="card-meta-row" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-                <div style="display:flex; align-items:center;">
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; margin-right:4px;">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>${student.classes || '수업'}</span>
-                </div>
+            `;
+          } else {
+            card.innerHTML = `
+              <div class="card-header">
+                <span class="student-name">${this.escapeHtml(student.name)}</span>
                 <div style="display:flex; align-items:center; gap:0.3rem;">
-                  ${parentPhoneOnCard ? `<button class="btn-sms-quick" style="background:rgba(99,102,241,0.15); color:var(--accent); border:1px solid rgba(99,102,241,0.3); padding:0.15rem 0.45rem; border-radius:6px; font-size:0.75rem; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:0.2rem; transition:all 0.2s; z-index: 5; position: relative;" title="학부모에게 직접 문자 보내기">💬 문자</button>` : ''}
-                  ${(typeClass === 'regular' || typeClass === 'makeup') ? `<button class="btn-absent-quick" data-id="${student.id}" style="background:rgba(239,68,68,0.15); color:var(--color-absent); border:1px solid rgba(239,68,68,0.3); padding:0.15rem 0.45rem; border-radius:6px; font-size:0.75rem; cursor:pointer; font-weight:500; transition:all 0.2s; z-index: 5; position: relative;">결석</button>` : ''}
-                  ${(typeClass === 'regular' || typeClass === 'makeup') ? `<button class="btn-cancelled-quick" data-id="${student.id}" style="background:rgba(113,128,150,0.15); color:var(--color-cancelled); border:1px solid rgba(113,128,150,0.3); padding:0.15rem 0.45rem; border-radius:6px; font-size:0.75rem; cursor:pointer; font-weight:500; transition:all 0.2s; z-index: 5; position: relative;">휴강</button>` : ''}
+                  <span class="student-grade">${student.grade}</span>
+                  <span class="badge-time" style="background:rgba(99,102,241,0.1); color:var(--accent); border:1px solid rgba(99,102,241,0.2); padding:0.1rem 0.35rem; border-radius:4px; font-size:0.7rem; font-weight:600;">${timeStr}</span>
                 </div>
               </div>
-              ${timerHtml}
-            </div>
-            <span class="badge-tag">${statusLabel}</span>
-            <div class="completed-overlay">
-              <div class="checkmark-circle">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width:16px; height:16px;">
+              <div class="card-meta">
+                <div class="card-meta-row" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                  <div style="display:flex; align-items:center;">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; margin-right:4px;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>${student.classes || '수업'}</span>
+                  </div>
+                </div>
+                ${timerHtml}
+              </div>
+              <span class="badge-tag">${statusLabel}</span>
+              <div class="completed-overlay">
+                <div class="checkmark-circle">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width:16px; height:16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+            `;
+          }
                   <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
@@ -527,6 +535,17 @@ class DashboardManager {
           if (isMakeup) {
             student.makeupCompleted = '대기';
             this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "대기", "students");
+            if (student.absentDates) {
+              const datesList = student.absentDates.split(',').map(d => d.trim()).filter(Boolean);
+              for (let i = datesList.length - 1; i >= 0; i--) {
+                if (datesList[i].startsWith('~~') && datesList[i].endsWith('~~')) {
+                  datesList[i] = datesList[i].substring(2, datesList[i].length - 2);
+                  break;
+                }
+              }
+              student.absentDates = datesList.join(', ');
+              this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+            }
           } else {
             student.attendanceStatus = '대기';
           }
@@ -543,6 +562,17 @@ class DashboardManager {
             if (isMakeup) {
               student.makeupCompleted = '대기';
               this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "대기", "students");
+              if (student.absentDates) {
+                const datesList = student.absentDates.split(',').map(d => d.trim()).filter(Boolean);
+                for (let i = datesList.length - 1; i >= 0; i--) {
+                  if (datesList[i].startsWith('~~') && datesList[i].endsWith('~~')) {
+                    datesList[i] = datesList[i].substring(2, datesList[i].length - 2);
+                    break;
+                  }
+                }
+                student.absentDates = datesList.join(', ');
+                this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+              }
             } else {
               student.attendanceStatus = '대기';
             }
@@ -554,6 +584,17 @@ class DashboardManager {
           if (isMakeup) {
             student.makeupCompleted = '완료';
             this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "완료", "students");
+            if (student.absentDates) {
+              const datesList = student.absentDates.split(',').map(d => d.trim()).filter(Boolean);
+              for (let i = 0; i < datesList.length; i++) {
+                if (!datesList[i].startsWith('~~') && !datesList[i].endsWith('~~')) {
+                  datesList[i] = `~~${datesList[i]}~~`;
+                  break;
+                }
+              }
+              student.absentDates = datesList.join(', ');
+              this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+            }
             finalStatus = "보강완료";
           } else {
             student.attendanceStatus = '수업완료';
@@ -572,11 +613,11 @@ class DashboardManager {
     }
 
     // Look up parent's phone number from memberAnalysis
-    const memberRecForPhone = this.app.state.memberAnalysis.find(m => m.name.trim() === student.name.trim());
+    const memberRecForPhone = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
     const parentPhoneVal = memberRecForPhone ? (memberRecForPhone.phone || "").trim() : "";
 
     dailyLog = this.app.state.dailyLogs.find(log => 
-      log.name.trim() === student.name.trim() && 
+      log.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
       log.time.trim() === activeTime.trim() && 
       (log.date || '').trim() === dailyLogDateStr.trim()
     );
@@ -608,16 +649,10 @@ class DashboardManager {
       }
       dailyLog.status = dailyStatus;
       dailyLog.inTime = dailyInTime;
-      if (parentPhoneVal) {
-        dailyLog.number = parentPhoneVal;
-      }
       const attendanceUpdates = [
         { tab: "dailyLogs", row: dailyLog.row, field: "status", value: dailyStatus },
         { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: dailyInTime }
       ];
-      if (parentPhoneVal) {
-        attendanceUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "number", value: parentPhoneVal });
-      }
       this.app.api.updateBatchInGoogleSheets(attendanceUpdates);
     } else {
       if (finalStatus === "수업중" || finalStatus === "보강완료") {
@@ -634,7 +669,7 @@ class DashboardManager {
         status: dailyStatus,
         inTime: dailyInTime,
         reason: isMakeup ? "보강 수업" : (finalStatus === "결석" ? "정규 결석" : ""),
-        number: parentPhoneVal || "",
+        number: "",
         event: "",
         grammarDone: "",
         specialClass: "",
@@ -679,11 +714,11 @@ class DashboardManager {
     const shortDay = this.selectedDay.substring(0, 1);
     const dailyLogDateStr = `${targetDates.slashFormat}${shortDay}`;
     
-    const memberRecForPhone = this.app.state.memberAnalysis.find(m => m.name.trim() === student.name.trim());
+    const memberRecForPhone = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
     const parentPhoneVal = memberRecForPhone ? (memberRecForPhone.phone || "").trim() : "";
 
     let dailyLog = this.app.state.dailyLogs.find(log => 
-      log.name.trim() === student.name.trim() && 
+      log.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
       (log.date || '').trim() === dailyLogDateStr.trim() &&
       (log.time || '').trim() === activeTime.trim()
     );
@@ -691,16 +726,10 @@ class DashboardManager {
     if (dailyLog) {
       dailyLog.status = "결석";
       dailyLog.inTime = "";
-      if (parentPhoneVal) {
-        dailyLog.number = parentPhoneVal;
-      }
       const absentUpdates = [
         { tab: "dailyLogs", row: dailyLog.row, field: "status", value: "결석" },
         { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: "" }
       ];
-      if (parentPhoneVal) {
-        absentUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "number", value: parentPhoneVal });
-      }
       this.app.api.updateBatchInGoogleSheets(absentUpdates);
     } else {
       const nextRow = this.app.state.dailyLogs.length > 0 ? Math.max(...this.app.state.dailyLogs.map(l => l.row)) + 1 : 2;
@@ -714,7 +743,7 @@ class DashboardManager {
         status: "결석",
         inTime: "",
         reason: "정규 결석",
-        number: parentPhoneVal || "",
+        number: "",
         event: "",
         grammarDone: "",
         specialClass: "",
@@ -744,11 +773,11 @@ class DashboardManager {
     const shortDay = this.selectedDay.substring(0, 1);
     const dailyLogDateStr = `${targetDates.slashFormat}${shortDay}`;
     
-    const memberRecForPhone = this.app.state.memberAnalysis.find(m => m.name.trim() === student.name.trim());
+    const memberRecForPhone = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
     const parentPhoneVal = memberRecForPhone ? (memberRecForPhone.phone || "").trim() : "";
 
     let dailyLog = this.app.state.dailyLogs.find(log => 
-      log.name.trim() === student.name.trim() && 
+      log.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
       (log.date || '').trim() === dailyLogDateStr.trim() &&
       (log.time || '').trim() === activeTime.trim()
     );
@@ -757,17 +786,11 @@ class DashboardManager {
       dailyLog.status = "휴강";
       dailyLog.inTime = "";
       dailyLog.reason = "휴강";
-      if (parentPhoneVal) {
-        dailyLog.number = parentPhoneVal;
-      }
       const cancelUpdates = [
         { tab: "dailyLogs", row: dailyLog.row, field: "status", value: "휴강" },
         { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: "" },
         { tab: "dailyLogs", row: dailyLog.row, field: "reason", value: "휴강" }
       ];
-      if (parentPhoneVal) {
-        cancelUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "number", value: parentPhoneVal });
-      }
       this.app.api.updateBatchInGoogleSheets(cancelUpdates);
     } else {
       const nextRow = this.app.state.dailyLogs.length > 0 ? Math.max(...this.app.state.dailyLogs.map(l => l.row)) + 1 : 2;
@@ -781,7 +804,7 @@ class DashboardManager {
         status: "휴강",
         inTime: "",
         reason: "휴강",
-        number: parentPhoneVal || "",
+        number: "",
         event: "",
         grammarDone: "",
         specialClass: "",

@@ -252,6 +252,42 @@ class SheetAPI {
     });
   }
 
+  addMemberAnalysisToGoogleSheets(member) {
+    if (!this.gasWebhookUrl) return;
+    fetch(this.gasWebhookUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "addMemberAnalysis",
+        num: member.num || "",
+        name: member.name,
+        grade: member.grade || "",
+        regDate: member.regDate || "",
+        consultation: member.consultation || "",
+        notes: member.notes || "",
+        progress: member.progress || "",
+        levelUp: member.levelUp || "",
+        levelChange: member.levelChange || "",
+        grammarDone: member.grammarDone || "",
+        readingTest: member.readingTest || "",
+        bookPlan: member.bookPlan || "",
+        analysisSent: member.analysisSent || "",
+        readMethod: member.readMethod || "",
+        studentId: member.studentId || "",
+        phone: member.phone || ""
+      })
+    })
+    .then(() => {
+      console.log(`Google Sheets memberAnalysis add sent: ${member.name}`);
+      this.app.showToast("구글 시트 저장 완료");
+    })
+    .catch(err => {
+      console.error("Add memberAnalysis failed:", err);
+      this.app.showToast("구글 시트 저장 실패", true);
+    });
+  }
+
   deleteFieldInGoogleSheets(row, tabName) {
     if (!this.gasWebhookUrl) return;
     fetch(this.gasWebhookUrl, {

@@ -62,7 +62,7 @@ class SMSManager {
     if (this.smsMode === "none") return;
 
     // 1. Get phone number
-    const memberRec = this.app.state.memberAnalysis.find(m => m.name.trim() === student.name.trim());
+    const memberRec = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, ''));
     const phone = memberRec ? (memberRec.phone || "").trim() : "";
     if (!phone) {
       console.log(`[SMS] ${student.name} 학생의 학부모 연락처가 등록되지 않아 문자를 발송할 수 없습니다.`);
@@ -188,7 +188,7 @@ class SMSManager {
   }
 
   showSmsPreviewModal(studentName, completedTitle, nextTitle) {
-    const memberRec = this.app.state.memberAnalysis.find(m => m.name.trim() === studentName.trim());
+    const memberRec = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === studentName.replace(/\s+/g, ''));
     const phone = memberRec ? (memberRec.phone || "").trim() : "";
     
     const message = `[생각나래] ${studentName} 학생이 교재 [${completedTitle}] 학습을 잘 완료했습니다. 다음 교재인 [${nextTitle}]를 준비해서 보내주시기 바랍니다.`;

@@ -297,6 +297,11 @@ class AttendanceApp {
     this.timerRefreshInterval = setInterval(() => {
       this.dashboardManager.updateDashboard();
     }, 30000);
+
+    // Auto background sync from Google Sheets every 60 seconds (Item 10)
+    this.syncInterval = setInterval(() => {
+      this.api.fetchFromGoogleSheets(false);
+    }, 60000);
   }
 
   adjustMockMakeupDates() {
@@ -396,7 +401,7 @@ class AttendanceApp {
 
     this.state.students.forEach(student => {
       const dailyLog = this.state.dailyLogs.find(l => 
-        l.name.trim() === student.name.trim() && 
+        l.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
         (l.date || '').trim() === dailyLogDateStr.trim()
       );
       if (dailyLog) {

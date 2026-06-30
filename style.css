@@ -18,13 +18,13 @@
   --overlay-bg: rgba(15, 23, 42, 0.4);
   
   /* Status Colors (Optimized for light mode contrast) */
-  --color-regular: #b45309; /* Amber/Yellow for Standby */
-  --color-regular-bg: rgba(217, 119, 6, 0.06);
-  --color-regular-border: rgba(217, 119, 6, 0.3);
+  --color-regular: #ffffff; /* White text on yellow */
+  --color-regular-bg: #d97706; /* Solid Amber/Yellow */
+  --color-regular-border: transparent;
   
-  --color-makeup: #ec4899; /* Pink-500: highly vibrant pink for makeup */
-  --color-makeup-bg: rgba(236, 72, 153, 0.06);
-  --color-makeup-border: rgba(236, 72, 153, 0.35);
+  --color-makeup: #ffffff; /* White text on pink */
+  --color-makeup-bg: #db2777; /* Solid Pink-600 */
+  --color-makeup-border: transparent;
   
   --color-absent: #dc2626; /* Red-600: bright crimson red for absent */
   --color-absent-bg: rgba(220, 38, 38, 0.06);
@@ -34,9 +34,9 @@
   --color-completed-bg: rgba(71, 85, 105, 0.08);
   --color-completed-border: rgba(71, 85, 105, 0.25);
   
-  --color-inclass: #059669; /* Green for 수업중 */
-  --color-inclass-bg: rgba(5, 150, 105, 0.06);
-  --color-inclass-border: rgba(5, 150, 105, 0.3);
+  --color-inclass: #ffffff; /* White text on green */
+  --color-inclass-bg: #059669; /* Solid Green */
+  --color-inclass-border: transparent;
   
   --color-cancelled: #718096; /* Slate/Grey for 휴강 */
   --color-cancelled-bg: rgba(113, 128, 150, 0.06);
@@ -403,26 +403,26 @@ main {
 /* Regular Student Card */
 .student-card.regular {
   background: var(--color-regular-bg);
-  border: 1.5px solid var(--color-regular-border);
-  border-left: 5px solid var(--color-regular);
+  border: 1px solid transparent;
+  border-left: 5px solid #b45309;
 }
 
 .student-card.regular:hover {
-  border-color: var(--color-regular);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.15);
+  border-color: transparent;
+  box-shadow: none;
   transform: translateY(-4px);
 }
 
 /* Makeup Student Card */
 .student-card.makeup {
   background: var(--color-makeup-bg);
-  border: 1.5px solid var(--color-makeup-border);
-  border-left: 5px solid var(--color-makeup);
+  border: 1px solid transparent;
+  border-left: 5px solid #be185d;
 }
 
 .student-card.makeup:hover {
-  border-color: var(--color-makeup);
-  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.15);
+  border-color: transparent;
+  box-shadow: none;
   transform: translateY(-4px);
 }
 
@@ -435,7 +435,7 @@ main {
 
 .student-card.absent:hover {
   border-color: var(--color-absent);
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.15);
+  box-shadow: none;
   transform: translateY(-4px);
 }
 
@@ -454,13 +454,13 @@ main {
 /* In-Class Student Card */
 .student-card.in-class {
   background: var(--color-inclass-bg);
-  border: 1.5px solid var(--color-inclass-border);
-  border-left: 5px solid var(--color-inclass);
+  border: 1px solid transparent;
+  border-left: 5px solid #047857;
 }
 
 .student-card.in-class:hover {
-  border-color: var(--color-inclass);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+  border-color: transparent;
+  box-shadow: none;
   transform: translateY(-4px);
 }
 
@@ -487,27 +487,32 @@ main {
 }
 
 .student-card.regular .student-name {
-  color: #b45309;
+  color: #ffffff;
 }
 
 .student-card.regular .student-grade {
-  color: #b45309;
-  border-color: rgba(217, 119, 6, 0.25);
-  background: rgba(217, 119, 6, 0.05);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .student-card.regular .card-meta {
-  color: #b45309;
+  color: #ffffff;
 }
 
 .student-card.regular .badge-tag {
-  background: rgba(217, 119, 6, 0.12);
-  color: #b45309;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.student-card.makeup .student-name {
+  color: #ffffff;
 }
 
 .student-card.makeup .student-grade {
-  color: #be185d;
-  border-color: rgba(219, 39, 119, 0.2);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .student-card.absent .student-grade {
@@ -563,22 +568,22 @@ main {
 }
 
 .student-card.in-class .student-name {
-  color: #047857;
+  color: #ffffff;
 }
 
 .student-card.in-class .student-grade {
-  color: #047857;
-  border-color: rgba(5, 150, 105, 0.25);
-  background: rgba(5, 150, 105, 0.05);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .student-card.in-class .card-meta {
-  color: #065f46;
+  color: #d1fae5;
 }
 
 .student-card.in-class .badge-tag {
-  background: rgba(5, 150, 105, 0.12);
-  color: #047857;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 /* Cancelled Student Card Styles */
@@ -703,7 +708,8 @@ main {
 }
 
 .sheet-table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   text-align: left;
   font-size: 0.9rem;

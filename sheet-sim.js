@@ -514,8 +514,8 @@ class SheetSimulator {
             <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 100px; font-weight:600;"></td>
             <td><input type="text" class="sheet-input-period" value="${this.escapeHtml(row.period || '')}" style="width: 100px; text-align:center;"></td>
             <td><input type="text" class="sheet-input-author" value="${this.escapeHtml(row.author || '')}" style="width: 100px;"></td>
-            <td><input type="text" class="sheet-input-content" value="${this.escapeHtml(row.content || '')}" style="width: 350px;"></td>
-            <td><input type="text" class="sheet-input-needs" value="${this.escapeHtml(row.needs || '')}" style="width: 300px;"></td>
+            <td><textarea class="sheet-input-content" style="width: 350px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.content || '')}</textarea></td>
+            <td><textarea class="sheet-input-needs" style="width: 300px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.needs || '')}</textarea></td>
             <td><button class="btn-delete-row" data-id="${row.id}">🗑️</button></td>
           </tr>
         `).join('');
@@ -1146,6 +1146,9 @@ class SheetSimulator {
         };
         dataset.push(newRow);
         this.onDataChanged("memberAnalysis", dataset);
+        if (window.app && window.app.api && window.app.api.addMemberAnalysisToGoogleSheets) {
+          window.app.api.addMemberAnalysisToGoogleSheets(newRow);
+        }
         break;
 
       case "한명 검색":
@@ -1273,7 +1276,46 @@ class SheetSimulator {
             }
             this.render();
           });
-          tr.querySelector(".sheet-select-makeup-done").addEventListener("change", (e) => updateField(id, "students", rowArray, "makeupCompleted", e.target.value));
+          tr.querySelector(".sheet-select-makeup-done").addEventListener("change", (e) => {
+            const val = e.target.value;
+            const rowObj = rowArray.find(r => r.id === id);
+            if (rowObj) {
+              rowObj.makeupCompleted = val;
+              if (window.app && window.app.updateFieldInGoogleSheets) {
+                window.app.updateFieldInGoogleSheets(rowObj.row, "makeupCompleted", val, "students");
+              }
+              if (val === "완료") {
+                if (rowObj.absentDates) {
+                  const datesList = rowObj.absentDates.split(',').map(d => d.trim()).filter(Boolean);
+                  for (let i = 0; i < datesList.length; i++) {
+                    if (!datesList[i].startsWith('~~') && !datesList[i].endsWith('~~')) {
+                      datesList[i] = `~~${datesList[i]}~~`;
+                      break;
+                    }
+                  }
+                  rowObj.absentDates = datesList.join(', ');
+                  if (window.app && window.app.updateFieldInGoogleSheets) {
+                    window.app.updateFieldInGoogleSheets(rowObj.row, "absentDates", rowObj.absentDates, "students");
+                  }
+                }
+              } else {
+                if (rowObj.absentDates) {
+                  const datesList = rowObj.absentDates.split(',').map(d => d.trim()).filter(Boolean);
+                  for (let i = datesList.length - 1; i >= 0; i--) {
+                    if (datesList[i].startsWith('~~') && datesList[i].endsWith('~~')) {
+                      datesList[i] = datesList[i].substring(2, datesList[i].length - 2);
+                      break;
+                    }
+                  }
+                  rowObj.absentDates = datesList.join(', ');
+                  if (window.app && window.app.updateFieldInGoogleSheets) {
+                    window.app.updateFieldInGoogleSheets(rowObj.row, "absentDates", rowObj.absentDates, "students");
+                  }
+                }
+              }
+              this.render();
+            }
+          });
           
           tr.querySelectorAll(".sheet-input-time").forEach(input => {
             input.addEventListener("change", (e) => {

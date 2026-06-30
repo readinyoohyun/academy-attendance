@@ -39,7 +39,7 @@ class CRMManager {
   }
 
   getLastConsultationDays(name) {
-    const studentAnal = this.app.state.consultations.filter(a => a.name === name);
+    const studentAnal = this.app.state.consultations.filter(a => a.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
     if (studentAnal.length === 0) {
       return Infinity;
     }
@@ -187,39 +187,65 @@ class CRMManager {
       saveBtn.onclick = () => {
         const name = this.currentCrmStudentName;
         if (!name) return;
-        let memberRec = this.app.state.memberAnalysis.find(m => m.name.trim() === name.trim());
+        
+        const student = this.app.state.students.find(s => s.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+        if (!student) return;
+
+        let memberRec = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+        const fields = {
+          notes: document.getElementById("crmMemberNotes").value,
+          progress: document.getElementById("crmMemberProgress").value,
+          regDate: document.getElementById("crmMemberRegDate").value,
+          consultation: document.getElementById("crmMemberConsultation").value,
+          levelUp: document.getElementById("crmMemberLevelUp").value,
+          levelChange: document.getElementById("crmMemberLevelChange").value,
+          grammarDone: document.getElementById("crmMemberGrammarDone").value,
+          readingTest: document.getElementById("crmMemberReadingTest").value,
+          bookPlan: document.getElementById("crmMemberBookPlan").value,
+          analysisSent: document.getElementById("crmMemberAnalysisSent").value,
+          readMethod: document.getElementById("crmMemberReadMethod").value,
+          studentId: document.getElementById("crmMemberStudentId").value,
+          phone: document.getElementById("crmMemberPhone").value
+        };
+
         if (memberRec) {
-          const fields = {
-            num: memberRec.num || "",
-            name: memberRec.name || "",
-            grade: memberRec.grade || "",
-            notes: document.getElementById("crmMemberNotes").value,
-            progress: document.getElementById("crmMemberProgress").value,
-            regDate: document.getElementById("crmMemberRegDate").value,
-            consultation: document.getElementById("crmMemberConsultation").value,
-            levelUp: document.getElementById("crmMemberLevelUp").value,
-            levelChange: document.getElementById("crmMemberLevelChange").value,
-            grammarDone: document.getElementById("crmMemberGrammarDone").value,
-            readingTest: document.getElementById("crmMemberReadingTest").value,
-            bookPlan: document.getElementById("crmMemberBookPlan").value,
-            analysisSent: document.getElementById("crmMemberAnalysisSent").value,
-            readMethod: document.getElementById("crmMemberReadMethod").value,
-            studentId: document.getElementById("crmMemberStudentId").value,
-            phone: document.getElementById("crmMemberPhone").value
-          };
-          
           const updates = [];
           Object.keys(fields).forEach(f => {
             memberRec[f] = fields[f];
             updates.push({ tab: "memberAnalysis", row: memberRec.row, field: f, value: fields[f] });
           });
           this.app.api.updateBatchInGoogleSheets(updates);
-          
-          this.app.saveState();
-          this.app.sheetSim.setData(this.app.state);
-          this.loadCrmStudent(name);
-          alert("회원 종합 분석 정보가 저장되었고 구글 시트와 연동되었습니다!");
+        } else {
+          // 신규 등록
+          const nextRow = this.app.state.memberAnalysis.length > 0 ? Math.max(...this.app.state.memberAnalysis.map(m => m.row)) + 1 : 2;
+          memberRec = {
+            id: 'member_' + nextRow,
+            row: nextRow,
+            num: String(this.app.state.memberAnalysis.length + 1),
+            name: name,
+            grade: student.grade || "",
+            notes: fields.notes,
+            progress: fields.progress,
+            regDate: fields.regDate,
+            consultation: fields.consultation,
+            levelUp: fields.levelUp,
+            levelChange: fields.levelChange,
+            grammarDone: fields.grammarDone,
+            readingTest: fields.readingTest,
+            bookPlan: fields.bookPlan,
+            analysisSent: fields.analysisSent,
+            readMethod: fields.readMethod,
+            studentId: fields.studentId,
+            phone: fields.phone
+          };
+          this.app.state.memberAnalysis.push(memberRec);
+          this.app.api.addMemberAnalysisToGoogleSheets(memberRec);
         }
+        
+        this.app.saveState();
+        this.app.sheetSim.setData(this.app.state);
+        this.loadCrmStudent(name);
+        alert("회원 종합 분석 정보가 저장되었고 구글 시트와 연동되었습니다!");
       };
     }
 
@@ -243,9 +269,9 @@ class CRMManager {
       const accuracy = document.getElementById("inputTextbookAccuracy").value.trim();
       const startDate = document.getElementById("inputTextbookStartDate").value;
       
-      const student = this.app.state.students.find(s => s.name === name);
+      const student = this.app.state.students.find(s => s.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
       
-      let studentRow = this.app.state.textbooks.find(t => t.name === name);
+      let studentRow = this.app.state.textbooks.find(t => t.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
       const categoryFieldMap = {
         "비문학": { title: "nonfictionTitle", start: "nonfictionStart", end: "nonfictionEnd", accuracy: "nonfictionAccuracy" },
         "문학": { title: "literatureTitle", start: "literatureStart", end: "literatureEnd", accuracy: "literatureAccuracy" },
@@ -549,7 +575,7 @@ class CRMManager {
       rateText.style.color = "var(--danger)";
     }
     
-    const studentRow = this.app.state.textbooks.find(b => b.name === name);
+    const studentRow = this.app.state.textbooks.find(b => b.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
     const activeBooks = [];
     const allStudentBooks = [];
 
@@ -621,7 +647,7 @@ class CRMManager {
     }
 
     // Populate Member Analysis Inputs
-    let memberRec = this.app.state.memberAnalysis.find(m => m.name.trim() === name.trim());
+    let memberRec = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
     if (!memberRec) {
       const nextRow = this.app.state.memberAnalysis.length > 0 ? Math.max(...this.app.state.memberAnalysis.map(m => m.row)) + 1 : 20;
       memberRec = {

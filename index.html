@@ -938,7 +938,9 @@ function processSingleUpdate(ss, tab, row, field, value) {
   if (tab === "students" || tab === "전체 시간표") {
     var sheet = ss.getSheetByName("전체 시간표");
     if (field === "absentDates") {
-      sheet.getRange(row, 12).setValue(value);
+      var cell = sheet.getRange(row, 12);
+      cell.setValue(value);
+      formatAbsentCell(cell, value);
     } else if (field === "makeupCompleted") {
       sheet.getRange(row, 32).setValue(value);
     } else if (field === "makeupDate") {
@@ -1186,6 +1188,35 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
+    else if (postData.action === "addMemberAnalysis") {
+      var sheet = ss.getSheetByName("회원 분석/레벨변동/전화상담");
+      var lastRow = sheet.getLastRow();
+      var nextRow = lastRow + 1;
+      
+      var rowValues = [
+        postData.num || "",
+        postData.name || "",
+        postData.grade || "",
+        postData.regDate || "",
+        postData.consultation || "",
+        postData.notes || "",
+        postData.progress || "",
+        postData.levelUp || "",
+        postData.levelChange || "",
+        postData.grammarDone || "",
+        postData.readingTest || "",
+        postData.bookPlan || "",
+        postData.analysisSent || "",
+        postData.readMethod || "",
+        postData.studentId || "",
+        postData.phone || ""
+      ];
+      
+      sheet.getRange(nextRow, 1, 1, 16).setValues([rowValues]);
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", row: nextRow }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
     else if (postData.action === "deleteRow") {
       var tab = postData.tab;
       var row = parseInt(postData.row);
@@ -1226,6 +1257,28 @@ function getGradeRank(gradeStr) {
   else typeScore = 40;
   
   return typeScore + num;
+}
+
+// 결석일자 셀에 리치 텍스트 취소선(줄 긋기) 서식을 부분 적용하는 헬퍼 함수
+function formatAbsentCell(cell, value) {
+  if (!value) return;
+  var text = String(value);
+  var richTextBuilder = SpreadsheetApp.newRichTextValue().setText(text);
+  
+  var strikethroughStyle = SpreadsheetApp.newTextStyle().setStrikethrough(true).build();
+  
+  var regex = /~~([^~]+)~~/g;
+  var match;
+  while ((match = regex.exec(text)) !== null) {
+    richTextBuilder.setTextStyle(match.index, regex.lastIndex, strikethroughStyle);
+  }
+  
+  try {
+    cell.setRichTextValue(richTextBuilder.build());
+  } catch(e) {
+    // Fallback if rich text fails
+    cell.setValue(value);
+  }
 }
 
 // 매일 오전 6시 자동 실행용 일일 출석부 자동 생성 함수 (기존 기록 백업 후 초기화)
@@ -1278,13 +1331,20 @@ function generateDailyAttendance() {
   }
   
   // 2. 오늘의 요일에 맞는 학생들을 추출하여 채우기
+  // KST 타임존(Asia/Seoul)으로 요일 및 날짜 가져오기 (Item 4)
   var today = new Date();
-  var WEEKDAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-  var todayDayName = WEEKDAYS[today.getDay()];
+  var todayDayName = Utilities.formatDate(today, "Asia/Seoul", "EEEE");
+  var dayShort = "";
+  if (todayDayName.indexOf("Monday") !== -1 || todayDayName.indexOf("월") !== -1) { todayDayName = "월요일"; dayShort = "월"; }
+  else if (todayDayName.indexOf("Tuesday") !== -1 || todayDayName.indexOf("화") !== -1) { todayDayName = "화요일"; dayShort = "화"; }
+  else if (todayDayName.indexOf("Wednesday") !== -1 || todayDayName.indexOf("수") !== -1) { todayDayName = "수요일"; dayShort = "수"; }
+  else if (todayDayName.indexOf("Thursday") !== -1 || todayDayName.indexOf("목") !== -1) { todayDayName = "목요일"; dayShort = "목"; }
+  else if (todayDayName.indexOf("Friday") !== -1 || todayDayName.indexOf("금") !== -1) { todayDayName = "금요일"; dayShort = "금"; }
+  else if (todayDayName.indexOf("Saturday") !== -1 || todayDayName.indexOf("토") !== -1) { todayDayName = "토요일"; dayShort = "토"; }
+  else { todayDayName = "일요일"; dayShort = "일"; }
   
-  var m = today.getMonth() + 1;
-  var d = today.getDate();
-  var dayShort = todayDayName.substring(0, 1);
+  var m = parseInt(Utilities.formatDate(today, "Asia/Seoul", "M"), 10);
+  var d = parseInt(Utilities.formatDate(today, "Asia/Seoul", "d"), 10);
   var dateStr = m + "/" + d + dayShort;
   var dateDot = m + "." + d;
   var dateSlash = m + "/" + d;
