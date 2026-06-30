@@ -722,7 +722,7 @@ main {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--box-bg);
+  background: #f8fafc !important; /* solid background for sticky row 1 freezing */
   color: var(--text-secondary);
   font-weight: 600;
   padding: 1rem 0.8rem;
@@ -730,6 +730,25 @@ main {
   border-right: 1px solid var(--panel-border);
   font-family: var(--font-title);
   white-space: nowrap;
+}
+
+/* Column Resize Handle */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+  transition: background-color 0.2s;
+}
+
+.resize-handle:hover,
+th.resizing .resize-handle {
+  background-color: var(--accent);
+  width: 6px;
 }
 
 .sheet-table tr {

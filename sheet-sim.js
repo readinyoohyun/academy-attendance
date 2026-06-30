@@ -577,17 +577,72 @@ class SheetSimulator {
               </select>
             </td>
             <td><input type="text" class="sheet-input-regDate" value="${this.escapeHtml(row.regDate || '')}" style="width: 80px; text-align:center; ${this.getConditionalStyle(row.regDate)}"></td>
-            <td><textarea class="sheet-input-consultation" style="width: 150px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.consultation)}">${this.escapeHtml(row.consultation || '')}</textarea></td>
-            <td><textarea class="sheet-input-notes" style="width: 200px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.notes)}">${this.escapeHtml(row.notes || '')}</textarea></td>
-            <td><textarea class="sheet-input-progress" style="width: 150px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.progress, 'progress')}">${this.escapeHtml(row.progress || '')}</textarea></td>
-            <td><textarea class="sheet-input-levelUp" style="width: 120px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.levelUp)}">${this.escapeHtml(row.levelUp || '')}</textarea></td>
-            <td><textarea class="sheet-input-levelChange" style="width: 100px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.levelChange)}">${this.escapeHtml(row.levelChange || '')}</textarea></td>
-            <td><textarea class="sheet-input-grammarDone" style="width: 120px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.grammarDone, 'grammarDone')}">${this.escapeHtml(row.grammarDone || '')}</textarea></td>
-            <td><textarea class="sheet-input-readingTest" style="width: 120px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.readingTest)}">${this.escapeHtml(row.readingTest || '')}</textarea></td>
-            <td><textarea class="sheet-input-bookPlan" style="width: 120px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.bookPlan)}">${this.escapeHtml(row.bookPlan || '')}</textarea></td>
-            <td><textarea class="sheet-input-analysisSent" style="width: 90px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.analysisSent)}">${this.escapeHtml(row.analysisSent || '')}</textarea></td>
-            <td><textarea class="sheet-input-readMethod" style="width: 90px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.readMethod)}">${this.escapeHtml(row.readMethod || '')}</textarea></td>
-            <td><textarea class="sheet-input-studentId" style="width: 90px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.studentId)}">${this.escapeHtml(row.studentId || '')}</textarea></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-consultation" style="width: 120px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.consultation)}">${this.escapeHtml(row.consultation || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-notes" style="width: 170px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.notes)}">${this.escapeHtml(row.notes || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-progress" style="width: 120px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.progress, 'progress')}">${this.escapeHtml(row.progress || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-levelUp" style="width: 90px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.levelUp)}">${this.escapeHtml(row.levelUp || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-levelChange" style="width: 70px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.levelChange)}">${this.escapeHtml(row.levelChange || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-grammarDone" style="width: 90px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.grammarDone, 'grammarDone')}">${this.escapeHtml(row.grammarDone || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-readingTest" style="width: 90px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.readingTest)}">${this.escapeHtml(row.readingTest || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-bookPlan" style="width: 90px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.bookPlan)}">${this.escapeHtml(row.bookPlan || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-analysisSent" style="width: 65px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.analysisSent)}">${this.escapeHtml(row.analysisSent || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-readMethod" style="width: 65px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.readMethod)}">${this.escapeHtml(row.readMethod || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-studentId" style="width: 65px; height: 35px; resize: vertical; ${this.getConditionalStyle(row.studentId)}">${this.escapeHtml(row.studentId || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
             <td><input type="text" class="sheet-input-phone" value="${this.escapeHtml(row.phone || '')}" style="width: 110px; ${this.getConditionalStyle(row.phone)}"></td>
             <td><button class="btn-delete-row" data-id="${row.id}">🗑️</button></td>
           </tr>

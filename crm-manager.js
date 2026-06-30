@@ -670,7 +670,11 @@ class CRMManager {
     if (studentLogs.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.85rem;">출결 로그가 존재하지 않습니다.</td></tr>`;
     } else {
-      const sortedLogs = [...studentLogs].sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+      const sortedLogs = [...studentLogs].sort((a, b) => {
+        const timeA = a.timestamp || `${a.date || ''} ${a.time || ''}`;
+        const timeB = b.timestamp || `${b.date || ''} ${b.time || ''}`;
+        return timeB.localeCompare(timeA);
+      });
       sortedLogs.slice(0, 10).forEach(log => {
         let badgeClass = "badge-success";
         if (log.status === "결석") badgeClass = "badge-danger";
@@ -679,7 +683,7 @@ class CRMManager {
         const tr = document.createElement("tr");
         tr.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
         tr.innerHTML = `
-          <td style="padding: 0.5rem 0.8rem;">${log.date} (${log.day.substring(0,1)})</td>
+          <td style="padding: 0.5rem 0.8rem;">${log.date}${log.day ? ` (${log.day.substring(0,1)})` : ''}</td>
           <td style="padding: 0.5rem 0.8rem;">${log.time}</td>
           <td style="padding: 0.5rem 0.8rem; text-align: center;"><span class="${badgeClass}" style="font-size:0.75rem; padding: 0.1rem 0.3rem;">${log.status}</span></td>
         `;
@@ -688,7 +692,7 @@ class CRMManager {
     }
 
     // Populate Member Analysis Inputs
-    let memberRec = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+    let memberRec = this.app.state.memberAnalysis.find(m => m && m.name && m.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
     if (!memberRec) {
       const nextRow = this.app.state.memberAnalysis.length > 0 ? Math.max(...this.app.state.memberAnalysis.map(m => m.row)) + 1 : 20;
       memberRec = {
@@ -761,7 +765,11 @@ class CRMManager {
     if (studentAnal.length === 0) {
       evaluationList.innerHTML = `<div style="text-align:center; padding:3rem 1rem; color:var(--text-muted); font-size:0.9rem;">작성된 상담 및 리포트 발송 기록이 없습니다.</div>`;
     } else {
-      const sortedAnal = [...studentAnal].sort((a,b) => b.period.localeCompare(a.period));
+      const sortedAnal = [...studentAnal].sort((a, b) => {
+        const periodA = a.period || "";
+        const periodB = b.period || "";
+        return periodB.localeCompare(periodA);
+      });
       sortedAnal.forEach(anal => {
         const card = document.createElement("div");
         card.className = "evaluation-card";
