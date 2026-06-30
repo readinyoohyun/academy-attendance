@@ -494,6 +494,55 @@ class AttendanceApp {
       this.api.fetchFromGoogleSheets(true);
     };
 
+    // Textarea Zoom Modal Events
+    const modalZoom = document.getElementById("modalTextareaZoom");
+    const zoomField = document.getElementById("textareaZoomField");
+    let activeZoomTarget = null;
+
+    const closeZoomModal = () => {
+      if (modalZoom) modalZoom.classList.remove("active");
+      activeZoomTarget = null;
+    };
+
+    const elCloseZoom = document.getElementById("btnCloseTextareaZoomModal");
+    if (elCloseZoom) elCloseZoom.onclick = closeZoomModal;
+    const elCancelZoom = document.getElementById("btnCancelTextareaZoomModal");
+    if (elCancelZoom) elCancelZoom.onclick = closeZoomModal;
+
+    const elSaveZoom = document.getElementById("btnSaveTextareaZoomModal");
+    if (elSaveZoom) {
+      elSaveZoom.onclick = () => {
+        if (activeZoomTarget) {
+          activeZoomTarget.value = zoomField.value;
+          // Trigger change event to notify sheet-sim of the change!
+          const event = new Event('change', { bubbles: true });
+          activeZoomTarget.dispatchEvent(event);
+        }
+        closeZoomModal();
+      };
+    }
+
+    // Event delegation on document for zoom buttons click!
+    document.addEventListener("click", (e) => {
+      const zoomBtn = e.target.closest(".btn-zoom-textarea");
+      if (zoomBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        // Find sibling textarea or input in the same cell
+        const container = zoomBtn.parentElement;
+        if (container) {
+          const targetInput = container.querySelector("textarea, input");
+          if (targetInput) {
+            activeZoomTarget = targetInput;
+            zoomField.value = targetInput.value || "";
+            if (modalZoom) modalZoom.classList.add("active");
+            // Auto focus
+            setTimeout(() => zoomField.focus(), 100);
+          }
+        }
+      }
+    });
+
     // 5. Load manually
     const loadBtn = document.querySelector(".btn-secondary");
     if (loadBtn && loadBtn.id !== "btnSheetReset") {

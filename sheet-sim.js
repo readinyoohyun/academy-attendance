@@ -338,9 +338,11 @@ class SheetSimulator {
     
     switch (this.activeTab) {
       case "전체 시간표": {
-        const filtered = this.dataMap.students.filter(row => 
-          row.name.toLowerCase().includes(query) || row.grade.toLowerCase().includes(query)
-        );
+        const filtered = this.dataMap.students.filter(row => {
+          const nameVal = row.name ? String(row.name).toLowerCase() : "";
+          const gradeVal = row.grade ? String(row.grade).toLowerCase() : "";
+          return nameVal.includes(query) || gradeVal.includes(query);
+        });
         if (filtered.length === 0) return `<tr><td colspan="14" style="text-align:center; padding:2rem; color:var(--text-muted);">학생 데이터가 없습니다.</td></tr>`;
         
         return filtered.map(row => {
@@ -415,7 +417,12 @@ class SheetSimulator {
               <td><input type="text" class="sheet-input-date" value="${this.escapeHtml(row.date)}" style="width: 80px;"></td>
               <td><input type="text" class="sheet-input-time" value="${this.escapeHtml(row.time)}" style="width: 60px; text-align:center;"></td>
               <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 90px; font-weight:600;"></td>
-              <td><textarea class="sheet-input-notes" style="width: 150px;">${this.escapeHtml(row.notes || '')}</textarea></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-notes" style="width: 120px; height: 32px; resize: vertical;">${this.escapeHtml(row.notes || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
               <td>
                 <select class="sheet-select-status" style="width: 80px;">
                   <option value="대기" ${this.getNormalizedStatus(row.status) === '대기' ? 'selected' : ''}>대기</option>
@@ -426,11 +433,26 @@ class SheetSimulator {
                 </select>
               </td>
               <td><input type="text" class="sheet-input-in-time" value="${this.escapeHtml(row.inTime || '')}" placeholder="HH:MM" style="width: 65px; text-align:center;"></td>
-              <td><textarea class="sheet-input-reason" style="width: 120px;">${this.escapeHtml(row.reason || '')}</textarea></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-reason" style="width: 90px; height: 32px; resize: vertical;">${this.escapeHtml(row.reason || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
               <td><input type="text" class="sheet-input-number" value="${this.escapeHtml(row.number || '')}" style="width: 60px; text-align:center;"></td>
               <td><input type="text" class="sheet-input-event" value="${this.escapeHtml(row.event || '')}" style="width: 100px;"></td>
-              <td><textarea class="sheet-input-grammarDone" style="width: 150px; ${this.getConditionalStyle(row.grammarDone || row.specialClass, 'grammarDone')}">${this.escapeHtml(row.grammarDone || row.specialClass || '')}</textarea></td>
-              <td><textarea class="sheet-input-contents" style="width: 200px;">${this.escapeHtml(row.contents || '')}</textarea></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-grammarDone" style="width: 120px; height: 32px; resize: vertical; ${this.getConditionalStyle(row.grammarDone || row.specialClass, 'grammarDone')}">${this.escapeHtml(row.grammarDone || row.specialClass || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-contents" style="width: 170px; height: 32px; resize: vertical;">${this.escapeHtml(row.contents || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
               <td><button class="btn-delete-row" data-id="${row.id}">🗑️</button></td>
             </tr>
           `;
@@ -438,14 +460,15 @@ class SheetSimulator {
       }
 
       case "문해력교재관리": {
-        const filtered = this.dataMap.textbooks.filter(row => 
-          row.name.toLowerCase().includes(query) || 
-          (row.nonfictionTitle && row.nonfictionTitle.toLowerCase().includes(query)) ||
-          (row.literatureTitle && row.literatureTitle.toLowerCase().includes(query)) ||
-          (row.vocabTitle && row.vocabTitle.toLowerCase().includes(query)) ||
-          (row.complexTitle && row.complexTitle.toLowerCase().includes(query)) ||
-          (row.readaloudTitle && row.readaloudTitle.toLowerCase().includes(query))
-        );
+        const filtered = this.dataMap.textbooks.filter(row => {
+          const nameVal = row.name ? String(row.name).toLowerCase() : "";
+          const nonfictionVal = row.nonfictionTitle ? String(row.nonfictionTitle).toLowerCase() : "";
+          const literatureVal = row.literatureTitle ? String(row.literatureTitle).toLowerCase() : "";
+          const vocabVal = row.vocabTitle ? String(row.vocabTitle).toLowerCase() : "";
+          const complexVal = row.complexTitle ? String(row.complexTitle).toLowerCase() : "";
+          const readaloudVal = row.readaloudTitle ? String(row.readaloudTitle).toLowerCase() : "";
+          return nameVal.includes(query) || nonfictionVal.includes(query) || literatureVal.includes(query) || vocabVal.includes(query) || complexVal.includes(query) || readaloudVal.includes(query);
+        });
         if (filtered.length === 0) return `<tr><td colspan="25" style="text-align:center; padding:2rem; color:var(--text-muted);">교재 현황 데이터가 없습니다.</td></tr>`;
         
         return filtered.map(row => `
@@ -496,9 +519,11 @@ class SheetSimulator {
       }
 
       case "상담내용/리포트발송/채널발송": {
-        const filtered = this.dataMap.consultations.filter(row => 
-          row.name.toLowerCase().includes(query) || (row.content && row.content.toLowerCase().includes(query))
-        );
+        const filtered = this.dataMap.consultations.filter(row => {
+          const nameVal = row.name ? String(row.name).toLowerCase() : "";
+          const contentVal = row.content ? String(row.content).toLowerCase() : "";
+          return nameVal.includes(query) || contentVal.includes(query);
+        });
         if (filtered.length === 0) return `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">상담 기록이 없습니다.</td></tr>`;
         
         return filtered.map(row => `
@@ -514,17 +539,29 @@ class SheetSimulator {
             <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 100px; font-weight:600;"></td>
             <td><input type="text" class="sheet-input-period" value="${this.escapeHtml(row.period || '')}" style="width: 100px; text-align:center;"></td>
             <td><input type="text" class="sheet-input-author" value="${this.escapeHtml(row.author || '')}" style="width: 70px; text-align:center;"></td>
-            <td><textarea class="sheet-input-content" style="width: 350px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.content || '')}</textarea></td>
-            <td><textarea class="sheet-input-needs" style="width: 300px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.needs || '')}</textarea></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-content" style="width: 310px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.content || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <textarea class="sheet-input-needs" style="width: 260px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.needs || '')}</textarea>
+                <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+              </div>
+            </td>
             <td><button class="btn-delete-row" data-id="${row.id}">🗑️</button></td>
           </tr>
         `).join('');
       }
 
       case "회원 분석/레벨변동/전화상담": {
-        const filtered = this.dataMap.memberAnalysis.filter(row => 
-          row.name.toLowerCase().includes(query) || (row.notes && row.notes.toLowerCase().includes(query))
-        );
+        const filtered = this.dataMap.memberAnalysis.filter(row => {
+          const nameVal = row.name ? String(row.name).toLowerCase() : "";
+          const notesVal = row.notes ? String(row.notes).toLowerCase() : "";
+          return nameVal.includes(query) || notesVal.includes(query);
+        });
         if (filtered.length === 0) return `<tr><td colspan="18" style="text-align:center; padding:2rem; color:var(--text-muted);">회원 분석 데이터가 없습니다.</td></tr>`;
         
         return filtered.map(row => `
@@ -558,10 +595,19 @@ class SheetSimulator {
       }
 
       case "한명 검색": {
-        const searchName = query || "신나라";
-        const members = this.dataMap.memberAnalysis.filter(m => m.name.toLowerCase().trim() === searchName.toLowerCase().trim());
-        const studentTextbooks = this.dataMap.textbooks.filter(t => t.name.toLowerCase().trim() === searchName.toLowerCase().trim());
-        const studentConsults = this.dataMap.consultations.filter(c => c.name.toLowerCase().trim() === searchName.toLowerCase().trim());
+        const searchName = (query || "신나라").toLowerCase().trim();
+        const members = this.dataMap.memberAnalysis.filter(m => {
+          const nameVal = m.name ? String(m.name).toLowerCase().trim() : "";
+          return nameVal === searchName;
+        });
+        const studentTextbooks = this.dataMap.textbooks.filter(t => {
+          const nameVal = t.name ? String(t.name).toLowerCase().trim() : "";
+          return nameVal === searchName;
+        });
+        const studentConsults = this.dataMap.consultations.filter(c => {
+          const nameVal = c.name ? String(c.name).toLowerCase().trim() : "";
+          return nameVal === searchName;
+        });
         
         const memberRows = Math.max(1, members.length);
         const textbookRows = Math.max(1, studentTextbooks.length);
@@ -831,9 +877,11 @@ class SheetSimulator {
       }
 
       case "누적일일수업관리": {
-        const filtered = this.dataMap.accumulatedLogs.filter(row => 
-          row.name.toLowerCase().includes(query) || (row.date && row.date.toLowerCase().includes(query))
-        );
+        const filtered = this.dataMap.accumulatedLogs.filter(row => {
+          const nameVal = row.name ? String(row.name).toLowerCase() : "";
+          const dateVal = row.date ? String(row.date).toLowerCase() : "";
+          return nameVal.includes(query) || dateVal.includes(query);
+        });
         if (filtered.length === 0) return `<tr><td colspan="14" style="text-align:center; padding:2rem; color:var(--text-muted);">누적일일수업관리 데이터가 없습니다.</td></tr>`;
         
         return filtered.map((row, idx) => {
@@ -845,7 +893,12 @@ class SheetSimulator {
               <td><input type="text" class="sheet-input-date" value="${this.escapeHtml(row.date)}" style="width: 80px;"></td>
               <td><input type="text" class="sheet-input-time" value="${this.escapeHtml(row.time)}" style="width: 60px; text-align:center;"></td>
               <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 90px; font-weight:600;"></td>
-              <td><input type="text" class="sheet-input-notes" value="${this.escapeHtml(row.notes || '')}" style="width: 150px;"></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-notes" style="width: 120px; height: 32px; resize: vertical;">${this.escapeHtml(row.notes || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
               <td>
                 <select class="sheet-select-status" style="width: 80px;">
                   <option value="대기" ${this.getNormalizedStatus(row.status) === '대기' ? 'selected' : ''}>대기</option>
@@ -856,11 +909,26 @@ class SheetSimulator {
                 </select>
               </td>
               <td><input type="text" class="sheet-input-in-time" value="${this.escapeHtml(row.inTime || '')}" placeholder="HH:MM" style="width: 65px; text-align:center;"></td>
-              <td><input type="text" class="sheet-input-reason" value="${this.escapeHtml(row.reason || '')}" style="width: 120px;"></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-reason" style="width: 90px; height: 32px; resize: vertical;">${this.escapeHtml(row.reason || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
               <td><input type="text" class="sheet-input-number" value="${this.escapeHtml(row.number || '')}" style="width: 60px; text-align:center;"></td>
               <td><input type="text" class="sheet-input-event" value="${this.escapeHtml(row.event || '')}" style="width: 100px;"></td>
-              <td><input type="text" class="sheet-input-grammarDone" value="${this.escapeHtml(row.grammarDone || '')}" style="width: 150px; ${this.getConditionalStyle(row.grammarDone, 'grammarDone')}"></td>
-              <td><input type="text" class="sheet-input-contents" value="${this.escapeHtml(row.contents || '')}" style="width: 200px;"></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-grammarDone" style="width: 120px; height: 32px; resize: vertical; ${this.getConditionalStyle(row.grammarDone, 'grammarDone')}">${this.escapeHtml(row.grammarDone || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-contents" style="width: 170px; height: 32px; resize: vertical;">${this.escapeHtml(row.contents || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
               <td><button class="btn-delete-row" data-id="${rowId}">🗑️</button></td>
             </tr>
           `;

@@ -594,8 +594,8 @@ class CRMManager {
     const classesStr = student.classes || "과정 미지정";
     document.getElementById("crmStudentSchedule").innerText = `정규 일정: ${scheduleStr} | 시수/과정: ${classesStr}`;
 
-    const studentAccumLogs = (this.app.state.accumulatedLogs || []).filter(log => log.name === name);
-    const studentDailyLogs = (this.app.state.dailyLogs || []).filter(log => log.name === name && log.status !== '대기' && log.status !== '보강대기' && log.status !== '수업중');
+    const studentAccumLogs = (this.app.state.accumulatedLogs || []).filter(log => log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+    const studentDailyLogs = (this.app.state.dailyLogs || []).filter(log => log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, '') && log.status !== '대기' && log.status !== '보강대기' && log.status !== '수업중');
     const studentLogs = [...studentAccumLogs, ...studentDailyLogs];
     const presentCount = studentLogs.filter(log => log.status === '출석' || log.status === '수업완료' || log.status === '보강완료').length;
     const absentCount = studentLogs.filter(log => log.status === '결석').length;
@@ -616,7 +616,7 @@ class CRMManager {
       rateText.style.color = "var(--danger)";
     }
     
-    const studentRow = this.app.state.textbooks.find(b => b.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+    const studentRow = this.app.state.textbooks.find(b => b && b.name && b.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
     const activeBooks = [];
     const allStudentBooks = [];
 
@@ -652,7 +652,7 @@ class CRMManager {
     
     document.getElementById("crmActiveTextbookCount").innerText = `${activeBooks.length}과목 / 총 ${allStudentBooks.length}과목`;
 
-    const studentAnal = this.app.state.consultations.filter(a => a.name === name);
+    const studentAnal = this.app.state.consultations.filter(a => a && a.name && a.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
     document.getElementById("crmAnalysisCount").innerText = `${studentAnal.length}건`;
 
     document.getElementById("crmAttendanceCounts").innerText = `출석 ${presentCount}회, 결석 ${absentCount}회, 보강 완료 ${makeupCount}회`;
