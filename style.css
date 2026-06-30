@@ -1793,6 +1793,11 @@ th.resizing {
   border-right: 2px solid var(--accent);
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Sheet Simulator Textarea auto-expanding cell styling */
 .sheet-table td textarea {
   height: 32px;

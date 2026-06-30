@@ -696,6 +696,14 @@
               </button>
             </div>
             <pre class="code-content" id="gasCodeBlock">
+function ensureColumns(sheet, requiredCols) {
+  if (!sheet) return;
+  var maxCols = sheet.getMaxColumns();
+  if (maxCols < requiredCols) {
+    sheet.insertColumnsAfter(maxCols, requiredCols - maxCols);
+  }
+}
+
 function doGet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
@@ -705,6 +713,7 @@ function doGet() {
   if (sheetStudents) {
     var lastRow = sheetStudents.getLastRow();
     if (lastRow > 1) {
+      ensureColumns(sheetStudents, 32);
       // Ensure makeup cols
       if (sheetStudents.getRange("AE1").getValue() !== "보강일시") sheetStudents.getRange("AE1").setValue("보강일시");
       if (sheetStudents.getRange("AF1").getValue() !== "보강완료") sheetStudents.getRange("AF1").setValue("보강완료");
@@ -768,7 +777,8 @@ function doGet() {
   if (sheetDaily) {
     var lastRow = sheetDaily.getLastRow();
     if (lastRow > 1) {
-      var range = sheetDaily.getRange(2, 1, lastRow - 1, 12); // Read 12 columns
+      ensureColumns(sheetDaily, 11);
+      var range = sheetDaily.getRange(2, 1, lastRow - 1, 11); // Read 11 columns
       var data = range.getDisplayValues();
       for (var i = 0; i < data.length; i++) {
         var name = String(data[i][2] || "").trim();
@@ -798,6 +808,7 @@ function doGet() {
   if (sheetTextbooks) {
     var lastRow = sheetTextbooks.getLastRow();
     if (lastRow > 1) {
+      ensureColumns(sheetTextbooks, 22);
       var range = sheetTextbooks.getRange(2, 1, lastRow - 1, 22);
       var data = range.getDisplayValues();
       for (var i = 0; i < data.length; i++) {
@@ -839,6 +850,7 @@ function doGet() {
   if (sheetConsult) {
     var lastRow = sheetConsult.getLastRow();
     if (lastRow > 1) {
+      ensureColumns(sheetConsult, 6);
       var range = sheetConsult.getRange(2, 1, lastRow - 1, 6); // Read 6 columns
       var data = range.getDisplayValues();
       for (var i = 0; i < data.length; i++) {
@@ -864,6 +876,7 @@ function doGet() {
   if (sheetMember) {
     var lastRow = sheetMember.getLastRow();
     if (lastRow > 1) {
+      ensureColumns(sheetMember, 16);
       var range = sheetMember.getRange(2, 1, lastRow - 1, 16);
       var data = range.getDisplayValues();
       for (var i = 0; i < data.length; i++) {
@@ -902,6 +915,7 @@ function doGet() {
   if (sheetAccumulated) {
     var lastRow = sheetAccumulated.getLastRow();
     if (lastRow > 1) {
+      ensureColumns(sheetAccumulated, 11);
       var range = sheetAccumulated.getRange(2, 1, lastRow - 1, 11);
       var data = range.getDisplayValues();
       for (var i = 0; i < data.length; i++) {
@@ -941,101 +955,116 @@ function doGet() {
 function processSingleUpdate(ss, tab, row, field, value) {
   if (tab === "students" || tab === "전체 시간표") {
     var sheet = ss.getSheetByName("전체 시간표");
-    if (field === "absentDates") {
-      var cell = sheet.getRange(row, 12);
-      cell.setValue(value);
-      formatAbsentCell(cell, value);
-    } else if (field === "makeupCompleted") {
-      sheet.getRange(row, 32).setValue(value);
-    } else if (field === "makeupDate") {
-      sheet.getRange(row, 31).setValue(value);
-    } else if (field === "grade") {
-      sheet.getRange(row, 2).setValue(value);
-    } else if (field === "name") {
-      sheet.getRange(row, 3).setValue(value);
-    } else if (field === "classes") {
-      sheet.getRange(row, 4).setValue(value);
-    } else if (field === "times") {
-      var timesObj = JSON.parse(value);
-      var dayCols = { "월요일": 5, "화요일": 6, "수요일": 7, "목요일": 8, "금요일": 9, "토요일": 10 };
-      for (var dName in dayCols) {
-        if (timesObj[dName] !== undefined) {
-          sheet.getRange(row, dayCols[dName]).setValue(timesObj[dName]);
+    if (sheet) {
+      ensureColumns(sheet, 32);
+      if (field === "absentDates") {
+        var cell = sheet.getRange(row, 12);
+        cell.setValue(value);
+        formatAbsentCell(cell, value);
+      } else if (field === "makeupCompleted") {
+        sheet.getRange(row, 32).setValue(value);
+      } else if (field === "makeupDate") {
+        sheet.getRange(row, 31).setValue(value);
+      } else if (field === "grade") {
+        sheet.getRange(row, 2).setValue(value);
+      } else if (field === "name") {
+        sheet.getRange(row, 3).setValue(value);
+      } else if (field === "classes") {
+        sheet.getRange(row, 4).setValue(value);
+      } else if (field === "times") {
+        var timesObj = JSON.parse(value);
+        var dayCols = { "월요일": 5, "화요일": 6, "수요일": 7, "목요일": 8, "금요일": 9, "토요일": 10 };
+        for (var dName in dayCols) {
+          if (timesObj[dName] !== undefined) {
+            sheet.getRange(row, dayCols[dName]).setValue(timesObj[dName]);
+          }
         }
       }
     }
   } else if (tab === "textbooks" || tab === "문해력교재관리") {
     var sheet = ss.getSheetByName("문해력교재관리");
-    var cols = {
-      grade: 1, name: 2,
-      nonfictionTitle: 3, nonfictionStart: 4, nonfictionEnd: 5, nonfictionAccuracy: 6,
-      literatureTitle: 7, literatureStart: 8, literatureEnd: 9, literatureAccuracy: 10,
-      vocabTitle: 11, vocabStart: 12, vocabEnd: 13, vocabAccuracy: 14,
-      complexTitle: 15, complexStart: 16, complexEnd: 17, complexAccuracy: 18,
-      readaloudTitle: 19, readaloudStart: 20, readaloudEnd: 21, readaloudAccuracy: 22
-    };
-    var col = cols[field];
-    if (col) {
-      sheet.getRange(row, col).setValue(value);
+    if (sheet) {
+      ensureColumns(sheet, 22);
+      var cols = {
+        grade: 1, name: 2,
+        nonfictionTitle: 3, nonfictionStart: 4, nonfictionEnd: 5, nonfictionAccuracy: 6,
+        literatureTitle: 7, literatureStart: 8, literatureEnd: 9, literatureAccuracy: 10,
+        vocabTitle: 11, vocabStart: 12, vocabEnd: 13, vocabAccuracy: 14,
+        complexTitle: 15, complexStart: 16, complexEnd: 17, complexAccuracy: 18,
+        readaloudTitle: 19, readaloudStart: 20, readaloudEnd: 21, readaloudAccuracy: 22
+      };
+      var col = cols[field];
+      if (col) {
+        sheet.getRange(row, col).setValue(value);
+      }
     }
   } else if (tab === "consultations" || tab === "상담내용/리포트발송/채널발송") {
     var sheet = ss.getSheetByName("상담내용/리포트발송/채널발송");
-    var cols = {
-      grade: 1, name: 2, period: 3, author: 4, content: 5, needs: 6
-    };
-    var col = cols[field];
-    if (col) {
-      sheet.getRange(row, col).setValue(value);
+    if (sheet) {
+      ensureColumns(sheet, 6);
+      var cols = {
+        grade: 1, name: 2, period: 3, author: 4, content: 5, needs: 6
+      };
+      var col = cols[field];
+      if (col) {
+        sheet.getRange(row, col).setValue(value);
+      }
     }
   } else if (tab === "memberAnalysis" || tab === "회원 분석/레벨변동/전화상담") {
     var sheet = ss.getSheetByName("회원 분석/레벨변동/전화상담");
-    if (field === "15" || field === 15 || field === "P") {
-      field = "phone";
-    }
-    var cols = {
-      num: 1, name: 2, grade: 3, regDate: 4, consultation: 5, notes: 6,
-      progress: 7, levelUp: 8, levelChange: 9, grammarDone: 10,
-      readingTest: 11, bookPlan: 12, analysisSent: 13, readMethod: 14, studentId: 15,
-      phone: 16
-    };
-    var col = cols[field];
-    if (col) {
-      var cell = sheet.getRange(row, col);
-      cell.setValue(value);
-      if (col === 7 || col === 10) {
-        applyRichTextStyling(cell, value);
-      } else {
-        var checkVal = String(value).trim();
-        if (col === 8 && (checkVal.indexOf("코스업") !== -1 || checkVal.indexOf("레벨업") !== -1 || checkVal.indexOf("진로검사") !== -1)) {
-          cell.setFontColor("#2563eb");
-          cell.setFontWeight("bold");
+    if (sheet) {
+      ensureColumns(sheet, 16);
+      if (field === "15" || field === 15 || field === "P") {
+        field = "phone";
+      }
+      var cols = {
+        num: 1, name: 2, grade: 3, regDate: 4, consultation: 5, notes: 6,
+        progress: 7, levelUp: 8, levelChange: 9, grammarDone: 10,
+        readingTest: 11, bookPlan: 12, analysisSent: 13, readMethod: 14, studentId: 15,
+        phone: 16
+      };
+      var col = cols[field];
+      if (col) {
+        var cell = sheet.getRange(row, col);
+        cell.setValue(value);
+        if (col === 7 || col === 10) {
+          applyRichTextStyling(cell, value);
         } else {
-          cell.setFontColor(null);
-          cell.setFontWeight(null);
+          var checkVal = String(value).trim();
+          if (col === 8 && (checkVal.indexOf("코스업") !== -1 || checkVal.indexOf("레벨업") !== -1 || checkVal.indexOf("진로검사") !== -1)) {
+            cell.setFontColor("#2563eb");
+            cell.setFontWeight("bold");
+          } else {
+            cell.setFontColor(null);
+            cell.setFontWeight(null);
+          }
         }
       }
     }
   } else if (tab === "dailyLogs" || tab === "오늘 출석부") {
     var sheet = ss.getSheetByName("오늘 출석부");
-    var cols = {
-      date: 1, time: 2, name: 3, notes: 4, status: 5, inTime: 6, reason: 7,
-      number: 8, event: 9, grammarDone: 10, contents: 11
-    };
-    var col = cols[field];
-    if (col) {
-      var cell = sheet.getRange(row, col);
-      try {
-        cell.setValue(value);
-      } catch (err) {
-        if (field === "status") {
-          cell.clearDataValidations();
+    if (sheet) {
+      ensureColumns(sheet, 11);
+      var cols = {
+        date: 1, time: 2, name: 3, notes: 4, status: 5, inTime: 6, reason: 7,
+        number: 8, event: 9, grammarDone: 10, contents: 11
+      };
+      var col = cols[field];
+      if (col) {
+        var cell = sheet.getRange(row, col);
+        try {
           cell.setValue(value);
-        } else {
-          throw err;
+        } catch (err) {
+          if (field === "status") {
+            cell.clearDataValidations();
+            cell.setValue(value);
+          } else {
+            throw err;
+          }
         }
-      }
-      if (field === "number" || field === "event" || field === "grammarDone" || field === "contents") {
-        accumulateDailyEventToMemberAnalysis(sheet, row);
+        if (field === "number" || field === "event" || field === "grammarDone" || field === "contents") {
+          accumulateDailyEventToMemberAnalysis(sheet, row);
+        }
       }
     }
   }
@@ -1065,6 +1094,7 @@ function doPost(e) {
       var sheet = ss.getSheetByName("전체 시간표");
       var lastRow = sheet.getLastRow();
       var nextRow = lastRow + 1;
+      ensureColumns(sheet, 32);
       
       sheet.getRange(nextRow, 1).setValue(nextRow - 1);
       sheet.getRange(nextRow, 2).setValue(postData.grade);
@@ -1097,6 +1127,7 @@ function doPost(e) {
       }
       var lastRow = sheet.getLastRow();
       var nextRow = lastRow + 1;
+      ensureColumns(sheet, 11);
       
       sheet.getRange(nextRow, 1).setValue(postData.date); // 날짜요일
       sheet.getRange(nextRow, 2).setValue(postData.time); // 시간
@@ -1123,7 +1154,8 @@ function doPost(e) {
           "비문학 교재명", "시작일", "마침일", "정답률", 
           "문학교재명", "시작일", "마침일", "정답률", 
           "어휘 교재명", "시작일", "마침일", "정답률", 
-          "복합 교재명", "시작일", "마침일", "정답률"
+          "복합 교재명", "시작일", "마침일", "정답률",
+          "음독 교재명", "시작일", "마침일", "정답률"
         ]);
       }
       
@@ -1138,6 +1170,7 @@ function doPost(e) {
       }
       
       var targetRow = foundRow !== -1 ? foundRow : (lastRow + 1);
+      ensureColumns(sheet, 22);
       
       if (foundRow === -1) {
         sheet.getRange(targetRow, 1).setValue(postData.grade || "");
@@ -1172,6 +1205,8 @@ function doPost(e) {
       }
       var lastRow = sheet.getLastRow();
       var nextRow = lastRow + 1;
+      ensureColumns(sheet, 6);
+      
       sheet.getRange(nextRow, 1).setValue(postData.grade || "");
       sheet.getRange(nextRow, 2).setValue(postData.name);
       sheet.getRange(nextRow, 3).setValue(postData.period);
@@ -1191,6 +1226,8 @@ function doPost(e) {
       }
       var lastRow = sheet.getLastRow();
       var nextRow = lastRow + 1;
+      ensureColumns(sheet, 6);
+      
       sheet.getRange(nextRow, 1).setValue(postData.timestamp);
       sheet.getRange(nextRow, 2).setValue(postData.name);
       sheet.getRange(nextRow, 3).setValue(postData.date);
@@ -1300,6 +1337,7 @@ function generateDailyAttendance() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheetStudents = ss.getSheetByName("전체 시간표");
   if (!sheetStudents) return;
+  ensureColumns(sheetStudents, 32);
   
   var sheetDaily = ss.getSheetByName("오늘 출석부");
   if (!sheetDaily) {
@@ -1309,6 +1347,7 @@ function generateDailyAttendance() {
       "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
     ]);
   }
+  ensureColumns(sheetDaily, 11);
   
   // 1. 기존 '오늘 출석부' 데이터를 '누적일일수업관리'로 백업
   var lastRowDaily = sheetDaily.getLastRow();
@@ -1327,6 +1366,7 @@ function generateDailyAttendance() {
         "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
       ]);
     }
+    ensureColumns(sheetAccumulated, 11);
     var dailyRange = sheetDaily.getRange(2, 1, lastRowDaily - 1, 11);
     var dailyValues = dailyRange.getValues();
     var dailyRichTexts = dailyRange.getRichTextValues();

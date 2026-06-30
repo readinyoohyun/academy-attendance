@@ -248,7 +248,7 @@ class SheetSimulator {
             <th>음독 교재 (S)</th>
             <th>시작일 (T)</th>
             <th>마침일 (U)</th>
-            <th>다음교재 (V)</th>
+            <th>정답률 (V)</th>
             <th>동작</th>
           </tr>
         `;
@@ -1856,7 +1856,7 @@ class SheetSimulator {
                 <th style="background:rgba(99,102,241,0.03);">음독 교재 (S)</th>
                 <th style="background:rgba(99,102,241,0.03);">시작일 (T)</th>
                 <th style="background:rgba(99,102,241,0.03);">마침일 (U)</th>
-                <th style="background:rgba(99,102,241,0.03);">다음교재 (V)</th>
+                <th style="background:rgba(99,102,241,0.03);">정답률 (V)</th>
               </tr>
             </thead>
             <tbody>

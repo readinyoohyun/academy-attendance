@@ -690,6 +690,44 @@ class AttendanceApp {
         this.api.fetchFromGoogleSheets(false);
       }
     });
+
+    // 7. Copy Code button event listener
+    document.querySelectorAll(".btn-copy").forEach(btn => {
+      btn.onclick = () => {
+        const targetId = btn.getAttribute("data-target");
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          const text = targetEl.innerText;
+          navigator.clipboard.writeText(text).then(() => {
+            this.showToast("코드가 클립보드에 복사되었습니다!");
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" stroke="var(--color-regular)" />
+              </svg>
+              복사 완료!
+            `;
+            setTimeout(() => {
+              btn.innerHTML = originalHtml;
+            }, 2000);
+          }).catch(err => {
+            console.error("Clipboard copy failed:", err);
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+              document.execCommand("copy");
+              this.showToast("코드가 클립보드에 복사되었습니다!");
+            } catch (copyErr) {
+              alert("복사에 실패했습니다. 수동으로 복사해 주세요.");
+            }
+            document.body.removeChild(textarea);
+          });
+        }
+      };
+    });
   }
 
   // Request 1 - Bidirectional data binding for cell updates

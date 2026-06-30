@@ -18,6 +18,11 @@ class SheetAPI {
     
     console.log("Fetching datasets from Google Sheets...");
     
+    const syncIndicator = document.getElementById("syncStatusIndicator");
+    if (syncIndicator) {
+      syncIndicator.style.display = "inline-flex";
+    }
+    
     const loadBtn = document.querySelector(".btn-secondary");
     const originalText = loadBtn ? loadBtn.innerHTML : "구글시트 불러오기";
     if (loadBtn) {
@@ -72,6 +77,10 @@ class SheetAPI {
         if (loadBtn) {
           loadBtn.innerHTML = originalText;
           loadBtn.disabled = false;
+        }
+        const syncIndicator = document.getElementById("syncStatusIndicator");
+        if (syncIndicator) {
+          syncIndicator.style.display = "none";
         }
       });
   }
