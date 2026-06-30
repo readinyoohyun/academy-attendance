@@ -2365,9 +2365,29 @@ function onEdit(e) {
   if (sheetName === "오늘 출석부") {
     var startCol = range.getColumn();
     var endCol = range.getLastColumn();
+    var startRow = range.getRow();
+    var endRow = range.getLastRow();
+    
+    // 1. 구글 시트에서 직접 등원여부(E열/5열)를 변경할 때 등원시간(F열/6열) 자동 기입
+    if (startCol <= 5 && endCol >= 5) {
+      for (var r = startRow; r <= endRow; r++) {
+        if (r > 1) {
+          var statusCell = sheet.getRange(r, 5);
+          var timeCell = sheet.getRange(r, 6);
+          var statusVal = String(statusCell.getValue()).trim();
+          if ((statusVal === "수업중" || statusVal === "수업 중" || statusVal === "보강 수업중") && !timeCell.getValue()) {
+            var now = new Date();
+            var timeStr = Utilities.formatDate(now, "Asia/Seoul", "HH:mm");
+            timeCell.setValue(timeStr);
+          } else if (statusVal === "대기" || statusVal === "결석") {
+            timeCell.setValue("");
+          }
+        }
+      }
+    }
+    
+    // 2. 숫자, 이벤트 등 입력 시 회원 분석 시트로 자동 누적
     if (startCol <= 10 && endCol >= 8) {
-      var startRow = range.getRow();
-      var endRow = range.getLastRow();
       for (var r = startRow; r <= endRow; r++) {
         if (r > 1) {
           accumulateDailyEventToMemberAnalysis(sheet, r);
