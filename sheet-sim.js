@@ -939,7 +939,9 @@ class SheetSimulator {
         });
         if (filtered.length === 0) return `<tr><td colspan="14" style="text-align:center; padding:2rem; color:var(--text-muted);">누적일일수업관리 데이터가 없습니다.</td></tr>`;
         
-        return filtered.map((row, idx) => {
+        // Limit rendering to the first 100 entries to prevent performance freeze
+        const sliced = filtered.slice(0, 100);
+        return sliced.map((row, idx) => {
           const rowId = row.id || `acc_${idx}`;
           const rowNum = row.row || (idx + 2);
           return `
@@ -1034,7 +1036,7 @@ class SheetSimulator {
       case "누적일일수업관리":
         return `
           <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
-            <div>💡 <strong>누적일일수업관리:</strong> 구글 시트의 "누적일일수업관리" 시트와 연동되는 공간으로, 학생들의 수업 완료 정보가 일자별로 영구 축적되는 데이터베이스입니다.</div>
+            <div>💡 <strong>누적일일수업관리:</strong> 구글 시트의 "누적일일수업관리" 시트와 연동되는 공간입니다. (※ 브라우저 속도 최적화를 위해 최근 100개 항목만 로드되며, 상단 검색창에 이름이나 날짜를 입력하여 전체 기록을 안전하게 조회하실 수 있습니다.)</div>
           </div>
         `;
     }
