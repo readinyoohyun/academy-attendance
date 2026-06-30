@@ -698,7 +698,8 @@ class AttendanceApp {
         const targetEl = document.getElementById(targetId);
         if (targetEl) {
           const text = targetEl.innerText;
-          navigator.clipboard.writeText(text).then(() => {
+          
+          const handleSuccess = () => {
             this.showToast("코드가 클립보드에 복사되었습니다!");
             const originalHtml = btn.innerHTML;
             btn.innerHTML = `
@@ -710,8 +711,9 @@ class AttendanceApp {
             setTimeout(() => {
               btn.innerHTML = originalHtml;
             }, 2000);
-          }).catch(err => {
-            console.error("Clipboard copy failed:", err);
+          };
+
+          const handleFallback = () => {
             const textarea = document.createElement("textarea");
             textarea.value = text;
             textarea.style.position = "fixed";
@@ -719,12 +721,23 @@ class AttendanceApp {
             textarea.select();
             try {
               document.execCommand("copy");
-              this.showToast("코드가 클립보드에 복사되었습니다!");
+              handleSuccess();
             } catch (copyErr) {
               alert("복사에 실패했습니다. 수동으로 복사해 주세요.");
             }
             document.body.removeChild(textarea);
-          });
+          };
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+              .then(handleSuccess)
+              .catch(err => {
+                console.error("Clipboard copy failed:", err);
+                handleFallback();
+              });
+          } else {
+            handleFallback();
+          }
         }
       };
     });
