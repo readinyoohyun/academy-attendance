@@ -2379,7 +2379,7 @@ function onEdit(e) {
             var now = new Date();
             var timeStr = Utilities.formatDate(now, "Asia/Seoul", "HH:mm");
             timeCell.setValue(timeStr);
-          } else if (statusVal === "대기" || statusVal === "결석") {
+          } else if (statusVal === "대기" || statusVal === "결석" || statusVal === "휴강" || !statusVal) {
             timeCell.setValue("");
           }
         }
