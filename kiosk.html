@@ -7,10 +7,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-color: #f8fafc;
-      --card-bg: #ffffff;
-      --card-border: #e2e8f0;
-      --text-primary: #0f172a;
+      --bg-color: #0b0f19; /* Navy background */
+      --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #1e1b4b 100%);
+      --card-bg: #ffffff; /* Pure white name buttons */
+      --card-border: #cbd5e1;
+      --text-primary: #0f172a; /* Dark text for cards */
       --text-secondary: #475569;
       --text-muted: #94a3b8;
       
@@ -31,8 +32,8 @@
     }
 
     body {
-      background: var(--bg-color);
-      color: var(--text-primary);
+      background: var(--bg-gradient);
+      color: #ffffff; /* Text outside cards is white */
       font-family: var(--font-title);
       min-height: 100vh;
       display: flex;
@@ -41,7 +42,7 @@
       overflow-x: hidden;
     }
 
-    /* Header */
+    /* Header (학원이름이 적혀있는 바 - 건드리지 않음) */
     header {
       background: #ffffff;
       border: 1px solid var(--card-border);
@@ -92,10 +93,10 @@
     .time-slot-header {
       font-size: 1.4rem;
       font-weight: 800;
-      color: #4f46e5;
+      color: #ffffff; /* 시간 글자색은 화이트로 변경 */
       margin-bottom: 1rem;
       padding-left: 0.6rem;
-      border-left: 5px solid #4f46e5;
+      border-left: 5px solid #3b82f6; /* Accent blue left border */
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -108,7 +109,7 @@
       gap: 1.2rem;
     }
 
-    /* Student Card */
+    /* Student Card (이름 버튼색 - 건드리지 않음) */
     .student-card {
       background: var(--card-bg);
       border: 2px solid var(--card-border);
@@ -327,11 +328,11 @@
     }
 
     .spinner {
-      border: 4px solid rgba(0, 0, 0, 0.05);
+      border: 4px solid rgba(255, 255, 255, 0.15);
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      border-left-color: #4f46e5;
+      border-left-color: #3b82f6;
       animation: spin 1s linear infinite;
     }
 
@@ -357,7 +358,7 @@
   <!-- Loader -->
   <div id="initialLoader" class="initial-loader">
     <div class="spinner"></div>
-    <p style="font-size: 1.2rem; color: var(--text-secondary);">스프레드시트에서 오늘 시간표를 불러오는 중입니다...</p>
+    <p style="font-size: 1.2rem; color: #ffffff;">스프레드시트에서 오늘 시간표를 불러오는 중입니다...</p>
   </div>
 
   <!-- Content (Hidden until loaded) -->
@@ -674,7 +675,7 @@
 
       if (sortedSlots.length === 0) {
         container.innerHTML = `
-          <div style="text-align: center; padding: 5rem; color: var(--text-muted); font-size: 1.3rem;">
+          <div style="text-align: center; padding: 5rem; color: #94a3b8; font-size: 1.3rem;">
             오늘 예정된 등하원 수업 시간표가 없습니다.
           </div>
         `;
