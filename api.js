@@ -30,7 +30,10 @@ class SheetAPI {
       loadBtn.disabled = true;
     }
 
-    fetch(this.gasWebhookUrl)
+    const separator = this.gasWebhookUrl.indexOf("?") !== -1 ? "&" : "?";
+    const cacheBusterUrl = this.gasWebhookUrl + separator + "_t=" + Date.now();
+
+    fetch(cacheBusterUrl)
       .then(res => res.json())
       .then(data => {
         if (data && typeof data === 'object') {
