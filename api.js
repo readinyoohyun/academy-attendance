@@ -1,4 +1,17 @@
 // api.js - SheetAPI Class to handle Google Sheets communication
+
+// Proxy Google Apps Script calls through Vercel serverless function on non-file protocols
+if (typeof window !== 'undefined') {
+  const originalFetch = window.fetch;
+  window.fetch = function(input, init) {
+    if (typeof input === 'string' && input.indexOf('https://script.google.com') === 0 && window.location.protocol !== 'file:') {
+      const proxyUrl = `/api/sync?url=${encodeURIComponent(input)}`;
+      return originalFetch(proxyUrl, init);
+    }
+    return originalFetch(input, init);
+  };
+}
+
 class SheetAPI {
   constructor(app) {
     this.app = app;
