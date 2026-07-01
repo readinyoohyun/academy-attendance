@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>출결 전용 키오스크 - 유현리드인 한그루역사학원</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      
+      --accent-in: #10b981;
+      --accent-in-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      --accent-out: #3b82f6;
+      --accent-out-gradient: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+      --accent-wait: #f59e0b;
+      
+      --font-title: 'Outfit', 'Noto Sans KR', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      font-family: var(--font-title);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    header {
+      background: rgba(30, 41, 59, 0.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .header-logo {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #6366f1, #818cf8, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .header-info {
+      text-align: right;
+    }
+
+    .current-date {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .current-time {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #3b82f6;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+      margin-top: 0.2rem;
+    }
+
+    /* Controls Panel */
+    .controls-panel {
+      background: rgba(30, 41, 59, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 0.9rem 1.2rem;
+      padding-left: 2.8rem;
+      color: var(--text-primary);
+      font-size: 1.1rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .filter-btn {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 0.9rem 1.4rem;
+      color: var(--text-primary);
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn.active {
+      background: #6366f1;
+      border-color: #6366f1;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+    }
+
+    /* Student Cards Grid */
+    .cards-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1.2rem;
+      padding-bottom: 2rem;
+    }
+
+    .student-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 1.5rem 1.2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 160px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .student-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--accent-wait);
+    }
+
+    .student-card.status-in::before {
+      background: var(--accent-in);
+    }
+
+    .student-card.status-out::before {
+      background: var(--text-muted);
+    }
+
+    .student-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      background: rgba(30, 41, 59, 0.85);
+    }
+
+    .student-name {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-top: 0.5rem;
+      word-break: keep-all;
+    }
+
+    .student-grade {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 0.3rem;
+      font-weight: 500;
+    }
+
+    .student-time {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .status-badge {
+      display: inline-block;
+      align-self: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      margin-top: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    .status-badge.wait {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-wait);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .status-badge.in {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-in);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-badge.out {
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--text-secondary);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    /* Modal dialog */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-overlay.active .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .modal-btn {
+      padding: 1.2rem;
+      font-size: 1.3rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      transition: all 0.2s ease;
+      color: white;
+    }
+
+    .modal-btn-in {
+      background: var(--accent-in-gradient);
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);
+    }
+
+    .modal-btn-in:active {
+      transform: scale(0.98);
+    }
+
+    .modal-btn-out {
+      background: var(--accent-out-gradient);
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.35);
+    }
+
+    .modal-btn-out:active {
+      transform: scale(0.98);
+    }
+
+    .modal-btn-close {
+      background: rgba(148, 163, 184, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      padding: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Success Overlay */
+    .success-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #0f172a;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .success-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .success-icon {
+      width: 120px;
+      height: 120px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 3px solid var(--accent-in);
+      color: var(--accent-in);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
+      animation: pulse 2s infinite;
+    }
+
+    .success-icon.out {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: var(--accent-out);
+      color: var(--accent-out);
+    }
+
+    .success-title {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+
+    .success-message {
+      font-size: 1.4rem;
+      color: var(--text-secondary);
+      margin-bottom: 3rem;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .success-timer {
+      font-size: 1rem;
+      color: var(--text-muted);
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Initial sync progress loader */
+    .initial-loader {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      flex: 1;
+      gap: 1.5rem;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border-left-color: #3b82f6;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-logo">
+      🏫 리딩유천 역사학원 출결 키오스크
+    </div>
+    <div class="header-info">
+      <div id="kioskDate" class="current-date">로딩 중...</div>
+      <div id="kioskTime" class="current-time">00:00:00</div>
+    </div>
+  </header>
+
+  <!-- Loader -->
+  <div id="initialLoader" class="initial-loader">
+    <div class="spinner"></div>
+    <p style="font-size: 1.2rem; color: var(--text-secondary);">스프레드시트에서 출석 정보를 연동하는 중입니다...</p>
+  </div>
+
+  <!-- Content (Hidden until loaded) -->
+  <div id="kioskContent" style="display: none; flex-direction: column; flex: 1;">
+    
+    <!-- Controls -->
+    <section class="controls-panel">
+      <div class="search-wrapper">
+        <svg class="search-icon" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text" id="kioskSearch" class="search-input" placeholder="이름을 검색하세요 (초성 검색 가능, 예: ㄱㅅㅁ)">
+      </div>
+      
+      <button id="btnFilterToday" class="filter-btn active">📅 오늘 수업 원생만 보기</button>
+      <button id="btnFilterAll" class="filter-btn">👥 전체 원생 보기</button>
+    </section>
+
+    <!-- Student Cards Grid -->
+    <section id="cardsContainer" class="cards-container">
+      <!-- Generated dynamically -->
+    </section>
+  </div>
+
+  <!-- Check-in Choice Modal -->
+  <div id="attendanceModal" class="modal-overlay">
+    <div class="modal-box">
+      <div id="modalStudentName" class="modal-title">강성모</div>
+      <div id="modalStudentGrade" class="modal-subtitle">초등 3학년</div>
+      
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-in" onclick="processKioskAttendance('in')">
+          <span>🏫</span> 등 원 하 기 (수업 시작)
+        </button>
+        <button class="modal-btn modal-btn-out" onclick="processKioskAttendance('out')">
+          <span>🏡</span> 하 원 하 기 (수업 종료)
+        </button>
+        <button class="modal-btn modal-btn-close" onclick="closeAttendanceModal()">
+          닫 기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Announcement Overlay -->
+  <div id="successOverlay" class="success-overlay">
+    <div id="successIcon" class="success-icon">
+      <svg width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <div id="successTitle" class="success-title">등원 완료!</div>
+    <div id="successMessage" class="success-message">
+      강성모 학생, 안전하게 등원하였습니다.<br>오늘도 재미있게 공부해 봅시다! 😊
+    </div>
+    <div id="successTimer" class="success-timer">3초 뒤 자동으로 출석부 화면으로 돌아갑니다...</div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // Global state
+    let state = {
+      students: [],
+      dailyLogs: [],
+      memberAnalysis: []
+    };
+    
+    let config = {
+      gasWebhookUrl: "",
+      smsMode: "local",
+      smsLocalIp: "http://192.168.219.148:8080/send-sms",
+      smsTemplateIn: "{name}학생이 유현리드인 한그루역사학원에 {time}에 등원하여 수업중입니다.",
+      smsTemplateOut: "{name}학생이 유현리드인 한그루역사학원에 {time}에 수업을 마치고 하원하였습니다."
+    };
+
+    let selectedStudent = null;
+    let filterMode = "today"; // 'today' or 'all'
+
+    // Hangul Chosung (initial consonant) map for search helper
+    const CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+    
+    function getChosung(str) {
+      let result = "";
+      for (let i = 0; i < str.length; i++) {
+        const code = str.charCodeAt(i) - 44032;
+        if (code > -1 && code < 11172) {
+          result += CHOSUNG_LIST[Math.floor(code / 588)];
+        } else {
+          result += str.charAt(i);
+        }
+      }
+      return result;
+    }
+
+    // Load Local Storage Configuration & Sync
+    function initKiosk() {
+      // 1. Sync DateTime Clock
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      // 2. Load configurations from same localStorage
+      config.gasWebhookUrl = localStorage.getItem("gas_webhook_url") || "";
+      config.smsMode = localStorage.getItem("sms_mode") || "local";
+      config.smsLocalIp = localStorage.getItem("sms_local_ip") || "http://192.168.219.148:8080/send-sms";
+      config.smsTemplateIn = localStorage.getItem("sms_template_in") || config.smsTemplateIn;
+      config.smsTemplateOut = localStorage.getItem("sms_template_out") || config.smsTemplateOut;
+
+      // Try reading local cached state first
+      const cached = localStorage.getItem("academy_attendance_state");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          state.students = parsed.students || [];
+          state.dailyLogs = parsed.dailyLogs || [];
+          state.memberAnalysis = parsed.memberAnalysis || [];
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      // 3. Fetch fresh data from Google Sheets immediately
+      fetchDataFromGoogleSheets();
+
+      // Bind Filter Buttons
+      document.getElementById("btnFilterToday").onclick = () => setFilterMode("today");
+      document.getElementById("btnFilterAll").onclick = () => setFilterMode("all");
+      
+      // Bind Search Input
+      document.getElementById("kioskSearch").oninput = renderStudentCards;
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const weekdays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+      
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const date = String(now.getDate()).padStart(2, '0');
+      const day = weekdays[now.getDay()];
+      
+      document.getElementById("kioskDate").innerText = `${year}년 ${month}월 ${date}일 (${day})`;
+      
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById("kioskTime").innerText = `${hours}:${minutes}:${seconds}`;
+    }
+
+    function setFilterMode(mode) {
+      filterMode = mode;
+      document.getElementById("btnFilterToday").className = `filter-btn ${mode === 'today' ? 'active' : ''}`;
+      document.getElementById("btnFilterAll").className = `filter-btn ${mode === 'all' ? 'active' : ''}`;
+      renderStudentCards();
+    }
+
+    // Fetch data from google sheets API
+    function fetchDataFromGoogleSheets() {
+      if (!config.gasWebhookUrl) {
+        // Fallback to loaded local state
+        showContent();
+        return;
+      }
+
+      const separator = config.gasWebhookUrl.indexOf("?") !== -1 ? "&" : "?";
+      const cacheBusterUrl = config.gasWebhookUrl + separator + "_t=" + Date.now();
+
+      fetch(cacheBusterUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data && typeof data === 'object') {
+            state.students = data.students || [];
+            state.dailyLogs = data.dailyLogs || [];
+            state.memberAnalysis = data.memberAnalysis || [];
+            
+            // Save to shared localStorage so the main app also gets it
+            const cached = localStorage.getItem("academy_attendance_state");
+            let parsedState = {};
+            if (cached) {
+              try { parsedState = JSON.parse(cached); } catch(e){}
+            }
+            parsedState.students = state.students;
+            parsedState.dailyLogs = state.dailyLogs;
+            parsedState.memberAnalysis = state.memberAnalysis;
+            localStorage.setItem("academy_attendance_state", JSON.stringify(parsedState));
+          }
+        })
+        .catch(err => console.error("Kiosk sync error:", err))
+        .finally(() => {
+          showContent();
+        });
+    }
+
+    function showContent() {
+      document.getElementById("initialLoader").style.display = "none";
+      document.getElementById("kioskContent").style.display = "flex";
+      renderStudentCards();
+    }
+
+    // Detect students scheduled for today or active
+    function getTodayWeekday() {
+      const weekdays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+      return weekdays[new Date().getDay()];
+    }
+
+    // Formatted date string like 7/1
+    function getTodayDateStr() {
+      const now = new Date();
+      return `${now.getMonth() + 1}/${now.getDate()}`;
+    }
+
+    function renderStudentCards() {
+      const container = document.getElementById("cardsContainer");
+      container.innerHTML = "";
+      
+      const searchVal = document.getElementById("kioskSearch").value.toLowerCase().replace(/\s+/g, '');
+      const searchChosung = getChosung(searchVal);
+      
+      const todayDay = getTodayWeekday();
+      const todayDateSlash = getTodayDateStr(); // e.g. "7/1"
+      const shortDay = todayDay.substring(0, 1);
+      const dailyLogDateStr = `${todayDateSlash}${shortDay}`; // e.g. "7/1수"
+      
+      // Filter list
+      let filtered = state.students.filter(student => {
+        // Name Search
+        const nameClean = (student.name || "").toLowerCase().replace(/\s+/g, '');
+        const nameChosung = getChosung(nameClean);
+        const matchesSearch = nameClean.includes(searchVal) || nameChosung.includes(searchChosung);
+        if (!matchesSearch) return false;
+        
+        if (filterMode === "all") return true;
+        
+        // Today schedule filter
+        const regTime = student.times && student.times[todayDay];
+        const isScheduledToday = regTime && regTime.trim() !== "";
+        
+        // Makeup scheduled today check
+        let isMakeupToday = false;
+        if (student.makeupDate) {
+          // split commas
+          const makeups = student.makeupDate.split(',').map(m => m.trim()).filter(Boolean);
+          isMakeupToday = makeups.some(m => {
+            // E.g. "7/1", "7/1(수)", or "수요일"
+            return m.includes(todayDateSlash) || m.includes(todayDay) || (m.includes(shortDay) && m.includes('/'));
+          });
+        }
+        
+        // Also check if they already checked in today
+        const hasDailyLog = state.dailyLogs.some(log => 
+          (log.name || "").trim() === (student.name || "").trim() && 
+          (log.date || "").trim() === dailyLogDateStr.trim()
+        );
+        
+        return isScheduledToday || isMakeupToday || hasDailyLog;
+      });
+
+      // Sort alphabetically by name
+      filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted); font-size: 1.2rem;">
+            검색 결과에 맞는 원생이 없습니다.
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(student => {
+        // Find current daily log status
+        const log = state.dailyLogs.find(l => 
+          (l.name || "").trim() === (student.name || "").trim() && 
+          (l.date || "").trim() === dailyLogDateStr.trim()
+        );
+        
+        let status = "대기";
+        let statusClass = "wait";
+        if (log) {
+          const norm = log.status || "대기";
+          if (norm === "수업중") {
+            status = "수업중";
+            statusClass = "in";
+          } else if (norm === "수업완료" || norm === "보강완료") {
+            status = "완료";
+            statusClass = "out";
+          } else if (norm === "결석") {
+            status = "결석";
+            statusClass = "out";
+          }
+        }
+
+        const card = document.createElement("div");
+        card.className = `student-card status-${statusClass}`;
+        
+        // Get scheduled time for display
+        const timeVal = student.times && student.times[todayDay] ? student.times[todayDay] : "시간 외";
+
+        card.innerHTML = `
+          <div>
+            <div class="student-name">${student.name || ""}</div>
+            <div class="student-grade">${student.grade || ""}</div>
+            <div class="student-time">🕒 ${timeVal}</div>
+          </div>
+          <span class="status-badge ${statusClass}">${status}</span>
+        `;
+        
+        card.onclick = () => openAttendanceModal(student, status);
+        container.appendChild(card);
+      });
+    }
+
+    // Modal Control
+    function openAttendanceModal(student, status) {
+      selectedStudent = student;
+      document.getElementById("modalStudentName").innerText = student.name;
+      document.getElementById("modalStudentGrade").innerText = student.grade || "";
+      
+      const modal = document.getElementById("attendanceModal");
+      modal.classList.add("active");
+    }
+
+    function closeAttendanceModal() {
+      document.getElementById("attendanceModal").classList.remove("active");
+      selectedStudent = null;
+    }
+
+    // Process attendance (in/out)
+    function processKioskAttendance(type) {
+      if (!selectedStudent) return;
+      
+      const student = selectedStudent;
+      const todayDay = getTodayWeekday();
+      const todayDateSlash = getTodayDateStr();
+      const shortDay = todayDay.substring(0, 1);
+      const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
+      
+      // Determine active time (current class time slot or current actual time)
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      // Class scheduled time as activeTime
+      const activeTime = student.times && student.times[todayDay] ? student.times[todayDay].trim() : currentTime;
+      
+      let dailyStatus = type === 'in' ? '수업중' : '수업완료';
+      let dailyInTime = type === 'in' ? currentTime : '';
+      let dailyOutTime = type === 'out' ? currentTime : '';
+
+      // Close modal immediately
+      closeAttendanceModal();
+
+      // Find if daily log exists
+      let dailyLog = state.dailyLogs.find(log => 
+        (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
+        log.time.trim() === activeTime.trim() && 
+        (log.date || '').trim() === dailyLogDateStr.trim()
+      );
+
+      // Perform local updates
+      if (dailyLog) {
+        dailyLog.status = dailyStatus;
+        if (type === 'in') {
+          dailyLog.inTime = currentTime;
+        } else {
+          dailyLog.outTime = currentTime;
+        }
+        
+        // Push batch update to Google Sheets
+        if (config.gasWebhookUrl) {
+          const updates = [
+            { tab: "dailyLogs", row: dailyLog.row, field: "status", value: dailyStatus }
+          ];
+          if (type === 'in') {
+            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: currentTime });
+          } else {
+            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "outTime", value: currentTime });
+          }
+          sendBatchUpdateToGoogleSheets(updates);
+        }
+      } else {
+        // Create new log row
+        const nextRow = state.dailyLogs.length > 0 ? Math.max(...state.dailyLogs.map(l => l.row)) + 1 : 2;
+        dailyLog = {
+          id: 'daily_' + nextRow,
+          row: nextRow,
+          date: dailyLogDateStr,
+          time: activeTime,
+          name: student.name,
+          notes: student.notes || "",
+          status: dailyStatus,
+          inTime: type === 'in' ? currentTime : "",
+          outTime: type === 'out' ? currentTime : "",
+          reason: "", number: "", event: "", grammarDone: "", specialClass: "", contents: ""
+        };
+        state.dailyLogs.push(dailyLog);
+        
+        // Push new daily log row to Google Sheets
+        if (config.gasWebhookUrl) {
+          sendNewDailyLogToGoogleSheets(dailyLog);
+        }
+      }
+
+      // Save local cached state
+      const cached = localStorage.getItem("academy_attendance_state");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          parsed.dailyLogs = state.dailyLogs;
+          localStorage.setItem("academy_attendance_state", JSON.stringify(parsed));
+        } catch(e){}
+      }
+
+      // Update student properties (regular attendanceStatus for sync visual)
+      if (type === 'in') {
+        student.attendanceStatus = '수업중';
+      } else {
+        student.attendanceStatus = '수업완료';
+      }
+
+      // Trigger SMS Send
+      sendKioskSmsNotification(student, type, type === 'in' ? currentTime : currentTime);
+
+      // Show success screen
+      showSuccessOverlay(student.name, type);
+    }
+
+    // Success Screen Popup & Auto closing
+    function showSuccessOverlay(name, type) {
+      const overlay = document.getElementById("successOverlay");
+      const icon = document.getElementById("successIcon");
+      const title = document.getElementById("successTitle");
+      const msg = document.getElementById("successMessage");
+      
+      if (type === 'in') {
+        icon.className = "success-icon";
+        title.innerText = "등원 확인! 🏫";
+        msg.innerHTML = `<strong>${name}</strong> 학생이 안전하게 등원하였습니다.<br>유현리드인 한그루역사학원에서 즐겁게 공부해 봅시다!`;
+      } else {
+        icon.className = "success-icon out";
+        title.innerText = "하원 확인! 🏡";
+        msg.innerHTML = `<strong>${name}</strong> 학생이 안전하게 하원하였습니다.<br>조심히 들어가고 다음 시간에 또 만나요!`;
+      }
+      
+      overlay.classList.add("active");
+      
+      // Auto close after 3 seconds
+      let timeLeft = 3;
+      const timerText = document.getElementById("successTimer");
+      timerText.innerText = `${timeLeft}초 뒤 자동으로 출석부 화면으로 돌아갑니다...`;
+      
+      const interval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) {
+          timerText.innerText = `${timeLeft}초 뒤 자동으로 출석부 화면으로 돌아갑니다...`;
+        } else {
+          clearInterval(interval);
+          overlay.classList.remove("active");
+          renderStudentCards();
+        }
+      }, 1000);
+    }
+
+    // Google Sheets API Helpers
+    function sendBatchUpdateToGoogleSheets(updates) {
+      fetch(config.gasWebhookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "batchUpdate",
+          updates: updates
+        })
+      }).catch(err => console.error("Kiosk batch update error:", err));
+    }
+
+    // SMS Sender logic
+    function sendKioskSmsNotification(student, type, timeStr) {
+      // Find parent phone number
+      const member = state.memberAnalysis.find(m => (m.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
+      const rawPhone = member ? (member.phone || "") : "";
+      const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+      
+      if (!cleanPhone) {
+        console.warn("No phone number found for SMS:", student.name);
+        return;
+      }
+
+      // Build message content from template
+      const template = type === "in" ? config.smsTemplateIn : config.smsTemplateOut;
+      const message = template
+        .replace(/{name}/g, student.name)
+        .replace(/{time}/g, timeStr);
+
+      console.log(`[Kiosk SMS Send] Mode: ${config.smsMode}, To: ${cleanPhone}, Msg: ${message}`);
+
+      if (config.smsMode === "click") {
+        // SMS URL scheme trigger
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        let smsUrl = `sms:${cleanPhone}`;
+        if (isMobile) {
+          const separator = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "&" : "?";
+          smsUrl += `${separator}body=${encodeURIComponent(message)}`;
+        } else {
+          smsUrl += `?body=${encodeURIComponent(message)}`;
+        }
+        window.open(smsUrl, "_blank");
+        
+      } else if (config.smsMode === "auto") {
+        // Textbee Cloud API trigger
+        const apiKey = localStorage.getItem("sms_api_key");
+        const deviceId = localStorage.getItem("sms_device_id");
+        if (!apiKey || !deviceId) return;
+        
+        fetch(`https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`, {
+          method: "POST",
+          headers: {
+            "x-api-key": apiKey,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            recipients: [cleanPhone],
+            message: message
+          })
+        }).catch(err => console.error("Kiosk Textbee SMS send error:", err));
+        
+      } else if (config.smsMode === "local") {
+        // Local Wi-Fi Gateway trigger
+        if (!config.smsLocalIp) return;
+        
+        let targetUrl = config.smsLocalIp.trim();
+        if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+          targetUrl = "http://" + targetUrl;
+        }
+        
+        let sendUrl = targetUrl;
+        let hasCustomPath = targetUrl.includes("/send") || targetUrl.includes("/sms") || targetUrl.includes("/message");
+        if (!hasCustomPath) {
+          sendUrl = targetUrl.endsWith("/") ? targetUrl + "send" : targetUrl + "/send";
+        }
+
+        const payload = {
+          to: cleanPhone,
+          phone: cleanPhone,
+          number: cleanPhone,
+          recipients: [cleanPhone],
+          message: message
+        };
+
+        fetch(sendUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+        .then(res => {
+          if (!res.ok && !hasCustomPath) {
+            return fetch(targetUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+          }
+          return res;
+        })
+        .catch(err => console.error("Kiosk Local Wi-Fi SMS gateway error:", err));
+      }
+    }
+
+    function sendNewDailyLogToGoogleSheets(log) {
+      fetch(config.gasWebhookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "addDailyLog",
+          date: log.date,
+          time: log.time,
+          name: log.name,
+          status: log.status,
+          inTime: log.inTime || "",
+          outTime: log.outTime || "",
+          notes: log.notes || ""
+        })
+      }).catch(err => console.error("Kiosk log add error:", err));
+    }
+
+    // Run on startup
+    window.onload = initKiosk;
+  </script>
+</body>
+</html>
