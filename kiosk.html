@@ -9,9 +9,9 @@
     :root {
       --bg-color: #0b0f19; /* Navy background */
       --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #1e1b4b 100%);
-      --card-bg: #ffffff; /* Pure white name buttons */
+      --card-bg: #ffffff; /* Pure white name buttons for active students */
       --card-border: #cbd5e1;
-      --text-primary: #0f172a; /* Dark text for cards */
+      --text-primary: #0f172a;
       --text-secondary: #475569;
       --text-muted: #94a3b8;
       
@@ -93,10 +93,10 @@
     .time-slot-header {
       font-size: 1.4rem;
       font-weight: 800;
-      color: #ffffff; /* 시간 글자색은 화이트로 변경 */
+      color: #ffffff; /* 시간 글자색은 화이트 */
       margin-bottom: 1rem;
       padding-left: 0.6rem;
-      border-left: 5px solid #3b82f6; /* Accent blue left border */
+      border-left: 5px solid #3b82f6;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -109,10 +109,10 @@
       gap: 1.2rem;
     }
 
-    /* Student Card (이름 버튼색 - 건드리지 않음) */
+    /* Student Card Default (대기 / 보강 학생 - 백색으로 선명하게 부각) */
     .student-card {
-      background: var(--card-bg);
-      border: 2px solid var(--card-border);
+      background: var(--card-bg); /* #ffffff */
+      border: 2px solid var(--card-border); /* #cbd5e1 */
       border-radius: 18px;
       padding: 1.5rem 1.2rem;
       text-align: center;
@@ -124,7 +124,16 @@
       min-height: 160px;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Active cards hover effects */
+    .student-card.status-대기:hover,
+    .student-card.status-보강:hover,
+    .student-card.status-수업중:hover {
+      transform: translateY(-4px);
+      border-color: #4f46e5;
+      box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2);
     }
 
     /* Top lines depending on status */
@@ -151,7 +160,7 @@
     }
 
     .student-card.status-수업완료::before {
-      background: var(--text-muted);
+      background: rgba(148, 163, 184, 0.3); /* Faded top line */
     }
 
     .student-card.status-결석::before {
@@ -159,26 +168,80 @@
     }
 
     .student-card.status-휴강::before {
-      background: var(--accent-cancelled);
+      background: rgba(100, 116, 139, 0.3); /* Faded top line */
     }
 
-    .student-card:hover {
-      transform: translateY(-4px);
-      border-color: #4f46e5;
-      box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.15);
+    /* Active Card Text Colors */
+    .student-card.status-대기 .student-name,
+    .student-card.status-보강 .student-name {
+      color: var(--text-primary); /* #0f172a (Charcoal) */
+    }
+    .student-card.status-대기 .student-grade,
+    .student-card.status-보강 .student-grade {
+      color: var(--text-secondary); /* #475569 */
+    }
+
+    /* 수업중 (수업 진행 학생 - 연한 초록빛 바탕으로 구분) */
+    .student-card.status-수업중 {
+      background: #f0fdf4;
+      border-color: #a7f3d0;
+    }
+    .student-card.status-수업중 .student-name {
+      color: #064e3b;
+    }
+    .student-card.status-수업중 .student-grade {
+      color: #047857;
+    }
+
+    /* 수업완료 (네이비 바탕색에 반투명화, 단 테두리는 흐릿하게 노출) */
+    .student-card.status-수업완료 {
+      background: rgba(30, 41, 59, 0.4);
+      border-color: rgba(255, 255, 255, 0.12); /* 흐릿하지만 형태는 보이도록 테두리 적용 */
+      box-shadow: none;
+    }
+    .student-card.status-수업완료 .student-name {
+      color: rgba(148, 163, 184, 0.7); /* Muted text */
+    }
+    .student-card.status-수업완료 .student-grade {
+      color: rgba(148, 163, 184, 0.5);
+    }
+
+    /* 결석 (흐릿한 투명 처리 + 옅은 빨강 테두리 노출) */
+    .student-card.status-결석 {
+      background: rgba(30, 41, 59, 0.25);
+      border-color: rgba(220, 38, 38, 0.25); /* 흐릿한 빨강 테두리 */
+      box-shadow: none;
+    }
+    .student-card.status-결석 .student-name {
+      color: rgba(148, 163, 184, 0.6);
+    }
+    .student-card.status-결석 .student-grade {
+      color: rgba(148, 163, 184, 0.4);
+    }
+
+    /* 휴강 (가장 흐릿하게 투명 처리 + 아주 옅은 테두리 노출) */
+    .student-card.status-휴강 {
+      background: rgba(30, 41, 59, 0.15);
+      border-color: rgba(255, 255, 255, 0.06); /* 아주 흐릿한 테두리 */
+      box-shadow: none;
+      opacity: 0.65;
+    }
+    .student-card.status-휴강 .student-name {
+      color: rgba(148, 163, 184, 0.5);
+    }
+    .student-card.status-휴강 .student-grade {
+      color: rgba(148, 163, 184, 0.35);
     }
 
     .student-name {
       font-size: 1.5rem;
       font-weight: 800;
-      color: var(--text-primary);
       margin-top: 0.5rem;
       word-break: keep-all;
     }
 
     .student-grade {
       font-size: 0.9rem;
-      color: var(--text-secondary);
       margin-top: 0.4rem;
       font-weight: 600;
     }
@@ -213,21 +276,21 @@
     }
 
     .status-badge.status-수업완료 {
-      background: rgba(148, 163, 184, 0.15);
-      color: var(--text-secondary);
-      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(148, 163, 184, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .status-badge.status-결석 {
-      background: rgba(220, 38, 38, 0.1);
-      color: var(--accent-absent);
-      border: 1px solid rgba(220, 38, 38, 0.3);
+      background: rgba(220, 38, 38, 0.08);
+      color: rgba(220, 38, 38, 0.7);
+      border: 1px solid rgba(220, 38, 38, 0.2);
     }
 
     .status-badge.status-휴강 {
-      background: rgba(100, 116, 139, 0.1);
-      color: var(--accent-cancelled);
-      border: 1px solid rgba(100, 116, 139, 0.3);
+      background: rgba(255, 255, 255, 0.03);
+      color: rgba(148, 163, 184, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     /* Live Remaining Time Tag */
