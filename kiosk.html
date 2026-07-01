@@ -451,6 +451,42 @@
     // Constants
     const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 
+    // Custom Grade Weight for sorting (유치 -> 초1~6 -> 예비중 -> 중1~3 -> 예비고 -> 고1~3)
+    const GRADE_ORDER = [
+      "유치", "7세", "6세",
+      "초1", "초2", "초3", "초4", "초5", "초6",
+      "초등1", "초등2", "초등3", "초등4", "초등5", "초등6",
+      "예비중", "중1", "중2", "중3", "예비고", "고1", "고2", "고3"
+    ];
+    
+    function getGradeWeight(gradeStr) {
+      if (!gradeStr) return 999;
+      const clean = gradeStr.trim().replace(/\s+/g, '');
+      const index = GRADE_ORDER.findIndex(g => clean.includes(g) || g.includes(clean));
+      if (index !== -1) {
+        return index;
+      }
+      if (clean.includes("유치")) return 0;
+      if (clean.includes("초")) {
+        const numMatch = clean.match(/\d/);
+        if (numMatch) return 3 + parseInt(numMatch[0], 10);
+        return 12;
+      }
+      if (clean.includes("예비중")) return 17;
+      if (clean.includes("중")) {
+        const numMatch = clean.match(/\d/);
+        if (numMatch) return 20 + parseInt(numMatch[0], 10);
+        return 25;
+      }
+      if (clean.includes("예비고")) return 27;
+      if (clean.includes("고")) {
+        const numMatch = clean.match(/\d/);
+        if (numMatch) return 30 + parseInt(numMatch[0], 10);
+        return 35;
+      }
+      return 999;
+    }
+
     // Global state
     let state = {
       students: [],
@@ -539,7 +575,7 @@
       updateClock();
       setInterval(updateClock, 1000);
 
-      // 2. Parse configurations from URL parameters (painless sharing)
+      // 2. Parse configurations from URL parameters
       const urlParams = new URLSearchParams(window.location.search);
       const paramGasUrl = urlParams.get("gas_webhook_url");
       const paramSmsMode = urlParams.get("sms_mode");
@@ -660,11 +696,9 @@
       
       // Filter list of students scheduled for today or active today
       let filtered = state.students.filter(student => {
-        // Today schedule filter
         const regTime = student.times && student.times[todayDay];
         const isScheduledToday = regTime && regTime.trim() !== "";
         
-        // Makeup scheduled today check
         let isMakeupToday = false;
         if (student.makeupDate) {
           const makeups = student.makeupDate.split(',').map(m => m.trim()).filter(Boolean);
@@ -673,7 +707,6 @@
           });
         }
         
-        // Also check if they already have a daily log today
         const hasDailyLog = state.dailyLogs.some(log => 
           (log.name || "").trim() === (student.name || "").trim() && 
           (log.date || "").trim() === dailyLogDateStr.trim()
@@ -682,23 +715,20 @@
         return isScheduledToday || isMakeupToday || hasDailyLog;
       });
 
-      // Group students by HOURLY slot (정시 단위로 묶기)
+      // Group students by HOURLY slot
       const groups = {};
       
       filtered.forEach(student => {
         let rawSlots = [];
         
-        // Check if dailyLog exists today
         const log = state.dailyLogs.find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
           (l.date || "").trim() === dailyLogDateStr.trim()
         );
         
-        // Determine time slot
         if (log && log.time) {
           rawSlots.push(log.time.trim());
         } else {
-          // Check makeup schedule today
           const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
           const activeMakeup = parsedMakeups.find(m => 
             m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
@@ -706,7 +736,6 @@
           if (activeMakeup && activeMakeup.time) {
             rawSlots.push(activeMakeup.time.trim());
           } else {
-            // Check regular times today
             const regTime = student.times && student.times[todayDay];
             if (regTime && regTime.trim() !== "") {
               const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
@@ -722,7 +751,6 @@
         rawSlots = Array.from(new Set(rawSlots));
         
         rawSlots.forEach(rawSlot => {
-          // Group by hourly slots, e.g. "14:30" or "14:00" -> "14:00"
           let hourSlot = "시간 외";
           if (rawSlot !== "시간 외") {
             const match = rawSlot.match(/^(\d{1,2})/);
@@ -736,7 +764,6 @@
             groups[hourSlot] = [];
           }
           
-          // Prevent adding duplicate student entry under same hourly slot
           const alreadyAdded = groups[hourSlot].some(item => item.student.id === student.id);
           if (!alreadyAdded) {
             groups[hourSlot].push({ student, log, exactTime: rawSlot });
@@ -762,8 +789,16 @@
 
       sortedSlots.forEach(slot => {
         const list = groups[slot];
-        // Sort students alphabetically inside each time slot
-        list.sort((a, b) => (a.student.name || "").localeCompare(b.student.name || ""));
+        
+        // 정렬 기준: 1순위 학년순(Grade), 2순위 이름순(Name)
+        list.sort((a, b) => {
+          const weightA = getGradeWeight(a.student.grade);
+          const weightB = getGradeWeight(b.student.grade);
+          if (weightA !== weightB) {
+            return weightA - weightB;
+          }
+          return (a.student.name || "").localeCompare(b.student.name || "");
+        });
 
         // Render Section Header
         const section = document.createElement("div");
@@ -782,7 +817,6 @@
           let statusClass = "대기";
           let remainingTimeHtml = "";
 
-          // Check makeup standby state
           const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
           const isMakeup = parsedMakeups.some(m => 
             m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
@@ -799,7 +833,6 @@
               status = "수업중";
               statusClass = "수업중";
               
-              // Calculate remaining minutes dynamically
               if (log.inTime) {
                 const inTimeParts = log.inTime.split(":");
                 if (inTimeParts.length === 2) {
@@ -833,7 +866,6 @@
           const card = document.createElement("div");
           card.className = `student-card status-${statusClass}`;
           
-          // Display exact minutes format next to the grade, e.g. "초등 3학년 (14:30)"
           const timeDisplay = exactTime && exactTime !== "시간 외" ? ` (${exactTime})` : "";
 
           card.innerHTML = `
@@ -862,12 +894,10 @@
       const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
 
       if (currentStatus === "대기" || currentStatus === "보강") {
-        // Tapping on Standby/Makeup card instantly checks them in
         selectedStudent = student;
         processKioskAttendance("in");
       } 
       else if (currentStatus === "수업중") {
-        // Find daily log to calculate remaining minutes
         const log = state.dailyLogs.find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
           (l.date || "").trim() === dailyLogDateStr.trim()
@@ -884,15 +914,13 @@
             const elapsedMins = Math.floor((now.getTime() - inDate.getTime()) / 60000);
             const remainingMins = durationMins - elapsedMins;
             
-            // BLOCK CHECKOUT IF TIME NOT MET!
             if (remainingMins > 0) {
               showTemporaryNotice(student.name, `수업시간이 ${remainingMins}분 남았습니다.`, true);
-              return; // Halt checkout execution
+              return;
             }
           }
         }
 
-        // Proceed to check out if remaining minutes <= 0
         selectedStudent = student;
         processKioskAttendance("out");
       } 
@@ -907,7 +935,7 @@
       }
     }
 
-    // Temporary notice overlay (handles success, complete and warning notices)
+    // Temporary notice overlay
     function showTemporaryNotice(name, message, isWarning = false) {
       const overlay = document.getElementById("successOverlay");
       const icon = document.getElementById("successIcon");
@@ -981,7 +1009,6 @@
           dailyLog.outTime = currentTime;
         }
         
-        // Push batch update to Google Sheets
         if (config.gasWebhookUrl) {
           const updates = [
             { tab: "dailyLogs", row: dailyLog.row, field: "status", value: dailyStatus }
@@ -994,7 +1021,6 @@
           sendBatchUpdateToGoogleSheets(updates);
         }
       } else {
-        // Create new log row
         const nextRow = state.dailyLogs.length > 0 ? Math.max(...state.dailyLogs.map(l => l.row)) + 1 : 2;
         dailyLog = {
           id: 'daily_' + nextRow,
@@ -1010,13 +1036,11 @@
         };
         state.dailyLogs.push(dailyLog);
         
-        // Push new daily log row to Google Sheets
         if (config.gasWebhookUrl) {
           sendNewDailyLogToGoogleSheets(dailyLog);
         }
       }
 
-      // Save local cached state
       const cached = localStorage.getItem("academy_attendance_state");
       if (cached) {
         try {
@@ -1026,17 +1050,13 @@
         } catch(e){}
       }
 
-      // Update student properties
       if (type === 'in') {
         student.attendanceStatus = '수업중';
       } else {
         student.attendanceStatus = '수업완료';
       }
 
-      // Trigger SMS Send
       sendKioskSmsNotification(student, type, type === 'in' ? currentTime : currentTime);
-
-      // Show success screen
       showSuccessOverlay(student.name, type);
     }
 
@@ -1047,7 +1067,6 @@
       const title = document.getElementById("successTitle");
       const msg = document.getElementById("successMessage");
       
-      // Reset styles to green/blue success defaults
       icon.style.borderColor = "";
       icon.style.color = "";
       icon.style.background = "";
@@ -1074,7 +1093,6 @@
       
       overlay.classList.add("active");
       
-      // Auto close after 3 seconds
       let timeLeft = 3;
       const timerText = document.getElementById("successTimer");
       timerText.innerText = `${timeLeft}초 뒤 자동으로 화면이 닫힙니다...`;
