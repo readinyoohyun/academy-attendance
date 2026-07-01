@@ -1899,3 +1899,24 @@ th.resizing .resize-handle::after {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
   }
 }
+
+/* Simulator dropdown status colors */
+.sheet-select-status {
+  transition: background-color 0.2s, color 0.2s;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.15) !important;
+  padding: 0.2rem !important;
+}
+.sheet-select-status.status-select-대기 { background-color: #fef08a !important; color: #000000 !important; font-weight: bold; }
+.sheet-select-status.status-select-수업중 { background-color: #065f46 !important; color: #ffffff !important; font-weight: bold; }
+.sheet-select-status.status-select-수업완료 { background-color: #1e3a8a !important; color: #ffffff !important; font-weight: bold; }
+.sheet-select-status.status-select-보강완료 { background-color: #1e3a8a !important; color: #ffffff !important; font-weight: bold; }
+.sheet-select-status.status-select-결석 { background-color: #991b1b !important; color: #ffffff !important; font-weight: bold; }
+.sheet-select-status.status-select-휴강 { background-color: #cbd5e1 !important; color: #000000 !important; font-weight: bold; }
+
+.sheet-select-status option[value="대기"] { background-color: #fef08a; color: #000000; }
+.sheet-select-status option[value="수업중"] { background-color: #065f46; color: #ffffff; }
+.sheet-select-status option[value="수업완료"] { background-color: #1e3a8a; color: #ffffff; }
+.sheet-select-status option[value="보강완료"] { background-color: #1e3a8a; color: #ffffff; }
+.sheet-select-status option[value="결석"] { background-color: #991b1b; color: #ffffff; }
+.sheet-select-status option[value="휴강"] { background-color: #cbd5e1; color: #000000; }

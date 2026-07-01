@@ -426,7 +426,7 @@ class SheetSimulator {
                 </div>
               </td>
               <td>
-                <select class="sheet-select-status" style="width: 80px;">
+                <select class="sheet-select-status status-select-${this.getNormalizedStatus(row.status)}" style="width: 80px;">
                   <option value="대기" ${this.getNormalizedStatus(row.status) === '대기' ? 'selected' : ''}>대기</option>
                   <option value="수업중" ${this.getNormalizedStatus(row.status) === '수업중' ? 'selected' : ''}>수업중</option>
                   <option value="수업완료" ${this.getNormalizedStatus(row.status) === '수업완료' ? 'selected' : ''}>수업완료</option>
@@ -960,7 +960,7 @@ class SheetSimulator {
                 </div>
               </td>
               <td>
-                <select class="sheet-select-status" style="width: 80px;">
+                <select class="sheet-select-status status-select-${this.getNormalizedStatus(row.status)}" style="width: 80px;">
                   <option value="대기" ${this.getNormalizedStatus(row.status) === '대기' ? 'selected' : ''}>대기</option>
                   <option value="수업중" ${this.getNormalizedStatus(row.status) === '수업중' ? 'selected' : ''}>수업중</option>
                   <option value="수업완료" ${this.getNormalizedStatus(row.status) === '수업완료' ? 'selected' : ''}>수업완료</option>
@@ -1476,7 +1476,14 @@ class SheetSimulator {
           if (nameInput) nameInput.addEventListener("change", (e) => updateField(id, "dailyLogs", rowArray, "name", e.target.value.trim()));
           
           const statusSelect = tr.querySelector(".sheet-select-status");
-          if (statusSelect) statusSelect.addEventListener("change", (e) => updateField(id, "dailyLogs", rowArray, "status", e.target.value));
+          if (statusSelect) {
+            statusSelect.addEventListener("change", (e) => {
+              const val = e.target.value;
+              const norm = this.getNormalizedStatus(val);
+              e.target.className = `sheet-select-status status-select-${norm}`;
+              updateField(id, "dailyLogs", rowArray, "status", val);
+            });
+          }
           
           const inTimeInput = tr.querySelector(".sheet-input-in-time");
           if (inTimeInput) inTimeInput.addEventListener("change", (e) => updateField(id, "dailyLogs", rowArray, "inTime", e.target.value.trim()));
@@ -1571,7 +1578,14 @@ class SheetSimulator {
             if (notesInput) notesInput.addEventListener("change", (e) => updateAccField("notes", e.target.value.trim()));
             
             const statusSelect = tr.querySelector(".sheet-select-status");
-            if (statusSelect) statusSelect.addEventListener("change", (e) => updateAccField("status", e.target.value));
+            if (statusSelect) {
+              statusSelect.addEventListener("change", (e) => {
+                const val = e.target.value;
+                const norm = this.getNormalizedStatus(val);
+                e.target.className = `sheet-select-status status-select-${norm}`;
+                updateAccField("status", val);
+              });
+            }
             
             const inTimeInput = tr.querySelector(".sheet-input-in-time");
             if (inTimeInput) inTimeInput.addEventListener("change", (e) => updateAccField("inTime", e.target.value.trim()));
