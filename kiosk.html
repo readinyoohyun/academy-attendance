@@ -487,6 +487,20 @@
       return 999;
     }
 
+    // Convert time string like "14:30" to total minutes from midnight for sorting
+    function timeStringToMinutes(timeStr) {
+      if (!timeStr || timeStr === "시간 외") return 9999;
+      const parts = timeStr.trim().split(":");
+      if (parts.length === 2) {
+        const hrs = parseInt(parts[0], 10);
+        const mins = parseInt(parts[1], 10);
+        if (!isNaN(hrs) && !isNaN(mins)) {
+          return hrs * 60 + mins;
+        }
+      }
+      return 9999;
+    }
+
     // Global state
     let state = {
       students: [],
@@ -575,7 +589,7 @@
       updateClock();
       setInterval(updateClock, 1000);
 
-      // 2. Parse configurations from URL parameters
+      // 2. Parse configurations from URL parameters (painless sharing)
       const urlParams = new URLSearchParams(window.location.search);
       const paramGasUrl = urlParams.get("gas_webhook_url");
       const paramSmsMode = urlParams.get("sms_mode");
@@ -715,7 +729,7 @@
         return isScheduledToday || isMakeupToday || hasDailyLog;
       });
 
-      // Group students by HOURLY slot
+      // Group students by HOURLY slot (정시 단위로 묶기)
       const groups = {};
       
       filtered.forEach(student => {
@@ -726,6 +740,7 @@
           (l.date || "").trim() === dailyLogDateStr.trim()
         );
         
+        // Determine time slot
         if (log && log.time) {
           rawSlots.push(log.time.trim());
         } else {
@@ -751,6 +766,7 @@
         rawSlots = Array.from(new Set(rawSlots));
         
         rawSlots.forEach(rawSlot => {
+          // Group by hourly slots, e.g. "14:30" or "14:00" -> "14:00"
           let hourSlot = "시간 외";
           if (rawSlot !== "시간 외") {
             const match = rawSlot.match(/^(\d{1,2})/);
@@ -790,13 +806,23 @@
       sortedSlots.forEach(slot => {
         const list = groups[slot];
         
-        // 정렬 기준: 1순위 학년순(Grade), 2순위 이름순(Name)
+        // 정렬 기준 고도화:
+        // 1순위: 분 단위로 빠른 순 (exactTime 분 환산 기준 오름차순)
+        // 2순위: 학년 순 (Grade Weight 오름차순)
+        // 3순위: 이름 가나다 순 (Name 오름차순)
         list.sort((a, b) => {
+          const minutesA = timeStringToMinutes(a.exactTime);
+          const minutesB = timeStringToMinutes(b.exactTime);
+          if (minutesA !== minutesB) {
+            return minutesA - minutesB;
+          }
+          
           const weightA = getGradeWeight(a.student.grade);
           const weightB = getGradeWeight(b.student.grade);
           if (weightA !== weightB) {
             return weightA - weightB;
           }
+          
           return (a.student.name || "").localeCompare(b.student.name || "");
         });
 
@@ -1160,7 +1186,7 @@
       console.log(`[Kiosk SMS Send] Mode: ${config.smsMode}, To: ${cleanPhone}, Msg: ${message}`);
 
       if (config.smsMode === "click") {
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
         let smsUrl = `sms:${cleanPhone}`;
         if (isMobile) {
           const separator = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "&" : "?";
