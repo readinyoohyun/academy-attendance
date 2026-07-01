@@ -361,6 +361,7 @@ class AttendanceApp {
 
     document.getElementById("inputGasUrl").value = this.gasWebhookUrl;
     document.getElementById("autoTimeSwitch").checked = this.autoTimeEnabled;
+    this.updateGasUrlQrCode();
 
     this.sheetSim.setData(this.state);
   }
@@ -405,6 +406,19 @@ class AttendanceApp {
     setTimeout(() => {
       toast.remove();
     }, 3000);
+  }
+
+  updateGasUrlQrCode() {
+    const container = document.getElementById("gasUrlQrContainer");
+    const img = document.getElementById("gasUrlQrImg");
+    if (container && img) {
+      if (this.gasWebhookUrl && this.gasWebhookUrl.indexOf("https://script.google.com") === 0) {
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(this.gasWebhookUrl)}`;
+        container.style.display = "block";
+      } else {
+        container.style.display = "none";
+      }
+    }
   }
 
   syncAttendanceFromDailyLogs() {
@@ -495,6 +509,7 @@ class AttendanceApp {
       const url = document.getElementById("inputGasUrl").value.trim();
       this.gasWebhookUrl = url;
       this.saveState();
+      this.updateGasUrlQrCode();
       alert("구글 Apps Script API Webhook 주소가 안전하게 저장되었습니다!");
       this.api.fetchFromGoogleSheets(true);
     };
@@ -505,6 +520,7 @@ class AttendanceApp {
       this.gasWebhookUrl = defaultUrl;
       localStorage.setItem("gas_webhook_url", defaultUrl);
       this.saveState();
+      this.updateGasUrlQrCode();
       alert("연동 주소가 기본 정규 주소로 초기화되었습니다!");
       this.api.fetchFromGoogleSheets(true);
     };

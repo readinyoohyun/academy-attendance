@@ -2436,6 +2436,13 @@ function onOpen() {
               <button class="btn-primary" id="btnSaveGasUrl" style="height: 45px;">URL 저장</button>
               <button class="btn-secondary" id="btnResetGasUrl" style="height: 45px; background: rgba(220, 38, 38, 0.1); color: #ef4444; border: 1px solid rgba(220, 38, 38, 0.2); border-radius: 10px; cursor: pointer; padding: 0 1rem; font-weight: 600; transition: background-color 0.2s;">기본값으로 초기화</button>
             </div>
+            <div id="gasUrlQrContainer" style="margin-top: 1.5rem; display: none; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px; border: 1px solid var(--panel-border); max-width: 320px;">
+              <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--text-primary);">📱 타기기 연동용 QR 코드</h4>
+              <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0 0 1rem 0;">이 컴퓨터에서 작동하는 연동 주소입니다. 다른 태블릿이나 스마트폰 카메라로 스캔하여 간편하게 주소를 전송할 수 있습니다.</p>
+              <div style="display: flex; justify-content: center; background: white; padding: 0.8rem; border-radius: 8px; width: fit-content; margin: 0 auto;">
+                <img id="gasUrlQrImg" src="" style="width: 150px; height: 150px;" alt="QR Code">
+              </div>
+            </div>
           </div>
         </div>
 
