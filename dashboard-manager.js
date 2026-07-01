@@ -875,7 +875,7 @@ class DashboardManager {
         }
 
         const dailyLog = this.app.state.dailyLogs.find(l => 
-          l.name.trim() === student.name.trim() && 
+          ((l && l.name) || '').trim() === ((student && student.name) || '').trim() && 
           (l.time || '').trim() === timeStr.trim() &&
           (l.date || '').trim() === dailyLogDateStr.trim()
         );
@@ -915,8 +915,8 @@ class DashboardManager {
     const dailyLogDateStr = `${targetDates.slashFormat}${shortDay}`;
 
     const dailyLog = this.app.state.dailyLogs.find(l => 
-      l.name.trim() === student.name.trim() && 
-      l.time.trim() === activeTime.trim() && 
+      ((l && l.name) || '').trim() === ((student && student.name) || '').trim() && 
+      ((l && l.time) || '').trim() === (activeTime || '').trim() && 
       (l.date || '').trim() === dailyLogDateStr.trim()
     );
 

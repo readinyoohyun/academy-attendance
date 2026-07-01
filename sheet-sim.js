@@ -394,9 +394,11 @@ class SheetSimulator {
       }
       
       case "오늘 출석부": {
-        const filtered = this.dataMap.dailyLogs.filter(row => 
-          row.name.toLowerCase().includes(query) || (row.date && row.date.toLowerCase().includes(query))
-        );
+        const filtered = this.dataMap.dailyLogs.filter(row => {
+          const nameVal = row && row.name ? String(row.name).toLowerCase() : "";
+          const dateVal = row && row.date ? String(row.date).toLowerCase() : "";
+          return nameVal.includes(query) || dateVal.includes(query);
+        });
         if (filtered.length === 0) return `<tr><td colspan="13" style="text-align:center; padding:2rem; color:var(--text-muted);">오늘의 수업 정보가 없습니다.</td></tr>`;
         
         return filtered.map(row => {

@@ -414,8 +414,8 @@ class AttendanceApp {
 
     this.state.students.forEach(student => {
       const dailyLog = this.state.dailyLogs.find(l => 
-        l.name.replace(/\s+/g, '') === student.name.replace(/\s+/g, '') && 
-        (l.date || '').trim() === dailyLogDateStr.trim()
+        ((l && l.name) || '').replace(/\s+/g, '') === ((student && student.name) || '').replace(/\s+/g, '') && 
+        ((l && l.date) || '').trim() === dailyLogDateStr.trim()
       );
       if (dailyLog) {
         const norm = getNormalizedStatus(dailyLog.status);
