@@ -544,8 +544,8 @@ class AttendanceApp {
     });
 
     // 5. Load manually
-    const loadBtn = document.querySelector(".btn-secondary");
-    if (loadBtn && loadBtn.id !== "btnSheetReset") {
+    const loadBtn = document.getElementById("btnSyncGoogleSheets");
+    if (loadBtn) {
       loadBtn.onclick = () => {
         this.api.fetchFromGoogleSheets(true);
       };

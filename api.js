@@ -23,7 +23,7 @@ class SheetAPI {
       syncIndicator.style.display = "inline-flex";
     }
     
-    const loadBtn = document.querySelector(".btn-secondary");
+    const loadBtn = document.getElementById("btnSyncGoogleSheets");
     const originalText = loadBtn ? loadBtn.innerHTML : "구글시트 불러오기";
     if (loadBtn) {
       loadBtn.innerHTML = "⏱️ 동기화 중...";
