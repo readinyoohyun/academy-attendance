@@ -499,6 +499,16 @@ class AttendanceApp {
       this.api.fetchFromGoogleSheets(true);
     };
 
+    document.getElementById("btnResetGasUrl").onclick = () => {
+      const defaultUrl = "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec";
+      document.getElementById("inputGasUrl").value = defaultUrl;
+      this.gasWebhookUrl = defaultUrl;
+      localStorage.setItem("gas_webhook_url", defaultUrl);
+      this.saveState();
+      alert("연동 주소가 기본 정규 주소로 초기화되었습니다!");
+      this.api.fetchFromGoogleSheets(true);
+    };
+
     // Textarea Zoom Modal Events
     const modalZoom = document.getElementById("modalTextareaZoom");
     const zoomField = document.getElementById("textareaZoomField");

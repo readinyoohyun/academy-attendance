@@ -2432,7 +2432,10 @@ function onOpen() {
               <label for="inputGasUrl">구글 Apps Script 웹 앱 API URL</label>
               <input type="url" id="inputGasUrl" class="input-custom" placeholder="https://script.google.com/macros/s/.../exec">
             </div>
-            <button class="btn-primary" id="btnSaveGasUrl" style="height: 45px;">URL 저장</button>
+            <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+              <button class="btn-primary" id="btnSaveGasUrl" style="height: 45px;">URL 저장</button>
+              <button class="btn-secondary" id="btnResetGasUrl" style="height: 45px; background: rgba(220, 38, 38, 0.1); color: #ef4444; border: 1px solid rgba(220, 38, 38, 0.2); border-radius: 10px; cursor: pointer; padding: 0 1rem; font-weight: 600; transition: background-color 0.2s;">기본값으로 초기화</button>
+            </div>
           </div>
         </div>
 
