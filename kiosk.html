@@ -252,6 +252,24 @@
       border: 1px solid rgba(148, 163, 184, 0.2);
     }
 
+    /* Live Remaining Time Tag */
+    .remaining-time-tag {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #34d399;
+      margin-top: 0.5rem;
+      background: rgba(16, 185, 129, 0.12);
+      padding: 0.25rem 0.6rem;
+      border-radius: 8px;
+      display: inline-block;
+      align-self: center;
+    }
+
+    .remaining-time-tag.completed {
+      color: #94a3b8;
+      background: rgba(148, 163, 184, 0.1);
+    }
+
     /* Modal dialog */
     .modal-overlay {
       position: fixed;
@@ -559,6 +577,21 @@
       return result;
     }
 
+    // Helper: Get student class duration in minutes based on classes string or grade
+    function getClassDuration(student) {
+      if (!student) return 60;
+      const classesStr = student.classes || "";
+      const match = classesStr.match(/(60|70|90|100|120|180)\s*분/);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+      const grade = student.grade || "";
+      if (grade.includes("중") || grade.includes("고") || grade.includes("예비중")) {
+        return 90;
+      }
+      return 60;
+    }
+
     // Load Local Storage Configuration & Sync
     function initKiosk() {
       // 1. Sync DateTime Clock
@@ -594,6 +627,9 @@
       
       // Bind Search Input
       document.getElementById("kioskSearch").oninput = renderStudentCards;
+
+      // Live remaining time countdown timer (updates remaining time displays every 10 seconds)
+      setInterval(renderStudentCards, 10000);
     }
 
     function updateClock() {
@@ -742,11 +778,33 @@
         
         let status = "대기";
         let statusClass = "wait";
+        let remainingTimeHtml = "";
+
         if (log) {
           const norm = log.status || "대기";
           if (norm === "수업중") {
             status = "수업중";
             statusClass = "in";
+            
+            // Calculate remaining minutes dynamically
+            if (log.inTime) {
+              const inTimeParts = log.inTime.split(":");
+              if (inTimeParts.length === 2) {
+                const inHrs = parseInt(inTimeParts[0], 10);
+                const inMins = parseInt(inTimeParts[1], 10);
+                const now = new Date();
+                const inDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), inHrs, inMins, 0);
+                const durationMins = getClassDuration(student);
+                const elapsedMins = Math.floor((now.getTime() - inDate.getTime()) / 60000);
+                const remainingMins = durationMins - elapsedMins;
+                
+                if (remainingMins > 0) {
+                  remainingTimeHtml = `<div class="remaining-time-tag">⏳ 남은 시간: ${remainingMins}분</div>`;
+                } else {
+                  remainingTimeHtml = `<div class="remaining-time-tag completed">✅ 수업완료 (시간경과)</div>`;
+                }
+              }
+            }
           } else if (norm === "수업완료" || norm === "보강완료") {
             status = "완료";
             statusClass = "out";
@@ -767,6 +825,7 @@
             <div class="student-name">${student.name || ""}</div>
             <div class="student-grade">${student.grade || ""}</div>
             <div class="student-time">🕒 ${timeVal}</div>
+            ${remainingTimeHtml}
           </div>
           <span class="status-badge ${statusClass}">${status}</span>
         `;
