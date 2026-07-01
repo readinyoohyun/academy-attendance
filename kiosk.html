@@ -66,6 +66,10 @@
       gap: 0.6rem;
     }
 
+    .header-logo-text {
+      cursor: pointer;
+    }
+
     .header-info {
       text-align: right;
     }
@@ -440,14 +444,42 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    
+    /* Config settings link/button in footer */
+    footer {
+      margin-top: auto; 
+      padding: 1.5rem 0; 
+      text-align: center; 
+      color: rgba(255, 255, 255, 0.25); 
+      font-size: 0.9rem; 
+      position: relative;
+    }
+    
+    .btn-settings-cog {
+      background: none; 
+      border: none; 
+      color: rgba(255, 255, 255, 0.2); 
+      cursor: pointer; 
+      font-size: 1.2rem; 
+      position: absolute; 
+      right: 15px; 
+      bottom: 1.2rem; 
+      opacity: 0.5; 
+      transition: opacity 0.2s;
+    }
+    
+    .btn-settings-cog:hover {
+      opacity: 1;
+      color: #ffffff;
+    }
   </style>
 </head>
 <body>
 
   <!-- Header -->
   <header>
-    <div class="header-logo">
-      🏫 유현리드인 한그루역사 출결 키오스크
+    <div class="header-logo" id="headerLogo">
+      <span class="header-logo-text" id="btnLogoTitle">🏫 유현리드인 한그루역사 출결 키오스크</span>
     </div>
     <div class="header-info">
       <div id="kioskDate" class="current-date">로딩 중...</div>
@@ -458,7 +490,7 @@
   <!-- Loader -->
   <div id="initialLoader" class="initial-loader">
     <div class="spinner"></div>
-    <p style="font-size: 1.2rem; color: #ffffff;">스프레드시트에서 오늘 시간표를 불러오는 중입니다...</p>
+    <p style="font-size: 1.2rem; color: #ffffff;" id="loadingStatusText">스프레드시트에서 오늘 시간표를 불러오는 중입니다...</p>
   </div>
 
   <!-- Content (Hidden until loaded) -->
@@ -511,6 +543,12 @@
     </div>
     <div id="successTimer" class="success-timer">3초 뒤 자동으로 화면이 닫힙니다...</div>
   </div>
+
+  <!-- Footer with Settings Cog -->
+  <footer>
+    유현리드인 한그루역사 • Kiosk Mode
+    <button class="btn-settings-cog" id="btnOpenSettings" title="구글시트 연동 주소 설정">⚙️</button>
+  </footer>
 
   <!-- Scripts -->
   <script>
@@ -655,7 +693,7 @@
       updateClock();
       setInterval(updateClock, 1000);
 
-      // 2. Parse configurations from URL parameters
+      // 2. Parse configurations from URL parameters (painless sharing)
       const urlParams = new URLSearchParams(window.location.search);
       const paramGasUrl = urlParams.get("gas_webhook_url");
       const paramSmsMode = urlParams.get("sms_mode");
@@ -696,6 +734,27 @@
 
       // Live remaining time countdown timer (updates remaining time displays every 10 seconds)
       setInterval(renderStudentCards, 10000);
+
+      // 4. Bind settings buttons (both gear and hidden title click)
+      document.getElementById("btnOpenSettings").onclick = openSettingsPrompt;
+      document.getElementById("btnLogoTitle").onclick = openSettingsPrompt;
+
+      // If gasUrl is missing on first load, warn the user
+      if (!config.gasWebhookUrl) {
+        document.getElementById("loadingStatusText").innerHTML = 
+          `<span style="color: #f59e0b; font-weight: 700;">⚠️ 연동 설정 필요!</span><br>하단의 ⚙️ 아이콘을 누르고 구글 Apps Script 연동 주소를 등록해주세요.`;
+      }
+    }
+
+    // Settings prompt handler
+    function openSettingsPrompt() {
+      const currentUrl = localStorage.getItem("gas_webhook_url") || "";
+      const newUrl = prompt("구글 스프레드시트 Apps Script 웹앱 URL을 입력해주세요:\n(원장앱 설정 페이지 상단의 Webhook URL과 동일합니다.)", currentUrl);
+      if (newUrl !== null) {
+        localStorage.setItem("gas_webhook_url", newUrl.trim());
+        alert("구글 시트 연동 설정이 저장되었습니다. 페이지를 새로고침합니다.");
+        window.location.reload();
+      }
     }
 
     function updateClock() {
@@ -752,6 +811,8 @@
 
     function showContent() {
       document.getElementById("initialLoader").style.display = "none";
+      
+      // Only show main layout if we actually have gasUrl configured, or show empty container
       document.getElementById("kioskContent").style.display = "flex";
       renderStudentCards();
     }
@@ -1269,7 +1330,6 @@
       }).catch(err => console.error("Kiosk batch update error:", err));
     }
 
-    // New Daily Log helper
     function sendNewDailyLogToGoogleSheets(log) {
       fetch(config.gasWebhookUrl, {
         method: "POST",
