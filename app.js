@@ -295,9 +295,10 @@ class AttendanceApp {
     };
 
     this.gasWebhookUrl = "";
-    this.smsMode = "auto";
+    this.smsMode = "local";
     this.smsApiKey = "";
     this.smsDeviceId = "";
+    this.smsLocalIp = "http://192.168.0.50:8080";
     this.smsTemplateIn = "{name}학생이 유현리드인 한그루역사학원에 {time}에 등원하여 수업중입니다.";
     this.smsTemplateOut = "{name}학생이 유현리드인 한그루역사학원에 {time}에 수업을 마치고 하원하였습니다.";
 
@@ -397,9 +398,10 @@ class AttendanceApp {
       localStorage.setItem("gas_webhook_url", storedUrl);
     }
     this.gasWebhookUrl = storedUrl;
-    this.smsMode = localStorage.getItem("sms_mode") || "click";
+    this.smsMode = localStorage.getItem("sms_mode") || "local";
     this.smsApiKey = localStorage.getItem("sms_api_key") || "";
     this.smsDeviceId = localStorage.getItem("sms_device_id") || "";
+    this.smsLocalIp = localStorage.getItem("sms_local_ip") || "http://192.168.0.50:8080";
     this.smsTemplateIn = localStorage.getItem("sms_template_in") || this.smsTemplateIn;
     this.smsTemplateOut = localStorage.getItem("sms_template_out") || this.smsTemplateOut;
     this.autoTimeEnabled = localStorage.getItem("auto_time_enabled") !== "false";
@@ -431,6 +433,7 @@ class AttendanceApp {
     localStorage.setItem("sms_mode", this.smsMode);
     localStorage.setItem("sms_api_key", this.smsApiKey);
     localStorage.setItem("sms_device_id", this.smsDeviceId);
+    localStorage.setItem("sms_local_ip", this.smsLocalIp);
     localStorage.setItem("sms_template_in", this.smsTemplateIn);
     localStorage.setItem("sms_template_out", this.smsTemplateOut);
     localStorage.setItem("auto_time_enabled", String(this.autoTimeEnabled));

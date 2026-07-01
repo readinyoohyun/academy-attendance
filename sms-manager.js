@@ -10,6 +10,8 @@ class SMSManager {
   set smsApiKey(val) { this.app.smsApiKey = val; }
   get smsDeviceId() { return this.app.smsDeviceId; }
   set smsDeviceId(val) { this.app.smsDeviceId = val; }
+  get smsLocalIp() { return this.app.smsLocalIp; }
+  set smsLocalIp(val) { this.app.smsLocalIp = val; }
   get smsTemplateIn() { return this.app.smsTemplateIn; }
   set smsTemplateIn(val) { this.app.smsTemplateIn = val; }
   get smsTemplateOut() { return this.app.smsTemplateOut; }
@@ -18,8 +20,10 @@ class SMSManager {
   initSmsSettings() {
     const smsModeSelect = document.getElementById("smsModeSelect");
     const smsGatewaySettings = document.getElementById("smsGatewaySettings");
+    const smsLocalSettings = document.getElementById("smsLocalSettings");
     const smsGatewayApiKey = document.getElementById("smsGatewayApiKey");
     const smsGatewayDeviceId = document.getElementById("smsGatewayDeviceId");
+    const smsLocalIp = document.getElementById("smsLocalIp");
     const smsTemplateIn = document.getElementById("smsTemplateIn");
     const smsTemplateOut = document.getElementById("smsTemplateOut");
     const btnSaveSmsSettings = document.getElementById("btnSaveSmsSettings");
@@ -30,15 +34,21 @@ class SMSManager {
     smsModeSelect.value = this.smsMode;
     smsGatewayApiKey.value = this.smsApiKey;
     smsGatewayDeviceId.value = this.smsDeviceId;
+    if (smsLocalIp) smsLocalIp.value = this.smsLocalIp;
     smsTemplateIn.value = this.smsTemplateIn;
     smsTemplateOut.value = this.smsTemplateOut;
 
-    // Toggle gateway fields based on mode
+    // Toggle gateway/local fields based on mode
     const toggleGatewayFields = () => {
       if (smsModeSelect.value === "auto") {
         smsGatewaySettings.style.display = "block";
+        if (smsLocalSettings) smsLocalSettings.style.display = "none";
+      } else if (smsModeSelect.value === "local") {
+        smsGatewaySettings.style.display = "none";
+        if (smsLocalSettings) smsLocalSettings.style.display = "block";
       } else {
         smsGatewaySettings.style.display = "none";
+        if (smsLocalSettings) smsLocalSettings.style.display = "none";
       }
     };
     toggleGatewayFields();
@@ -50,6 +60,7 @@ class SMSManager {
       this.smsMode = smsModeSelect.value;
       this.smsApiKey = smsGatewayApiKey.value.trim();
       this.smsDeviceId = smsGatewayDeviceId.value.trim();
+      if (smsLocalIp) this.smsLocalIp = smsLocalIp.value.trim();
       this.smsTemplateIn = smsTemplateIn.value.trim();
       this.smsTemplateOut = smsTemplateOut.value.trim();
       
@@ -135,6 +146,60 @@ class SMSManager {
       })
       .catch(err => {
         console.error("Textbee SMS 발송 오류: ", err);
+      });
+    } else if (this.smsMode === "local") {
+      // Option C: Local Wi-Fi SMS Gateway (Totally Free & Direct)
+      if (!this.smsLocalIp) {
+        this.app.showToast("로컬 IP 주소가 입력되지 않았습니다!", true);
+        return;
+      }
+      
+      let targetUrl = this.smsLocalIp.trim();
+      if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+        targetUrl = "http://" + targetUrl;
+      }
+      
+      const sendUrl = targetUrl.endsWith("/") ? targetUrl + "send" : targetUrl + "/send";
+      console.log(`[SMS Local Send] Requesting local gateway: ${sendUrl}`);
+      
+      const payload = {
+        to: cleanPhone,
+        phone: cleanPhone,
+        number: cleanPhone,
+        recipients: [cleanPhone],
+        message: message
+      };
+      
+      fetch(sendUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(res => {
+        if (!res.ok) {
+          console.log("[SMS Local Send] /send failed, trying root URL POST /...");
+          return fetch(targetUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+        }
+        return res;
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Local SMS Gateway returned HTTP ${res.status}`);
+        }
+        console.log("[SMS Local Sent Successfully]");
+        this.app.showToast("로컬 와이파이 문자 발송 완료!");
+      })
+      .catch(err => {
+        console.error("Local SMS Gateway Send Error: ", err);
+        this.app.showToast("로컬 문자 발송 실패 (네트워크/IP 확인 필요)", true);
       });
     }
   }

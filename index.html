@@ -629,12 +629,14 @@
                 <label for="smsModeSelect" style="font-weight:600; display:block; margin-bottom:0.4rem; color: var(--accent);">문자 발송 방식</label>
                 <select id="smsModeSelect" class="select-custom">
                   <option value="none">사용 안 함 (SMS 비활성화)</option>
-                  <option value="click" selected>원클릭 모바일 문자 발송 (기본 추천)</option>
+                  <option value="click">원클릭 모바일 문자 발송 (기본 추천)</option>
                   <option value="auto">안드로이드 게이트웨이 자동 발송 (Textbee 연동)</option>
+                  <option value="local" selected>로컬 Wi-Fi 직접 자동 발송 (무료, 건수 무제한)</option>
                 </select>
                 <small style="display:block; color:var(--text-muted); margin-top:0.4rem; line-height:1.4;">
                   * <strong>원클릭 문자</strong>: 태블릿/폰의 기본 문자앱을 열어 pre-fill합니다. 설정 필요 없이 가장 안전합니다.<br>
-                  * <strong>자동 발송</strong>: 안드로이드 공기계에 Textbee 앱을 깔아 무인 상태로 자동 발송합니다.
+                  * <strong>자동 발송</strong>: 안드로이드 공기계에 Textbee 앱을 깔아 무인 상태로 자동 발송합니다.<br>
+                  * <strong>로컬 Wi-Fi</strong>: 같은 와이파이 내에서 학원폰의 로컬 서버앱과 직접 통신하여 무료로 무제한 자동 발송합니다.
                 </small>
               </div>
               
@@ -650,6 +652,16 @@
                 <small style="display:block; color:var(--text-muted); margin-top:0.4rem;">
                   * 상세 설정 방법은 아래의 설명 가이드를 참고하세요.
                 </small>
+              </div>
+
+              <div id="smsLocalSettings" style="display: block; margin-top: 1rem; border-top: 1px dashed var(--panel-border); padding-top: 1rem;">
+                <div class="form-group">
+                  <label for="smsLocalIp" style="font-size:0.8rem; font-weight:600; color: var(--accent);">학원폰 로컬 IP 주소</label>
+                  <input type="text" id="smsLocalIp" class="input-custom" placeholder="예: http://192.168.0.50:8080">
+                  <small style="display:block; color:var(--text-muted); margin-top:0.4rem; line-height:1.4;">
+                    * 학원폰에 설치한 로컬 SMS 게이트웨이 앱에 표시된 IP 주소를 입력해 주세요. (같은 공유기 와이파이 환경 필요)
+                  </small>
+                </div>
               </div>
             </div>
             
