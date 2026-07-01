@@ -57,18 +57,21 @@ class DashboardManager {
       // 1. Is student absent on this specific day?
       let isAbsent = false;
       if (student.absentDates) {
-        const cleanAbs = student.absentDates.replace(/\s+/g, '');
-        isAbsent = cleanAbs.includes(dates.slashFormat) || cleanAbs.includes(dates.dotFormat);
+        const parts = String(student.absentDates).split(',').map(x => x.trim()).filter(Boolean);
+        isAbsent = parts.some(item => {
+          const pure = parseAbsentDatePure(item);
+          return pure && (pure.slashFormat === dates.slashFormat || pure.dotFormat === dates.dotFormat);
+        });
       }
 
       // 2. Case A: Makeup Class
       let isMakeupTodayAndTime = false;
       if (student.makeupDate) {
-        const parsed = parseMakeupDate(student.makeupDate);
-        const isDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
-        if (parsed && parsed.day === this.selectedDay && parsed.time === timeStr && isDateMatch) {
-          isMakeupTodayAndTime = true;
-        }
+        const parsedMakeups = parseMultipleMakeups(student.makeupDate);
+        isMakeupTodayAndTime = parsedMakeups.some(parsed => {
+          const isDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
+          return parsed && parsed.day === this.selectedDay && parsed.time === timeStr && isDateMatch;
+        });
       }
       
       // 3. Case B: Regular Class
@@ -82,11 +85,11 @@ class DashboardManager {
       // Show regular student here unless they have a makeup today
       let hasMakeupToday = false;
       if (student.makeupDate) {
-        const parsed = parseMakeupDate(student.makeupDate);
-        const isDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
-        if (parsed && parsed.day === this.selectedDay && isDateMatch) {
-          hasMakeupToday = true;
-        }
+        const parsedMakeups = parseMultipleMakeups(student.makeupDate);
+        hasMakeupToday = parsedMakeups.some(parsed => {
+          const isDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
+          return parsed && parsed.day === this.selectedDay && isDateMatch;
+        });
       }
 
       // Check if student has a daily log for this time slot today with active status (not standby)
@@ -105,8 +108,12 @@ class DashboardManager {
         // If they have a log but are not scheduled on this day/time, check if another student with the same name IS scheduled.
         const sameNameStudents = this.app.state.students.filter(s => (s.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
         const anyScheduled = sameNameStudents.some(s => {
-          const sMakeup = s.makeupDate ? parseMakeupDate(s.makeupDate) : null;
-          const sIsMakeup = sMakeup && sMakeup.day === this.selectedDay && sMakeup.time === timeStr && (sMakeup.isWeekly || sMakeup.formattedSlash === dates.slashFormat || sMakeup.formattedDot === dates.dotFormat);
+          const sParsedMakeups = s.makeupDate ? parseMultipleMakeups(s.makeupDate) : [];
+          const sIsMakeup = sParsedMakeups.some(sMakeup => 
+            sMakeup.day === this.selectedDay && 
+            sMakeup.time === timeStr && 
+            (sMakeup.isWeekly || sMakeup.formattedSlash === dates.slashFormat || sMakeup.formattedDot === dates.dotFormat)
+          );
           const sRegTime = s.times && s.times[this.selectedDay];
           let sIsRegActive = false;
           if (sRegTime) {
@@ -115,11 +122,11 @@ class DashboardManager {
           }
           let sHasMakeupToday = false;
           if (s.makeupDate) {
-            const parsed = parseMakeupDate(s.makeupDate);
-            const sIsDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
-            if (parsed && parsed.day === this.selectedDay && sIsDateMatch) {
-              sHasMakeupToday = true;
-            }
+            const parsedMakeups = parseMultipleMakeups(s.makeupDate);
+            sHasMakeupToday = parsedMakeups.some(parsed => {
+              const sIsDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
+              return parsed && parsed.day === this.selectedDay && sIsDateMatch;
+            });
           }
           return (sIsRegActive && !sHasMakeupToday) || sIsMakeup;
         });
@@ -156,10 +163,12 @@ class DashboardManager {
         parts.forEach(p => activeTimesSet.add(p));
       }
       if (st.makeupDate) {
-        const parsed = parseMakeupDate(st.makeupDate);
-        if (parsed && parsed.day === this.selectedDay && (parsed.isWeekly || parsed.formattedSlash === targetDates.slashFormat || parsed.formattedDot === targetDates.dotFormat)) {
-          activeTimesSet.add(parsed.time.trim());
-        }
+        const parsedMakeups = parseMultipleMakeups(st.makeupDate);
+        parsedMakeups.forEach(parsed => {
+          if (parsed && parsed.day === this.selectedDay && (parsed.isWeekly || parsed.formattedSlash === targetDates.slashFormat || parsed.formattedDot === targetDates.dotFormat)) {
+            activeTimesSet.add(parsed.time.trim());
+          }
+        });
       }
     });
 
@@ -479,7 +488,10 @@ class DashboardManager {
         this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "대기", "students");
       } else {
         let datesList = student.absentDates ? student.absentDates.split(',').map(d => d.trim()).filter(Boolean) : [];
-        datesList = datesList.filter(d => d !== dateStr);
+        datesList = datesList.filter(d => {
+          const pure = parseAbsentDatePure(d);
+          return !pure || (pure.slashFormat !== dateStr && pure.dotFormat !== dateStr);
+        });
         student.absentDates = datesList.join(', ');
         this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
       }
@@ -515,8 +527,12 @@ class DashboardManager {
           this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "대기", "students");
         } else {
           let datesList = student.absentDates ? student.absentDates.split(',').map(d => d.trim()).filter(Boolean) : [];
-          if (!datesList.includes(dateStr)) {
-            datesList.push(dateStr);
+          const hasDate = datesList.some(d => {
+            const pure = parseAbsentDatePure(d);
+            return pure && (pure.slashFormat === dateStr || pure.dotFormat === dateStr);
+          });
+          if (!hasDate) {
+            datesList.push(`${dateStr}(${shortDay})`);
           }
           student.absentDates = datesList.join(', ');
           this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
@@ -536,8 +552,9 @@ class DashboardManager {
             if (student.absentDates) {
               const datesList = student.absentDates.split(',').map(d => d.trim()).filter(Boolean);
               for (let i = datesList.length - 1; i >= 0; i--) {
-                if (datesList[i].startsWith('~~') && datesList[i].endsWith('~~')) {
-                  datesList[i] = datesList[i].substring(2, datesList[i].length - 2);
+                const item = datesList[i];
+                if (item.indexOf('~~') === 0 && item.slice(-2) === '~~') {
+                  datesList[i] = item.slice(2, -2);
                   break;
                 }
               }
@@ -563,8 +580,9 @@ class DashboardManager {
               if (student.absentDates) {
                 const datesList = student.absentDates.split(',').map(d => d.trim()).filter(Boolean);
                 for (let i = datesList.length - 1; i >= 0; i--) {
-                  if (datesList[i].startsWith('~~') && datesList[i].endsWith('~~')) {
-                    datesList[i] = datesList[i].substring(2, datesList[i].length - 2);
+                  const item = datesList[i];
+                  if (item.indexOf('~~') === 0 && item.slice(-2) === '~~') {
+                    datesList[i] = item.slice(2, -2);
                     break;
                   }
                 }
@@ -585,8 +603,9 @@ class DashboardManager {
             if (student.absentDates) {
               const datesList = student.absentDates.split(',').map(d => d.trim()).filter(Boolean);
               for (let i = 0; i < datesList.length; i++) {
-                if (!datesList[i].startsWith('~~') && !datesList[i].endsWith('~~')) {
-                  datesList[i] = `~~${datesList[i]}~~`;
+                const item = datesList[i];
+                if (item.indexOf('~~') !== 0 || item.slice(-2) !== '~~') {
+                  datesList[i] = `~~${item}~~`;
                   break;
                 }
               }
@@ -849,10 +868,12 @@ class DashboardManager {
         parts.forEach(p => activeTimesSet.add(p));
       }
       if (st.makeupDate) {
-        const parsed = parseMakeupDate(st.makeupDate);
-        if (parsed && parsed.day === this.selectedDay && (parsed.isWeekly || parsed.formattedSlash === targetDates.slashFormat || parsed.formattedDot === targetDates.dotFormat)) {
-          activeTimesSet.add(parsed.time.trim());
-        }
+        const parsedMakeups = parseMultipleMakeups(st.makeupDate);
+        parsedMakeups.forEach(parsed => {
+          if (parsed && parsed.day === this.selectedDay && (parsed.isWeekly || parsed.formattedSlash === targetDates.slashFormat || parsed.formattedDot === targetDates.dotFormat)) {
+            activeTimesSet.add(parsed.time.trim());
+          }
+        });
       }
     });
 
@@ -865,13 +886,19 @@ class DashboardManager {
     activeTimesSet.forEach(timeStr => {
       const activeStudents = this.getActiveStudentsForTime(timeStr);
       activeStudents.forEach(student => {
-        const parsedMakeup = student.makeupDate ? parseMakeupDate(student.makeupDate) : null;
-        const isMakeup = parsedMakeup && parsedMakeup.day === this.selectedDay && parsedMakeup.time === timeStr && (parsedMakeup.isWeekly || parsedMakeup.formattedSlash === targetDates.slashFormat || parsedMakeup.formattedDot === targetDates.dotFormat);
+        const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
+        const isMakeup = parsedMakeups.some(parsed => 
+          parsed && parsed.day === this.selectedDay && parsed.time === timeStr && 
+          (parsed.isWeekly || parsed.formattedSlash === targetDates.slashFormat || parsed.formattedDot === targetDates.dotFormat)
+        );
         
         let isAbsent = false;
         if (student.absentDates) {
-          const cleanAbs = student.absentDates.replace(/\s+/g, '');
-          isAbsent = cleanAbs.includes(targetDates.slashFormat) || cleanAbs.includes(targetDates.dotFormat);
+          const parts = String(student.absentDates).split(',').map(x => x.trim()).filter(Boolean);
+          isAbsent = parts.some(item => {
+            const pure = parseAbsentDatePure(item);
+            return pure && (pure.slashFormat === targetDates.slashFormat || pure.dotFormat === targetDates.dotFormat);
+          });
         }
 
         const dailyLog = this.app.state.dailyLogs.find(l => 
@@ -997,17 +1024,19 @@ class DashboardManager {
       }
 
       if (st.makeupDate) {
-        const parsed = parseMakeupDate(st.makeupDate);
-        if (parsed) {
-          const key = `${parsed.day} ${parsed.time}`;
-          if (!slotsMap[key]) {
-            slotsMap[key] = { lower: 0, upper: 0, regular: 0, makeup: 0 };
+        const parsedMakeups = parseMultipleMakeups(st.makeupDate);
+        parsedMakeups.forEach(parsed => {
+          if (parsed) {
+            const key = `${parsed.day} ${parsed.time}`;
+            if (!slotsMap[key]) {
+              slotsMap[key] = { lower: 0, upper: 0, regular: 0, makeup: 0 };
+            }
+            const isLower = ['초1', '초2', '초3'].includes(st.grade);
+            if (isLower) slotsMap[key].lower++;
+            else slotsMap[key].upper++;
+            slotsMap[key].makeup++;
           }
-          const isLower = ['초1', '초2', '초3'].includes(st.grade);
-          if (isLower) slotsMap[key].lower++;
-          else slotsMap[key].upper++;
-          slotsMap[key].makeup++;
-        }
+        });
       }
     });
 

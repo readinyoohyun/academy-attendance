@@ -402,13 +402,22 @@ class CRMManager {
       const dailyLogDateStr = `${slashFormat}${shortDay}`;
 
       if (attType === "makeup") {
-        student.makeupDate = `${dateInput} ${timeSelect}`;
+        const newMakeupStr = `${m}/${d}(${shortDay}) ${timeSelect}`;
+        let makeupList = student.makeupDate ? student.makeupDate.split(',').map(x => x.trim()).filter(Boolean) : [];
+        if (!makeupList.includes(newMakeupStr)) {
+          makeupList.push(newMakeupStr);
+        }
+        student.makeupDate = makeupList.join(', ');
         student.makeupCompleted = "대기";
         
         this.app.dashboardManager.logAttendanceEvent(name, "보강대기", timeSelect);
         let datesList = student.absentDates ? student.absentDates.split(',').map(x => x.trim()).filter(Boolean) : [];
-        if (!datesList.includes(slashFormat)) {
-          datesList.push(slashFormat);
+        const hasAbsent = datesList.some(item => {
+          const pure = parseAbsentDatePure(item);
+          return pure && (pure.slashFormat === slashFormat || pure.dotFormat === slashFormat);
+        });
+        if (!hasAbsent) {
+          datesList.push(`${slashFormat}(${shortDay})`);
         }
         student.absentDates = datesList.join(', ');
         
@@ -456,8 +465,12 @@ class CRMManager {
         }
       } else if (attType === "absence") {
         let datesList = student.absentDates ? student.absentDates.split(',').map(x => x.trim()).filter(Boolean) : [];
-        if (!datesList.includes(slashFormat)) {
-          datesList.push(slashFormat);
+        const hasAbsent = datesList.some(item => {
+          const pure = parseAbsentDatePure(item);
+          return pure && (pure.slashFormat === slashFormat || pure.dotFormat === slashFormat);
+        });
+        if (!hasAbsent) {
+          datesList.push(`${slashFormat}(${shortDay})`);
         }
         student.absentDates = datesList.join(', ');
         

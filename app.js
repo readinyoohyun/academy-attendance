@@ -188,17 +188,31 @@ function getFormattedDateOfWeekday(targetDayName) {
   };
 }
 
-// Helper: Parse makeup date string into Day of week and Hour
+// Helper: Parse makeup date string into Day of week and Hour (with yearless/dot/slash/parentheses support)
 function parseMakeupDate(makeupStr) {
   if (!makeupStr) return null;
   try {
-    const cleanStr = makeupStr.trim();
+    let cleanStr = String(makeupStr).trim();
+    
+    // 1. Check if it's weekly format (e.g. "목요일 16:00" or "수요일 15:30")
     const simpleMatch = cleanStr.match(/^([가-힣]{3})\s+(\d{2}:\d{2})$/);
     if (simpleMatch) {
       return { day: simpleMatch[1], time: simpleMatch[2], isWeekly: true };
     }
     
-    const d = new Date(cleanStr.replace(/-/g, '/'));
+    // 2. Strip weekday in parentheses if any, e.g. "7/25(토) 16:00" -> "7/25 16:00"
+    cleanStr = cleanStr.replace(/\([가-힣]+\)/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    // 3. Replace dots or dashes with slashes, e.g. "7.25 16:00" -> "7/25 16:00"
+    cleanStr = cleanStr.replace(/\./g, '/').replace(/-/g, '/');
+    
+    // 4. If year is omitted (like "7/25 16:00"), prepend the current year to ensure reliable parsing on Safari/Chrome
+    if (cleanStr.match(/^\d{1,2}\/\d{1,2}/)) {
+      const currentYear = new Date().getFullYear();
+      cleanStr = `${currentYear}/${cleanStr}`;
+    }
+    
+    const d = new Date(cleanStr);
     if (!isNaN(d.getTime())) {
       const day = WEEKDAYS[d.getDay()];
       const hours = String(d.getHours()).padStart(2, '0');
@@ -215,6 +229,37 @@ function parseMakeupDate(makeupStr) {
     }
   } catch (e) {
     console.error("Error parsing makeup date: ", makeupStr, e);
+  }
+  return null;
+}
+
+// Helper: Parse comma-separated list of multiple makeup dates
+function parseMultipleMakeups(makeupStr) {
+  if (!makeupStr) return [];
+  const parts = String(makeupStr).split(',').map(p => p.trim()).filter(Boolean);
+  const parsedList = [];
+  parts.forEach(part => {
+    const parsed = parseMakeupDate(part);
+    if (parsed) {
+      parsedList.push(parsed);
+    }
+  });
+  return parsedList;
+}
+
+// Helper: Extract pure date (M/D) from a styled absent date string like "7/1(수)" or "7.1"
+function parseAbsentDatePure(absentStr) {
+  if (!absentStr) return "";
+  const clean = String(absentStr).trim().replace(/\s+/g, '');
+  // Extract number/number at start, e.g. "7/1" or "07/01" or "7.1"
+  const match = clean.match(/^(\d{1,2})[/\.](\d{1,2})/);
+  if (match) {
+    const m = parseInt(match[1], 10);
+    const d = parseInt(match[2], 10);
+    return {
+      slashFormat: `${m}/${d}`,
+      dotFormat: `${m}.${d}`
+    };
   }
   return null;
 }
