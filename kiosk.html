@@ -3,22 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>출결 전용 키오스크 - 유현리드인 한그루역사학원</title>
+  <title>출결 전용 키오스크 - 유현리드인 한그루역사</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-      --card-bg: rgba(30, 41, 59, 0.7);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --text-primary: #f8fafc;
-      --text-secondary: #cbd5e1;
-      --text-muted: #64748b;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
       
       --accent-in: #10b981;
-      --accent-in-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
       --accent-out: #3b82f6;
-      --accent-out-gradient: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
       --accent-wait: #f59e0b;
+      --accent-absent: #dc2626;
+      --accent-makeup: #ec4899;
+      --accent-cancelled: #64748b;
       
       --font-title: 'Outfit', 'Noto Sans KR', sans-serif;
     }
@@ -30,7 +31,7 @@
     }
 
     body {
-      background: var(--bg-gradient);
+      background: var(--bg-color);
       color: var(--text-primary);
       font-family: var(--font-title);
       min-height: 100vh;
@@ -42,9 +43,7 @@
 
     /* Header */
     header {
-      background: rgba(30, 41, 59, 0.45);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: #ffffff;
       border: 1px solid var(--card-border);
       border-radius: 20px;
       padding: 1.5rem 2rem;
@@ -52,13 +51,13 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 1.5rem;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     }
 
     .header-logo {
       font-size: 1.8rem;
       font-weight: 800;
-      background: linear-gradient(to right, #6366f1, #818cf8, #a855f7);
+      background: linear-gradient(to right, #4f46e5, #7c3aed);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       display: flex;
@@ -79,131 +78,97 @@
     .current-time {
       font-size: 2.2rem;
       font-weight: 800;
-      color: #3b82f6;
+      color: #4f46e5;
       font-variant-numeric: tabular-nums;
-      text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+      text-shadow: 0 0 10px rgba(79, 70, 229, 0.1);
       margin-top: 0.2rem;
     }
 
-    /* Controls Panel */
-    .controls-panel {
-      background: rgba(30, 41, 59, 0.3);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 1.2rem 1.5rem;
-      margin-bottom: 1.5rem;
+    /* Time Slot Grouping */
+    .time-slot-section {
+      margin-bottom: 2rem;
+    }
+
+    .time-slot-header {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #4f46e5;
+      margin-bottom: 1rem;
+      padding-left: 0.6rem;
+      border-left: 5px solid #4f46e5;
       display: flex;
-      gap: 1rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .search-wrapper {
-      position: relative;
-      flex: 1;
-      min-width: 280px;
-    }
-
-    .search-input {
-      width: 100%;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      padding: 0.9rem 1.2rem;
-      padding-left: 2.8rem;
-      color: var(--text-primary);
-      font-size: 1.1rem;
-      font-weight: 500;
-      transition: all 0.3s ease;
-    }
-
-    .search-input:focus {
-      outline: none;
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted);
-      pointer-events: none;
-    }
-
-    .filter-btn {
-      background: rgba(30, 41, 59, 0.6);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 0.9rem 1.4rem;
-      color: var(--text-primary);
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      transition: all 0.2s ease;
     }
 
-    .filter-btn.active {
-      background: #6366f1;
-      border-color: #6366f1;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
-    }
-
-    /* Student Cards Grid */
-    .cards-container {
-      flex: 1;
+    /* Cards Grid */
+    .cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 1.2rem;
-      padding-bottom: 2rem;
     }
 
+    /* Student Card */
     .student-card {
       background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      border: 2px solid var(--card-border);
       border-radius: 18px;
       padding: 1.5rem 1.2rem;
       text-align: center;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s ease-in-out;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       min-height: 160px;
       position: relative;
       overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
+    /* Top lines depending on status */
     .student-card::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: 4px;
-      background: var(--accent-wait);
-    }
-
-    .student-card.status-in::before {
-      background: var(--accent-in);
-    }
-
-    .student-card.status-out::before {
+      height: 6px;
       background: var(--text-muted);
     }
 
+    .student-card.status-대기::before {
+      background: var(--accent-wait);
+    }
+
+    .student-card.status-보강::before {
+      background: var(--accent-makeup); /* Pink color line */
+    }
+
+    .student-card.status-수업중::before {
+      background: var(--accent-in);
+    }
+
+    .student-card.status-수업완료::before {
+      background: var(--text-muted);
+    }
+
+    .student-card.status-결석::before {
+      background: var(--accent-absent); /* Red color line */
+    }
+
+    .student-card.status-휴강::before {
+      background: var(--accent-cancelled);
+    }
+
     .student-card:hover {
-      transform: translateY(-5px);
-      border-color: rgba(99, 102, 241, 0.4);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-      background: rgba(30, 41, 59, 0.85);
+      transform: translateY(-4px);
+      border-color: #4f46e5;
+      box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.15);
     }
 
     .student-name {
-      font-size: 1.4rem;
+      font-size: 1.5rem;
       font-weight: 800;
       color: var(--text-primary);
       margin-top: 0.5rem;
@@ -211,52 +176,64 @@
     }
 
     .student-grade {
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       color: var(--text-secondary);
-      margin-top: 0.3rem;
-      font-weight: 500;
-    }
-
-    .student-time {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-top: 0.2rem;
+      margin-top: 0.4rem;
+      font-weight: 600;
     }
 
     .status-badge {
       display: inline-block;
       align-self: center;
-      font-size: 0.8rem;
-      font-weight: 700;
-      padding: 0.3rem 0.8rem;
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 0.35rem 0.9rem;
       border-radius: 20px;
       margin-top: 0.8rem;
-      text-transform: uppercase;
     }
 
-    .status-badge.wait {
-      background: rgba(245, 158, 11, 0.15);
+    /* Badge styles matching Korean sheet labels */
+    .status-badge.status-대기 {
+      background: rgba(245, 158, 11, 0.1);
       color: var(--accent-wait);
       border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
-    .status-badge.in {
-      background: rgba(16, 185, 129, 0.15);
+    .status-badge.status-보강 {
+      background: rgba(236, 72, 153, 0.1);
+      color: var(--accent-makeup);
+      border: 1px solid rgba(236, 72, 153, 0.3);
+    }
+
+    .status-badge.status-수업중 {
+      background: rgba(16, 185, 129, 0.1);
       color: var(--accent-in);
       border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
-    .status-badge.out {
-      background: rgba(148, 163, 184, 0.1);
+    .status-badge.status-수업완료 {
+      background: rgba(148, 163, 184, 0.15);
       color: var(--text-secondary);
-      border: 1px solid rgba(148, 163, 184, 0.2);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .status-badge.status-결석 {
+      background: rgba(220, 38, 38, 0.1);
+      color: var(--accent-absent);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+
+    .status-badge.status-휴강 {
+      background: rgba(100, 116, 139, 0.1);
+      color: var(--accent-cancelled);
+      border: 1px solid rgba(100, 116, 139, 0.3);
     }
 
     /* Live Remaining Time Tag */
     .remaining-time-tag {
       font-size: 0.85rem;
       font-weight: 700;
-      color: #34d399;
+      color: #059669;
       margin-top: 0.5rem;
       background: rgba(16, 185, 129, 0.12);
       padding: 0.25rem 0.6rem;
@@ -266,7 +243,7 @@
     }
 
     .remaining-time-tag.completed {
-      color: #94a3b8;
+      color: #64748b;
       background: rgba(148, 163, 184, 0.1);
     }
 
@@ -277,7 +254,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: #0f172a;
+      background: #ffffff;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -296,8 +273,8 @@
     .success-icon {
       width: 120px;
       height: 120px;
-      background: rgba(16, 185, 129, 0.15);
-      border: 3px solid var(--accent-in);
+      background: rgba(16, 185, 129, 0.1);
+      border: 4px solid var(--accent-in);
       color: var(--accent-in);
       border-radius: 50%;
       display: flex;
@@ -308,7 +285,7 @@
     }
 
     .success-icon.out {
-      background: rgba(59, 130, 246, 0.15);
+      background: rgba(59, 130, 246, 0.1);
       border-color: var(--accent-out);
       color: var(--accent-out);
     }
@@ -334,7 +311,7 @@
     }
 
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); }
       70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
       100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
@@ -350,11 +327,11 @@
     }
 
     .spinner {
-      border: 4px solid rgba(255, 255, 255, 0.1);
+      border: 4px solid rgba(0, 0, 0, 0.05);
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      border-left-color: #3b82f6;
+      border-left-color: #4f46e5;
       animation: spin 1s linear infinite;
     }
 
@@ -369,7 +346,7 @@
   <!-- Header -->
   <header>
     <div class="header-logo">
-      🏫 리딩유천 역사학원 출결 키오스크
+      🏫 유현리드인 한그루역사 출결 키오스크
     </div>
     <div class="header-info">
       <div id="kioskDate" class="current-date">로딩 중...</div>
@@ -380,32 +357,18 @@
   <!-- Loader -->
   <div id="initialLoader" class="initial-loader">
     <div class="spinner"></div>
-    <p style="font-size: 1.2rem; color: var(--text-secondary);">스프레드시트에서 출석 정보를 연동하는 중입니다...</p>
+    <p style="font-size: 1.2rem; color: var(--text-secondary);">스프레드시트에서 오늘 시간표를 불러오는 중입니다...</p>
   </div>
 
   <!-- Content (Hidden until loaded) -->
   <div id="kioskContent" style="display: none; flex-direction: column; flex: 1;">
-    
-    <!-- Controls -->
-    <section class="controls-panel">
-      <div class="search-wrapper">
-        <svg class="search-icon" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input type="text" id="kioskSearch" class="search-input" placeholder="이름을 검색하세요 (초성 검색 가능, 예: ㄱㅅㅁ)">
-      </div>
-      
-      <button id="btnFilterToday" class="filter-btn active">📅 오늘 수업 원생만 보기</button>
-      <button id="btnFilterAll" class="filter-btn">👥 전체 원생 보기</button>
-    </section>
-
-    <!-- Student Cards Grid -->
-    <section id="cardsContainer" class="cards-container">
-      <!-- Generated dynamically -->
+    <!-- Student Cards Grid Grouped by Hour -->
+    <section id="cardsContainer" style="display: flex; flex-direction: column; gap: 1rem; padding-bottom: 2rem;">
+      <!-- Generated dynamically by time slots -->
     </section>
   </div>
 
-  <!-- Success Announcement Overlay -->
+  <!-- Announcement Overlay (Success & Warning Alerts) -->
   <div id="successOverlay" class="success-overlay">
     <div id="successIcon" class="success-icon">
       <svg width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -414,13 +377,16 @@
     </div>
     <div id="successTitle" class="success-title">등원 완료!</div>
     <div id="successMessage" class="success-message">
-      강성모 학생, 안전하게 등원하였습니다.<br>오늘도 재미있게 공부해 봅시다! 😊
+      강성모 학생, 안전하게 등원하였습니다.
     </div>
-    <div id="successTimer" class="success-timer">3초 뒤 자동으로 출석부 화면으로 돌아갑니다...</div>
+    <div id="successTimer" class="success-timer">3초 뒤 자동으로 화면이 닫힙니다...</div>
   </div>
 
   <!-- Scripts -->
   <script>
+    // Constants
+    const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+
     // Global state
     let state = {
       students: [],
@@ -437,23 +403,6 @@
     };
 
     let selectedStudent = null;
-    let filterMode = "today"; // 'today' or 'all'
-
-    // Hangul Chosung (initial consonant) map for search helper
-    const CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-    
-    function getChosung(str) {
-      let result = "";
-      for (let i = 0; i < str.length; i++) {
-        const code = str.charCodeAt(i) - 44032;
-        if (code > -1 && code < 11172) {
-          result += CHOSUNG_LIST[Math.floor(code / 588)];
-        } else {
-          result += str.charAt(i);
-        }
-      }
-      return result;
-    }
 
     // Helper: Get student class duration in minutes based on classes string or grade
     function getClassDuration(student) {
@@ -470,7 +419,57 @@
       return 60;
     }
 
-    // Load Local Storage Configuration & Sync
+    // Helper: Parse makeup date string into Day of week and Hour
+    function parseMakeupDate(makeupStr) {
+      if (!makeupStr) return null;
+      try {
+        let cleanStr = String(makeupStr).trim();
+        const simpleMatch = cleanStr.match(/^([가-힣]{3})\s+(\d{2}:\d{2})$/);
+        if (simpleMatch) {
+          return { day: simpleMatch[1], time: simpleMatch[2], isWeekly: true };
+        }
+        cleanStr = cleanStr.replace(/\([가-힣]+\)/g, ' ').replace(/\s+/g, ' ').trim();
+        cleanStr = cleanStr.replace(/\./g, '/').replace(/-/g, '/');
+        if (cleanStr.match(/^\d{1,2}\/\d{1,2}/)) {
+          const currentYear = new Date().getFullYear();
+          cleanStr = `${currentYear}/${cleanStr}`;
+        }
+        const d = new Date(cleanStr);
+        if (!isNaN(d.getTime())) {
+          const day = WEEKDAYS[d.getDay()];
+          const hours = String(d.getHours()).padStart(2, '0');
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          const month = d.getMonth() + 1;
+          const date = d.getDate();
+          return { 
+            day, 
+            time: `${hours}:${minutes}`, 
+            isWeekly: false,
+            formattedSlash: `${month}/${date}`,
+            formattedDot: `${month}.${date}`
+          };
+        }
+      } catch (e) {
+        console.error("Error parsing makeup date: ", makeupStr, e);
+      }
+      return null;
+    }
+
+    // Helper: Parse comma-separated list of multiple makeup dates
+    function parseMultipleMakeups(makeupStr) {
+      if (!makeupStr) return [];
+      const parts = String(makeupStr).split(',').map(p => p.trim()).filter(Boolean);
+      const parsedList = [];
+      parts.forEach(part => {
+        const parsed = parseMakeupDate(part);
+        if (parsed) {
+          parsedList.push(parsed);
+        }
+      });
+      return parsedList;
+    }
+
+    // Load Configuration & Sync
     function initKiosk() {
       // 1. Sync DateTime Clock
       updateClock();
@@ -515,25 +514,17 @@
       // 3. Fetch fresh data from Google Sheets immediately
       fetchDataFromGoogleSheets();
 
-      // Bind Filter Buttons
-      document.getElementById("btnFilterToday").onclick = () => setFilterMode("today");
-      document.getElementById("btnFilterAll").onclick = () => setFilterMode("all");
-      
-      // Bind Search Input
-      document.getElementById("kioskSearch").oninput = renderStudentCards;
-
       // Live remaining time countdown timer (updates remaining time displays every 10 seconds)
       setInterval(renderStudentCards, 10000);
     }
 
     function updateClock() {
       const now = new Date();
-      const weekdays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
       
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const date = String(now.getDate()).padStart(2, '0');
-      const day = weekdays[now.getDay()];
+      const day = WEEKDAYS[now.getDay()];
       
       document.getElementById("kioskDate").innerText = `${year}년 ${month}월 ${date}일 (${day})`;
       
@@ -541,13 +532,6 @@
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
       document.getElementById("kioskTime").innerText = `${hours}:${minutes}:${seconds}`;
-    }
-
-    function setFilterMode(mode) {
-      filterMode = mode;
-      document.getElementById("btnFilterToday").className = `filter-btn ${mode === 'today' ? 'active' : ''}`;
-      document.getElementById("btnFilterAll").className = `filter-btn ${mode === 'all' ? 'active' : ''}`;
-      renderStudentCards();
     }
 
     // Fetch data from google sheets API
@@ -592,13 +576,10 @@
       renderStudentCards();
     }
 
-    // Detect students scheduled for today or active
     function getTodayWeekday() {
-      const weekdays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-      return weekdays[new Date().getDay()];
+      return WEEKDAYS[new Date().getDay()];
     }
 
-    // Formatted date string like 7/1
     function getTodayDateStr() {
       const now = new Date();
       return `${now.getMonth() + 1}/${now.getDate()}`;
@@ -608,24 +589,13 @@
       const container = document.getElementById("cardsContainer");
       container.innerHTML = "";
       
-      const searchVal = document.getElementById("kioskSearch").value.toLowerCase().replace(/\s+/g, '');
-      const searchChosung = getChosung(searchVal);
-      
       const todayDay = getTodayWeekday();
       const todayDateSlash = getTodayDateStr(); // e.g. "7/1"
       const shortDay = todayDay.substring(0, 1);
       const dailyLogDateStr = `${todayDateSlash}${shortDay}`; // e.g. "7/1수"
       
-      // Filter list
+      // Filter list of students scheduled for today or active today
       let filtered = state.students.filter(student => {
-        // Name Search
-        const nameClean = (student.name || "").toLowerCase().replace(/\s+/g, '');
-        const nameChosung = getChosung(nameClean);
-        const matchesSearch = nameClean.includes(searchVal) || nameChosung.includes(searchChosung);
-        if (!matchesSearch) return false;
-        
-        if (filterMode === "all") return true;
-        
         // Today schedule filter
         const regTime = student.times && student.times[todayDay];
         const isScheduledToday = regTime && regTime.trim() !== "";
@@ -639,7 +609,7 @@
           });
         }
         
-        // Also check if they already checked in today
+        // Also check if they already have a daily log today
         const hasDailyLog = state.dailyLogs.some(log => 
           (log.name || "").trim() === (student.name || "").trim() && 
           (log.date || "").trim() === dailyLogDateStr.trim()
@@ -648,119 +618,253 @@
         return isScheduledToday || isMakeupToday || hasDailyLog;
       });
 
-      // Sort alphabetically by name
-      filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-
-      if (filtered.length === 0) {
-        container.innerHTML = `
-          <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted); font-size: 1.2rem;">
-            검색 결과에 맞는 원생이 없습니다.
-          </div>
-        `;
-        return;
-      }
-
+      // Group students by time slot
+      const groups = {};
+      
       filtered.forEach(student => {
+        let slots = [];
+        
+        // Check if dailyLog exists today
         const log = state.dailyLogs.find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
           (l.date || "").trim() === dailyLogDateStr.trim()
         );
         
-        let status = "대기";
-        let statusClass = "wait";
-        let remainingTimeHtml = "";
-
-        if (log) {
-          const norm = log.status || "대기";
-          if (norm === "수업중") {
-            status = "수업중";
-            statusClass = "in";
-            
-            // Calculate remaining minutes dynamically
-            if (log.inTime) {
-              const inTimeParts = log.inTime.split(":");
-              if (inTimeParts.length === 2) {
-                const inHrs = parseInt(inTimeParts[0], 10);
-                const inMins = parseInt(inTimeParts[1], 10);
-                const now = new Date();
-                const inDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), inHrs, inMins, 0);
-                const durationMins = getClassDuration(student);
-                const elapsedMins = Math.floor((now.getTime() - inDate.getTime()) / 60000);
-                const remainingMins = durationMins - elapsedMins;
-                
-                if (remainingMins > 0) {
-                  remainingTimeHtml = `<div class="remaining-time-tag">⏳ 남은 시간: ${remainingMins}분</div>`;
-                } else {
-                  remainingTimeHtml = `<div class="remaining-time-tag completed">✅ 수업완료 (시간경과)</div>`;
-                }
-              }
+        // Determine time slot
+        if (log && log.time) {
+          slots.push(log.time.trim());
+        } else {
+          // Check makeup schedule today
+          const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
+          const activeMakeup = parsedMakeups.find(m => 
+            m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
+          );
+          if (activeMakeup && activeMakeup.time) {
+            slots.push(activeMakeup.time.trim());
+          } else {
+            // Check regular times today
+            const regTime = student.times && student.times[todayDay];
+            if (regTime && regTime.trim() !== "") {
+              const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
+              parts.forEach(p => slots.push(p));
             }
-          } else if (norm === "수업완료" || norm === "보강완료") {
-            status = "완료";
-            statusClass = "out";
-          } else if (norm === "결석") {
-            status = "결석";
-            statusClass = "out";
           }
         }
-
-        const card = document.createElement("div");
-        card.className = `student-card status-${statusClass}`;
         
-        const timeVal = student.times && student.times[todayDay] ? student.times[todayDay] : "시간 외";
+        if (slots.length === 0) {
+          slots.push("시간 외");
+        }
+        
+        slots = Array.from(new Set(slots));
+        
+        slots.forEach(slot => {
+          if (!groups[slot]) {
+            groups[slot] = [];
+          }
+          groups[slot].push({ student, log });
+        });
+      });
 
-        card.innerHTML = `
-          <div>
-            <div class="student-name">${student.name || ""}</div>
-            <div class="student-grade">${student.grade || ""}</div>
-            <div class="student-time">🕒 ${timeVal}</div>
-            ${remainingTimeHtml}
+      // Sort time slots chronologically
+      const sortedSlots = Object.keys(groups).sort((a, b) => {
+        if (a === "시간 외") return 1;
+        if (b === "시간 외") return -1;
+        return a.localeCompare(b);
+      });
+
+      if (sortedSlots.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 5rem; color: var(--text-muted); font-size: 1.3rem;">
+            오늘 예정된 등하원 수업 시간표가 없습니다.
           </div>
-          <span class="status-badge ${statusClass}">${status}</span>
         `;
+        return;
+      }
+
+      sortedSlots.forEach(slot => {
+        const list = groups[slot];
+        // Sort students alphabetically inside each time slot
+        list.sort((a, b) => (a.student.name || "").localeCompare(b.student.name || ""));
+
+        // Render Section Header
+        const section = document.createElement("div");
+        section.className = "time-slot-section";
         
-        // One-touch click handler (No cumbersome popups!)
-        card.onclick = () => handleCardOneTouch(student, status);
-        container.appendChild(card);
+        const heading = document.createElement("h2");
+        heading.className = "time-slot-header";
+        heading.innerText = `🕒 ${slot} 수업`;
+        section.appendChild(heading);
+        
+        const grid = document.createElement("div");
+        grid.className = "cards-grid";
+
+        list.forEach(({ student, log }) => {
+          let status = "대기";
+          let statusClass = "대기";
+          let remainingTimeHtml = "";
+
+          // Check makeup standby state
+          const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
+          const isMakeup = parsedMakeups.some(m => 
+            m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
+          );
+          
+          if (isMakeup) {
+            status = "보강";
+            statusClass = "보강";
+          }
+
+          if (log) {
+            const norm = log.status || "대기";
+            if (norm === "수업중") {
+              status = "수업중";
+              statusClass = "수업중";
+              
+              // Calculate remaining minutes dynamically
+              if (log.inTime) {
+                const inTimeParts = log.inTime.split(":");
+                if (inTimeParts.length === 2) {
+                  const inHrs = parseInt(inTimeParts[0], 10);
+                  const inMins = parseInt(inTimeParts[1], 10);
+                  const now = new Date();
+                  const inDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), inHrs, inMins, 0);
+                  const durationMins = getClassDuration(student);
+                  const elapsedMins = Math.floor((now.getTime() - inDate.getTime()) / 60000);
+                  const remainingMins = durationMins - elapsedMins;
+                  
+                  if (remainingMins > 0) {
+                    remainingTimeHtml = `<div class="remaining-time-tag">⏳ 남은 시간: ${remainingMins}분</div>`;
+                  } else {
+                    remainingTimeHtml = `<div class="remaining-time-tag completed">✅ 수업완료 (시간경과)</div>`;
+                  }
+                }
+              }
+            } else if (norm === "수업완료" || norm === "보강완료") {
+              status = "수업완료";
+              statusClass = "수업완료";
+            } else if (norm === "결석") {
+              status = "결석";
+              statusClass = "결석";
+            } else if (norm === "휴강") {
+              status = "휴강";
+              statusClass = "휴강";
+            }
+          }
+
+          const card = document.createElement("div");
+          card.className = `student-card status-${statusClass}`;
+          
+          card.innerHTML = `
+            <div>
+              <div class="student-name">${student.name || ""}</div>
+              <div class="student-grade">${student.grade || ""}</div>
+              ${remainingTimeHtml}
+            </div>
+            <span class="status-badge status-${statusClass}">${status}</span>
+          `;
+          
+          card.onclick = () => handleCardOneTouch(student, status);
+          grid.appendChild(card);
+        });
+
+        section.appendChild(grid);
+        container.appendChild(section);
       });
     }
 
     // Direct Check-in / Check-out on click without modal choices
     function handleCardOneTouch(student, currentStatus) {
-      if (currentStatus === "대기") {
-        // Tapping on Standby card instantly checks them in
+      const todayDay = getTodayWeekday();
+      const todayDateSlash = getTodayDateStr();
+      const shortDay = todayDay.substring(0, 1);
+      const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
+
+      if (currentStatus === "대기" || currentStatus === "보강") {
+        // Tapping on Standby/Makeup card instantly checks them in
         selectedStudent = student;
         processKioskAttendance("in");
-      } else if (currentStatus === "수업중") {
-        // Tapping on In-class card instantly checks them out
+      } 
+      else if (currentStatus === "수업중") {
+        // Find daily log to calculate remaining minutes
+        const log = state.dailyLogs.find(l => 
+          (l.name || "").trim() === (student.name || "").trim() && 
+          (l.date || "").trim() === dailyLogDateStr.trim()
+        );
+
+        if (log && log.inTime) {
+          const inTimeParts = log.inTime.split(":");
+          if (inTimeParts.length === 2) {
+            const inHrs = parseInt(inTimeParts[0], 10);
+            const inMins = parseInt(inTimeParts[1], 10);
+            const now = new Date();
+            const inDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), inHrs, inMins, 0);
+            const durationMins = getClassDuration(student);
+            const elapsedMins = Math.floor((now.getTime() - inDate.getTime()) / 60000);
+            const remainingMins = durationMins - elapsedMins;
+            
+            // BLOCK CHECKOUT IF TIME NOT MET!
+            if (remainingMins > 0) {
+              showTemporaryNotice(student.name, `수업시간이 ${remainingMins}분 남았습니다.`, true);
+              return; // Halt checkout execution
+            }
+          }
+        }
+
+        // Proceed to check out if remaining minutes <= 0
         selectedStudent = student;
         processKioskAttendance("out");
-      } else if (currentStatus === "완료") {
-        // Already completed
-        showTemporaryNotice(student.name, "오늘 일정이 완료되었습니다. 😊");
-      } else if (currentStatus === "결석") {
-        // Marked absent
+      } 
+      else if (currentStatus === "수업완료") {
+        showTemporaryNotice(student.name, "오늘 일정이 수업완료되었습니다. 😊");
+      } 
+      else if (currentStatus === "결석") {
         showTemporaryNotice(student.name, "오늘 결석 처리되었습니다. 🏫");
+      } 
+      else if (currentStatus === "휴강") {
+        showTemporaryNotice(student.name, "오늘 휴강 처리되었습니다. 🏫");
       }
     }
 
-    // Temporary notice overlay for already completed status
-    function showTemporaryNotice(name, message) {
+    // Temporary notice overlay (handles success, complete and warning notices)
+    function showTemporaryNotice(name, message, isWarning = false) {
       const overlay = document.getElementById("successOverlay");
       const icon = document.getElementById("successIcon");
       const title = document.getElementById("successTitle");
       const msg = document.getElementById("successMessage");
       const timerText = document.getElementById("successTimer");
       
-      icon.className = "success-icon out";
-      title.innerText = "안내";
-      msg.innerHTML = `<strong>${name}</strong> 학생은 ${message}`;
-      timerText.innerText = "잠시 후 화면이 닫힙니다...";
+      if (isWarning) {
+        icon.className = "success-icon";
+        icon.style.borderColor = "#ef4444";
+        icon.style.color = "#ef4444";
+        icon.style.background = "rgba(239, 68, 68, 0.1)";
+        icon.innerHTML = `
+          <svg width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        `;
+        title.innerText = "수업 시간 미달 ⏳";
+        msg.innerHTML = `<strong>${name}</strong> 학생, ${message}<br>정해진 수업 시간을 모두 채운 뒤 하원해 주세요!`;
+      } else {
+        icon.className = "success-icon out";
+        icon.style.borderColor = "#3b82f6";
+        icon.style.color = "#3b82f6";
+        icon.style.background = "rgba(59, 130, 246, 0.1)";
+        icon.innerHTML = `
+          <svg width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        `;
+        title.innerText = "안내";
+        msg.innerHTML = `<strong>${name}</strong> 학생은 ${message}`;
+      }
       
+      timerText.innerText = "잠시 후 화면이 닫힙니다...";
       overlay.classList.add("active");
+      
       setTimeout(() => {
         overlay.classList.remove("active");
-      }, 2000);
+      }, 3000);
     }
 
     // Process attendance (in/out)
@@ -861,14 +965,29 @@
       const title = document.getElementById("successTitle");
       const msg = document.getElementById("successMessage");
       
+      // Reset styles to green/blue success defaults
+      icon.style.borderColor = "";
+      icon.style.color = "";
+      icon.style.background = "";
+      
       if (type === 'in') {
         icon.className = "success-icon";
-        title.innerText = "등원 확인! 🏫";
-        msg.innerHTML = `<strong>${name}</strong> 학생이 안전하게 등원하였습니다.<br>유현리드인 한그루역사학원에서 즐겁게 공부해 봅시다!`;
+        title.innerText = "등원 완료! 🏫";
+        msg.innerHTML = `<strong>${name}</strong> 학생이 안전하게 등원하였습니다.<br>오늘도 유현리드인 한그루역사에서 즐겁게 공부해 봅시다!`;
+        icon.innerHTML = `
+          <svg width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        `;
       } else {
         icon.className = "success-icon out";
-        title.innerText = "하원 확인! 🏡";
-        msg.innerHTML = `<strong>${name}</strong> 학생이 안전하게 하원하였습니다.<br>조심히 들어가고 다음 시간에 또 만나요!`;
+        title.innerText = "하원 완료! 🏡";
+        msg.innerHTML = `<strong>${name}</strong> 학생이 안전하게 하원하였습니다.<br>오늘 공부하느라 수고 많았어요! 조심히 들어가세요!`;
+        icon.innerHTML = `
+          <svg width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        `;
       }
       
       overlay.classList.add("active");
@@ -876,12 +995,12 @@
       // Auto close after 3 seconds
       let timeLeft = 3;
       const timerText = document.getElementById("successTimer");
-      timerText.innerText = `${timeLeft}초 뒤 자동으로 출석부 화면으로 돌아갑니다...`;
+      timerText.innerText = `${timeLeft}초 뒤 자동으로 화면이 닫힙니다...`;
       
       const interval = setInterval(() => {
         timeLeft--;
         if (timeLeft > 0) {
-          timerText.innerText = `${timeLeft}초 뒤 자동으로 출석부 화면으로 돌아갑니다...`;
+          timerText.innerText = `${timeLeft}초 뒤 자동으로 화면이 닫힙니다...`;
         } else {
           clearInterval(interval);
           overlay.classList.remove("active");
