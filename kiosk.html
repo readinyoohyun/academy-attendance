@@ -270,108 +270,6 @@
       background: rgba(148, 163, 184, 0.1);
     }
 
-    /* Modal dialog */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-
-    .modal-overlay.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .modal-box {
-      background: #1e293b;
-      border: 1px solid var(--card-border);
-      border-radius: 24px;
-      padding: 2.5rem;
-      width: 90%;
-      max-width: 500px;
-      text-align: center;
-      transform: scale(0.9);
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-overlay.active .modal-box {
-      transform: scale(1);
-    }
-
-    .modal-title {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--text-primary);
-      margin-bottom: 0.5rem;
-    }
-
-    .modal-subtitle {
-      font-size: 1.1rem;
-      color: var(--text-secondary);
-      margin-bottom: 2rem;
-    }
-
-    .modal-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .modal-btn {
-      padding: 1.2rem;
-      font-size: 1.3rem;
-      font-weight: 800;
-      border: none;
-      border-radius: 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.8rem;
-      transition: all 0.2s ease;
-      color: white;
-    }
-
-    .modal-btn-in {
-      background: var(--accent-in-gradient);
-      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);
-    }
-
-    .modal-btn-in:active {
-      transform: scale(0.98);
-    }
-
-    .modal-btn-out {
-      background: var(--accent-out-gradient);
-      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.35);
-    }
-
-    .modal-btn-out:active {
-      transform: scale(0.98);
-    }
-
-    .modal-btn-close {
-      background: rgba(148, 163, 184, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: var(--text-secondary);
-      font-size: 1.1rem;
-      padding: 1rem;
-      margin-top: 0.5rem;
-    }
-
     /* Success Overlay */
     .success-overlay {
       position: fixed;
@@ -507,26 +405,6 @@
     </section>
   </div>
 
-  <!-- Check-in Choice Modal -->
-  <div id="attendanceModal" class="modal-overlay">
-    <div class="modal-box">
-      <div id="modalStudentName" class="modal-title">강성모</div>
-      <div id="modalStudentGrade" class="modal-subtitle">초등 3학년</div>
-      
-      <div class="modal-actions">
-        <button class="modal-btn modal-btn-in" onclick="processKioskAttendance('in')">
-          <span>🏫</span> 등 원 하 기 (수업 시작)
-        </button>
-        <button class="modal-btn modal-btn-out" onclick="processKioskAttendance('out')">
-          <span>🏡</span> 하 원 하 기 (수업 종료)
-        </button>
-        <button class="modal-btn modal-btn-close" onclick="closeAttendanceModal()">
-          닫 기
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- Success Announcement Overlay -->
   <div id="successOverlay" class="success-overlay">
     <div id="successIcon" class="success-icon">
@@ -598,7 +476,23 @@
       updateClock();
       setInterval(updateClock, 1000);
 
-      // 2. Load configurations from same localStorage
+      // 2. Parse configurations from URL parameters (painless sharing)
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramGasUrl = urlParams.get("gas_webhook_url");
+      const paramSmsMode = urlParams.get("sms_mode");
+      const paramSmsLocalIp = urlParams.get("sms_local_ip");
+      
+      if (paramGasUrl) {
+        localStorage.setItem("gas_webhook_url", decodeURIComponent(paramGasUrl));
+      }
+      if (paramSmsMode) {
+        localStorage.setItem("sms_mode", paramSmsMode);
+      }
+      if (paramSmsLocalIp) {
+        localStorage.setItem("sms_local_ip", decodeURIComponent(paramSmsLocalIp));
+      }
+
+      // Load configurations from localStorage
       config.gasWebhookUrl = localStorage.getItem("gas_webhook_url") || "";
       config.smsMode = localStorage.getItem("sms_mode") || "local";
       config.smsLocalIp = localStorage.getItem("sms_local_ip") || "http://192.168.219.148:8080/send-sms";
@@ -659,7 +553,6 @@
     // Fetch data from google sheets API
     function fetchDataFromGoogleSheets() {
       if (!config.gasWebhookUrl) {
-        // Fallback to loaded local state
         showContent();
         return;
       }
@@ -740,10 +633,8 @@
         // Makeup scheduled today check
         let isMakeupToday = false;
         if (student.makeupDate) {
-          // split commas
           const makeups = student.makeupDate.split(',').map(m => m.trim()).filter(Boolean);
           isMakeupToday = makeups.some(m => {
-            // E.g. "7/1", "7/1(수)", or "수요일"
             return m.includes(todayDateSlash) || m.includes(todayDay) || (m.includes(shortDay) && m.includes('/'));
           });
         }
@@ -770,7 +661,6 @@
       }
 
       filtered.forEach(student => {
-        // Find current daily log status
         const log = state.dailyLogs.find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
           (l.date || "").trim() === dailyLogDateStr.trim()
@@ -817,7 +707,6 @@
         const card = document.createElement("div");
         card.className = `student-card status-${statusClass}`;
         
-        // Get scheduled time for display
         const timeVal = student.times && student.times[todayDay] ? student.times[todayDay] : "시간 외";
 
         card.innerHTML = `
@@ -830,24 +719,48 @@
           <span class="status-badge ${statusClass}">${status}</span>
         `;
         
-        card.onclick = () => openAttendanceModal(student, status);
+        // One-touch click handler (No cumbersome popups!)
+        card.onclick = () => handleCardOneTouch(student, status);
         container.appendChild(card);
       });
     }
 
-    // Modal Control
-    function openAttendanceModal(student, status) {
-      selectedStudent = student;
-      document.getElementById("modalStudentName").innerText = student.name;
-      document.getElementById("modalStudentGrade").innerText = student.grade || "";
-      
-      const modal = document.getElementById("attendanceModal");
-      modal.classList.add("active");
+    // Direct Check-in / Check-out on click without modal choices
+    function handleCardOneTouch(student, currentStatus) {
+      if (currentStatus === "대기") {
+        // Tapping on Standby card instantly checks them in
+        selectedStudent = student;
+        processKioskAttendance("in");
+      } else if (currentStatus === "수업중") {
+        // Tapping on In-class card instantly checks them out
+        selectedStudent = student;
+        processKioskAttendance("out");
+      } else if (currentStatus === "완료") {
+        // Already completed
+        showTemporaryNotice(student.name, "오늘 일정이 완료되었습니다. 😊");
+      } else if (currentStatus === "결석") {
+        // Marked absent
+        showTemporaryNotice(student.name, "오늘 결석 처리되었습니다. 🏫");
+      }
     }
 
-    function closeAttendanceModal() {
-      document.getElementById("attendanceModal").classList.remove("active");
-      selectedStudent = null;
+    // Temporary notice overlay for already completed status
+    function showTemporaryNotice(name, message) {
+      const overlay = document.getElementById("successOverlay");
+      const icon = document.getElementById("successIcon");
+      const title = document.getElementById("successTitle");
+      const msg = document.getElementById("successMessage");
+      const timerText = document.getElementById("successTimer");
+      
+      icon.className = "success-icon out";
+      title.innerText = "안내";
+      msg.innerHTML = `<strong>${name}</strong> 학생은 ${message}`;
+      timerText.innerText = "잠시 후 화면이 닫힙니다...";
+      
+      overlay.classList.add("active");
+      setTimeout(() => {
+        overlay.classList.remove("active");
+      }, 2000);
     }
 
     // Process attendance (in/out)
@@ -860,19 +773,11 @@
       const shortDay = todayDay.substring(0, 1);
       const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
       
-      // Determine active time (current class time slot or current actual time)
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
-      // Class scheduled time as activeTime
       const activeTime = student.times && student.times[todayDay] ? student.times[todayDay].trim() : currentTime;
       
       let dailyStatus = type === 'in' ? '수업중' : '수업완료';
-      let dailyInTime = type === 'in' ? currentTime : '';
-      let dailyOutTime = type === 'out' ? currentTime : '';
-
-      // Close modal immediately
-      closeAttendanceModal();
 
       // Find if daily log exists
       let dailyLog = state.dailyLogs.find(log => 
@@ -935,7 +840,7 @@
         } catch(e){}
       }
 
-      // Update student properties (regular attendanceStatus for sync visual)
+      // Update student properties
       if (type === 'in') {
         student.attendanceStatus = '수업중';
       } else {
@@ -980,6 +885,7 @@
         } else {
           clearInterval(interval);
           overlay.classList.remove("active");
+          selectedStudent = null;
           renderStudentCards();
         }
       }, 1000);
@@ -998,9 +904,26 @@
       }).catch(err => console.error("Kiosk batch update error:", err));
     }
 
+    function sendNewDailyLogToGoogleSheets(log) {
+      fetch(config.gasWebhookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "addDailyLog",
+          date: log.date,
+          time: log.time,
+          name: log.name,
+          status: log.status,
+          inTime: log.inTime || "",
+          outTime: log.outTime || "",
+          notes: log.notes || ""
+        })
+      }).catch(err => console.error("Kiosk log add error:", err));
+    }
+
     // SMS Sender logic
     function sendKioskSmsNotification(student, type, timeStr) {
-      // Find parent phone number
       const member = state.memberAnalysis.find(m => (m.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
       const rawPhone = member ? (member.phone || "") : "";
       const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
@@ -1010,7 +933,6 @@
         return;
       }
 
-      // Build message content from template
       const template = type === "in" ? config.smsTemplateIn : config.smsTemplateOut;
       const message = template
         .replace(/{name}/g, student.name)
@@ -1019,7 +941,6 @@
       console.log(`[Kiosk SMS Send] Mode: ${config.smsMode}, To: ${cleanPhone}, Msg: ${message}`);
 
       if (config.smsMode === "click") {
-        // SMS URL scheme trigger
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         let smsUrl = `sms:${cleanPhone}`;
         if (isMobile) {
@@ -1031,7 +952,6 @@
         window.open(smsUrl, "_blank");
         
       } else if (config.smsMode === "auto") {
-        // Textbee Cloud API trigger
         const apiKey = localStorage.getItem("sms_api_key");
         const deviceId = localStorage.getItem("sms_device_id");
         if (!apiKey || !deviceId) return;
@@ -1049,7 +969,6 @@
         }).catch(err => console.error("Kiosk Textbee SMS send error:", err));
         
       } else if (config.smsMode === "local") {
-        // Local Wi-Fi Gateway trigger
         if (!config.smsLocalIp) return;
         
         let targetUrl = config.smsLocalIp.trim();
@@ -1088,24 +1007,6 @@
         })
         .catch(err => console.error("Kiosk Local Wi-Fi SMS gateway error:", err));
       }
-    }
-
-    function sendNewDailyLogToGoogleSheets(log) {
-      fetch(config.gasWebhookUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "addDailyLog",
-          date: log.date,
-          time: log.time,
-          name: log.name,
-          status: log.status,
-          inTime: log.inTime || "",
-          outTime: log.outTime || "",
-          notes: log.notes || ""
-        })
-      }).catch(err => console.error("Kiosk log add error:", err));
     }
 
     // Run on startup
