@@ -346,7 +346,12 @@ class AttendanceApp {
       this.resetToInitialState();
     }
 
-    this.gasWebhookUrl = localStorage.getItem("gas_webhook_url") || "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec";
+    let storedUrl = localStorage.getItem("gas_webhook_url");
+    if (!storedUrl || !storedUrl.startsWith("https://script.google.com")) {
+      storedUrl = "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec";
+      localStorage.setItem("gas_webhook_url", storedUrl);
+    }
+    this.gasWebhookUrl = storedUrl;
     this.smsMode = localStorage.getItem("sms_mode") || "click";
     this.smsApiKey = localStorage.getItem("sms_api_key") || "";
     this.smsDeviceId = localStorage.getItem("sms_device_id") || "";
