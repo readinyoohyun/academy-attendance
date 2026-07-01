@@ -159,7 +159,13 @@ class SMSManager {
         targetUrl = "http://" + targetUrl;
       }
       
-      const sendUrl = targetUrl.endsWith("/") ? targetUrl + "send" : targetUrl + "/send";
+      // If the user already typed a specific path (like /send, /send-sms, /sms, etc.), use it directly
+      let sendUrl = targetUrl;
+      let hasCustomPath = targetUrl.includes("/send") || targetUrl.includes("/sms") || targetUrl.includes("/message");
+      if (!hasCustomPath) {
+        sendUrl = targetUrl.endsWith("/") ? targetUrl + "send" : targetUrl + "/send";
+      }
+      
       console.log(`[SMS Local Send] Requesting local gateway: ${sendUrl}`);
       
       const payload = {
@@ -178,7 +184,7 @@ class SMSManager {
         body: JSON.stringify(payload)
       })
       .then(res => {
-        if (!res.ok) {
+        if (!res.ok && !hasCustomPath) {
           console.log("[SMS Local Send] /send failed, trying root URL POST /...");
           return fetch(targetUrl, {
             method: "POST",
