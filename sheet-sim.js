@@ -430,8 +430,9 @@ class SheetSimulator {
                   <option value="대기" ${this.getNormalizedStatus(row.status) === '대기' ? 'selected' : ''}>대기</option>
                   <option value="수업중" ${this.getNormalizedStatus(row.status) === '수업중' ? 'selected' : ''}>수업중</option>
                   <option value="수업완료" ${this.getNormalizedStatus(row.status) === '수업완료' ? 'selected' : ''}>수업완료</option>
-                  <option value="결석" ${this.getNormalizedStatus(row.status) === '결석' ? 'selected' : ''}>결석</option>
+                  <option value="휴강" ${this.getNormalizedStatus(row.status) === '휴강' ? 'selected' : ''}>휴강</option>
                   <option value="보강완료" ${this.getNormalizedStatus(row.status) === '보강완료' ? 'selected' : ''}>보강완료</option>
+                  <option value="결석" ${this.getNormalizedStatus(row.status) === '결석' ? 'selected' : ''}>결석</option>
                 </select>
               </td>
               <td><input type="text" class="sheet-input-in-time" value="${this.escapeHtml(row.inTime || '')}" placeholder="HH:MM" style="width: 65px; text-align:center;"></td>
@@ -963,8 +964,9 @@ class SheetSimulator {
                   <option value="대기" ${this.getNormalizedStatus(row.status) === '대기' ? 'selected' : ''}>대기</option>
                   <option value="수업중" ${this.getNormalizedStatus(row.status) === '수업중' ? 'selected' : ''}>수업중</option>
                   <option value="수업완료" ${this.getNormalizedStatus(row.status) === '수업완료' ? 'selected' : ''}>수업완료</option>
-                  <option value="결석" ${this.getNormalizedStatus(row.status) === '결석' ? 'selected' : ''}>결석</option>
+                  <option value="휴강" ${this.getNormalizedStatus(row.status) === '휴강' ? 'selected' : ''}>휴강</option>
                   <option value="보강완료" ${this.getNormalizedStatus(row.status) === '보강완료' ? 'selected' : ''}>보강완료</option>
+                  <option value="결석" ${this.getNormalizedStatus(row.status) === '결석' ? 'selected' : ''}>결석</option>
                 </select>
               </td>
               <td><input type="text" class="sheet-input-in-time" value="${this.escapeHtml(row.inTime || '')}" placeholder="HH:MM" style="width: 65px; text-align:center;"></td>
