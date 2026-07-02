@@ -1165,8 +1165,22 @@
       }
     }
 
+    // Helper to clear active overlay timers safely
+    function clearActiveOverlayTimers() {
+      if (window.activeNoticeTimeout) {
+        clearTimeout(window.activeNoticeTimeout);
+        window.activeNoticeTimeout = null;
+      }
+      if (window.activeNoticeInterval) {
+        clearInterval(window.activeNoticeInterval);
+        window.activeNoticeInterval = null;
+      }
+    }
+
     // Temporary notice overlay
     function showTemporaryNotice(name, message, isWarning = false) {
+      clearActiveOverlayTimers();
+      
       const overlay = document.getElementById("successOverlay");
       const icon = document.getElementById("successIcon");
       const title = document.getElementById("successTitle");
@@ -1199,12 +1213,18 @@
         msg.innerHTML = `<strong>${name}</strong> 학생은 ${message}`;
       }
       
-      timerText.innerText = "잠시 후 화면이 닫힙니다...";
+      timerText.innerText = "화면을 터치하면 바로 닫힙니다.";
       overlay.classList.add("active");
       
-      setTimeout(() => {
+      overlay.onclick = () => {
+        clearActiveOverlayTimers();
         overlay.classList.remove("active");
-      }, 3000);
+        renderStudentCards();
+      };
+      
+      window.activeNoticeTimeout = setTimeout(() => {
+        overlay.classList.remove("active");
+      }, isWarning ? 1800 : 1200);
     }
 
     // Process attendance (in/out)
@@ -1292,10 +1312,13 @@
 
     // Success Screen Popup & Auto closing
     function showSuccessOverlay(name, type) {
+      clearActiveOverlayTimers();
+      
       const overlay = document.getElementById("successOverlay");
       const icon = document.getElementById("successIcon");
       const title = document.getElementById("successTitle");
       const msg = document.getElementById("successMessage");
+      const timerText = document.getElementById("successTimer");
       
       icon.style.borderColor = "";
       icon.style.color = "";
@@ -1321,23 +1344,21 @@
         `;
       }
       
+      timerText.innerText = "화면을 터치하면 바로 닫힙니다.";
       overlay.classList.add("active");
       
-      let timeLeft = 3;
-      const timerText = document.getElementById("successTimer");
-      timerText.innerText = `${timeLeft}초 뒤 자동으로 화면이 닫힙니다...`;
+      overlay.onclick = () => {
+        clearActiveOverlayTimers();
+        overlay.classList.remove("active");
+        selectedStudent = null;
+        renderStudentCards();
+      };
       
-      const interval = setInterval(() => {
-        timeLeft--;
-        if (timeLeft > 0) {
-          timerText.innerText = `${timeLeft}초 뒤 자동으로 화면이 닫힙니다...`;
-        } else {
-          clearInterval(interval);
-          overlay.classList.remove("active");
-          selectedStudent = null;
-          renderStudentCards();
-        }
-      }, 1000);
+      window.activeNoticeTimeout = setTimeout(() => {
+        overlay.classList.remove("active");
+        selectedStudent = null;
+        renderStudentCards();
+      }, 1200);
     }
 
     // Google Sheets API Helpers
