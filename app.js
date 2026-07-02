@@ -461,7 +461,9 @@ class AttendanceApp {
     const img = document.getElementById("gasUrlQrImg");
     if (container && img) {
       if (this.gasWebhookUrl && this.gasWebhookUrl.indexOf("https://script.google.com") === 0) {
-        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(this.gasWebhookUrl)}`;
+        const currentOrigin = window.location.origin;
+        const kioskUrl = `${currentOrigin}/kiosk.html?gas_webhook_url=${encodeURIComponent(this.gasWebhookUrl)}`;
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(kioskUrl)}`;
         container.style.display = "block";
       } else {
         container.style.display = "none";
