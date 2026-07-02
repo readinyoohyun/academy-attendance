@@ -61,9 +61,10 @@ function fetchWithRedirect(url, method = 'GET', body = null) {
             return;
           }
 
-          let rawData = '';
-          res.on('data', (chunk) => { rawData += chunk; });
+          const chunks = [];
+          res.on('data', (chunk) => { chunks.push(chunk); });
           res.on('end', () => {
+            const rawData = Buffer.concat(chunks).toString('utf8');
             resolve(rawData);
           });
         });
