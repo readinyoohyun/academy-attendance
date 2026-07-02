@@ -735,6 +735,9 @@
       // Live remaining time countdown timer (updates remaining time displays every 10 seconds)
       setInterval(renderStudentCards, 10000);
 
+      // Auto background sync from Google Sheets every 60 seconds (1 minute)
+      setInterval(fetchDataFromGoogleSheets, 60000);
+
       // 4. Bind settings buttons (both gear and hidden title click)
       document.getElementById("btnOpenSettings").onclick = openSettingsPrompt;
       document.getElementById("btnLogoTitle").onclick = openSettingsPrompt;
