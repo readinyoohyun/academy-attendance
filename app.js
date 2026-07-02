@@ -497,6 +497,27 @@ class AttendanceApp {
           }
         } else if (norm === "결석") {
           student.attendanceStatus = "결석";
+          
+          // Two-way sync: If marked as absent on today's daily log, ensure today's date is in absentDates on the students sheet
+          const isMakeup = student.makeupDate && parseMultipleMakeups(student.makeupDate).some(parsed => 
+            parsed.day === this.selectedDay && 
+            (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat)
+          );
+          
+          if (!isMakeup) {
+            let datesList = student.absentDates ? student.absentDates.split(',').map(d => d.trim()).filter(Boolean) : [];
+            const hasDate = datesList.some(d => {
+              const pure = parseAbsentDatePure(d);
+              return pure && (pure.slashFormat === dates.slashFormat || pure.dotFormat === dates.dotFormat);
+            });
+            if (!hasDate) {
+              const shortDay = this.selectedDay.substring(0, 1);
+              datesList.push(`${dates.slashFormat}(${shortDay})`);
+              student.absentDates = datesList.join(', ');
+              this.saveState();
+              this.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+            }
+          }
         } else {
           student.attendanceStatus = "대기";
         }
