@@ -835,8 +835,13 @@
       const shortDay = todayDay.substring(0, 1);
       const dailyLogDateStr = `${todayDateSlash}${shortDay}`; // e.g. "7/1수"
       
-      // Filter list of students scheduled for today or active today
-      let filtered = state.students.filter(student => {
+      // Filter list of students scheduled for today or active today, avoiding duplicates for same student names
+      const uniqueNameMap = new Map();
+      
+      state.students.forEach(student => {
+        const name = (student.name || "").trim();
+        if (!name) return;
+        
         const regTime = student.times && student.times[todayDay];
         const isScheduledToday = regTime && regTime.trim() !== "";
         
@@ -849,12 +854,27 @@
         }
         
         const hasDailyLog = state.dailyLogs.some(log => 
-          (log.name || "").trim() === (student.name || "").trim() && 
+          (log.name || "").trim() === name && 
           (log.date || "").trim() === dailyLogDateStr.trim()
         );
         
-        return isScheduledToday || isMakeupToday || hasDailyLog;
+        const isActiveToday = isScheduledToday || isMakeupToday || hasDailyLog;
+        if (isActiveToday) {
+          if (!uniqueNameMap.has(name)) {
+            uniqueNameMap.set(name, student);
+          } else {
+            // Prefer the student record that has an active schedule today
+            const existing = uniqueNameMap.get(name);
+            const existingScheduled = (existing.times && existing.times[todayDay] && existing.times[todayDay].trim() !== "");
+            const currentScheduled = isScheduledToday;
+            if (!existingScheduled && currentScheduled) {
+              uniqueNameMap.set(name, student);
+            }
+          }
+        }
       });
+      
+      let filtered = Array.from(uniqueNameMap.values());
 
       // Calculate state counts (대기, 수업중, 수업완료, 결석, 보강, 휴강)
       const countedWait = new Set();
