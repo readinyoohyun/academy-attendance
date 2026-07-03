@@ -150,7 +150,7 @@ header h1 span {
 main {
   flex: 1;
   padding: 2rem;
-  max-width: 1440px;
+  max-width: 100%; /* Stretches to full screen on PC */
   width: 100%;
   margin: 0 auto;
   position: relative;
@@ -176,6 +176,19 @@ main {
   grid-template-columns: 280px 1fr;
   gap: 1.5rem;
   align-items: start;
+}
+
+/* Responsive Two Column Grid (Collapses to 1 column on tablets/mobile) */
+.responsive-two-column-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media(max-width: 900px) {
+  .responsive-two-column-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Time & Filter Selector Panel */
