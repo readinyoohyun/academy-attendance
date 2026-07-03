@@ -580,6 +580,12 @@ class CRMManager {
       return;
     }
 
+    const today = new Date();
+    if (this.currentCrmStudentName !== name) {
+      this.crmCalendarYear = today.getFullYear();
+      this.crmCalendarMonth = today.getMonth() + 1;
+    }
+
     this.currentCrmStudentName = name;
     
     document.getElementById("crmPlaceholder").style.display = "none";
@@ -704,6 +710,9 @@ class CRMManager {
       });
     }
 
+    // Render the monthly attendance calendar
+    this.renderCrmCalendar(studentLogs);
+
     // Populate Member Analysis Inputs
     let memberRec = this.app.state.memberAnalysis.find(m => m && m.name && m.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
     if (!memberRec) {
@@ -812,6 +821,182 @@ class CRMManager {
     
     // Timeline render
     this.renderTimeline(name);
+  }
+
+  // CRM Monthly Attendance Calendar renderer
+  renderCrmCalendar(studentLogs) {
+    const container = document.getElementById("crmAttendanceCalendarContainer");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "crm-calendar-wrapper";
+
+    // Calendar Header
+    const header = document.createElement("div");
+    header.className = "crm-calendar-header";
+
+    const title = document.createElement("div");
+    title.className = "crm-calendar-title";
+    title.innerText = `📅 ${this.crmCalendarYear}년 ${this.crmCalendarMonth}월 출결 현황`;
+
+    const navContainer = document.createElement("div");
+    navContainer.style.display = "flex";
+    navContainer.style.gap = "0.4rem";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.className = "crm-calendar-nav-btn";
+    prevBtn.innerText = "<";
+    prevBtn.onclick = (e) => {
+      e.preventDefault();
+      this.crmCalendarMonth--;
+      if (this.crmCalendarMonth < 1) {
+        this.crmCalendarMonth = 12;
+        this.crmCalendarYear--;
+      }
+      this.renderCrmCalendar(studentLogs);
+    };
+
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "crm-calendar-nav-btn";
+    nextBtn.innerText = ">";
+    nextBtn.onclick = (e) => {
+      e.preventDefault();
+      this.crmCalendarMonth++;
+      if (this.crmCalendarMonth > 12) {
+        this.crmCalendarMonth = 1;
+        this.crmCalendarYear++;
+      }
+      this.renderCrmCalendar(studentLogs);
+    };
+
+    navContainer.appendChild(prevBtn);
+    navContainer.appendChild(nextBtn);
+    header.appendChild(title);
+    header.appendChild(navContainer);
+    wrapper.appendChild(header);
+
+    // Grid Container
+    const grid = document.createElement("div");
+    grid.className = "crm-calendar-grid";
+
+    // Week Headers
+    const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
+    weekDays.forEach(day => {
+      const dayHeader = document.createElement("div");
+      dayHeader.className = "crm-calendar-day-header";
+      dayHeader.innerText = day;
+      if (day === "일") dayHeader.style.color = "#ef4444";
+      if (day === "토") dayHeader.style.color = "#3b82f6";
+      grid.appendChild(dayHeader);
+    });
+
+    // Calendar Days Calculation
+    const firstDay = new Date(this.crmCalendarYear, this.crmCalendarMonth - 1, 1);
+    const lastDay = new Date(this.crmCalendarYear, this.crmCalendarMonth, 0);
+    const startDayOfWeek = firstDay.getDay(); // 0 is Sunday
+    const totalDays = lastDay.getDate();
+
+    // Previous Month's trailing days
+    const prevMonthLastDay = new Date(this.crmCalendarYear, this.crmCalendarMonth - 1, 0).getDate();
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const cell = document.createElement("div");
+      cell.className = "crm-calendar-cell other-month";
+      cell.innerText = prevMonthLastDay - i;
+      grid.appendChild(cell);
+    }
+
+    // Current Month's days
+    for (let day = 1; day <= totalDays; day++) {
+      const cell = document.createElement("div");
+      cell.className = "crm-calendar-cell";
+      cell.innerText = day;
+
+      // Find logs for this specific date
+      const dateLogs = studentLogs.filter(log => {
+        if (!log.date) return false;
+        const cleanDate = log.date.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, "").replace(/\(|\)/g, "").trim();
+        const parts = cleanDate.split(/[\/\.-]/);
+        let m = -1, d = -1;
+        if (parts.length >= 3) {
+          m = parseInt(parts[1], 10);
+          d = parseInt(parts[2], 10);
+        } else if (parts.length === 2) {
+          m = parseInt(parts[0], 10);
+          d = parseInt(parts[1], 10);
+        }
+        return m === this.crmCalendarMonth && d === day;
+      });
+
+      if (dateLogs.length > 0) {
+        let status = "대기";
+        let inTime = "";
+        let outTime = "";
+        let details = "";
+
+        const presentLog = dateLogs.find(l => l.status === "출석" || l.status === "수업완료" || l.status === "출석완료");
+        const makeupLog = dateLogs.find(l => l.status === "보강완료" || l.status === "보강" || l.status === "보강대기");
+        const absentLog = dateLogs.find(l => l.status === "결석");
+        const cancelledLog = dateLogs.find(l => l.status === "휴강");
+
+        if (presentLog) {
+          status = "present";
+          inTime = presentLog.inTime || presentLog.time || "";
+          outTime = presentLog.outTime || "";
+          details = "출석";
+        } else if (makeupLog) {
+          status = "makeup";
+          inTime = makeupLog.inTime || makeupLog.time || "";
+          outTime = makeupLog.outTime || "";
+          details = "보강 완료";
+        } else if (absentLog) {
+          status = "absent";
+          details = "결석";
+        } else if (cancelledLog) {
+          status = "cancelled";
+          details = "휴강";
+        }
+
+        if (status !== "대기") {
+          cell.classList.add(`status-${status}`);
+          
+          // Create Dot
+          const dot = document.createElement("div");
+          dot.className = "crm-calendar-dot";
+          cell.appendChild(dot);
+
+          // Create Premium Tooltip
+          const tooltip = document.createElement("div");
+          tooltip.className = "crm-calendar-tooltip";
+          
+          let tooltipText = `${details}`;
+          if (inTime) {
+            tooltipText += ` | 등원 ${inTime}`;
+          }
+          if (outTime) {
+            tooltipText += ` ➡️ 하원 ${outTime}`;
+          }
+          tooltip.innerText = tooltipText;
+          cell.appendChild(tooltip);
+        }
+      }
+
+      grid.appendChild(cell);
+    }
+
+    // Next Month's leading days to complete the grid row
+    const currentCellsCount = startDayOfWeek + totalDays;
+    const remainingCells = (currentCellsCount % 7 === 0) ? 0 : 7 - (currentCellsCount % 7);
+    for (let i = 1; i <= remainingCells; i++) {
+      const cell = document.createElement("div");
+      cell.className = "crm-calendar-cell other-month";
+      cell.innerText = i;
+      grid.appendChild(cell);
+    }
+
+    wrapper.appendChild(grid);
+    container.appendChild(wrapper);
   }
 
   // Request 1: renderAccordion function

@@ -1933,3 +1933,203 @@ th.resizing .resize-handle::after {
 .sheet-select-status option[value="보강완료"] { background-color: #1e3a8a; color: #ffffff; }
 .sheet-select-status option[value="결석"] { background-color: #991b1b; color: #ffffff; }
 .sheet-select-status option[value="휴강"] { background-color: #cbd5e1; color: #000000; }
+
+/* Overtime alert pulsing style */
+@keyframes alert-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+    border-color: #dc2626 !important;
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+    border-color: #dc2626 !important;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+    border-color: #dc2626 !important;
+  }
+}
+
+.student-card.in-class.overtime {
+  animation: alert-pulse 2s infinite !important;
+  border: 2px solid #dc2626 !important;
+  position: relative !important;
+}
+
+.student-card.in-class.overtime::after {
+  content: '⚠️ 미하원';
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  background: #dc2626;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(220,38,38,0.3);
+  z-index: 5;
+}
+
+/* CRM Attendance Calendar Styles */
+.crm-calendar-wrapper {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-top: 1rem;
+}
+
+.crm-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.crm-calendar-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.crm-calendar-nav-btn {
+  background: var(--accent);
+  border: none;
+  color: white;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.crm-calendar-nav-btn:hover {
+  background: var(--accent-hover);
+}
+
+.crm-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.crm-calendar-day-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.crm-calendar-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: default;
+  transition: var(--transition);
+}
+
+.crm-calendar-cell.other-month {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.crm-calendar-cell:not(.other-month):hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: var(--accent);
+}
+
+/* Attendance Dot Indicators */
+.crm-calendar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 0.2rem;
+}
+
+.crm-calendar-cell.status-present {
+  background: rgba(5, 150, 105, 0.08) !important;
+  border-color: rgba(5, 150, 105, 0.3) !important;
+  font-weight: 700;
+}
+.crm-calendar-cell.status-present .crm-calendar-dot {
+  background: #059669;
+}
+
+.crm-calendar-cell.status-makeup {
+  background: rgba(219, 39, 119, 0.08) !important;
+  border-color: rgba(219, 39, 119, 0.3) !important;
+  font-weight: 700;
+}
+.crm-calendar-cell.status-makeup .crm-calendar-dot {
+  background: #db2777;
+}
+
+.crm-calendar-cell.status-absent {
+  background: rgba(220, 38, 38, 0.08) !important;
+  border-color: rgba(220, 38, 38, 0.3) !important;
+  font-weight: 700;
+}
+.crm-calendar-cell.status-absent .crm-calendar-dot {
+  background: #dc2626;
+}
+
+.crm-calendar-cell.status-cancelled {
+  background: rgba(113, 128, 150, 0.08) !important;
+  border-color: rgba(113, 128, 150, 0.3) !important;
+}
+.crm-calendar-cell.status-cancelled .crm-calendar-dot {
+  background: #718096;
+}
+
+/* Premium Attendance Tooltip styling */
+.crm-calendar-cell .crm-calendar-tooltip {
+  visibility: hidden;
+  position: absolute;
+  bottom: 115%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: white;
+  text-align: center;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.crm-calendar-cell .crm-calendar-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #0f172a transparent transparent transparent;
+}
+
+.crm-calendar-cell:hover .crm-calendar-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}

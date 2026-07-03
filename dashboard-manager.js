@@ -332,9 +332,7 @@ class DashboardManager {
           const memberRecForPhoneOnCard = this.app.state.memberAnalysis.find(m => (m.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
           const parentPhoneOnCard = memberRecForPhoneOnCard ? (memberRecForPhoneOnCard.phone || "").trim() : "";
 
-          card.className = `student-card glass-panel ${typeClass}`;
-          card.setAttribute("data-id", student.id);
-
+          let isOvertime = false;
           let timerHtml = "";
           if (typeClass === "in-class" && dailyLog && dailyLog.inTime) {
             const inTimeParts = dailyLog.inTime.split(":");
@@ -348,19 +346,26 @@ class DashboardManager {
               const progressPercent = Math.min(100, Math.round((elapsedMins / durationMins) * 100));
               const remainingMins = Math.max(0, durationMins - elapsedMins);
               
+              if (elapsedMins > durationMins + 15) {
+                isOvertime = true;
+              }
+              
               timerHtml = `
                 <div class="card-timer-container" style="margin-top: 0.6rem; font-size: 0.75rem; color: var(--text-secondary); width: 100%;">
                   <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
                     <span>⏱️ ${elapsedMins}/${durationMins}분 경과</span>
-                    <span>${remainingMins}분 남음</span>
+                    <span style="${isOvertime ? 'color:#dc2626; font-weight:700;' : ''}">${isOvertime ? '하원 지체!' : remainingMins + '분 남음'}</span>
                   </div>
                   <div class="progress-bar-bg" style="width:100%; height:6px; background:rgba(0,0,0,0.06); border-radius:3px; overflow:hidden;">
-                    <div class="progress-bar-fill" style="width:${progressPercent}%; height:100%; background:var(--color-inclass); border-radius:3px; transition:width 0.3s ease;"></div>
+                    <div class="progress-bar-fill" style="width:${progressPercent}%; height:100%; background:${isOvertime ? '#dc2626' : 'var(--color-inclass)'}; border-radius:3px; transition:width 0.3s ease;"></div>
                   </div>
                 </div>
               `;
             }
           }
+
+          card.className = `student-card glass-panel ${typeClass}${isOvertime ? ' overtime' : ''}`;
+          card.setAttribute("data-id", student.id);
 
           if (typeClass === 'regular' || typeClass === 'makeup') {
             card.innerHTML = `
