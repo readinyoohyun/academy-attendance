@@ -1639,6 +1639,13 @@ class SheetSimulator {
 
     const maxLen = Math.max(numLines.length, eventLines.length);
 
+    // Track original values to check if any field has changed after modifications
+    const originalValues = {};
+    const targetFields = ["notes", "progress", "levelUp", "grammarDone", "readingTest", "bookPlan"];
+    targetFields.forEach(field => {
+      originalValues[field] = (student[field] || "").trim();
+    });
+
     const groupMap = {
       notes: [],
       progress: [],
@@ -1685,12 +1692,13 @@ class SheetSimulator {
 
     // Parse Column J (grammarDone) items
     grammarLines.forEach(item => {
-      const isCompletion = item.includes("글완") || item.includes("글쓰기완") || item.includes("완료");
+      const cleanItemNoSpaces = item.replace(/\s+/g, "");
+      const isCompletion = cleanItemNoSpaces.includes("글완") || cleanItemNoSpaces.includes("글쓰기완") || cleanItemNoSpaces.includes("완료");
       const hasDigit = /\d+/.test(item);
 
       if (isCompletion) {
         // Find existing book line in progress (Col G) and append " 글완"
-        const cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+        const cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").replace(/글쓰기\s*완/g, "").trim();
         let currentProgress = (student.progress || "").trim();
         if (currentProgress) {
           let lines = currentProgress.split("\n");
@@ -1701,16 +1709,29 @@ class SheetSimulator {
             if (cleanBookNoSpaces && lineNoSpaces.includes(cleanBookNoSpaces)) {
               found = true;
               if (!line.includes("글완") && !line.includes("글쓰기완") && !line.includes("완료")) {
-                return `${line} 글완`;
+                const newLine = `${line} 글완`;
+                if (newLine.trim().indexOf(eventDatePrefix) === 0) {
+                  groupMap.progress.push(newLine);
+                }
+                return newLine;
               }
             }
             return line;
           });
-          // If not found and cleanBook is empty, append to the last line
-          if (!found && !cleanBookNoSpaces && lines.length > 0) {
+          
+          if (!found && cleanBookNoSpaces) {
+            const newLine = `${eventDatePrefix} ${cleanBook} 글완`;
+            lines.push(newLine);
+            groupMap.progress.push(newLine);
+            found = true;
+          } else if (!found && !cleanBookNoSpaces && lines.length > 0) {
             const lastLine = lines[lines.length - 1];
             if (!lastLine.includes("글완") && !lastLine.includes("글쓰기완") && !lastLine.includes("완료")) {
-              lines[lines.length - 1] = `${lastLine} 글완`;
+              const newLine = `${lastLine} 글완`;
+              if (newLine.trim().indexOf(eventDatePrefix) === 0) {
+                groupMap.progress.push(newLine);
+              }
+              lines[lines.length - 1] = newLine;
             }
           }
           student.progress = lines.join("\n");
@@ -1733,7 +1754,6 @@ class SheetSimulator {
       }
     });
 
-    const targetFields = ["notes", "progress", "levelUp", "grammarDone", "readingTest", "bookPlan"];
     targetFields.forEach(field => {
       let currentContent = (student[field] || "").trim();
       let lines = currentContent ? currentContent.split("\n") : [];
@@ -1744,7 +1764,7 @@ class SheetSimulator {
       newEventsToday.forEach(text => filteredLines.push(text));
 
       const newContent = filteredLines.join("\n");
-      if ((student[field] || "").trim() !== newContent.trim()) {
+      if (originalValues[field] !== newContent.trim()) {
         student[field] = newContent;
         this.onDataChanged("memberAnalysis", this.dataMap.memberAnalysis);
         if (window.app && window.app.updateFieldInGoogleSheets) {
