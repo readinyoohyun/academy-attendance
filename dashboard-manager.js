@@ -369,8 +369,23 @@ class DashboardManager {
 
           if (typeClass === 'regular' || typeClass === 'makeup') {
             card.innerHTML = `
-              <div class="card-header" style="justify-content: center; height: 100%; display: flex; align-items: center; padding: 1.2rem 0;">
-                <span class="student-name" style="font-size: 1.4rem; font-weight: 700; text-align: center; color: #ffffff; width: 100%; word-break: keep-all;">${this.escapeHtml(student.name)}</span>
+              <div class="card-header">
+                <span class="student-name" style="color: #ffffff;">${this.escapeHtml(student.name)}</span>
+                <div style="display:flex; align-items:center; gap:0.3rem;">
+                  <span class="student-grade" style="color: rgba(255,255,255,0.9); font-weight: 600;">${student.grade}</span>
+                  <span class="badge-time" style="background:rgba(255,255,255,0.25); color:#ffffff; border:1px solid rgba(255,255,255,0.3); padding:0.1rem 0.35rem; border-radius:4px; font-size:0.7rem; font-weight:700;">${timeStr}</span>
+                </div>
+              </div>
+              <div class="card-meta">
+                <div class="card-meta-row" style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top: 0.2rem;">
+                  <div style="display:flex; align-items:center; color: rgba(255,255,255,0.9); font-size: 0.8rem;">
+                    <span>${student.classes || '수업'}</span>
+                  </div>
+                  <div style="display: flex; gap: 0.35rem;">
+                    <button class="btn-absent-quick" style="background: rgba(239, 68, 68, 0.45); border: 1px solid rgba(239, 68, 68, 0.55); color: #ffffff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">결석</button>
+                    <button class="btn-cancelled-quick" style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">휴강</button>
+                  </div>
+                </div>
               </div>
             `;
           } else {
