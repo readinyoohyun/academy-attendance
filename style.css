@@ -2185,7 +2185,9 @@ body.fixed-layout .view-content.active {
 
 /* Locked layout height & scrolling table wrapper specifically for Google Sheets Simulator tab */
 #view-sheet {
-  overflow: hidden;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
 }
 
 #view-sheet.active {
