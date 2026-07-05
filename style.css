@@ -2133,3 +2133,34 @@ th.resizing .resize-handle::after {
   opacity: 1;
   transform: translateX(-50%) translateY(-2px);
 }
+
+/* Locked layout height & scrolling table wrapper specifically for Google Sheets Simulator tab */
+#view-sheet.active {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+#view-sheet.active #sheetSimulatorContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#view-sheet.active .sheet-container {
+  height: 100%;
+  padding: 1.2rem;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+#view-sheet.active .sheet-table-wrapper {
+  flex: 1;
+  max-height: none; /* Override default 75vh */
+  overflow-y: auto;
+  overflow-x: auto;
+}
