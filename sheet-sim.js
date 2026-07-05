@@ -29,6 +29,15 @@ class SheetSimulator {
     return s;
   }
 
+  normalizeGrade(g) {
+    if (!g) return "";
+    let s = String(g).trim().replace(/\s+/g, "");
+    s = s.replace(/^초등(\d)/, "초$1");
+    s = s.replace(/^중등(\d)/, "중$1");
+    s = s.replace(/^고등(\d)/, "고$1");
+    return s;
+  }
+
   setData(dataMap) {
     this.dataMap = {
       students: dataMap.students || [],
@@ -380,8 +389,8 @@ class SheetSimulator {
                     { val: '고2', label: '고등 2' },
                     { val: '고3', label: '고등 3' },
                     { val: '기타', label: '기타' }
-                  ].map(function(g) {
-                    return '<option value="' + g.val + '"' + (row.grade === g.val ? ' selected' : '') + '>' + g.label + '</option>';
+                  ].map(g => {
+                    return '<option value="' + g.val + '"' + (this.normalizeGrade(row.grade) === this.normalizeGrade(g.val) ? ' selected' : '') + '>' + g.label + '</option>';
                   }).join('')}
                 </select>
               </td>
@@ -509,8 +518,8 @@ class SheetSimulator {
                   { val: '고2', label: '고등 2' },
                   { val: '고3', label: '고등 3' },
                   { val: '기타', label: '기타' }
-                ].map(function(g) {
-                  return '<option value="' + g.val + '"' + (row.grade === g.val ? ' selected' : '') + '>' + g.label + '</option>';
+                ].map(g => {
+                  return '<option value="' + g.val + '"' + (this.normalizeGrade(row.grade) === this.normalizeGrade(g.val) ? ' selected' : '') + '>' + g.label + '</option>';
                 }).join('')}
               </select>
             </td>
@@ -581,8 +590,8 @@ class SheetSimulator {
                   { val: '고2', label: '고등 2' },
                   { val: '고3', label: '고등 3' },
                   { val: '기타', label: '기타' }
-                ].map(function(g) {
-                  return '<option value="' + g.val + '"' + (row.grade === g.val ? ' selected' : '') + '>' + g.label + '</option>';
+                ].map(g => {
+                  return '<option value="' + g.val + '"' + (this.normalizeGrade(row.grade) === this.normalizeGrade(g.val) ? ' selected' : '') + '>' + g.label + '</option>';
                 }).join('')}
               </select>
             </td>
@@ -636,8 +645,8 @@ class SheetSimulator {
                   { val: '고2', label: '고등 2' },
                   { val: '고3', label: '고등 3' },
                   { val: '기타', label: '기타' }
-                ].map(function(g) {
-                  return '<option value="' + g.val + '"' + (row.grade === g.val ? ' selected' : '') + '>' + g.label + '</option>';
+                ].map(g => {
+                  return '<option value="' + g.val + '"' + (this.normalizeGrade(row.grade) === this.normalizeGrade(g.val) ? ' selected' : '') + '>' + g.label + '</option>';
                 }).join('')}
               </select>
             </td>
