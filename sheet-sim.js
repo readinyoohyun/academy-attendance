@@ -122,7 +122,7 @@ class SheetSimulator {
     const capacities = this.calculateCapacities();
 
     let html = `
-      <div class="sheet-container glass-panel">
+      <div class="sheet-container glass-panel ${this.activeTab === '한명 검색' ? 'decoupled-view' : ''}">
         <!-- Sheet Header Toolbar -->
         <div class="sheet-toolbar">
           <h2 class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">

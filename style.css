@@ -59,6 +59,11 @@
   padding: 0;
 }
 
+html:has(body.fixed-layout) {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   font-family: var(--font-main);
   background: var(--bg-gradient);
@@ -731,6 +736,13 @@ main {
   font-size: 0.9rem;
 }
 
+.sheet-table thead,
+.sheet-table thead tr {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
 .sheet-table th {
   position: sticky;
   top: 0;
@@ -743,6 +755,11 @@ main {
   border-right: 1px solid var(--panel-border);
   font-family: var(--font-title);
   white-space: nowrap;
+  /* Hardware acceleration hacks to fix iOS Safari sticky lag/rendering bugs */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Column Resize Handle */
@@ -2193,9 +2210,18 @@ body.fixed-layout .view-content.active {
   overflow: hidden;
 }
 
+#view-sheet.active .sheet-container.decoupled-view {
+  overflow-y: auto; /* Allow the single search container itself to scroll vertically since it has 3 section cards */
+}
+
 #view-sheet.active .sheet-table-wrapper {
   flex: 1;
   max-height: none; /* Override default 75vh */
   overflow-y: auto;
   overflow-x: auto;
+}
+
+#view-sheet.active .sheet-container.decoupled-view .sheet-table-wrapper {
+  flex: none;
+  max-height: 400px; /* Internal scroll height limit for single-student tables in card sections */
 }
