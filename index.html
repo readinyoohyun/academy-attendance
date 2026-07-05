@@ -319,6 +319,9 @@
                     </tbody>
                   </table>
                 </div>
+
+                <!-- Monthly Attendance Calendar Placeholder (CRM) -->
+                <div id="crmAttendanceCalendarContainer"></div>
               </div>
 
               <!-- SECTION B: TEXTBOOK 진도 관리 -->
@@ -802,27 +805,27 @@ function doGet() {
   var dailyLogsData = [];
   if (sheetDaily) {
     var lastRow = sheetDaily.getLastRow();
-    if (lastRow > 1) {
+    if (lastRow > 2) {
       ensureColumns(sheetDaily, 11);
-      var range = sheetDaily.getRange(2, 1, lastRow - 1, 11); // Read 11 columns
+      var range = sheetDaily.getRange(3, 1, lastRow - 2, 11); // 3행부터 읽기 (2행 템플릿 건너뜀)
       var data = range.getDisplayValues();
       for (var i = 0; i < data.length; i++) {
         var name = String(data[i][2] || "").trim();
         if (!name) continue;
         dailyLogsData.push({
-          id: "daily_" + (2 + i),
-          row: 2 + i,
+          id: "daily_" + (3 + i),
+          row: 3 + i,
           date: String(data[i][0] || ""),
           time: String(data[i][1] || ""),
           name: name,
-          notes: String(data[i][3] || ""), // Col D (notes)
-          status: String(data[i][4] || "대기").trim(), // Col E (status)
-          inTime: String(data[i][5] || ""), // Col F (inTime)
-          reason: String(data[i][6] || ""), // Col G (reason)
-          number: String(data[i][7] || ""), // Col H (number)
-          event: String(data[i][8] || ""), // Col I (event)
-          grammarDone: String(data[i][9] || ""), // Col J (진단글쓰기/특별수업)
-          contents: String(data[i][10] || "") // Col K (수업내용 및 특이사항)
+          notes: String(data[i][3] || ""),
+          status: String(data[i][4] || "대기").trim(),
+          inTime: String(data[i][5] || ""),
+          reason: String(data[i][6] || ""),
+          number: String(data[i][7] || ""),
+          event: String(data[i][8] || ""),
+          grammarDone: String(data[i][9] || ""),
+          contents: String(data[i][10] || "")
         });
       }
     }
@@ -1375,43 +1378,6 @@ function generateDailyAttendance() {
   }
   ensureColumns(sheetDaily, 11);
   
-  // 1. 기존 '오늘 출석부' 데이터를 '누적일일수업관리'로 백업
-  var lastRowDaily = sheetDaily.getLastRow();
-  
-  // 드롭다운(Data Validation) 유효성 검사 룰 백업 (2행 기준)
-  var validationE2 = lastRowDaily >= 2 ? sheetDaily.getRange("E2").getDataValidation() : null;
-  var validationH2 = lastRowDaily >= 2 ? sheetDaily.getRange("H2").getDataValidation() : null;
-  var validationI2 = lastRowDaily >= 2 ? sheetDaily.getRange("I2").getDataValidation() : null;
-  
-  if (lastRowDaily > 1) {
-    var sheetAccumulated = ss.getSheetByName("누적일일수업관리");
-    if (!sheetAccumulated) {
-      sheetAccumulated = ss.insertSheet("누적일일수업관리");
-      sheetAccumulated.appendRow([
-        "날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유",
-        "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
-      ]);
-    }
-    ensureColumns(sheetAccumulated, 11);
-    var dailyRange = sheetDaily.getRange(2, 1, lastRowDaily - 1, 11);
-    var dailyValues = dailyRange.getValues();
-    var dailyRichTexts = dailyRange.getRichTextValues();
-    
-    // Prepend to cumulative sheet: insert rows right below the header (at row 2)
-    sheetAccumulated.insertRowsBefore(2, dailyValues.length);
-    var destRange = sheetAccumulated.getRange(2, 1, dailyValues.length, 11);
-    destRange.setValues(dailyValues);
-    try {
-      destRange.setRichTextValues(dailyRichTexts);
-    } catch(e) {}
-    
-    // 백업 후 기존 데이터 행을 완전히 삭제하지 않고 값(Text)만 초기화!
-    // 이렇게 함으로써 구글 시트에 기설정된 드롭다운(데이터 유효성 검사)이 2행 이하 전체 셀에 안전하게 보존됩니다.
-    dailyRange.clearContent();
-  }
-  
-  // 2. 오늘의 요일에 맞는 학생들을 추출하여 채우기
-  // KST 타임존(Asia/Seoul)으로 요일 및 날짜 가져오기 (Item 4)
   var today = new Date();
   var todayDayName = Utilities.formatDate(today, "Asia/Seoul", "EEEE");
   var dayShort = "";
@@ -1428,6 +1394,52 @@ function generateDailyAttendance() {
   var dateStr = m + "/" + d + dayShort;
   var dateDot = m + "." + d;
   var dateSlash = m + "/" + d;
+  
+  var lastRowDaily = sheetDaily.getLastRow();
+  
+  // 드롭다운 검사 룰 백업 (2행 템플릿 기준)
+  var validationE2 = lastRowDaily >= 2 ? sheetDaily.getRange("E2").getDataValidation() : null;
+  var validationH2 = lastRowDaily >= 2 ? sheetDaily.getRange("H2").getDataValidation() : null;
+  var validationI2 = lastRowDaily >= 2 ? sheetDaily.getRange("I2").getDataValidation() : null;
+  
+  // [중복 백업 및 삭제 방지 안전장치]
+  // 3행의 날짜 정보가 오늘 날짜와 같다면, 이미 오늘자 시간표가 생성된 상태이므로 실행을 스킵합니다.
+  if (lastRowDaily >= 3) {
+    var checkDateVal = String(sheetDaily.getRange(3, 1).getValue()).trim();
+    var checkDateMatch = checkDateVal.match(/(\d+\/\d+)/);
+    if (checkDateMatch && checkDateMatch[1] === dateSlash) {
+      Logger.log("오늘 출석부가 이미 생성되어 작동 중입니다. 중복 백업 및 초기화를 건너뜁니다.");
+      return;
+    }
+  }
+  
+  // 2행은 고정해 두고, 3행 이하 기존 데이터를 '누적일일수업관리'로 백업 후 지움
+  if (lastRowDaily >= 3) {
+    var sheetAccumulated = ss.getSheetByName("누적일일수업관리");
+    if (!sheetAccumulated) {
+      sheetAccumulated = ss.insertSheet("누적일일수업관리");
+      sheetAccumulated.appendRow([
+        "날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유",
+        "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
+      ]);
+    }
+    ensureColumns(sheetAccumulated, 11);
+    
+    // 3행부터 마지막 행까지 (A열~K열 총 11개 컬럼) 데이터 복사
+    var dailyRange = sheetDaily.getRange(3, 1, lastRowDaily - 2, 11);
+    var dailyValues = dailyRange.getDisplayValues(); // getDisplayValues() 사용하여 시간 문자열 포맷 유지
+    var dailyRichTexts = dailyRange.getRichTextValues();
+    
+    sheetAccumulated.insertRowsBefore(2, dailyValues.length);
+    var destRange = sheetAccumulated.getRange(2, 1, dailyValues.length, 11);
+    destRange.setValues(dailyValues);
+    try {
+      destRange.setRichTextValues(dailyRichTexts);
+    } catch(e) {}
+    
+    // 3행 이하 기존 행들을 완전 삭제하여 초기화 (2행은 무조건 유지)
+    sheetDaily.deleteRows(3, lastRowDaily - 2);
+  }
   
   var lastRowSt = sheetStudents.getLastRow();
   if (lastRowSt < 2) return;
@@ -1449,8 +1461,8 @@ function generateDailyAttendance() {
     }
     if (isGroup || name.length > 8) continue;
     
-    var grade = String(studentsData[i][1] || "").trim(); // 학년 추가 (정리 정렬을 위함)
-    var notes = String(studentsData[i][10] || "").trim(); // Col K (index 10) 특이사항
+    var grade = String(studentsData[i][1] || "").trim();
+    var notes = String(studentsData[i][10] || "").trim();
     var absentDates = String(studentsData[i][11] || "").trim().replace(/\s+/g, '');
     var makeupDateStr = String(studentsData[i][30] || "").trim();
     var makeupCompleted = String(studentsData[i][31] || "").trim();
@@ -1486,12 +1498,7 @@ function generateDailyAttendance() {
     
     if (isMakeupToday && makeupCompleted !== "완료") {
       dailyLogsToAdd.push({
-        time: makeupTime,
-        name: name,
-        grade: grade,
-        status: "대기",
-        reason: "보강 수업",
-        notes: notes
+        time: makeupTime, name: name, grade: grade, status: "대기", reason: "보강 수업", notes: notes
       });
     } else if (regTime && !makeupDateStr) {
       var parts = regTime.split(/[,/; ]+/);
@@ -1499,61 +1506,38 @@ function generateDailyAttendance() {
         var t = parts[p].trim();
         if (t) {
           dailyLogsToAdd.push({
-            time: t,
-            name: name,
-            grade: grade,
-            status: isAbsentToday ? "결석" : "대기",
-            reason: isAbsentToday ? "정규 결석" : "",
-            notes: notes
+            time: t, name: name, grade: grade, status: isAbsentToday ? "결석" : "대기", reason: isAbsentToday ? "정규 결석" : "", notes: notes
           });
         }
       }
     }
   }
   
-  // 1. 시간 오름차순 -> 2. 같은 시간이면 학년 오름차순 -> 3. 동일 학년이면 이름 오름차순 정렬
   dailyLogsToAdd.sort(function(a, b) {
     var timeComp = a.time.localeCompare(b.time);
     if (timeComp !== 0) return timeComp;
-    
     var rankA = getGradeRank(a.grade);
     var rankB = getGradeRank(b.grade);
     if (rankA !== rankB) return rankA - rankB;
-    
     return a.name.localeCompare(b.name);
   });
   
-  // 데이터 밀어넣기
   if (dailyLogsToAdd.length > 0) {
-    var writeRange = sheetDaily.getRange(2, 1, dailyLogsToAdd.length, 11);
+    // 3행부터 밀어넣기 시작
+    var writeRange = sheetDaily.getRange(3, 1, dailyLogsToAdd.length, 11);
     var writeValues = [];
     for (var j = 0; j < dailyLogsToAdd.length; j++) {
       writeValues.push([
-        dateStr, // 날짜요일 (A)
-        dailyLogsToAdd[j].time, // 시간 (B)
-        dailyLogsToAdd[j].name, // 이름 (C)
-        dailyLogsToAdd[j].notes, // 특이사항 (D)
-        dailyLogsToAdd[j].status, // 등원여부 (E)
-        "", // 등원시간 (F)
-        dailyLogsToAdd[j].reason, // 보강결석사유 (G)
-        "", // 숫자 (H)
-        "", // 이벤트 (I)
-        "", // 진단글쓰기/특별수업 (J)
-        ""  // 수업내용 및 특이사항 (K)
+        dateStr, dailyLogsToAdd[j].time, dailyLogsToAdd[j].name, dailyLogsToAdd[j].notes,
+        dailyLogsToAdd[j].status, "", dailyLogsToAdd[j].reason, "", "", "", ""
       ]);
     }
     writeRange.setValues(writeValues);
     
-    // 비워진 칸(드롭다운 유효성 검사)이 2행 기준보다 늘어난 경우, 드롭다운 룰을 하단 셀까지 동적 복사 적용
-    if (validationE2) {
-      sheetDaily.getRange(2, 5, dailyLogsToAdd.length, 1).setDataValidation(validationE2);
-    }
-    if (validationH2) {
-      sheetDaily.getRange(2, 8, dailyLogsToAdd.length, 1).setDataValidation(validationH2);
-    }
-    if (validationI2) {
-      sheetDaily.getRange(2, 9, dailyLogsToAdd.length, 1).setDataValidation(validationI2);
-    }
+    // 유효성 룰 전파 (3행 이하)
+    if (validationE2) sheetDaily.getRange(3, 5, dailyLogsToAdd.length, 1).setDataValidation(validationE2);
+    if (validationH2) sheetDaily.getRange(3, 8, dailyLogsToAdd.length, 1).setDataValidation(validationH2);
+    if (validationI2) sheetDaily.getRange(3, 9, dailyLogsToAdd.length, 1).setDataValidation(validationI2);
   }
 }
 

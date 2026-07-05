@@ -229,40 +229,40 @@ class SheetSimulator {
             <th class="row-num-col">행</th>
             <th>학년 (A)</th>
             <th>이름 (B)</th>
-            <th>비문학 교재명 (C)</th>
-            <th>시작일 (D)</th>
-            <th>마침일 (E)</th>
-            <th>정답률 (F)</th>
-            <th>문학교재명 (G)</th>
-            <th>시작일 (H)</th>
-            <th>마침일 (I)</th>
-            <th>정답률 (J)</th>
-            <th>어휘 교재명 (K)</th>
-            <th>시작일 (L)</th>
-            <th>마침일 (M)</th>
-            <th>정답률 (N)</th>
-            <th>복합 교재명 (O)</th>
-            <th>시작일 (P)</th>
-            <th>마침일 (Q)</th>
-            <th>정답률 (R)</th>
-            <th>음독 교재 (S)</th>
-            <th>시작일 (T)</th>
-            <th>마침일 (U)</th>
-            <th>정답률 (V)</th>
+            <th style="background:#e0f2fe !important; color:#0369a1;">비문학 교재명 (C)</th>
+            <th style="background:#e0f2fe !important; color:#0369a1;">시작일 (D)</th>
+            <th style="background:#e0f2fe !important; color:#0369a1;">마침일 (E)</th>
+            <th style="background:#e0f2fe !important; color:#0369a1;">정답률 (F)</th>
+            <th style="background:#ffe4e6 !important; color:#b91c1c;">문학교재명 (G)</th>
+            <th style="background:#ffe4e6 !important; color:#b91c1c;">시작일 (H)</th>
+            <th style="background:#ffe4e6 !important; color:#b91c1c;">마침일 (I)</th>
+            <th style="background:#ffe4e6 !important; color:#b91c1c;">정답률 (J)</th>
+            <th style="background:#fef3c7 !important; color:#b45309;">어휘 교재명 (K)</th>
+            <th style="background:#fef3c7 !important; color:#b45309;">시작일 (L)</th>
+            <th style="background:#fef3c7 !important; color:#b45309;">마침일 (M)</th>
+            <th style="background:#fef3c7 !important; color:#b45309;">정답률 (N)</th>
+            <th style="background:#f3e8ff !important; color:#6d28d9;">복합 교재명 (O)</th>
+            <th style="background:#f3e8ff !important; color:#6d28d9;">시작일 (P)</th>
+            <th style="background:#f3e8ff !important; color:#6d28d9;">마침일 (Q)</th>
+            <th style="background:#f3e8ff !important; color:#6d28d9;">정답률 (R)</th>
+            <th style="background:#d1fae5 !important; color:#047857;">음독 교재 (S)</th>
+            <th style="background:#d1fae5 !important; color:#047857;">시작일 (T)</th>
+            <th style="background:#d1fae5 !important; color:#047857;">마침일 (U)</th>
+            <th style="background:#d1fae5 !important; color:#047857;">정답률 (V)</th>
             <th>동작</th>
           </tr>
         `;
       case "상담내용/리포트발송/채널발송":
         return `
           <tr>
-            <th class="row-num-col">행</th>
-            <th>학년 (A)</th>
-            <th>이름 (B)</th>
-            <th>작성기간 (C)</th>
-            <th style="width: 80px;">작성인 (D)</th>
-            <th>상담내용 / 분석지 / 채널 보냄 (E)</th>
-            <th>부모님의 need / 학생 특이사항 (F)</th>
-            <th>동작</th>
+            <th class="row-num-col" style="width: 40px; text-align:center;">행</th>
+            <th style="width: 70px; text-align:center;">학년 (A)</th>
+            <th style="width: 90px; text-align:center;">이름 (B)</th>
+            <th style="width: 90px; text-align:center;">작성기간 (C)</th>
+            <th style="width: 60px; text-align:center; white-space: normal; word-break: break-all;">작성인 (D)</th>
+            <th style="width: 380px;">상담내용 / 분석지 / 채널 보냄 (E)</th>
+            <th style="width: 300px;">부모님의 need / 학생 특이사항 (F)</th>
+            <th style="width: 60px; text-align:center;">동작</th>
           </tr>
         `;
       case "회원 분석/레벨변동/전화상담":
@@ -363,11 +363,26 @@ class SheetSimulator {
           return `
             <tr class="${isOverCapacity ? 'row-error' : ''}" data-id="${row.id}">
               <td class="row-num-col" style="text-align:center; font-weight:600;">${row.row}</td>
+
               <td>
                 <select class="sheet-input-grade" style="width: 70px;">
-                  ${['초등 1', '초등 2', '초등 3', '초등 4', '초등 5', '초등 6', '중등 1', '중등 2', '중등 3', '고등 1', '고등 2', '고등 3', '기타'].map(g => `
-                    <option value="${g}" ${row.grade === g ? 'selected' : ''}>${g}</option>
-                  `).join('')}
+                  ${[
+                    { val: '초1', label: '초등 1' },
+                    { val: '초2', label: '초등 2' },
+                    { val: '초3', label: '초등 3' },
+                    { val: '초4', label: '초등 4' },
+                    { val: '초5', label: '초등 5' },
+                    { val: '초6', label: '초등 6' },
+                    { val: '중1', label: '중등 1' },
+                    { val: '중2', label: '중등 2' },
+                    { val: '중3', label: '중등 3' },
+                    { val: '고1', label: '고등 1' },
+                    { val: '고2', label: '고등 2' },
+                    { val: '고3', label: '고등 3' },
+                    { val: '기타', label: '기타' }
+                  ].map(function(g) {
+                    return '<option value="' + g.val + '"' + (row.grade === g.val ? ' selected' : '') + '>' + g.label + '</option>';
+                  }).join('')}
                 </select>
               </td>
               <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 90px; font-weight:600;"></td>
@@ -477,49 +492,66 @@ class SheetSimulator {
         return filtered.map(row => `
           <tr data-id="${row.id}">
             <td class="row-num-col" style="text-align:center; font-weight:600;">${row.row}</td>
+
             <td>
               <select class="sheet-input-grade" style="width: 80px;">
-                ${['초등 1', '초등 2', '초등 3', '초등 4', '초등 5', '초등 6', '중등 1', '중등 2', '중등 3', '고등 1', '고등 2', '고등 3', '기타'].map(g => `
-                  <option value="${g}" ${row.grade === g ? 'selected' : ''}>${g}</option>
-                `).join('')}
+                ${[
+                  { val: '초1', label: '초등 1' },
+                  { val: '초2', label: '초등 2' },
+                  { val: '초3', label: '초등 3' },
+                  { val: '초4', label: '초등 4' },
+                  { val: '초5', label: '초등 5' },
+                  { val: '초6', label: '초등 6' },
+                  { val: '중1', label: '중등 1' },
+                  { val: '중2', label: '중등 2' },
+                  { val: '중3', label: '중등 3' },
+                  { val: '고1', label: '고등 1' },
+                  { val: '고2', label: '고등 2' },
+                  { val: '고3', label: '고등 3' },
+                  { val: '기타', label: '기타' }
+                ].map(function(g) {
+                  return '<option value="' + g.val + '"' + (row.grade === g.val ? ' selected' : '') + '>' + g.label + '</option>';
+                }).join('')}
               </select>
             </td>
             <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 80px; font-weight:600;"></td>
             
             <!-- 비문학 -->
-            <td><input type="text" class="sheet-input-field" data-field="nonfictionTitle" value="${this.escapeHtml(row.nonfictionTitle || '')}" style="width: 120px;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="nonfictionStart" value="${this.escapeHtml(row.nonfictionStart || '')}" style="width: 80px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="nonfictionEnd" value="${this.escapeHtml(row.nonfictionEnd || '')}" style="width: 80px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="nonfictionAccuracy" value="${this.escapeHtml(row.nonfictionAccuracy || '')}" style="width: 60px; text-align:center;"></td>
+            <td style="${row.nonfictionTitle ? 'background-color: #e0f2fe;' : ''}"><input type="text" class="sheet-input-field" data-field="nonfictionTitle" value="${this.escapeHtml(row.nonfictionTitle || '')}" style="width: 120px;"></td>
+            <td style="${row.nonfictionStart ? 'background-color: #e0f2fe;' : ''}"><input type="text" class="sheet-input-field" data-field="nonfictionStart" value="${this.escapeHtml(row.nonfictionStart || '')}" style="width: 80px; text-align:center;"></td>
+            <td style="${row.nonfictionEnd ? 'background-color: #e0f2fe;' : ''}"><input type="text" class="sheet-input-field" data-field="nonfictionEnd" value="${this.escapeHtml(row.nonfictionEnd || '')}" style="width: 80px; text-align:center;"></td>
+            <td style="${row.nonfictionAccuracy ? 'background-color: #e0f2fe;' : ''}"><input type="text" class="sheet-input-field" data-field="nonfictionAccuracy" value="${this.escapeHtml(row.nonfictionAccuracy || '')}" style="width: 60px; text-align:center;"></td>
             
             <!-- 문학 -->
-            <td><input type="text" class="sheet-input-field" data-field="literatureTitle" value="${this.escapeHtml(row.literatureTitle || '')}" style="width: 120px;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="literatureStart" value="${this.escapeHtml(row.literatureStart || '')}" style="width: 80px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="literatureEnd" value="${this.escapeHtml(row.literatureEnd || '')}" style="width: 80px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="literatureAccuracy" value="${this.escapeHtml(row.literatureAccuracy || '')}" style="width: 60px; text-align:center;"></td>
+            <td style="${row.literatureTitle ? 'background-color: #ffe4e6;' : ''}"><input type="text" class="sheet-input-field" data-field="literatureTitle" value="${this.escapeHtml(row.literatureTitle || '')}" style="width: 120px;"></td>
+            <td style="${row.literatureStart ? 'background-color: #ffe4e6;' : ''}"><input type="text" class="sheet-input-field" data-field="literatureStart" value="${this.escapeHtml(row.literatureStart || '')}" style="width: 80px; text-align:center;"></td>
+            <td style="${row.literatureEnd ? 'background-color: #ffe4e6;' : ''}"><input type="text" class="sheet-input-field" data-field="literatureEnd" value="${this.escapeHtml(row.literatureEnd || '')}" style="width: 80px; text-align:center;"></td>
+            <td style="${row.literatureAccuracy ? 'background-color: #ffe4e6;' : ''}"><input type="text" class="sheet-input-field" data-field="literatureAccuracy" value="${this.escapeHtml(row.literatureAccuracy || '')}" style="width: 60px; text-align:center;"></td>
             
             <!-- 어휘 -->
-            <td><input type="text" class="sheet-input-field" data-field="vocabTitle" value="${this.escapeHtml(row.vocabTitle || '')}" style="width: 120px;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="vocabStart" value="${this.escapeHtml(row.vocabStart || '')}" style="width: 80px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="vocabEnd" value="${this.escapeHtml(row.vocabEnd || '')}" style="width: 80px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="vocabAccuracy" value="${this.escapeHtml(row.vocabAccuracy || '')}" style="width: 60px; text-align:center;"></td>
+            <td style="${row.vocabTitle ? 'background-color: #fef3c7;' : ''}"><input type="text" class="sheet-input-field" data-field="vocabTitle" value="${this.escapeHtml(row.vocabTitle || '')}" style="width: 120px;"></td>
+            <td style="${row.vocabStart ? 'background-color: #fef3c7;' : ''}"><input type="text" class="sheet-input-field" data-field="vocabStart" value="${this.escapeHtml(row.vocabStart || '')}" style="width: 80px; text-align:center;"></td>
+            <td style="${row.vocabEnd ? 'background-color: #fef3c7;' : ''}"><input type="text" class="sheet-input-field" data-field="vocabEnd" value="${this.escapeHtml(row.vocabEnd || '')}" style="width: 80px; text-align:center;"></td>
+            <td style="${row.vocabAccuracy ? 'background-color: #fef3c7;' : ''}"><input type="text" class="sheet-input-field" data-field="vocabAccuracy" value="${this.escapeHtml(row.vocabAccuracy || '')}" style="width: 60px; text-align:center;"></td>
             
             <!-- 복합 -->
-            <td><input type="text" class="sheet-input-field" data-field="complexTitle" value="${this.escapeHtml(row.complexTitle || '')}" style="width: 120px;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="complexStart" value="${this.escapeHtml(row.complexStart || '')}" style="width: 80px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="complexEnd" value="${this.escapeHtml(row.complexEnd || '')}" style="width: 80px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="complexAccuracy" value="${this.escapeHtml(row.complexAccuracy || '')}" style="width: 60px; text-align:center;"></td>
+            <td style="${row.complexTitle ? 'background-color: #f3e8ff;' : ''}"><input type="text" class="sheet-input-field" data-field="complexTitle" value="${this.escapeHtml(row.complexTitle || '')}" style="width: 120px;"></td>
+            <td style="${row.complexStart ? 'background-color: #f3e8ff;' : ''}"><input type="text" class="sheet-input-field" data-field="complexStart" value="${this.escapeHtml(row.complexStart || '')}" style="width: 80px; text-align:center;"></td>
+            <td style="${row.complexEnd ? 'background-color: #f3e8ff;' : ''}"><input type="text" class="sheet-input-field" data-field="complexEnd" value="${this.escapeHtml(row.complexEnd || '')}" style="width: 80px; text-align:center;"></td>
+            <td style="${row.complexAccuracy ? 'background-color: #f3e8ff;' : ''}"><input type="text" class="sheet-input-field" data-field="complexAccuracy" value="${this.escapeHtml(row.complexAccuracy || '')}" style="width: 60px; text-align:center;"></td>
             
             <!-- 음독 -->
-            <td><input type="text" class="sheet-input-field" data-field="readaloudTitle" value="${this.escapeHtml(row.readaloudTitle || '')}" style="width: 120px;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="readaloudStart" value="${this.escapeHtml(row.readaloudStart || '')}" style="width: 80px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="readaloudEnd" value="${this.escapeHtml(row.readaloudEnd || '')}" style="width: 80px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-field" data-field="readaloudAccuracy" value="${this.escapeHtml(row.readaloudAccuracy || '')}" style="width: 60px; text-align:center;"></td>
+            <td style="${row.readaloudTitle ? 'background-color: #d1fae5;' : ''}"><input type="text" class="sheet-input-field" data-field="readaloudTitle" value="${this.escapeHtml(row.readaloudTitle || '')}" style="width: 120px;"></td>
+            <td style="${row.readaloudStart ? 'background-color: #d1fae5;' : ''}"><input type="text" class="sheet-input-field" data-field="readaloudStart" value="${this.escapeHtml(row.readaloudStart || '')}" style="width: 80px; text-align:center;"></td>
+            <td style="${row.readaloudEnd ? 'background-color: #d1fae5;' : ''}"><input type="text" class="sheet-input-field" data-field="readaloudEnd" value="${this.escapeHtml(row.readaloudEnd || '')}" style="width: 80px; text-align:center;"></td>
+            <td style="${row.readaloudAccuracy ? 'background-color: #d1fae5;' : ''}"><input type="text" class="sheet-input-field" data-field="readaloudAccuracy" value="${this.escapeHtml(row.readaloudAccuracy || '')}" style="width: 60px; text-align:center;"></td>
             
             <td><button class="btn-delete-row" data-id="${row.id}">🗑️</button></td>
           </tr>
         `).join('');
       }
+
+
 
       case "상담내용/리포트발송/채널발송": {
         const filtered = this.dataMap.consultations.filter(row => {
@@ -532,25 +564,40 @@ class SheetSimulator {
         return filtered.map(row => `
           <tr data-id="${row.id}">
             <td class="row-num-col" style="text-align:center; font-weight:600;">${row.row}</td>
+
             <td>
-              <select class="sheet-input-grade" style="width: 80px;">
-                ${['초등 1', '초등 2', '초등 3', '초등 4', '초등 5', '초등 6', '중등 1', '중등 2', '중등 3', '고등 1', '고등 2', '고등 3', '기타'].map(g => `
-                  <option value="${g}" ${row.grade === g ? 'selected' : ''}>${g}</option>
-                `).join('')}
+              <select class="sheet-input-grade" style="width: 70px;">
+                ${[
+                  { val: '초1', label: '초등 1' },
+                  { val: '초2', label: '초등 2' },
+                  { val: '초3', label: '초등 3' },
+                  { val: '초4', label: '초등 4' },
+                  { val: '초5', label: '초등 5' },
+                  { val: '초6', label: '초등 6' },
+                  { val: '중1', label: '중등 1' },
+                  { val: '중2', label: '중등 2' },
+                  { val: '중3', label: '중등 3' },
+                  { val: '고1', label: '고등 1' },
+                  { val: '고2', label: '고등 2' },
+                  { val: '고3', label: '고등 3' },
+                  { val: '기타', label: '기타' }
+                ].map(function(g) {
+                  return '<option value="' + g.val + '"' + (row.grade === g.val ? ' selected' : '') + '>' + g.label + '</option>';
+                }).join('')}
               </select>
             </td>
-            <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 100px; font-weight:600;"></td>
-            <td><input type="text" class="sheet-input-period" value="${this.escapeHtml(row.period || '')}" style="width: 100px; text-align:center;"></td>
-            <td><input type="text" class="sheet-input-author" value="${this.escapeHtml(row.author || '')}" style="width: 70px; text-align:center;"></td>
+            <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 90px; font-weight:600;"></td>
+            <td><input type="text" class="sheet-input-period" value="${this.escapeHtml(row.period || '')}" style="width: 90px; text-align:center;"></td>
+            <td><input type="text" class="sheet-input-author" value="${this.escapeHtml(row.author || '')}" style="width: 50px; text-align:center;"></td>
             <td>
               <div style="display:flex; align-items:center; gap:4px;">
-                <textarea class="sheet-input-content" style="width: 310px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.content || '')}</textarea>
+                <textarea class="sheet-input-content" style="width: 370px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.content || '')}</textarea>
                 <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
               </div>
             </td>
             <td>
               <div style="display:flex; align-items:center; gap:4px;">
-                <textarea class="sheet-input-needs" style="width: 260px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.needs || '')}</textarea>
+                <textarea class="sheet-input-needs" style="width: 290px; height: 32px; min-height: 32px; resize: vertical; transition: height 0.2s; padding: 0.4rem; font-family: var(--font-main); border: 1px solid transparent; border-radius: 6px; background: transparent; overflow-y: hidden;" onfocus="this.style.height='120px'; this.style.background='var(--input-bg)'; this.style.borderColor='var(--accent)';" onblur="this.style.height='32px'; this.style.background='transparent'; this.style.borderColor='transparent';">${this.escapeHtml(row.needs || '')}</textarea>
                 <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
               </div>
             </td>
@@ -572,11 +619,26 @@ class SheetSimulator {
             <td class="row-num-col" style="text-align:center; font-weight:600;">${row.row}</td>
             <td><input type="text" class="sheet-input-num" value="${this.escapeHtml(row.num || '')}" style="width: 50px; text-align:center; ${this.getConditionalStyle(row.num)}"></td>
             <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 90px; font-weight:600; ${this.getConditionalStyle(row.name)}"></td>
+
             <td>
               <select class="sheet-input-grade" style="width: 80px; ${this.getConditionalStyle(row.grade)}">
-                ${['초등 1', '초등 2', '초등 3', '초등 4', '초등 5', '초등 6', '중등 1', '중등 2', '중등 3', '고등 1', '고등 2', '고등 3', '기타'].map(g => `
-                  <option value="${g}" ${row.grade === g ? 'selected' : ''}>${g}</option>
-                `).join('')}
+                ${[
+                  { val: '초1', label: '초등 1' },
+                  { val: '초2', label: '초등 2' },
+                  { val: '초3', label: '초등 3' },
+                  { val: '초4', label: '초등 4' },
+                  { val: '초5', label: '초등 5' },
+                  { val: '초6', label: '초등 6' },
+                  { val: '중1', label: '중등 1' },
+                  { val: '중2', label: '중등 2' },
+                  { val: '중3', label: '중등 3' },
+                  { val: '고1', label: '고등 1' },
+                  { val: '고2', label: '고등 2' },
+                  { val: '고3', label: '고등 3' },
+                  { val: '기타', label: '기타' }
+                ].map(function(g) {
+                  return '<option value="' + g.val + '"' + (row.grade === g.val ? ' selected' : '') + '>' + g.label + '</option>';
+                }).join('')}
               </select>
             </td>
             <td><input type="text" class="sheet-input-regDate" value="${this.escapeHtml(row.regDate || '')}" style="width: 80px; text-align:center; ${this.getConditionalStyle(row.regDate)}"></td>
@@ -894,12 +956,12 @@ class SheetSimulator {
         rowsHtml += `
           <tr style="background:rgba(255,255,255,0.02); font-weight:bold; font-size:0.8rem;">
             <td class="row-num-col">${sec3HeaderRow}</td>
-            <td style="text-align:center;">학년 (A)</td>
-            <td style="text-align:center;">이름 (B)</td>
-            <td style="text-align:center;">작성기간 (C)</td>
-            <td style="text-align:center;">작성인 (D)</td>
-            <td style="text-align:center;">상담내용 / 분석지 / 채널 보냄 (E)</td>
-            <td style="text-align:center;">부모님의 need / 학생 특이사항 (F)</td>
+            <td style="width: 70px; text-align:center;">학년 (A)</td>
+            <td style="width: 90px; text-align:center;">이름 (B)</td>
+            <td style="width: 90px; text-align:center;">작성기간 (C)</td>
+            <td style="width: 60px; text-align:center; white-space: normal; word-break: break-all;">작성인 (D)</td>
+            <td style="min-width: 380px; text-align:left;">상담내용 / 분석지 / 채널 보냄 (E)</td>
+            <td style="min-width: 300px; text-align:left;">부모님의 need / 학생 특이사항 (F)</td>
             ${Array(12).fill('<td></td>').join('')}
           </tr>
         `;
@@ -910,12 +972,12 @@ class SheetSimulator {
             rowsHtml += `
               <tr style="background:rgba(99,102,241,0.02);">
                 <td class="row-num-col">${sec3DataStartRow + index}</td>
-                <td style="text-align:center;">${this.escapeHtml(c.grade || '')}</td>
-                <td style="text-align:center; font-weight:600;">${this.escapeHtml(c.name || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(c.period || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(c.author || '')}</td>
-                <td style="text-align:left; max-width:400px; white-space:pre-wrap; word-break:break-all; font-size:0.85rem; line-height:1.4; padding:0.4rem;">${this.escapeHtml(c.content || '')}</td>
-                <td style="text-align:left; max-width:300px; white-space:pre-wrap; word-break:break-all; font-size:0.85rem; line-height:1.4; padding:0.4rem;">${this.escapeHtml(c.needs || '')}</td>
+                <td style="width: 70px; text-align:center;">${this.escapeHtml(c.grade || '')}</td>
+                <td style="width: 90px; text-align:center; font-weight:600;">${this.escapeHtml(c.name || '')}</td>
+                <td style="width: 90px; text-align:center;">${this.escapeHtml(c.period || '')}</td>
+                <td style="width: 60px; text-align:center; white-space: normal; word-break: break-all;">${this.escapeHtml(c.author || '')}</td>
+                <td style="min-width: 380px; text-align:left; white-space:pre-wrap; word-break:break-all; font-size:0.85rem; line-height:1.4; padding:0.4rem;">${this.escapeHtml(c.content || '')}</td>
+                <td style="min-width: 300px; text-align:left; white-space:pre-wrap; word-break:break-all; font-size:0.85rem; line-height:1.4; padding:0.4rem;">${this.escapeHtml(c.needs || '')}</td>
                 ${Array(12).fill('<td></td>').join('')}
               </tr>
             `;
@@ -1145,28 +1207,68 @@ class SheetSimulator {
         handle.className = "resize-handle";
         col.appendChild(handle);
         col.style.position = "relative";
+        
         let startX, startWidth;
+        
+        const startResize = (clientX) => {
+          startX = clientX;
+          startWidth = col.offsetWidth;
+          col.classList.add("resizing");
+        };
+        
+        const resize = (clientX) => {
+          const width = startWidth + (clientX - startX);
+          if (width > 30) {
+            col.style.width = width + "px";
+            col.style.minWidth = width + "px";
+          }
+        };
+        
+        const endResize = () => {
+          col.classList.remove("resizing");
+        };
+
+        // Mouse Events
         handle.addEventListener("mousedown", (e) => {
           e.stopPropagation();
           e.preventDefault();
-          startX = e.pageX;
-          startWidth = col.offsetWidth;
-          col.classList.add("resizing");
-          const onMouseMove = (e) => {
-            const width = startWidth + (e.pageX - startX);
-            if (width > 50) {
-              col.style.width = width + "px";
-              col.style.minWidth = width + "px";
-            }
+          startResize(e.pageX);
+          
+          const onMouseMove = (moveEvent) => {
+            resize(moveEvent.pageX);
           };
           const onMouseUp = () => {
-            col.classList.remove("resizing");
+            endResize();
             document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
           };
           document.addEventListener("mousemove", onMouseMove);
           document.addEventListener("mouseup", onMouseUp);
         });
+
+        // Touch Events (for mobile/tablet support)
+        handle.addEventListener("touchstart", (e) => {
+          if (e.touches.length > 0) {
+            e.stopPropagation();
+            startResize(e.touches[0].pageX);
+            
+            const onTouchMove = (moveEvent) => {
+              if (moveEvent.touches.length > 0) {
+                // Prevent scrolling while dragging resize handle
+                moveEvent.preventDefault();
+                resize(moveEvent.touches[0].pageX);
+              }
+            };
+            const onTouchEnd = () => {
+              endResize();
+              document.removeEventListener("touchmove", onTouchMove);
+              document.removeEventListener("touchend", onTouchEnd);
+            };
+            document.addEventListener("touchmove", onTouchMove, { passive: false });
+            document.addEventListener("touchend", onTouchEnd);
+          }
+        });
+
       });
     });
   }
@@ -1510,12 +1612,19 @@ class SheetSimulator {
 
         case "문해력교재관리": {
           const rowArray = this.dataMap.textbooks;
-          tr.querySelector(".sheet-input-grade").addEventListener("change", (e) => updateField(id, "textbooks", rowArray, "grade", e.target.value.trim()));
-          tr.querySelector(".sheet-input-name").addEventListener("change", (e) => updateField(id, "textbooks", rowArray, "name", e.target.value.trim()));
+          tr.querySelector(".sheet-input-grade").addEventListener("change", (e) => {
+            updateField(id, "textbooks", rowArray, "grade", e.target.value.trim());
+            this.render();
+          });
+          tr.querySelector(".sheet-input-name").addEventListener("change", (e) => {
+            updateField(id, "textbooks", rowArray, "name", e.target.value.trim());
+            this.render();
+          });
           tr.querySelectorAll(".sheet-input-field").forEach(input => {
             input.addEventListener("change", (e) => {
               const field = input.getAttribute("data-field");
               updateField(id, "textbooks", rowArray, field, e.target.value.trim());
+              this.render();
             });
           });
           break;
@@ -1961,13 +2070,13 @@ class SheetSimulator {
           <table class="sheet-table" style="width: 100%; min-width: 800px; border-collapse: collapse;">
             <thead>
               <tr style="background:var(--table-header-bg); font-weight:bold; font-size:0.8rem;">
-                <th class="row-num-col" style="width: 40px;">행</th>
-                <th>학년 (A)</th>
-                <th>이름 (B)</th>
-                <th>작성기간 (C)</th>
-                <th>작성인 (D)</th>
-                <th style="min-width: 250px;">상담내용 / 분석지 / 채널 보냄 (E)</th>
-                <th style="min-width: 200px;">부모님의 need / 학생 특이사항 (F)</th>
+                <th class="row-num-col" style="width: 40px; text-align:center;">행</th>
+                <th style="width: 70px; text-align:center;">학년 (A)</th>
+                <th style="width: 90px; text-align:center;">이름 (B)</th>
+                <th style="width: 90px; text-align:center;">작성기간 (C)</th>
+                <th style="width: 60px; text-align:center; white-space: normal; word-break: break-all;">작성인 (D)</th>
+                <th style="min-width: 380px; text-align:left;">상담내용 / 분석지 / 채널 보냄 (E)</th>
+                <th style="min-width: 300px; text-align:left;">부모님의 need / 학생 특이사항 (F)</th>
               </tr>
             </thead>
             <tbody>
@@ -1978,13 +2087,13 @@ class SheetSimulator {
       studentConsults.forEach((c, index) => {
         html += `
               <tr style="background:rgba(99,102,241,0.01);">
-                <td class="row-num-col" style="text-align:center;">${sec3StartRow + index}</td>
-                <td style="text-align:center;">${this.escapeHtml(c.grade || '')}</td>
-                <td style="text-align:center; font-weight:600; color: var(--accent);">${this.escapeHtml(c.name || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(c.period || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(c.author || '')}</td>
-                <td style="text-align:left; white-space:pre-wrap; word-break:break-all; font-size:0.85rem; line-height:1.4; padding:0.5rem 0.8rem;">${this.escapeHtml(c.content || '')}</td>
-                <td style="text-align:left; white-space:pre-wrap; word-break:break-all; font-size:0.85rem; line-height:1.4; padding:0.5rem 0.8rem;">${this.escapeHtml(c.needs || '')}</td>
+                <td class="row-num-col" style="width: 40px; text-align:center;">${sec3StartRow + index}</td>
+                <td style="width: 70px; text-align:center;">${this.escapeHtml(c.grade || '')}</td>
+                <td style="width: 90px; text-align:center; font-weight:600; color: var(--accent);">${this.escapeHtml(c.name || '')}</td>
+                <td style="width: 90px; text-align:center;">${this.escapeHtml(c.period || '')}</td>
+                <td style="width: 60px; text-align:center; white-space: normal; word-break: break-all;">${this.escapeHtml(c.author || '')}</td>
+                <td style="min-width: 380px; text-align:left; white-space:pre-wrap; word-break:break-all; font-size:0.85rem; line-height:1.4; padding:0.5rem 0.8rem;">${this.escapeHtml(c.content || '')}</td>
+                <td style="min-width: 300px; text-align:left; white-space:pre-wrap; word-break:break-all; font-size:0.85rem; line-height:1.4; padding:0.5rem 0.8rem;">${this.escapeHtml(c.needs || '')}</td>
               </tr>
         `;
       });
