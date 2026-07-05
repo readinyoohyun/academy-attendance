@@ -2134,12 +2134,47 @@ th.resizing .resize-handle::after {
   transform: translateX(-50%) translateY(-2px);
 }
 
+/* Fixed height SPA layout rules for main app */
+body.fixed-layout {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+body.fixed-layout main {
+  flex: 1;
+  padding: 1rem;
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body.fixed-layout .view-content {
+  display: none;
+  animation: fadeIn 0.4s ease-out forwards;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.fixed-layout .view-content.active {
+  display: block;
+}
+
 /* Locked layout height & scrolling table wrapper specifically for Google Sheets Simulator tab */
+#view-sheet {
+  overflow: hidden;
+}
+
 #view-sheet.active {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px);
-  overflow: hidden;
+  height: 100%;
 }
 
 #view-sheet.active #sheetSimulatorContainer {

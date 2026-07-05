@@ -539,16 +539,7 @@ class AttendanceApp {
         document.getElementById(targetView).classList.add("active");
         
         if (targetView === "view-sheet") {
-          document.documentElement.style.overflow = "hidden";
-          document.documentElement.style.height = "100vh";
-          document.body.style.overflow = "hidden";
-          document.body.style.height = "100vh";
           this.sheetSim.render();
-        } else {
-          document.documentElement.style.overflow = "";
-          document.documentElement.style.height = "";
-          document.body.style.overflow = "";
-          document.body.style.height = "";
         }
       };
     });
