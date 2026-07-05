@@ -159,7 +159,7 @@ class SheetSimulator {
         </div>
 
         <!-- Sheet Table Wrapper -->
-        <div class="sheet-table-wrapper" style="border: none; background: transparent; padding: 0; overflow-x: auto; display: block;">
+        <div class="sheet-table-wrapper" style="border: none; background: transparent; padding: 0; overflow-x: auto; overflow-y: auto; max-height: 75vh; display: block;">
           ${this.activeTab === "한명 검색" ? this.renderDecoupledSingleSearch(capacities) : `
           <table class="sheet-table">
             <thead>
