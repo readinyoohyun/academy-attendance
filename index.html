@@ -2228,44 +2228,45 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
   // Parse Column J (grammarDone) items
   for (var g = 0; g < grammarLines.length; g++) {
     var item = grammarLines[g];
-    var isCompletion = (item.indexOf("글완") !== -1 || item.indexOf("글쓰기완") !== -1 || item.indexOf("완료") !== -1);
+    var isCompletion = (item.indexOf("글완") !== -1 || item.indexOf("글쓰기완") !== -1 || item.indexOf("글쓰완") !== -1 || item.indexOf("완료") !== -1);
+    var hasDigit = /\d+/.test(item);
 
     if (isCompletion) {
-      // Find existing book line in grammarDone (Col J / Column 10) of memberAnalysis and append " 글완"
-      var cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
-      var grammarCell = sheetMember.getRange(memberRowIndex, 10);
-      var currentGrammar = String(grammarCell.getValue() || "").trim();
-      if (currentGrammar) {
-        var lines = currentGrammar.split("\n");
+      // Find existing book line in progress (Col G / Column 7) of memberAnalysis and append " 글완"
+      var cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|글쓰완|완료/g, "").trim();
+      var progressCell = sheetMember.getRange(memberRowIndex, 7);
+      var currentProgress = String(progressCell.getValue() || "").trim();
+      if (currentProgress) {
+        var lines = currentProgress.split("\n");
         var found = false;
         var cleanBookNoSpaces = cleanBook.replace(/\s+/g, "").toLowerCase();
         for (var lIdx = 0; lIdx < lines.length; lIdx++) {
           var lineNoSpaces = lines[lIdx].replace(/\s+/g, "").toLowerCase();
           if (cleanBookNoSpaces && lineNoSpaces.indexOf(cleanBookNoSpaces) !== -1) {
             found = true;
-            if (lines[lIdx].indexOf("글완") === -1 && lines[lIdx].indexOf("글쓰기완") === -1 && lines[lIdx].indexOf("완료") === -1) {
+            if (lines[lIdx].indexOf("글완") === -1 && lines[lIdx].indexOf("글쓰기완") === -1 && lines[lIdx].indexOf("글쓰완") === -1 && lines[lIdx].indexOf("완료") === -1) {
               lines[lIdx] = lines[lIdx] + " 글완";
             }
           }
         }
         if (!found && !cleanBookNoSpaces && lines.length > 0) {
           var lastLine = lines[lines.length - 1];
-          if (lastLine.indexOf("글완") === -1 && lastLine.indexOf("글쓰기완") === -1 && lastLine.indexOf("완료") === -1) {
+          if (lastLine.indexOf("글완") === -1 && lastLine.indexOf("글쓰기완") === -1 && lastLine.indexOf("글쓰완") === -1 && lastLine.indexOf("완료") === -1) {
             lines[lines.length - 1] = lastLine + " 글완";
           }
         } else if (!found && cleanBookNoSpaces) {
           var newLine = eventDatePrefix + " " + cleanBook + " 글완";
           lines.push(newLine);
-          groupMap[10].push(newLine);
+          groupMap[7].push(newLine);
           found = true;
         }
-        grammarCell.setValue(lines.join("\n"));
+        progressCell.setValue(lines.join("\n"));
       } else {
         var textToSet = eventDatePrefix + " " + (cleanBook ? cleanBook + " 글완" : "글완");
-        grammarCell.setValue(textToSet);
-        groupMap[10].push(textToSet);
+        progressCell.setValue(textToSet);
+        groupMap[7].push(textToSet);
       }
-    } else {
+    } else if (hasDigit) {
       // Prepend date if not present
       var datePattern = /^\d+[\./]\d+/;
       var textToAppend = "";
@@ -2278,7 +2279,7 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
       } else {
         textToAppend = eventDatePrefix + " " + item;
       }
-      groupMap[10].push(textToAppend);
+      groupMap[7].push(textToAppend);
     }
   }
 
