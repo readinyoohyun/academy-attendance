@@ -829,6 +829,21 @@
       return `${now.getMonth() + 1}/${now.getDate()}`;
     }
 
+    function isSameDate(dateStr1, dateStr2) {
+      if (!dateStr1 || !dateStr2) return false;
+      const clean1 = String(dateStr1).trim().replace(/\s+/g, "");
+      const clean2 = String(dateStr2).trim().replace(/\s+/g, "");
+      if (clean1 === clean2) return true;
+      
+      const m1 = clean1.match(/(\d+)[\/\.](\d+)/);
+      const m2 = clean2.match(/(\d+)[\/\.](\d+)/);
+      if (m1 && m2) {
+        return parseInt(m1[1], 10) === parseInt(m2[1], 10) && 
+               parseInt(m1[2], 10) === parseInt(m2[2], 10);
+      }
+      return false;
+    }
+
     function renderStudentCards() {
       const container = document.getElementById("cardsContainer");
       container.innerHTML = "";
@@ -858,7 +873,7 @@
         
         const hasDailyLog = state.dailyLogs.some(log => 
           (log.name || "").trim() === name && 
-          (log.date || "").trim() === dailyLogDateStr.trim()
+          isSameDate(log.date, dailyLogDateStr)
         );
         
         const isActiveToday = isScheduledToday || isMakeupToday || hasDailyLog;
@@ -890,7 +905,7 @@
       filtered.forEach(student => {
         const log = state.dailyLogs.find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
-          (l.date || "").trim() === dailyLogDateStr.trim()
+          isSameDate(l.date, dailyLogDateStr)
         );
         
         let status = "대기";
@@ -941,7 +956,7 @@
         
         const log = state.dailyLogs.find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
-          (l.date || "").trim() === dailyLogDateStr.trim()
+          isSameDate(l.date, dailyLogDateStr)
         );
         
         // Determine time slot
@@ -1130,7 +1145,7 @@
       else if (currentStatus === "수업중") {
         const log = state.dailyLogs.find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
-          (l.date || "").trim() === dailyLogDateStr.trim()
+          isSameDate(l.date, dailyLogDateStr)
         );
 
         if (log && log.inTime) {
@@ -1247,7 +1262,7 @@
       let dailyLog = state.dailyLogs.find(log => 
         (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
         log.time.trim() === activeTime.trim() && 
-        (log.date || '').trim() === dailyLogDateStr.trim()
+        isSameDate(log.date, dailyLogDateStr)
       );
 
       // Perform local updates

@@ -181,6 +181,20 @@ class CRMManager {
       document.getElementById("modalAddCrmAttendance").classList.add("active");
     };
 
+    // Mark Check-in
+    const btnCrmMarkCheckIn = document.getElementById("btnCrmMarkCheckIn");
+    if (btnCrmMarkCheckIn) {
+      btnCrmMarkCheckIn.onclick = () => {
+        const name = this.currentCrmStudentName;
+        if (!name) return;
+        
+        const confirmCheckIn = confirm(`${name} 학생을 오늘 등원("수업중") 처리하시겠습니까?`);
+        if (confirmCheckIn) {
+          this.markStudentCheckInFromCrm(name);
+        }
+      };
+    }
+
     // Save Member Analysis
     const saveBtn = document.getElementById("btnCrmSaveMemberAnalysis");
     if (saveBtn) {
@@ -1364,5 +1378,96 @@ class CRMManager {
       `;
       container.appendChild(itemEl);
     });
+  }
+
+  isSameDate(dateStr1, dateStr2) {
+    if (!dateStr1 || !dateStr2) return false;
+    const clean1 = String(dateStr1).trim().replace(/\s+/g, "");
+    const clean2 = String(dateStr2).trim().replace(/\s+/g, "");
+    if (clean1 === clean2) return true;
+    
+    const m1 = clean1.match(/(\d+)[\/\.](\d+)/);
+    const m2 = clean2.match(/(\d+)[\/\.](\d+)/);
+    if (m1 && m2) {
+      return parseInt(m1[1], 10) === parseInt(m2[1], 10) && 
+             parseInt(m1[2], 10) === parseInt(m2[2], 10);
+    }
+    return false;
+  }
+
+  markStudentCheckInFromCrm(name) {
+    const student = this.app.state.students.find(st => st.name === name);
+    if (!student) return;
+
+    const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+    const todayDay = WEEKDAYS[new Date().getDay()];
+    const dates = getFormattedDateOfWeekday(todayDay);
+    const shortDay = todayDay.substring(0, 1);
+    const dailyLogDateStr = `${dates.slashFormat}${shortDay}`;
+
+    // Check if there is an active makeup today
+    let isMakeup = false;
+    if (student.makeupDate) {
+      const parsedMakeups = parseMultipleMakeups(student.makeupDate);
+      isMakeup = parsedMakeups.some(parsed => 
+        parsed && parsed.day === todayDay && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat)
+      );
+    }
+
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const activeTime = student.times && student.times[todayDay] ? student.times[todayDay].trim() : currentTime;
+
+    // Check if they already have a log for today
+    let dailyLog = this.app.state.dailyLogs.find(log => 
+      log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, '') && 
+      this.isSameDate(log.date, dailyLogDateStr)
+    );
+
+    if (dailyLog) {
+      dailyLog.status = "수업중";
+      dailyLog.inTime = currentTime;
+      const updates = [
+        { tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업중" },
+        { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: currentTime }
+      ];
+      this.app.api.updateBatchInGoogleSheets(updates);
+    } else {
+      const nextRow = this.app.state.dailyLogs.length > 0 ? Math.max(...this.app.state.dailyLogs.map(l => l.row)) + 1 : 2;
+      dailyLog = {
+        id: 'daily_' + nextRow,
+        row: nextRow,
+        date: dailyLogDateStr,
+        time: activeTime,
+        name: name,
+        notes: student.notes || "",
+        status: "수업중",
+        inTime: currentTime,
+        reason: isMakeup ? "보강 수업" : "",
+        number: "",
+        event: "",
+        grammarDone: "",
+        specialClass: "",
+        contents: ""
+      };
+      this.app.state.dailyLogs.push(dailyLog);
+      this.app.api.addDailyLogToGoogleSheets(dailyLog);
+    }
+
+    // Trigger SMS Notification if configured
+    this.app.smsManager.sendSmsNotification(student, "in", currentTime);
+
+    // Save state and re-render
+    this.app.saveState();
+    if (this.app.sheetSim) this.app.sheetSim.setData(this.app.state);
+    
+    // Force re-render of current day dashboard
+    this.app.dashboardManager.selectedDay = todayDay;
+    this.app.dashboardManager.updateDashboard();
+    
+    // Reload CRM profile card
+    this.loadCrmStudent(name);
+    
+    alert(`${name} 학생의 오늘 등원 처리가 완료되었습니다.`);
   }
 }
