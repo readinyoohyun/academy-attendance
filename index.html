@@ -1431,15 +1431,14 @@ function generateDailyAttendance() {
     
     // 3행부터 마지막 행까지 (A열~K열 총 11개 컬럼) 데이터 복사
     var dailyRange = sheetDaily.getRange(3, 1, lastRowDaily - 2, 11);
-    var dailyValues = dailyRange.getDisplayValues(); // getDisplayValues() 사용하여 시간 문자열 포맷 유지
-    var dailyRichTexts = dailyRange.getRichTextValues();
     
-    sheetAccumulated.insertRowsBefore(2, dailyValues.length);
-    var destRange = sheetAccumulated.getRange(2, 1, dailyValues.length, 11);
-    destRange.setValues(dailyValues);
-    try {
-      destRange.setRichTextValues(dailyRichTexts);
-    } catch(e) {}
+    sheetAccumulated.insertRowsBefore(2, lastRowDaily - 2);
+    var destRange = sheetAccumulated.getRange(2, 1, lastRowDaily - 2, 11);
+    
+    // 1. 값 복사 (수식이나 드롭다운 룰을 제외한 데이터 복사)
+    dailyRange.copyTo(destRange, SpreadsheetApp.CopyPasteType.PASTE_VALUES, false);
+    // 2. 서식 복사 (날짜/시간 포맷 및 색상, 폰트 스타일 복사)
+    dailyRange.copyTo(destRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
     
     // 3행 이하 기존 행들을 완전 삭제하여 초기화 (2행은 무조건 유지)
     sheetDaily.deleteRows(3, lastRowDaily - 2);
