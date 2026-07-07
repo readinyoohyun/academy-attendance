@@ -2228,12 +2228,12 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
   // Parse Column J (grammarDone) items
   for (var g = 0; g < grammarLines.length; g++) {
     var item = grammarLines[g];
-    var isCompletion = (item.indexOf("글완") !== -1 || item.indexOf("글쓰기완") !== -1 || item.indexOf("글쓰완") !== -1 || item.indexOf("완료") !== -1);
+    var isCompletion = (item.indexOf("글완") !== -1 || item.indexOf("글쓰기완") !== -1 || item.indexOf("완료") !== -1);
     var hasDigit = /\d+/.test(item);
 
     if (isCompletion) {
       // Find existing book line in progress (Col G / Column 7) of memberAnalysis and append " 글완"
-      var cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|글쓰완|완료/g, "").trim();
+      var cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
       var progressCell = sheetMember.getRange(memberRowIndex, 7);
       var currentProgress = String(progressCell.getValue() || "").trim();
       if (currentProgress) {
@@ -2244,14 +2244,14 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
           var lineNoSpaces = lines[lIdx].replace(/\s+/g, "").toLowerCase();
           if (cleanBookNoSpaces && lineNoSpaces.indexOf(cleanBookNoSpaces) !== -1) {
             found = true;
-            if (lines[lIdx].indexOf("글완") === -1 && lines[lIdx].indexOf("글쓰기완") === -1 && lines[lIdx].indexOf("글쓰완") === -1 && lines[lIdx].indexOf("완료") === -1) {
+            if (lines[lIdx].indexOf("글완") === -1 && lines[lIdx].indexOf("글쓰기완") === -1 && lines[lIdx].indexOf("완료") === -1) {
               lines[lIdx] = lines[lIdx] + " 글완";
             }
           }
         }
         if (!found && !cleanBookNoSpaces && lines.length > 0) {
           var lastLine = lines[lines.length - 1];
-          if (lastLine.indexOf("글완") === -1 && lastLine.indexOf("글쓰기완") === -1 && lastLine.indexOf("글쓰완") === -1 && lastLine.indexOf("완료") === -1) {
+          if (lastLine.indexOf("글완") === -1 && lastLine.indexOf("글쓰기완") === -1 && lastLine.indexOf("완료") === -1) {
             lines[lines.length - 1] = lastLine + " 글완";
           }
         } else if (!found && cleanBookNoSpaces) {

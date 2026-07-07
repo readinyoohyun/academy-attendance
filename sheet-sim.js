@@ -1855,12 +1855,12 @@ class SheetSimulator {
     // Parse Column J (grammarDone) items
     grammarLines.forEach(item => {
       const cleanItemNoSpaces = item.replace(/\s+/g, "");
-      const isCompletion = cleanItemNoSpaces.includes("글완") || cleanItemNoSpaces.includes("글쓰기완") || cleanItemNoSpaces.includes("글쓰완") || cleanItemNoSpaces.includes("완료");
+      const isCompletion = cleanItemNoSpaces.includes("글완") || cleanItemNoSpaces.includes("글쓰기완") || cleanItemNoSpaces.includes("완료");
       const hasDigit = /\d+/.test(item);
 
       if (isCompletion) {
         // Find existing book line in progress (Col G) and append " 글완"
-        const cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|글쓰완|완료/g, "").replace(/글쓰기\s*완/g, "").replace(/글쓰\s*완/g, "").trim();
+        const cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").replace(/글쓰기\s*완/g, "").trim();
         let currentProgress = (student.progress || "").trim();
         if (currentProgress) {
           let lines = currentProgress.split("\n");
@@ -1870,7 +1870,7 @@ class SheetSimulator {
             const lineNoSpaces = line.replace(/\s+/g, "").toLowerCase();
             if (cleanBookNoSpaces && lineNoSpaces.includes(cleanBookNoSpaces)) {
               found = true;
-              if (!line.includes("글완") && !line.includes("글쓰기완") && !line.includes("글쓰완") && !line.includes("완료")) {
+              if (!line.includes("글완") && !line.includes("글쓰기완") && !line.includes("완료")) {
                 const newLine = `${line} 글완`;
                 if (newLine.trim().indexOf(eventDatePrefix) === 0) {
                   groupMap.progress.push(newLine);
@@ -1888,7 +1888,7 @@ class SheetSimulator {
             found = true;
           } else if (!found && !cleanBookNoSpaces && lines.length > 0) {
             const lastLine = lines[lines.length - 1];
-            if (!lastLine.includes("글완") && !lastLine.includes("글쓰기완") && !lastLine.includes("글쓰완") && !lastLine.includes("완료")) {
+            if (!lastLine.includes("글완") && !lastLine.includes("글쓰기완") && !lastLine.includes("완료")) {
               const newLine = `${lastLine} 글완`;
               if (newLine.trim().indexOf(eventDatePrefix) === 0) {
                 groupMap.progress.push(newLine);
