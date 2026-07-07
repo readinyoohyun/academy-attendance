@@ -826,8 +826,8 @@ class SheetSimulator {
                 <td style="text-align:center; font-weight:600;">${this.escapeHtml(member.name || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(member.grade || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(member.regDate || '')}</td>
-                <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${this.getConditionalStyle(member.consultation)}">${this.escapeHtml(member.consultation || '')}</td>
-                <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${this.getConditionalStyle(member.notes)}">${this.escapeHtml(member.notes || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-all; font-size:0.85rem; line-height:1.4; text-align:left; ${this.getConditionalStyle(member.consultation)}">${this.escapeHtml(member.consultation || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-all; font-size:0.85rem; line-height:1.4; text-align:left; ${this.getConditionalStyle(member.notes)}">${this.escapeHtml(member.notes || '')}</td>
                 <td style="max-width:200px; font-size:0.85rem; line-height:1.4; vertical-align:top; text-align:left;">${this.renderRichTextHtml(member.progress || '')}</td>
                 <td style="${this.getConditionalStyle(member.levelUp)}">${this.escapeHtml(member.levelUp || '')}</td>
                 <td style="${this.getConditionalStyle(member.levelChange)}">${this.escapeHtml(member.levelChange || '')}</td>
@@ -1210,7 +1210,39 @@ class SheetSimulator {
     const tables = this.container.querySelectorAll(".sheet-table");
     tables.forEach(table => {
       const cols = table.querySelectorAll("th");
-      cols.forEach(col => {
+      cols.forEach((col, colIndex) => {
+        const key = `col_width_${this.activeTab}_${colIndex}`;
+        const savedWidth = localStorage.getItem(key);
+        
+        // 1. Apply width to the header and body cells
+        if (savedWidth) {
+          col.style.width = savedWidth;
+          col.style.minWidth = savedWidth;
+          
+          const rows = table.querySelectorAll("tbody tr");
+          rows.forEach(tr => {
+            const td = tr.children[colIndex];
+            if (td) {
+              td.style.width = savedWidth;
+              td.style.minWidth = savedWidth;
+            }
+          });
+        }
+
+        // 2. Ensure all inputs inside this column's cells fill 100% width
+        const rows = table.querySelectorAll("tbody tr");
+        rows.forEach(tr => {
+          const td = tr.children[colIndex];
+          if (td) {
+            const inputs = td.querySelectorAll("input, textarea, select");
+            inputs.forEach(input => {
+              input.style.width = "100%";
+              input.style.boxSizing = "border-box";
+            });
+          }
+        });
+
+        // 3. Create resize handles if not present
         if (col.querySelector(".resize-handle")) return;
         const handle = document.createElement("div");
         handle.className = "resize-handle";
@@ -1227,14 +1259,27 @@ class SheetSimulator {
         
         const resize = (clientX) => {
           const width = startWidth + (clientX - startX);
-          if (width > 30) {
+          if (width > 20) {
+            // Set width for header
             col.style.width = width + "px";
             col.style.minWidth = width + "px";
+            
+            // Set width for all body cells in this column
+            const tbodyRows = table.querySelectorAll("tbody tr");
+            tbodyRows.forEach(tr => {
+              const td = tr.children[colIndex];
+              if (td) {
+                td.style.width = width + "px";
+                td.style.minWidth = width + "px";
+              }
+            });
           }
         };
         
         const endResize = () => {
           col.classList.remove("resizing");
+          // Save width to localStorage
+          localStorage.setItem(key, col.style.width);
         };
 
         // Mouse Events
@@ -1263,7 +1308,6 @@ class SheetSimulator {
             
             const onTouchMove = (moveEvent) => {
               if (moveEvent.touches.length > 0) {
-                // Prevent scrolling while dragging resize handle
                 moveEvent.preventDefault();
                 resize(moveEvent.touches[0].pageX);
               }
@@ -1949,8 +1993,8 @@ class SheetSimulator {
                 <td style="text-align:center; font-weight:600; color: var(--accent);">${this.escapeHtml(member.name || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(member.grade || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(member.regDate || '')}</td>
-                <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${this.escapeHtml(member.consultation || '')}">${this.escapeHtml(member.consultation || '')}</td>
-                <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${this.escapeHtml(member.notes || '')}">${this.escapeHtml(member.notes || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-all; font-size:0.8rem; line-height:1.4; text-align:left;" title="${this.escapeHtml(member.consultation || '')}">${this.escapeHtml(member.consultation || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-all; font-size:0.8rem; line-height:1.4; text-align:left;" title="${this.escapeHtml(member.notes || '')}">${this.escapeHtml(member.notes || '')}</td>
                 <td style="max-width:200px; font-size:0.8rem; line-height:1.4; vertical-align:top; text-align:left; white-space: pre-wrap;">${this.renderRichTextHtml(member.progress || '')}</td>
                 <td>${this.escapeHtml(member.levelUp || '')}</td>
                 <td>${this.escapeHtml(member.levelChange || '')}</td>
