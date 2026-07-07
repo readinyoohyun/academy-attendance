@@ -1441,7 +1441,13 @@ function generateDailyAttendance() {
     dailyRange.copyTo(destRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
     
     // 3행 이하 기존 행들을 완전 삭제하여 초기화 (2행은 무조건 유지)
-    sheetDaily.deleteRows(3, lastRowDaily - 2);
+    var maxRows = sheetDaily.getMaxRows();
+    var frozenRows = sheetDaily.getFrozenRows();
+    var rowsToDelete = lastRowDaily - 2;
+    if (rowsToDelete >= maxRows - frozenRows) {
+      sheetDaily.insertRowsAfter(maxRows, 1);
+    }
+    sheetDaily.deleteRows(3, rowsToDelete);
   }
   
   var lastRowSt = sheetStudents.getLastRow();
