@@ -1406,10 +1406,14 @@ function generateDailyAttendance() {
   // 3행의 날짜 정보가 오늘 날짜와 같다면, 이미 오늘자 시간표가 생성된 상태이므로 실행을 스킵합니다.
   if (lastRowDaily >= 3) {
     var checkDateVal = String(sheetDaily.getRange(3, 1).getValue()).trim();
-    var checkDateMatch = checkDateVal.match(/(\d+\/\d+)/);
-    if (checkDateMatch && checkDateMatch[1] === dateSlash) {
-      Logger.log("오늘 출석부가 이미 생성되어 작동 중입니다. 중복 백업 및 초기화를 건너뜁니다.");
-      return;
+    var checkDateMatch = checkDateVal.match(/(\d+)[\/\.](\d+)/);
+    if (checkDateMatch) {
+      var checkM = parseInt(checkDateMatch[1], 10);
+      var checkD = parseInt(checkDateMatch[2], 10);
+      if (checkM === m && checkD === d) {
+        Logger.log("오늘 출석부가 이미 생성되어 작동 중입니다. 중복 백업 및 초기화를 건너뜁니다.");
+        return;
+      }
     }
   }
   
@@ -1500,7 +1504,7 @@ function generateDailyAttendance() {
       dailyLogsToAdd.push({
         time: makeupTime, name: name, grade: grade, status: "대기", reason: "보강 수업", notes: notes
       });
-    } else if (regTime && !makeupDateStr) {
+    } else if (regTime && !isMakeupToday) {
       var parts = regTime.split(/[,/; ]+/);
       for (var p = 0; p < parts.length; p++) {
         var t = parts[p].trim();
