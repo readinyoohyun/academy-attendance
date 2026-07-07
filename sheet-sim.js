@@ -1856,14 +1856,13 @@ class SheetSimulator {
     grammarLines.forEach(item => {
       const cleanItemNoSpaces = item.replace(/\s+/g, "");
       const isCompletion = cleanItemNoSpaces.includes("글완") || cleanItemNoSpaces.includes("글쓰기완") || cleanItemNoSpaces.includes("완료");
-      const hasDigit = /\d+/.test(item);
 
       if (isCompletion) {
-        // Find existing book line in progress (Col G) and append " 글완"
+        // Find existing book line in grammarDone (Col J) and append " 글완"
         const cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").replace(/글쓰기\s*완/g, "").trim();
-        let currentProgress = (student.progress || "").trim();
-        if (currentProgress) {
-          let lines = currentProgress.split("\n");
+        let currentGrammar = (student.grammarDone || "").trim();
+        if (currentGrammar) {
+          let lines = currentGrammar.split("\n");
           let found = false;
           const cleanBookNoSpaces = cleanBook.replace(/\s+/g, "").toLowerCase();
           lines = lines.map(line => {
@@ -1873,7 +1872,7 @@ class SheetSimulator {
               if (!line.includes("글완") && !line.includes("글쓰기완") && !line.includes("완료")) {
                 const newLine = `${line} 글완`;
                 if (newLine.trim().indexOf(eventDatePrefix) === 0) {
-                  groupMap.progress.push(newLine);
+                  groupMap.grammarDone.push(newLine);
                 }
                 return newLine;
               }
@@ -1884,22 +1883,30 @@ class SheetSimulator {
           if (!found && cleanBookNoSpaces) {
             const newLine = `${eventDatePrefix} ${cleanBook} 글완`;
             lines.push(newLine);
-            groupMap.progress.push(newLine);
+            groupMap.grammarDone.push(newLine);
             found = true;
           } else if (!found && !cleanBookNoSpaces && lines.length > 0) {
             const lastLine = lines[lines.length - 1];
             if (!lastLine.includes("글완") && !lastLine.includes("글쓰기완") && !lastLine.includes("완료")) {
               const newLine = `${lastLine} 글완`;
               if (newLine.trim().indexOf(eventDatePrefix) === 0) {
-                groupMap.progress.push(newLine);
+                groupMap.grammarDone.push(newLine);
               }
               lines[lines.length - 1] = newLine;
             }
           }
-          student.progress = lines.join("\n");
+          student.grammarDone = lines.join("\n");
+        } else if (cleanBook) {
+          const newLine = `${eventDatePrefix} ${cleanBook} 글완`;
+          student.grammarDone = newLine;
+          groupMap.grammarDone.push(newLine);
+        } else {
+          const newLine = `${eventDatePrefix} 글완`;
+          student.grammarDone = newLine;
+          groupMap.grammarDone.push(newLine);
         }
 
-      } else if (hasDigit) {
+      } else {
         // Prepend date if not present
         const datePattern = /^\d+[\./]\d+/;
         let textToAppend = "";
@@ -1912,7 +1919,7 @@ class SheetSimulator {
         } else {
           textToAppend = `${eventDatePrefix} ${item}`;
         }
-        groupMap.progress.push(textToAppend);
+        groupMap.grammarDone.push(textToAppend);
       }
     });
 
