@@ -1533,6 +1533,45 @@ class SheetSimulator {
           }
           this.accumulateLocalDailyEvent(row.name, row.date, row.number, row.event, row.grammarDone, row.contents);
         }
+
+        if (datasetKey === "dailyLogs" && field === "status") {
+          const student = this.dataMap.students.find(s => s.name.trim() === (row.name || "").trim());
+          if (student) {
+            const dateVal = row.date || "";
+            const match = dateVal.match(/(\d+)\/(\d+)(월|화|수|목|금|토|일)/);
+            let formattedAbsence = "";
+            if (match) {
+              formattedAbsence = `${match[1]}/${match[2]}(${match[3]})`;
+            } else {
+              const today = new Date();
+              const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+              formattedAbsence = `${today.getMonth() + 1}/${today.getDate()}(${weekdays[today.getDay()]})`;
+            }
+
+            let datesList = student.absentDates ? student.absentDates.split(",").map(d => d.trim()).filter(Boolean) : [];
+            if (value === "결석") {
+              const alreadyExists = datesList.some(d => d.replace(/~/g, "").replace(/\s+/g, "") === formattedAbsence.replace(/~/g, "").replace(/\s+/g, ""));
+              if (!alreadyExists) {
+                datesList.push(formattedAbsence);
+                student.absentDates = datesList.join(", ");
+                this.onDataChanged("students", this.dataMap.students);
+                if (window.app && window.app.updateFieldInGoogleSheets) {
+                  window.app.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+                }
+              }
+            } else {
+              const cleanAbsence = formattedAbsence.replace(/~/g, "").replace(/\s+/g, "");
+              const filteredList = datesList.filter(d => d.replace(/~/g, "").replace(/\s+/g, "") !== cleanAbsence);
+              if (filteredList.length !== datesList.length) {
+                student.absentDates = filteredList.join(", ");
+                this.onDataChanged("students", this.dataMap.students);
+                if (window.app && window.app.updateFieldInGoogleSheets) {
+                  window.app.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+                }
+              }
+            }
+          }
+        }
         
         this.onDataChanged(datasetKey, rowArray);
         

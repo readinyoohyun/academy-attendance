@@ -2452,19 +2452,87 @@ function onEdit(e) {
     var startRow = range.getRow();
     var endRow = range.getLastRow();
     
-    // 1. 구글 시트에서 직접 등원여부(E열/5열)를 변경할 때 등원시간(F열/6열) 자동 기입
+    // 1. 구글 시트에서 직접 등원여부(E열/5열)를 변경할 때 등원시간(F열/6열) 자동 기입 및 결석일자 동기화
     if (startCol <= 5 && endCol >= 5) {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sheetStudents = ss.getSheetByName("전체 시간표");
       for (var r = startRow; r <= endRow; r++) {
         if (r > 1) {
           var statusCell = sheet.getRange(r, 5);
           var timeCell = sheet.getRange(r, 6);
           var statusVal = String(statusCell.getValue()).trim();
+          var studentName = String(sheet.getRange(r, 3).getValue()).trim();
+          
           if ((statusVal === "수업중" || statusVal === "수업 중" || statusVal === "보강 수업중") && !timeCell.getValue()) {
             var now = new Date();
             var timeStr = Utilities.formatDate(now, "Asia/Seoul", "HH:mm");
             timeCell.setValue(timeStr);
           } else if (statusVal === "대기" || statusVal === "결석" || statusVal === "휴강" || !statusVal) {
             timeCell.setValue("");
+          }
+
+          // 결석일자 전체 시간표 연동 로직
+          if (studentName && sheetStudents) {
+            var lastRowSt = sheetStudents.getLastRow();
+            if (lastRowSt >= 2) {
+              var studentNames = sheetStudents.getRange(2, 3, lastRowSt - 1, 1).getValues();
+              var studentRowIndex = -1;
+              for (var sIdx = 0; sIdx < studentNames.length; sIdx++) {
+                if (String(studentNames[sIdx][0]).trim() === studentName) {
+                  studentRowIndex = 2 + sIdx;
+                  break;
+                }
+              }
+              if (studentRowIndex !== -1) {
+                var dateStr = String(sheet.getRange(r, 1).getValue()).trim(); // Col A
+                var match = dateStr.match(/(\d+)\/(\d+)(월|화|수|목|금|토|일)/);
+                var formattedAbsence = "";
+                if (match) {
+                  formattedAbsence = match[1] + "/" + match[2] + "(" + match[3] + ")";
+                } else {
+                  var today = new Date();
+                  var weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+                  formattedAbsence = (today.getMonth() + 1) + "/" + today.getDate() + "(" + weekdays[today.getDay()] + ")";
+                }
+
+                var absentCell = sheetStudents.getRange(studentRowIndex, 12); // Col L (12th column)
+                var currentAbsences = String(absentCell.getValue() || "").trim();
+                var datesList = currentAbsences ? currentAbsences.split(",").map(function(d) { return d.trim(); }).filter(Boolean) : [];
+
+                if (statusVal === "결석") {
+                  var alreadyExists = false;
+                  for (var i = 0; i < datesList.length; i++) {
+                    if (datesList[i].replace(/\s+/g, "").indexOf(formattedAbsence.replace(/\s+/g, "")) !== -1) {
+                      alreadyExists = true;
+                      break;
+                    }
+                  }
+                  if (!alreadyExists) {
+                    datesList.push(formattedAbsence);
+                    var newAbsencesVal = datesList.join(", ");
+                    absentCell.setValue(newAbsencesVal);
+                    formatAbsentCell(absentCell, newAbsencesVal);
+                  }
+                } else {
+                  var cleanAbsence = formattedAbsence.replace(/~/g, "").replace(/\s+/g, "");
+                  var filteredList = [];
+                  var modified = false;
+                  for (var i = 0; i < datesList.length; i++) {
+                    var cleanItem = datesList[i].replace(/~/g, "").replace(/\s+/g, "");
+                    if (cleanItem.indexOf(cleanAbsence) === -1) {
+                      filteredList.push(datesList[i]);
+                    } else {
+                      modified = true;
+                    }
+                  }
+                  if (modified) {
+                    var newAbsencesVal = filteredList.join(", ");
+                    absentCell.setValue(newAbsencesVal);
+                    formatAbsentCell(absentCell, newAbsencesVal);
+                  }
+                }
+              }
+            }
           }
         }
       }
