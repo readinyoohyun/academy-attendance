@@ -1983,15 +1983,15 @@ function setupSheetsAndHeaders() {
   var sheetDaily = ss.getSheetByName("오늘 출석부");
   if (!sheetDaily) {
     sheetDaily = ss.insertSheet("오늘 출석부");
+    sheetDaily.getRange(1, 1, 1, 11).setValues([["날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유", "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"]]);
   }
-  sheetDaily.getRange(1, 1, 1, 11).setValues([["날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유", "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"]]);
   
   // 누적일일수업관리 셋업
   var sheetAccumulated = ss.getSheetByName("누적일일수업관리");
   if (!sheetAccumulated) {
     sheetAccumulated = ss.insertSheet("누적일일수업관리");
+    sheetAccumulated.getRange(1, 1, 1, 11).setValues([["날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유", "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"]]);
   }
-  sheetAccumulated.getRange(1, 1, 1, 11).setValues([["날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유", "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"]]);
   
   var sheetTextbooks = ss.getSheetByName("문해력교재관리");
   if (!sheetTextbooks) {
@@ -2009,9 +2009,8 @@ function setupSheetsAndHeaders() {
   var sheetConsult = ss.getSheetByName("상담내용/리포트발송/채널발송");
   if (!sheetConsult) {
     sheetConsult = ss.insertSheet("상담내용/리포트발송/채널발송");
+    sheetConsult.getRange(1, 1, 1, 6).setValues([["학년", "이름", "작성기간", "작성인", "상담내용 / 분석지 / 채널 보냄", "부모님의 need / 학생 특이사항"]]);
   }
-  // 헤더 덮어쓰기 (A~F)
-  sheetConsult.getRange(1, 1, 1, 6).setValues([["학년", "이름", "작성기간", "작성인", "상담내용 / 분석지 / 채널 보냄", "부모님의 need / 학생 특이사항"]]);
   
   var sheetMember = ss.getSheetByName("회원 분석/레벨변동/전화상담");
   if (!sheetMember) {
