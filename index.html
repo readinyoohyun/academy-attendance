@@ -1490,7 +1490,7 @@ function generateDailyAttendance() {
     var isMakeupToday = false;
     var makeupTime = "";
     if (makeupDateStr) {
-      var parts = makeupDateStr.split(",");
+      var parts = makeupDateStr.split(/[\n,\r]+/);
       for (var pIdx = 0; pIdx < parts.length; pIdx++) {
         var part = parts[pIdx].trim();
         if (!part) continue;
@@ -2270,36 +2270,54 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
 
     if (isCompletion) {
       // Find existing book line in progress (Col G / Column 7) of memberAnalysis and append " 글완"
-      var cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+      var cleanBookAndScore = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+      var cleanBook = cleanBookAndScore.replace(/\s*\d+점?$/, "").trim();
+      var cleanBookNoSpaces = cleanBook.replace(/\s+/g, "").toLowerCase();
+
       var progressCell = sheetMember.getRange(memberRowIndex, 7);
       var currentProgress = String(progressCell.getValue() || "").trim();
       if (currentProgress) {
         var lines = currentProgress.split("\n");
         var found = false;
-        var cleanBookNoSpaces = cleanBook.replace(/\s+/g, "").toLowerCase();
         for (var lIdx = 0; lIdx < lines.length; lIdx++) {
           var lineNoSpaces = lines[lIdx].replace(/\s+/g, "").toLowerCase();
           if (cleanBookNoSpaces && lineNoSpaces.indexOf(cleanBookNoSpaces) !== -1) {
             found = true;
-            if (lines[lIdx].indexOf("글완") === -1 && lines[lIdx].indexOf("글쓰기완") === -1 && lines[lIdx].indexOf("완료") === -1) {
-              lines[lIdx] = lines[lIdx] + " 글완";
+            var newLine = lines[lIdx];
+            if (/\d+/.test(cleanBookAndScore)) {
+              // If user specified score today, update to today's date and score
+              newLine = eventDatePrefix + " " + cleanBookAndScore + " 글완";
+            } else {
+              // Otherwise just append " 글완" if not already present
+              if (lines[lIdx].indexOf("글완") === -1 && lines[lIdx].indexOf("글쓰기완") === -1 && lines[lIdx].indexOf("완료") === -1) {
+                newLine = lines[lIdx] + " 글완";
+              }
+            }
+            lines[lIdx] = newLine;
+            // If it starts with today's date, push to groupMap[7] to prevent deletion in writeback
+            if (newLine.trim().indexOf(eventDatePrefix) === 0) {
+              groupMap[7].push(newLine);
             }
           }
         }
-        if (!found && !cleanBookNoSpaces && lines.length > 0) {
-          var lastLine = lines[lines.length - 1];
-          if (lastLine.indexOf("글완") === -1 && lastLine.indexOf("글쓰기완") === -1 && lastLine.indexOf("완료") === -1) {
-            lines[lines.length - 1] = lastLine + " 글완";
-          }
-        } else if (!found && cleanBookNoSpaces) {
-          var newLine = eventDatePrefix + " " + cleanBook + " 글완";
+        if (!found && cleanBookNoSpaces) {
+          var newLine = eventDatePrefix + " " + cleanBookAndScore + " 글완";
           lines.push(newLine);
           groupMap[7].push(newLine);
           found = true;
+        } else if (!found && !cleanBookNoSpaces && lines.length > 0) {
+          var lastLine = lines[lines.length - 1];
+          if (lastLine.indexOf("글완") === -1 && lastLine.indexOf("글쓰기완") === -1 && lastLine.indexOf("완료") === -1) {
+            var newLine = lastLine + " 글완";
+            if (newLine.trim().indexOf(eventDatePrefix) === 0) {
+              groupMap[7].push(newLine);
+            }
+            lines[lines.length - 1] = newLine;
+          }
         }
         progressCell.setValue(lines.join("\n"));
       } else {
-        var textToSet = eventDatePrefix + " " + (cleanBook ? cleanBook + " 글완" : "글완");
+        var textToSet = eventDatePrefix + " " + (cleanBookAndScore ? cleanBookAndScore + " 글완" : "글완");
         progressCell.setValue(textToSet);
         groupMap[7].push(textToSet);
       }

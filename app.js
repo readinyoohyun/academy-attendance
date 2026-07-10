@@ -236,7 +236,7 @@ function parseMakeupDate(makeupStr) {
 // Helper: Parse comma-separated list of multiple makeup dates
 function parseMultipleMakeups(makeupStr) {
   if (!makeupStr) return [];
-  const parts = String(makeupStr).split(',').map(p => p.trim()).filter(Boolean);
+  const parts = String(makeupStr).split(/[\n,\r]+/).map(p => p.trim()).filter(Boolean);
   const parsedList = [];
   parts.forEach(part => {
     const parsed = parseMakeupDate(part);

@@ -1860,29 +1860,39 @@ class SheetSimulator {
 
       if (isCompletion) {
         // Find existing book line in progress (Col G) and append " 글완"
-        const cleanBook = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").replace(/글쓰기\s*완/g, "").trim();
+        const cleanBookAndScore = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+        const cleanBook = cleanBookAndScore.replace(/\s*\d+점?$/, "").trim();
+        const cleanBookNoSpaces = cleanBook.replace(/\s+/g, "").toLowerCase();
+
         let currentProgress = (student.progress || "").trim();
         if (currentProgress) {
           let lines = currentProgress.split("\n");
           let found = false;
-          const cleanBookNoSpaces = cleanBook.replace(/\s+/g, "").toLowerCase();
           lines = lines.map(line => {
             const lineNoSpaces = line.replace(/\s+/g, "").toLowerCase();
             if (cleanBookNoSpaces && lineNoSpaces.includes(cleanBookNoSpaces)) {
               found = true;
-              if (!line.includes("글완") && !line.includes("글쓰기완") && !line.includes("완료")) {
-                const newLine = `${line} 글완`;
-                if (newLine.trim().indexOf(eventDatePrefix) === 0) {
-                  groupMap.progress.push(newLine);
+              let newLine = line;
+              if (/\d+/.test(cleanBookAndScore)) {
+                // If user specified score today, update to today's date and score
+                newLine = `${eventDatePrefix} ${cleanBookAndScore} 글완`;
+              } else {
+                // Otherwise just append " 글완" if not already present
+                if (!line.includes("글완") && !line.includes("글쓰기완") && !line.includes("완료")) {
+                  newLine = `${line} 글완`;
                 }
-                return newLine;
               }
+              // If it starts with today's date, push to groupMap.progress to prevent deletion in writeback
+              if (newLine.trim().indexOf(eventDatePrefix) === 0) {
+                groupMap.progress.push(newLine);
+              }
+              return newLine;
             }
             return line;
           });
           
           if (!found && cleanBookNoSpaces) {
-            const newLine = `${eventDatePrefix} ${cleanBook} 글완`;
+            const newLine = `${eventDatePrefix} ${cleanBookAndScore} 글완`;
             lines.push(newLine);
             groupMap.progress.push(newLine);
             found = true;
@@ -1897,12 +1907,8 @@ class SheetSimulator {
             }
           }
           student.progress = lines.join("\n");
-        } else if (cleanBook) {
-          const newLine = `${eventDatePrefix} ${cleanBook} 글완`;
-          student.progress = newLine;
-          groupMap.progress.push(newLine);
         } else {
-          const newLine = `${eventDatePrefix} 글완`;
+          const newLine = `${eventDatePrefix} ${cleanBookAndScore || "글완"} 글완`.replace(/\s+글완\s+글완$/, " 글완");
           student.progress = newLine;
           groupMap.progress.push(newLine);
         }

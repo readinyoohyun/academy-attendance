@@ -417,7 +417,7 @@ class CRMManager {
 
       if (attType === "makeup") {
         const newMakeupStr = `${m}/${d}(${shortDay}) ${timeSelect}`;
-        let makeupList = student.makeupDate ? student.makeupDate.split(',').map(x => x.trim()).filter(Boolean) : [];
+        let makeupList = student.makeupDate ? student.makeupDate.split(/[\n,\r]+/).map(x => x.trim()).filter(Boolean) : [];
         if (!makeupList.includes(newMakeupStr)) {
           makeupList.push(newMakeupStr);
         }
