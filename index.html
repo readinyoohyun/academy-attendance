@@ -1490,18 +1490,55 @@ function generateDailyAttendance() {
     var isMakeupToday = false;
     var makeupTime = "";
     if (makeupDateStr) {
-      try {
-        var cleanStr = makeupDateStr.replace(/-/g, '/');
-        var makeupDateObj = new Date(cleanStr);
-        if (!isNaN(makeupDateObj.getTime())) {
-          var mm = makeupDateObj.getMonth() + 1;
-          var dd = makeupDateObj.getDate();
-          if (mm === m && dd === d) {
-            isMakeupToday = true;
-            makeupTime = String(makeupDateObj.getHours()).padStart(2, '0') + ":" + String(makeupDateObj.getMinutes()).padStart(2, '0');
+      var parts = makeupDateStr.split(",");
+      for (var pIdx = 0; pIdx < parts.length; pIdx++) {
+        var part = parts[pIdx].trim();
+        if (!part) continue;
+        var cleanPart = part.replace(/\s+/g, " ");
+        
+        // 1. Weekly repeating makeup (e.g. "금요일 14:30" or "금 14:30")
+        if (cleanPart.indexOf("/") === -1 && cleanPart.indexOf(".") === -1 && cleanPart.indexOf("-") === -1) {
+          var wMatch = cleanPart.match(/(월요일|화요일|수요일|목요일|금요일|토요일|일요일|월|화|수|목|금|토|일)\s*(\d{1,2}:\d{2})/);
+          if (wMatch) {
+            var mDay = wMatch[1];
+            var mTime = wMatch[2];
+            var tShort = todayDayName.substring(0, 1);
+            if (mDay === todayDayName || mDay === tShort) {
+              isMakeupToday = true;
+              makeupTime = mTime;
+              break;
+            }
           }
         }
-      } catch (e) {}
+        
+        // 2. Specific date makeup (e.g. "7/10(금) 14:30" or "2026-07-10 14:30" or "7.10 14:30")
+        var dMatch = cleanPart.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?/);
+        if (dMatch) {
+          var val1 = parseInt(dMatch[1], 10);
+          var val2 = parseInt(dMatch[2], 10);
+          var val4 = dMatch[4] ? parseInt(dMatch[4], 10) : null;
+          
+          var matchM = 0;
+          var matchD = 0;
+          if (val4 !== null) {
+            matchM = val2;
+            matchD = val4;
+          } else {
+            matchM = val1;
+            matchD = val2;
+          }
+          
+          if (matchM === m && matchD === d) {
+            isMakeupToday = true;
+            var tMatch = cleanPart.match(/(\d{1,2}:\d{2})/);
+            makeupTime = tMatch ? tMatch[1] : "";
+            break;
+          }
+        }
+      }
+    }
+    if (isMakeupToday && !makeupTime) {
+      makeupTime = "14:00"; // Fallback default time
     }
     
     var regTime = times[todayDayName] || "";
