@@ -646,25 +646,45 @@
         if (simpleMatch) {
           return { day: simpleMatch[1], time: simpleMatch[2], isWeekly: true };
         }
-        cleanStr = cleanStr.replace(/\([가-힣]+\)/g, ' ').replace(/\s+/g, ' ').trim();
-        cleanStr = cleanStr.replace(/\./g, '/').replace(/-/g, '/');
-        if (cleanStr.match(/^\d{1,2}\/\d{1,2}/)) {
+        
+        // Korean month/day format: e.g. "7월 14일 14:30" or "7월14일"
+        const koMatch = cleanStr.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일(\s*(\d{1,2}:\d{2}))?/);
+        if (koMatch) {
+          const m = parseInt(koMatch[1], 10);
+          const d = parseInt(koMatch[2], 10);
+          const time = koMatch[4] || "14:00";
           const currentYear = new Date().getFullYear();
-          cleanStr = `${currentYear}/${cleanStr}`;
-        }
-        const d = new Date(cleanStr);
-        if (!isNaN(d.getTime())) {
-          const day = WEEKDAYS[d.getDay()];
-          const hours = String(d.getHours()).padStart(2, '0');
-          const minutes = String(d.getMinutes()).padStart(2, '0');
-          const month = d.getMonth() + 1;
-          const date = d.getDate();
-          return { 
-            day, 
-            time: `${hours}:${minutes}`, 
+          const tempDate = new Date(currentYear, m - 1, d);
+          const day = WEEKDAYS[tempDate.getDay()];
+          return {
+            day,
+            time,
             isWeekly: false,
-            formattedSlash: `${month}/${date}`,
-            formattedDot: `${month}.${date}`
+            formattedSlash: `${m}/${d}`,
+            formattedDot: `${m}.${d}`
+          };
+        }
+
+        // Standard digit separator format: e.g. "7/14 14:30", "7.14 14:30", "2026-07-14 14:30"
+        const stdMatch = cleanStr.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?(\s*(\d{1,2}:\d{2}))?/);
+        if (stdMatch) {
+          let y = new Date().getFullYear();
+          let m = parseInt(stdMatch[1], 10);
+          let d = parseInt(stdMatch[2], 10);
+          let time = stdMatch[6] || "14:00";
+          if (stdMatch[3]) {
+            y = parseInt(stdMatch[1], 10);
+            m = parseInt(stdMatch[2], 10);
+            d = parseInt(stdMatch[4], 10);
+          }
+          const tempDate = new Date(y, m - 1, d);
+          const day = WEEKDAYS[tempDate.getDay()];
+          return {
+            day,
+            time,
+            isWeekly: false,
+            formattedSlash: `${m}/${d}`,
+            formattedDot: `${m}.${d}`
           };
         }
       } catch (e) {
@@ -676,7 +696,7 @@
     // Helper: Parse comma-separated list of multiple makeup dates
     function parseMultipleMakeups(makeupStr) {
       if (!makeupStr) return [];
-      const parts = String(makeupStr).split(',').map(p => p.trim()).filter(Boolean);
+      const parts = String(makeupStr).split(/[\n,\r]+/).map(p => p.trim()).filter(Boolean);
       const parsedList = [];
       parts.forEach(part => {
         const parsed = parseMakeupDate(part);
@@ -760,20 +780,46 @@
       }
     }
 
-    function updateClock() {
+    function getSeoulTime() {
       const now = new Date();
-      
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const date = String(now.getDate()).padStart(2, '0');
-      const day = WEEKDAYS[now.getDay()];
-      
-      document.getElementById("kioskDate").innerText = `${year}년 ${month}월 ${date}일 (${day})`;
-      
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      document.getElementById("kioskTime").innerText = `${hours}:${minutes}:${seconds}`;
+      try {
+        const formatter = new Intl.DateTimeFormat('ko-KR', {
+          timeZone: 'Asia/Seoul',
+          year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'long',
+          hour: 'numeric', minute: 'numeric', second: 'numeric',
+          hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        const map = {};
+        parts.forEach(p => map[p.type] = p.value);
+        
+        const year = map.year ? map.year.replace(/[^0-9]/g, '') : now.getFullYear();
+        const month = map.month ? map.month.replace(/[^0-9]/g, '') : (now.getMonth() + 1);
+        const date = map.day ? map.day.replace(/[^0-9]/g, '') : now.getDate();
+        const day = map.weekday ? map.weekday.trim() : WEEKDAYS[now.getDay()];
+        
+        const hour = map.hour ? map.hour.replace(/[^0-9]/g, '').padStart(2, '0') : String(now.getHours()).padStart(2, '0');
+        const minute = map.minute ? map.minute.replace(/[^0-9]/g, '').padStart(2, '0') : String(now.getMinutes()).padStart(2, '0');
+        const second = map.second ? map.second.replace(/[^0-9]/g, '').padStart(2, '0') : String(now.getSeconds()).padStart(2, '0');
+        
+        return { year, month, date, day, hour, minute, second };
+      } catch (e) {
+        // Fallback in case of environment failure
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const date = now.getDate();
+        const day = WEEKDAYS[now.getDay()];
+        const hour = String(now.getHours()).padStart(2, '0');
+        const minute = String(now.getMinutes()).padStart(2, '0');
+        const second = String(now.getSeconds()).padStart(2, '0');
+        return { year, month, date, day, hour, minute, second };
+      }
+    }
+
+    function updateClock() {
+      const s = getSeoulTime();
+      document.getElementById("kioskDate").innerText = `${s.year}년 ${s.month}월 ${s.date}일 (${s.day.substring(0, 1)})`;
+      document.getElementById("kioskTime").innerText = `${s.hour}:${s.minute}:${s.second}`;
     }
 
     // Fetch data from google sheets API
@@ -821,12 +867,12 @@
     }
 
     function getTodayWeekday() {
-      return WEEKDAYS[new Date().getDay()];
+      return getSeoulTime().day;
     }
 
     function getTodayDateStr() {
-      const now = new Date();
-      return `${now.getMonth() + 1}/${now.getDate()}`;
+      const s = getSeoulTime();
+      return `${s.month}/${s.date}`;
     }
 
     function isSameDate(dateStr1, dateStr2) {
@@ -865,9 +911,30 @@
         
         let isMakeupToday = false;
         if (student.makeupDate) {
-          const makeups = student.makeupDate.split(',').map(m => m.trim()).filter(Boolean);
+          const makeups = student.makeupDate.split(/[\n,\r]+/).map(m => m.trim()).filter(Boolean);
+          const parts = todayDateSlash.split("/");
+          const tM = parseInt(parts[0], 10);
+          const tD = parseInt(parts[1], 10);
           isMakeupToday = makeups.some(m => {
-            return m.includes(todayDateSlash) || m.includes(todayDay) || (m.includes(shortDay) && m.includes('/'));
+            if (m.includes(todayDateSlash) || m.includes(todayDay)) return true;
+            
+            const koMatch = m.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+            if (koMatch) {
+              return parseInt(koMatch[1], 10) === tM && parseInt(koMatch[2], 10) === tD;
+            }
+            
+            const numMatch = m.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?/);
+            if (numMatch) {
+              let matchM = parseInt(numMatch[1], 10);
+              let matchD = parseInt(numMatch[2], 10);
+              if (numMatch[4]) {
+                matchM = parseInt(numMatch[2], 10);
+                matchD = parseInt(numMatch[4], 10);
+              }
+              return matchM === tM && matchD === tD;
+            }
+            
+            return false;
           });
         }
         
@@ -1252,18 +1319,31 @@
       const shortDay = todayDay.substring(0, 1);
       const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
       
-      const now = new Date();
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const s = getSeoulTime();
+      const currentTime = `${s.hour}:${s.minute}`;
       const activeTime = student.times && student.times[todayDay] ? student.times[todayDay].trim() : currentTime;
       
       let dailyStatus = type === 'in' ? '수업중' : '수업완료';
 
-      // Find if daily log exists
-      let dailyLog = state.dailyLogs.find(log => 
-        (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
-        log.time.trim() === activeTime.trim() && 
-        isSameDate(log.date, dailyLogDateStr)
-      );
+      // Find if daily log exists.
+      // For check-out ('out'), search for any log for today that is currently '수업중' first.
+      let dailyLog = null;
+      if (type === 'out') {
+        dailyLog = state.dailyLogs.find(log => 
+          (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
+          isSameDate(log.date, dailyLogDateStr) &&
+          (log.status === "수업중" || log.status === "수업 중" || log.status === "보강 수업중")
+        );
+      }
+      
+      // Fallback: match by name, time, and date
+      if (!dailyLog) {
+        dailyLog = state.dailyLogs.find(log => 
+          (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
+          log.time.trim() === activeTime.trim() && 
+          isSameDate(log.date, dailyLogDateStr)
+        );
+      }
 
       // Perform local updates
       if (dailyLog) {

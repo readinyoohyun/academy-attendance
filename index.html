@@ -1511,7 +1511,19 @@ function generateDailyAttendance() {
           }
         }
         
-        // 2. Specific date makeup (e.g. "7/10(금) 14:30" or "2026-07-10 14:30" or "7.10 14:30")
+        // 2. Specific date makeup (e.g. "7/10(금) 14:30", "2026-07-10 14:30", "7.10 14:30", or "7월 10일")
+        var koDateMatch = cleanPart.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+        if (koDateMatch) {
+          var matchM = parseInt(koDateMatch[1], 10);
+          var matchD = parseInt(koDateMatch[2], 10);
+          if (matchM === m && matchD === d) {
+            isMakeupToday = true;
+            var tMatch = cleanPart.match(/(\d{1,2}:\d{2})/);
+            makeupTime = tMatch ? tMatch[1] : "";
+            break;
+          }
+        }
+
         var dMatch = cleanPart.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?/);
         if (dMatch) {
           var val1 = parseInt(dMatch[1], 10);
@@ -1537,24 +1549,53 @@ function generateDailyAttendance() {
         }
       }
     }
-    if (isMakeupToday && !makeupTime) {
-      makeupTime = "14:00"; // Fallback default time
-    }
     
-    var regTime = times[todayDayName] || "";
-    
-    if (isMakeupToday && makeupCompleted !== "완료") {
-      dailyLogsToAdd.push({
-        time: makeupTime, name: name, grade: grade, status: "대기", reason: "보강 수업", notes: notes
-      });
-    } else if (regTime && !isMakeupToday) {
-      var parts = regTime.split(/[,/; ]+/);
-      for (var p = 0; p < parts.length; p++) {
-        var t = parts[p].trim();
-        if (t) {
-          dailyLogsToAdd.push({
-            time: t, name: name, grade: grade, status: isAbsentToday ? "결석" : "대기", reason: isAbsentToday ? "정규 결석" : "", notes: notes
-          });
+    if (isMakeupToday) {
+      if (!makeupTime) {
+        makeupTime = "14:00"; // Fallback default time
+      }
+      
+      // Self-healing check: if Column AF (makeupCompleted) is "완료", but they are NOT in today's daily log as completed,
+      // it means this "완료" was left over from a previous makeup class. Reset it to "대기"!
+      if (makeupCompleted === "완료") {
+        var alreadyCompletedToday = false;
+        if (sheetDaily) {
+          var lastRowDaily = sheetDaily.getLastRow();
+          if (lastRowDaily >= 2) {
+            var dailyData = sheetDaily.getRange(2, 1, lastRowDaily - 1, 6).getValues();
+            for (var dIdx = 0; dIdx < dailyData.length; dIdx++) {
+              var dDate = String(dailyData[dIdx][0]).trim();
+              var dName = String(dailyData[dIdx][2]).trim();
+              var dStatus = String(dailyData[dIdx][4]).trim();
+              if (dName === name && isSameDateGAS(dDate, m + "/" + d + dayShort) && (dStatus === "수업완료" || dStatus === "보강완료")) {
+                alreadyCompletedToday = true;
+                break;
+              }
+            }
+          }
+        }
+        if (!alreadyCompletedToday) {
+          makeupCompleted = "대기";
+          sheetStudents.getRange(i + 2, 32).setValue("대기"); // Reset Column AF to "대기"
+        }
+      }
+      
+      if (makeupCompleted !== "완료") {
+        dailyLogsToAdd.push({
+          time: makeupTime, name: name, grade: grade, status: "대기", reason: "보강 수업", notes: notes
+        });
+      }
+    } else {
+      var regTime = times[todayDayName] || "";
+      if (regTime) {
+        var parts = regTime.split(/[,/; ]+/);
+        for (var p = 0; p < parts.length; p++) {
+          var t = parts[p].trim();
+          if (t) {
+            dailyLogsToAdd.push({
+              time: t, name: name, grade: grade, status: isAbsentToday ? "결석" : "대기", reason: isAbsentToday ? "정규 결석" : "", notes: notes
+            });
+          }
         }
       }
     }
@@ -2432,6 +2473,18 @@ function applyRichTextStyling(cell, text) {
   }
 }
 
+function isSameDateGAS(d1, d2) {
+  var clean1 = String(d1).trim().replace(/\s+/g, "");
+  var clean2 = String(d2).trim().replace(/\s+/g, "");
+  if (clean1 === clean2) return true;
+  var m1 = clean1.match(/(\d+)[\/\.](\d+)/);
+  var m2 = clean2.match(/(\d+)[\/\.](\d+)/);
+  if (m1 && m2) {
+    return parseInt(m1[1], 10) === parseInt(m2[1], 10) && 
+           parseInt(m1[2], 10) === parseInt(m2[2], 10);
+  }
+  return false;
+}
 
 // B3 셀 입력 수정 시 자동 레이아웃 조정 및 오늘 출석부 편집 시 이벤트 누적 트리거
 function onEdit(e) {
