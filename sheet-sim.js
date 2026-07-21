@@ -491,25 +491,16 @@ class SheetSimulator {
                 </div>
               </td>
               <td>
-                <div style="display:flex; align-items:center; gap:2px;">
-                  <select class="sheet-select-number" style="width:75px; height:32px; font-size:0.85rem; border-radius:4px; border:1px solid var(--panel-border); background:var(--input-bg); color:var(--text-primary); text-align:center;">
-                    <option value="" ${!row.number ? 'selected' : ''}>- 선택 -</option>
-                    ${['1', '2', '3', '4', '5', '6', '7', '8', '1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4', '4-1', '4-2', '4-3', '4-4', '5-1', '5-2', '5-3', '5-4', '6-1', '6-2', '6-3', '6-4', '6-5', '7-1', '7-2', '7-3', '7-4', '8-1', '8-2', '8-3', '8-4', '9-1', '9-2', '9-3', '9-4', '10-1', '10-2', '10-3', '10-4'].map(num => `<option value="${num}" ${row.number === num ? 'selected' : ''}>${num}</option>`).join('')}
-                    <option value="custom" ${row.number && !['1', '2', '3', '4', '5', '6', '7', '8', '1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4', '4-1', '4-2', '4-3', '4-4', '5-1', '5-2', '5-3', '5-4', '6-1', '6-2', '6-3', '6-4', '6-5', '7-1', '7-2', '7-3', '7-4', '8-1', '8-2', '8-3', '8-4', '9-1', '9-2', '9-3', '9-4', '10-1', '10-2', '10-3', '10-4'].includes(row.number) ? 'selected' : ''}>직접입력</option>
-                  </select>
-                  <input type="text" class="sheet-input-number" value="${this.escapeHtml(row.number || '')}" style="width: 50px; text-align:center;" placeholder="숫자">
-                </div>
+                <select class="sheet-select-number" style="width:100%; height:32px; font-size:0.85rem; border-radius:4px; border:1px solid var(--panel-border); background:var(--input-bg); color:var(--text-primary); text-align:center;">
+                  <option value="" ${!row.number ? 'selected' : ''}>- 선택 -</option>
+                  ${['1', '2', '3', '4', '5', '6', '7', '8', '1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4', '4-1', '4-2', '4-3', '4-4', '5-1', '5-2', '5-3', '5-4', '6-1', '6-2', '6-3', '6-4', '6-5', '7-1', '7-2', '7-3', '7-4', '8-1', '8-2', '8-3', '8-4', '9-1', '9-2', '9-3', '9-4', '10-1', '10-2', '10-3', '10-4'].map(num => `<option value="${num}" ${row.number === num ? 'selected' : ''}>${num}</option>`).join('')}
+                </select>
               </td>
               <td>
-                <div style="display:flex; align-items:center; gap:2px;">
-                  <select class="sheet-select-event" style="width:85px; height:32px; font-size:0.85rem; border-radius:4px; border:1px solid var(--panel-border); background:var(--input-bg); color:var(--text-primary);">
-                    <option value="" ${!row.event ? 'selected' : ''}>- 선택 -</option>
-                    ${['진단', '진도', '코스업', '레벨업', '진로검사', '훈민정음', '한자', '교재', '읽트', '독트', '독서계획표', '친구', '탐험가', '고수', '챔피언', '마스터', '달성', '스티커'].map(evt => `<option value="${evt}" ${row.event === evt ? 'selected' : ''}>${evt}</option>`).join('')}
-                    <option value="custom" ${row.event && !['진단', '진도', '코스업', '레벨업', '진로검사', '훈민정음', '한자', '교재', '읽트', '독트', '독서계획표', '친구', '탐험가', '고수', '챔피언', '마스터', '달성', '스티커'].includes(row.event) ? 'selected' : ''}>직접입력</option>
-                  </select>
-                  <textarea class="sheet-input-event" style="width: 75px; height: 32px; resize: vertical;" placeholder="이벤트">${this.escapeHtml(row.event || '')}</textarea>
-                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
-                </div>
+                <select class="sheet-select-event" style="width:100%; height:32px; font-size:0.85rem; border-radius:4px; border:1px solid var(--panel-border); background:var(--input-bg); color:var(--text-primary); text-align:center;">
+                  <option value="" ${!row.event ? 'selected' : ''}>- 선택 -</option>
+                  ${['진단', '진도', '코스업', '레벨업', '진로검사', '훈민정음', '한자', '교재', '읽트', '독트', '독서계획표', '친구', '탐험가', '고수', '챔피언', '마스터', '달성', '스티커'].map(evt => `<option value="${evt}" ${row.event === evt ? 'selected' : ''}>${evt}</option>`).join('')}
+                </select>
               </td>
               <td>
                 <div style="display:flex; align-items:center; gap:4px;">
