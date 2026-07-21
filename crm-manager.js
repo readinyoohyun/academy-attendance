@@ -38,23 +38,55 @@ class CRMManager {
     return choStr.includes(search);
   }
 
-  getLastConsultationDays(name) {
-    const studentAnal = this.app.state.consultations.filter(a => a.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
-    if (studentAnal.length === 0) {
-      return Infinity;
+  parseFlexibleDate(dateStr) {
+    if (!dateStr) return null;
+    const s = String(dateStr).trim();
+    // Match YY.MM.DD or YYYY.MM.DD (e.g. 26.06.04 or 2026.06.04 or 26.6.4)
+    const m = s.match(/^(\d{2,4})[\./\-](\d{1,2})[\./\-](\d{1,2})/);
+    if (m) {
+      let year = parseInt(m[1], 10);
+      const month = parseInt(m[2], 10) - 1;
+      const day = parseInt(m[3], 10);
+      if (year < 100) {
+        year = 2000 + year; // Convert 26 -> 2026
+      }
+      return new Date(year, month, day);
     }
-    
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      if (d.getFullYear() < 2000) {
+        d.setFullYear(d.getFullYear() + 100);
+      }
+      return d;
+    }
+    return null;
+  }
+
+  getLastConsultationDays(name) {
+    const studentAnal = (this.app.state.consultations || []).filter(a => a && a.name && a.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
     let latestDate = null;
+    
     studentAnal.forEach(anal => {
       if (anal.period) {
-        const d = new Date(anal.period);
-        if (!isNaN(d.getTime())) {
+        const d = this.parseFlexibleDate(anal.period);
+        if (d && !isNaN(d.getTime())) {
           if (!latestDate || d > latestDate) {
             latestDate = d;
           }
         }
       }
     });
+
+    // Fallback to registration date (등록일) from memberAnalysis if no consultation date
+    if (!latestDate) {
+      const memberRec = (this.app.state.memberAnalysis || []).find(m => m && m.name && m.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+      if (memberRec && memberRec.regDate) {
+        const d = this.parseFlexibleDate(memberRec.regDate);
+        if (d && !isNaN(d.getTime())) {
+          latestDate = d;
+        }
+      }
+    }
     
     if (!latestDate) return Infinity;
     
