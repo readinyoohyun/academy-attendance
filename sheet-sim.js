@@ -1247,6 +1247,17 @@ class SheetSimulator {
                 input.style.whiteSpace = "pre-wrap";
                 input.style.wordBreak = "break-word";
                 input.style.overflowWrap = "break-word";
+                
+                // Dynamic auto-height: adjust row height based on wrapped text content
+                const adjustHeight = () => {
+                  input.style.height = "auto";
+                  input.style.height = Math.max(32, input.scrollHeight) + "px";
+                };
+                adjustHeight();
+                if (!input.dataset.autoHeightBound) {
+                  input.dataset.autoHeightBound = "true";
+                  input.addEventListener("input", adjustHeight);
+                }
               }
             });
           }
