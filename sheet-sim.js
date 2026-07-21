@@ -1232,7 +1232,7 @@ class SheetSimulator {
           });
         }
 
-        // 2. Ensure all inputs inside this column's cells fill 100% width and don't overflow
+        // 2. Ensure all inputs inside this column's cells fill 100% width, wrap lines when text is long, and preserve font shape
         const rows = table.querySelectorAll("tbody tr");
         rows.forEach(tr => {
           const td = tr.children[colIndex];
@@ -1243,6 +1243,11 @@ class SheetSimulator {
               input.style.maxWidth = "100%";
               input.style.minWidth = "0";
               input.style.boxSizing = "border-box";
+              if (input.tagName.toLowerCase() === "textarea") {
+                input.style.whiteSpace = "pre-wrap";
+                input.style.wordBreak = "break-word";
+                input.style.overflowWrap = "break-word";
+              }
             });
           }
         });
