@@ -1257,6 +1257,9 @@ class SheetSimulator {
         rows.forEach(tr => {
           const td = tr.children[colIndex];
           if (td) {
+            td.style.whiteSpace = "pre-wrap";
+            td.style.wordBreak = "break-word";
+            td.style.overflowWrap = "break-word";
             const inputs = td.querySelectorAll("input, textarea, select");
             inputs.forEach(input => {
               input.style.width = "100%";
@@ -2092,18 +2095,18 @@ class SheetSimulator {
                 <td style="text-align:center; font-weight:600; color: var(--accent);">${this.escapeHtml(member.name || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(member.grade || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(member.regDate || '')}</td>
-                <td style="white-space:pre-wrap; word-break:break-all; font-size:0.8rem; line-height:1.4; text-align:left;" title="${this.escapeHtml(member.consultation || '')}">${this.escapeHtml(member.consultation || '')}</td>
-                <td style="white-space:pre-wrap; word-break:break-all; font-size:0.8rem; line-height:1.4; text-align:left;" title="${this.escapeHtml(member.notes || '')}">${this.escapeHtml(member.notes || '')}</td>
-                <td style="max-width:200px; font-size:0.8rem; line-height:1.4; vertical-align:top; text-align:left; white-space: pre-wrap;">${this.renderRichTextHtml(member.progress || '')}</td>
-                <td>${this.escapeHtml(member.levelUp || '')}</td>
-                <td>${this.escapeHtml(member.levelChange || '')}</td>
-                <td style="max-width:180px; font-size:0.8rem; line-height:1.4; vertical-align:top; text-align:left; white-space: pre-wrap;">${this.renderRichTextHtml(member.grammarDone || '')}</td>
-                <td>${this.escapeHtml(member.readingTest || '')}</td>
-                <td>${this.escapeHtml(member.bookPlan || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(member.analysisSent || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(member.readMethod || '')}</td>
-                <td>${this.escapeHtml(member.studentId || '')}</td>
-                <td>${this.escapeHtml(member.phone || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;" title="${this.escapeHtml(member.consultation || '')}">${this.escapeHtml(member.consultation || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;" title="${this.escapeHtml(member.notes || '')}">${this.escapeHtml(member.notes || '')}</td>
+                <td style="max-width:200px; font-size:0.8rem; line-height:1.4; vertical-align:top; text-align:left; white-space: pre-wrap; word-break: break-word;">${this.renderRichTextHtml(member.progress || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;">${this.escapeHtml(member.levelUp || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:center;">${this.escapeHtml(member.levelChange || '')}</td>
+                <td style="max-width:180px; font-size:0.8rem; line-height:1.4; vertical-align:top; text-align:left; white-space: pre-wrap; word-break: break-word;">${this.renderRichTextHtml(member.grammarDone || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;">${this.escapeHtml(member.readingTest || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;">${this.escapeHtml(member.bookPlan || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:center;">${this.escapeHtml(member.analysisSent || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:center;">${this.escapeHtml(member.readMethod || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;">${this.escapeHtml(member.studentId || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:center;">${this.escapeHtml(member.phone || '')}</td>
               </tr>
         `;
       });
@@ -2171,23 +2174,23 @@ class SheetSimulator {
                 <td class="row-num-col" style="text-align:center;">${sec2StartRow + index}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.grade || '')}</td>
                 <td style="text-align:center; font-weight:600; color: var(--accent);">${this.escapeHtml(tb.name || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(tb.nonfictionTitle || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;">${this.escapeHtml(tb.nonfictionTitle || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.nonfictionStart || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.nonfictionEnd || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.nonfictionAccuracy || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(tb.literatureTitle || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;">${this.escapeHtml(tb.literatureTitle || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.literatureStart || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.literatureEnd || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.literatureAccuracy || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(tb.vocabTitle || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;">${this.escapeHtml(tb.vocabTitle || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.vocabStart || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.vocabEnd || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.vocabAccuracy || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(tb.complexTitle || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;">${this.escapeHtml(tb.complexTitle || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.complexStart || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.complexEnd || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.complexAccuracy || '')}</td>
-                <td style="text-align:center;">${this.escapeHtml(tb.readaloudTitle || '')}</td>
+                <td style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem; line-height:1.4; text-align:left;">${this.escapeHtml(tb.readaloudTitle || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.readaloudStart || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.readaloudEnd || '')}</td>
                 <td style="text-align:center;">${this.escapeHtml(tb.readaloudAccuracy || '')}</td>
