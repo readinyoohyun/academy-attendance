@@ -395,15 +395,30 @@ class SheetSimulator {
                 </select>
               </td>
               <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 90px; font-weight:600;"></td>
-              <td><input type="text" class="sheet-input-classes" value="${this.escapeHtml(row.classes || '')}" style="width: 140px;"></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-classes" style="width: 140px; height: 35px; resize: vertical;">${this.escapeHtml(row.classes || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
               <td><input type="text" class="sheet-input-time" data-day="월요일" value="${this.escapeHtml(row.times['월요일'] || '')}" style="text-align:center; width:55px;"></td>
               <td><input type="text" class="sheet-input-time" data-day="화요일" value="${this.escapeHtml(row.times['화요일'] || '')}" style="text-align:center; width:55px;"></td>
               <td><input type="text" class="sheet-input-time" data-day="수요일" value="${this.escapeHtml(row.times['수요일'] || '')}" style="text-align:center; width:55px;"></td>
               <td><input type="text" class="sheet-input-time" data-day="목요일" value="${this.escapeHtml(row.times['목요일'] || '')}" style="text-align:center; width:55px;"></td>
               <td><input type="text" class="sheet-input-time" data-day="금요일" value="${this.escapeHtml(row.times['금요일'] || '')}" style="text-align:center; width:55px;"></td>
               <td><input type="text" class="sheet-input-time" data-day="토요일" value="${this.escapeHtml(row.times['토요일'] || '')}" style="text-align:center; width:55px;"></td>
-              <td><input type="text" class="sheet-input-absent" value="${this.escapeHtml(row.absentDates || '')}"></td>
-              <td><input type="text" class="sheet-input-makeup-date" value="${this.escapeHtml(row.makeupDate || '')}" placeholder="YYYY-MM-DD HH:MM" style="width: 130px;"></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-absent" style="width: 120px; height: 35px; resize: vertical;">${this.escapeHtml(row.absentDates || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-makeup-date" placeholder="YYYY-MM-DD HH:MM" style="width: 130px; height: 35px; resize: vertical;">${this.escapeHtml(row.makeupDate || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
               <td>
                 <select class="sheet-select-makeup-done" style="width: 80px;">
                   <option value="" ${row.makeupCompleted === '' ? 'selected' : ''}>-</option>
