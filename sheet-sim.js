@@ -482,7 +482,12 @@ class SheetSimulator {
                 </div>
               </td>
               <td><input type="text" class="sheet-input-number" value="${this.escapeHtml(row.number || '')}" style="width: 60px; text-align:center;"></td>
-              <td><input type="text" class="sheet-input-event" value="${this.escapeHtml(row.event || '')}" style="width: 100px;"></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-event" style="width: 100px; height: 32px; resize: vertical;">${this.escapeHtml(row.event || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
               <td>
                 <div style="display:flex; align-items:center; gap:4px;">
                   <textarea class="sheet-input-grammarDone" style="width: 120px; height: 32px; resize: vertical; ${this.getConditionalStyle(row.grammarDone || row.specialClass, 'grammarDone')}">${this.escapeHtml(row.grammarDone || row.specialClass || '')}</textarea>
@@ -541,31 +546,31 @@ class SheetSimulator {
             <td><input type="text" class="sheet-input-name" value="${this.escapeHtml(row.name)}" style="width: 80px; font-weight:600;"></td>
             
             <!-- 비문학 -->
-            <td style="${row.nonfictionTitle ? 'background-color: #e0f2fe;' : ''}"><input type="text" class="sheet-input-field" data-field="nonfictionTitle" value="${this.escapeHtml(row.nonfictionTitle || '')}" style="width: 120px;"></td>
+            <td style="${row.nonfictionTitle ? 'background-color: #e0f2fe;' : ''}"><textarea class="sheet-input-field" data-field="nonfictionTitle" style="width: 120px; height: 32px; resize: vertical;">${this.escapeHtml(row.nonfictionTitle || '')}</textarea></td>
             <td style="${row.nonfictionStart ? 'background-color: #e0f2fe;' : ''}"><input type="text" class="sheet-input-field" data-field="nonfictionStart" value="${this.escapeHtml(row.nonfictionStart || '')}" style="width: 80px; text-align:center;"></td>
             <td style="${row.nonfictionEnd ? 'background-color: #e0f2fe;' : ''}"><input type="text" class="sheet-input-field" data-field="nonfictionEnd" value="${this.escapeHtml(row.nonfictionEnd || '')}" style="width: 80px; text-align:center;"></td>
             <td style="${row.nonfictionAccuracy ? 'background-color: #e0f2fe;' : ''}"><input type="text" class="sheet-input-field" data-field="nonfictionAccuracy" value="${this.escapeHtml(row.nonfictionAccuracy || '')}" style="width: 60px; text-align:center;"></td>
             
             <!-- 문학 -->
-            <td style="${row.literatureTitle ? 'background-color: #ffe4e6;' : ''}"><input type="text" class="sheet-input-field" data-field="literatureTitle" value="${this.escapeHtml(row.literatureTitle || '')}" style="width: 120px;"></td>
+            <td style="${row.literatureTitle ? 'background-color: #ffe4e6;' : ''}"><textarea class="sheet-input-field" data-field="literatureTitle" style="width: 120px; height: 32px; resize: vertical;">${this.escapeHtml(row.literatureTitle || '')}</textarea></td>
             <td style="${row.literatureStart ? 'background-color: #ffe4e6;' : ''}"><input type="text" class="sheet-input-field" data-field="literatureStart" value="${this.escapeHtml(row.literatureStart || '')}" style="width: 80px; text-align:center;"></td>
             <td style="${row.literatureEnd ? 'background-color: #ffe4e6;' : ''}"><input type="text" class="sheet-input-field" data-field="literatureEnd" value="${this.escapeHtml(row.literatureEnd || '')}" style="width: 80px; text-align:center;"></td>
             <td style="${row.literatureAccuracy ? 'background-color: #ffe4e6;' : ''}"><input type="text" class="sheet-input-field" data-field="literatureAccuracy" value="${this.escapeHtml(row.literatureAccuracy || '')}" style="width: 60px; text-align:center;"></td>
             
             <!-- 어휘 -->
-            <td style="${row.vocabTitle ? 'background-color: #fef3c7;' : ''}"><input type="text" class="sheet-input-field" data-field="vocabTitle" value="${this.escapeHtml(row.vocabTitle || '')}" style="width: 120px;"></td>
+            <td style="${row.vocabTitle ? 'background-color: #fef3c7;' : ''}"><textarea class="sheet-input-field" data-field="vocabTitle" style="width: 120px; height: 32px; resize: vertical;">${this.escapeHtml(row.vocabTitle || '')}</textarea></td>
             <td style="${row.vocabStart ? 'background-color: #fef3c7;' : ''}"><input type="text" class="sheet-input-field" data-field="vocabStart" value="${this.escapeHtml(row.vocabStart || '')}" style="width: 80px; text-align:center;"></td>
             <td style="${row.vocabEnd ? 'background-color: #fef3c7;' : ''}"><input type="text" class="sheet-input-field" data-field="vocabEnd" value="${this.escapeHtml(row.vocabEnd || '')}" style="width: 80px; text-align:center;"></td>
             <td style="${row.vocabAccuracy ? 'background-color: #fef3c7;' : ''}"><input type="text" class="sheet-input-field" data-field="vocabAccuracy" value="${this.escapeHtml(row.vocabAccuracy || '')}" style="width: 60px; text-align:center;"></td>
             
             <!-- 복합 -->
-            <td style="${row.complexTitle ? 'background-color: #f3e8ff;' : ''}"><input type="text" class="sheet-input-field" data-field="complexTitle" value="${this.escapeHtml(row.complexTitle || '')}" style="width: 120px;"></td>
+            <td style="${row.complexTitle ? 'background-color: #f3e8ff;' : ''}"><textarea class="sheet-input-field" data-field="complexTitle" style="width: 120px; height: 32px; resize: vertical;">${this.escapeHtml(row.complexTitle || '')}</textarea></td>
             <td style="${row.complexStart ? 'background-color: #f3e8ff;' : ''}"><input type="text" class="sheet-input-field" data-field="complexStart" value="${this.escapeHtml(row.complexStart || '')}" style="width: 80px; text-align:center;"></td>
             <td style="${row.complexEnd ? 'background-color: #f3e8ff;' : ''}"><input type="text" class="sheet-input-field" data-field="complexEnd" value="${this.escapeHtml(row.complexEnd || '')}" style="width: 80px; text-align:center;"></td>
             <td style="${row.complexAccuracy ? 'background-color: #f3e8ff;' : ''}"><input type="text" class="sheet-input-field" data-field="complexAccuracy" value="${this.escapeHtml(row.complexAccuracy || '')}" style="width: 60px; text-align:center;"></td>
             
             <!-- 음독 -->
-            <td style="${row.readaloudTitle ? 'background-color: #d1fae5;' : ''}"><input type="text" class="sheet-input-field" data-field="readaloudTitle" value="${this.escapeHtml(row.readaloudTitle || '')}" style="width: 120px;"></td>
+            <td style="${row.readaloudTitle ? 'background-color: #d1fae5;' : ''}"><textarea class="sheet-input-field" data-field="readaloudTitle" style="width: 120px; height: 32px; resize: vertical;">${this.escapeHtml(row.readaloudTitle || '')}</textarea></td>
             <td style="${row.readaloudStart ? 'background-color: #d1fae5;' : ''}"><input type="text" class="sheet-input-field" data-field="readaloudStart" value="${this.escapeHtml(row.readaloudStart || '')}" style="width: 80px; text-align:center;"></td>
             <td style="${row.readaloudEnd ? 'background-color: #d1fae5;' : ''}"><input type="text" class="sheet-input-field" data-field="readaloudEnd" value="${this.escapeHtml(row.readaloudEnd || '')}" style="width: 80px; text-align:center;"></td>
             <td style="${row.readaloudAccuracy ? 'background-color: #d1fae5;' : ''}"><input type="text" class="sheet-input-field" data-field="readaloudAccuracy" value="${this.escapeHtml(row.readaloudAccuracy || '')}" style="width: 60px; text-align:center;"></td>
