@@ -481,10 +481,24 @@ class SheetSimulator {
                   <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
                 </div>
               </td>
-              <td><input type="text" class="sheet-input-number" value="${this.escapeHtml(row.number || '')}" style="width: 60px; text-align:center;"></td>
               <td>
-                <div style="display:flex; align-items:center; gap:4px;">
-                  <textarea class="sheet-input-event" style="width: 100px; height: 32px; resize: vertical;">${this.escapeHtml(row.event || '')}</textarea>
+                <div style="display:flex; align-items:center; gap:2px;">
+                  <select class="sheet-select-number" style="width:65px; height:32px; font-size:0.85rem; border-radius:4px; border:1px solid var(--panel-border); background:var(--input-bg); color:var(--text-primary); text-align:center;">
+                    <option value="" ${!row.number ? 'selected' : ''}>- 선택 -</option>
+                    ${['50', '60', '70', '75', '80', '85', '90', '95', '100'].map(num => `<option value="${num}" ${row.number === num ? 'selected' : ''}>${num}</option>`).join('')}
+                    <option value="custom" ${row.number && !['50','60','70','75','80','85','90','95','100'].includes(row.number) ? 'selected' : ''}>직접입력</option>
+                  </select>
+                  <input type="text" class="sheet-input-number" value="${this.escapeHtml(row.number || '')}" style="width: 50px; text-align:center;" placeholder="숫자">
+                </div>
+              </td>
+              <td>
+                <div style="display:flex; align-items:center; gap:2px;">
+                  <select class="sheet-select-event" style="width:85px; height:32px; font-size:0.85rem; border-radius:4px; border:1px solid var(--panel-border); background:var(--input-bg); color:var(--text-primary);">
+                    <option value="" ${!row.event ? 'selected' : ''}>- 선택 -</option>
+                    ${['진단', '진도', '코스업', '레벨업', '진로검사', '훈민정음', '한자', '교재', '읽트', '독트', '독서계획표', '친구', '탐험가', '고수', '챔피언', '마스터', '달성', '스티커'].map(evt => `<option value="${evt}" ${row.event === evt ? 'selected' : ''}>${evt}</option>`).join('')}
+                    <option value="custom" ${row.event && !['진단', '진도', '코스업', '레벨업', '진로검사', '훈민정음', '한자', '교재', '읽트', '독트', '독서계획표', '친구', '탐험가', '고수', '챔피언', '마스터', '달성', '스티커'].includes(row.event) ? 'selected' : ''}>직접입력</option>
+                  </select>
+                  <textarea class="sheet-input-event" style="width: 75px; height: 32px; resize: vertical;" placeholder="이벤트">${this.escapeHtml(row.event || '')}</textarea>
                   <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
                 </div>
               </td>
@@ -1734,11 +1748,39 @@ class SheetSimulator {
           const reasonInput = tr.querySelector(".sheet-input-reason");
           if (reasonInput) reasonInput.addEventListener("change", (e) => updateField(id, "dailyLogs", rowArray, "reason", e.target.value.trim()));
           
+          const numberSelect = tr.querySelector(".sheet-select-number");
           const numberInput = tr.querySelector(".sheet-input-number");
-          if (numberInput) numberInput.addEventListener("change", (e) => updateField(id, "dailyLogs", rowArray, "number", e.target.value.trim()));
+          if (numberSelect) {
+            numberSelect.addEventListener("change", (e) => {
+              const val = e.target.value;
+              if (val !== "custom") {
+                if (numberInput) numberInput.value = val;
+                updateField(id, "dailyLogs", rowArray, "number", val.trim());
+              }
+            });
+          }
+          if (numberInput) {
+            numberInput.addEventListener("change", (e) => {
+              updateField(id, "dailyLogs", rowArray, "number", e.target.value.trim());
+            });
+          }
           
+          const eventSelect = tr.querySelector(".sheet-select-event");
           const eventInput = tr.querySelector(".sheet-input-event");
-          if (eventInput) eventInput.addEventListener("change", (e) => updateField(id, "dailyLogs", rowArray, "event", e.target.value.trim()));
+          if (eventSelect) {
+            eventSelect.addEventListener("change", (e) => {
+              const val = e.target.value;
+              if (val !== "custom") {
+                if (eventInput) eventInput.value = val;
+                updateField(id, "dailyLogs", rowArray, "event", val.trim());
+              }
+            });
+          }
+          if (eventInput) {
+            eventInput.addEventListener("change", (e) => {
+              updateField(id, "dailyLogs", rowArray, "event", e.target.value.trim());
+            });
+          }
           
           const grammarInput = tr.querySelector(".sheet-input-grammarDone");
           if (grammarInput) grammarInput.addEventListener("change", (e) => updateField(id, "dailyLogs", rowArray, "grammarDone", e.target.value.trim()));
