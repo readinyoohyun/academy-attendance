@@ -206,6 +206,7 @@ class SheetSimulator {
             <th style="background:rgba(99,102,241,0.1); text-align:center;">목 (H)</th>
             <th style="background:rgba(99,102,241,0.1); text-align:center;">금 (I)</th>
             <th style="background:rgba(99,102,241,0.1); text-align:center;">토 (J)</th>
+            <th>특이사항 (K)</th>
             <th>결석 일자들 (L)</th>
             <th style="background:rgba(236,72,153,0.1);">보강일시 (AE)</th>
             <th style="background:rgba(236,72,153,0.1);">보강완료 (AF)</th>
@@ -407,6 +408,12 @@ class SheetSimulator {
               <td><input type="text" class="sheet-input-time" data-day="목요일" value="${this.escapeHtml(row.times['목요일'] || '')}" style="text-align:center; width:55px;"></td>
               <td><input type="text" class="sheet-input-time" data-day="금요일" value="${this.escapeHtml(row.times['금요일'] || '')}" style="text-align:center; width:55px;"></td>
               <td><input type="text" class="sheet-input-time" data-day="토요일" value="${this.escapeHtml(row.times['토요일'] || '')}" style="text-align:center; width:55px;"></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <textarea class="sheet-input-notes" style="width: 120px; height: 35px; resize: vertical;">${this.escapeHtml(row.notes || '')}</textarea>
+                  <button type="button" class="btn-zoom-textarea" style="background:transparent; border:none; cursor:pointer; padding:2px; font-size:1.1rem; outline:none;" title="크게보기">🔍</button>
+                </div>
+              </td>
               <td>
                 <div style="display:flex; align-items:center; gap:4px;">
                   <textarea class="sheet-input-absent" style="width: 120px; height: 35px; resize: vertical;">${this.escapeHtml(row.absentDates || '')}</textarea>
@@ -1654,6 +1661,10 @@ class SheetSimulator {
           tr.querySelector(".sheet-input-grade").addEventListener("change", (e) => updateField(id, "students", rowArray, "grade", e.target.value.trim()));
           tr.querySelector(".sheet-input-name").addEventListener("change", (e) => updateField(id, "students", rowArray, "name", e.target.value.trim()));
           tr.querySelector(".sheet-input-classes").addEventListener("change", (e) => updateField(id, "students", rowArray, "classes", e.target.value.trim()));
+          const notesInput = tr.querySelector(".sheet-input-notes");
+          if (notesInput) {
+            notesInput.addEventListener("change", (e) => updateField(id, "students", rowArray, "notes", e.target.value.trim()));
+          }
           tr.querySelector(".sheet-input-absent").addEventListener("change", (e) => updateField(id, "students", rowArray, "absentDates", e.target.value.trim()));
           tr.querySelector(".sheet-input-makeup-date").addEventListener("change", (e) => {
             updateField(id, "students", rowArray, "makeupDate", e.target.value.trim());
