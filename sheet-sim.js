@@ -1208,16 +1208,18 @@ class SheetSimulator {
 
   makeColumnsResizable() {
     const tables = this.container.querySelectorAll(".sheet-table");
-    tables.forEach(table => {
+    tables.forEach((table, tableIndex) => {
+      table.style.tableLayout = "fixed";
       const cols = table.querySelectorAll("th");
       cols.forEach((col, colIndex) => {
-        const key = `col_width_${this.activeTab}_${colIndex}`;
+        const key = `col_width_${this.activeTab}_${tableIndex}_${colIndex}`;
         const savedWidth = localStorage.getItem(key);
         
         // 1. Apply width to the header and body cells
         if (savedWidth) {
           col.style.width = savedWidth;
           col.style.minWidth = savedWidth;
+          col.style.maxWidth = savedWidth;
           
           const rows = table.querySelectorAll("tbody tr");
           rows.forEach(tr => {
@@ -1225,11 +1227,12 @@ class SheetSimulator {
             if (td) {
               td.style.width = savedWidth;
               td.style.minWidth = savedWidth;
+              td.style.maxWidth = savedWidth;
             }
           });
         }
 
-        // 2. Ensure all inputs inside this column's cells fill 100% width
+        // 2. Ensure all inputs inside this column's cells fill 100% width and don't overflow
         const rows = table.querySelectorAll("tbody tr");
         rows.forEach(tr => {
           const td = tr.children[colIndex];
@@ -1237,6 +1240,8 @@ class SheetSimulator {
             const inputs = td.querySelectorAll("input, textarea, select");
             inputs.forEach(input => {
               input.style.width = "100%";
+              input.style.maxWidth = "100%";
+              input.style.minWidth = "0";
               input.style.boxSizing = "border-box";
             });
           }
@@ -1259,18 +1264,21 @@ class SheetSimulator {
         
         const resize = (clientX) => {
           const width = startWidth + (clientX - startX);
-          if (width > 20) {
+          if (width > 10) {
+            const wStr = width + "px";
             // Set width for header
-            col.style.width = width + "px";
-            col.style.minWidth = width + "px";
+            col.style.width = wStr;
+            col.style.minWidth = wStr;
+            col.style.maxWidth = wStr;
             
             // Set width for all body cells in this column
             const tbodyRows = table.querySelectorAll("tbody tr");
             tbodyRows.forEach(tr => {
               const td = tr.children[colIndex];
               if (td) {
-                td.style.width = width + "px";
-                td.style.minWidth = width + "px";
+                td.style.width = wStr;
+                td.style.minWidth = wStr;
+                td.style.maxWidth = wStr;
               }
             });
           }
@@ -1278,8 +1286,10 @@ class SheetSimulator {
         
         const endResize = () => {
           col.classList.remove("resizing");
-          // Save width to localStorage
-          localStorage.setItem(key, col.style.width);
+          if (col.style.width) {
+            // Save width to localStorage
+            localStorage.setItem(key, col.style.width);
+          }
         };
 
         // Mouse Events
