@@ -97,9 +97,9 @@ const INITIAL_STUDENTS = [
 ];
 
 const INITIAL_DAILY_LOGS = [
-  { id: 'daily_2', row: 2, date: '6/18목', time: '18:00', name: '강성모', status: '출석', inTime: '17:55', reason: '', contents: '비문학 처음 세계사 1단원 요약', notes: '' },
-  { id: 'daily_3', row: 3, date: '6/18목', time: '16:00', name: '강예진', status: '출석', inTime: '15:58', reason: '', contents: '어휘 학습 및 문해력 독해 트레이닝', notes: '묵독 점검함.' },
-  { id: 'daily_4', row: 4, date: '6/18목', time: '15:00', name: '26 김민준', status: '보강완료', inTime: '15:02', reason: '이전 결석 보강', contents: '국어 독해 기본 1단계', notes: '집중도가 매우 좋음.' }
+  { id: 'daily_3', row: 3, date: '6/18목', time: '18:00', name: '강성모', status: '출석', inTime: '17:55', reason: '', contents: '비문학 처음 세계사 1단원 요약', notes: '' },
+  { id: 'daily_4', row: 4, date: '6/18목', time: '16:00', name: '강예진', status: '출석', inTime: '15:58', reason: '', contents: '어휘 학습 및 문해력 독해 트레이닝', notes: '묵독 점검함.' },
+  { id: 'daily_5', row: 5, date: '6/18목', time: '15:00', name: '26 김민준', status: '보강완료', inTime: '15:02', reason: '이전 결석 보강', contents: '국어 독해 기본 1단계', notes: '집중도가 매우 좋음.' }
 ];
 
 const INITIAL_TEXTBOOKS = [

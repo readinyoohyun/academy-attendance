@@ -441,6 +441,8 @@ class SheetSimulator {
       
       case "오늘 출석부": {
         const filtered = this.dataMap.dailyLogs.filter(row => {
+          if (!row) return false;
+          if (row.row <= 2 || row.name === '이름' || row.date === '날짜요일' || row.date === '날짜') return false;
           const nameVal = row && row.name ? String(row.name).toLowerCase() : "";
           const dateVal = row && row.date ? String(row.date).toLowerCase() : "";
           return nameVal.includes(query) || dateVal.includes(query);
