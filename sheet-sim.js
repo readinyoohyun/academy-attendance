@@ -483,10 +483,10 @@ class SheetSimulator {
               </td>
               <td>
                 <div style="display:flex; align-items:center; gap:2px;">
-                  <select class="sheet-select-number" style="width:65px; height:32px; font-size:0.85rem; border-radius:4px; border:1px solid var(--panel-border); background:var(--input-bg); color:var(--text-primary); text-align:center;">
+                  <select class="sheet-select-number" style="width:75px; height:32px; font-size:0.85rem; border-radius:4px; border:1px solid var(--panel-border); background:var(--input-bg); color:var(--text-primary); text-align:center;">
                     <option value="" ${!row.number ? 'selected' : ''}>- 선택 -</option>
-                    ${['50', '60', '70', '75', '80', '85', '90', '95', '100'].map(num => `<option value="${num}" ${row.number === num ? 'selected' : ''}>${num}</option>`).join('')}
-                    <option value="custom" ${row.number && !['50','60','70','75','80','85','90','95','100'].includes(row.number) ? 'selected' : ''}>직접입력</option>
+                    ${['1', '2', '3', '4', '5', '6', '7', '8', '1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4', '4-1', '4-2', '4-3', '4-4', '5-1', '5-2', '5-3', '5-4', '6-1', '6-2', '6-3', '6-4', '6-5', '7-1', '7-2', '7-3', '7-4', '8-1', '8-2', '8-3', '8-4', '9-1', '9-2', '9-3', '9-4', '10-1', '10-2', '10-3', '10-4'].map(num => `<option value="${num}" ${row.number === num ? 'selected' : ''}>${num}</option>`).join('')}
+                    <option value="custom" ${row.number && !['1', '2', '3', '4', '5', '6', '7', '8', '1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4', '4-1', '4-2', '4-3', '4-4', '5-1', '5-2', '5-3', '5-4', '6-1', '6-2', '6-3', '6-4', '6-5', '7-1', '7-2', '7-3', '7-4', '8-1', '8-2', '8-3', '8-4', '9-1', '9-2', '9-3', '9-4', '10-1', '10-2', '10-3', '10-4'].includes(row.number) ? 'selected' : ''}>직접입력</option>
                   </select>
                   <input type="text" class="sheet-input-number" value="${this.escapeHtml(row.number || '')}" style="width: 50px; text-align:center;" placeholder="숫자">
                 </div>
