@@ -128,6 +128,14 @@ class SheetSimulator {
   render() {
     if (!this.container) return;
 
+    // Cache scroll positions before rendering to prevent layout jump twitching
+    const scrollPositions = [];
+    const wrappers = this.container.querySelectorAll(".sheet-table-wrapper");
+    wrappers.forEach((w, index) => {
+      scrollPositions.push({ index, left: w.scrollLeft, top: w.scrollTop });
+    });
+    const windowScrollTop = window.scrollY;
+
     const capacities = this.calculateCapacities();
 
     let html = `
@@ -1238,6 +1246,17 @@ class SheetSimulator {
     });
     // Update row handlers
     this.attachCellChangeListeners();
+
+    // Restore scroll positions after rendering
+    const newWrappers = this.container.querySelectorAll(".sheet-table-wrapper");
+    newWrappers.forEach((w, index) => {
+      const pos = scrollPositions.find(p => p.index === index);
+      if (pos) {
+        w.scrollLeft = pos.left;
+        w.scrollTop = pos.top;
+      }
+    });
+    window.scrollTo(window.scrollX, windowScrollTop);
   }
 
   makeColumnsResizable() {

@@ -50,28 +50,68 @@ class SheetAPI {
       .then(res => res.json())
       .then(data => {
         if (data && typeof data === 'object') {
+          let incomingStudents = [];
+          let incomingDailyLogs = [];
+          let incomingTextbooks = [];
+          let incomingConsultations = [];
+          let incomingMemberAnalysis = [];
+          let incomingAttendanceLogs = [];
+          let incomingAccumulatedLogs = [];
+
           if (Array.isArray(data)) {
-            // Backward compatibility
-            this.app.state.students = data;
-            this.app.students = data;
+            incomingStudents = data;
           } else {
-            this.app.state.students = data.students || [];
-            this.app.state.dailyLogs = data.dailyLogs || [];
-            this.app.state.textbooks = data.textbooks || [];
-            this.app.state.consultations = data.consultations || [];
-            this.app.state.memberAnalysis = data.memberAnalysis || [];
-            this.app.state.attendanceLogs = data.attendanceLogs || [];
-            this.app.state.accumulatedLogs = data.accumulatedLogs || [];
-            this.app.students = this.app.state.students;
+            incomingStudents = data.students || [];
+            incomingDailyLogs = data.dailyLogs || [];
+            incomingTextbooks = data.textbooks || [];
+            incomingConsultations = data.consultations || [];
+            incomingMemberAnalysis = data.memberAnalysis || [];
+            incomingAttendanceLogs = data.attendanceLogs || [];
+            incomingAccumulatedLogs = data.accumulatedLogs || [];
           }
-          
-          this.app.saveState();
-          this.app.sheetSim.setData(this.app.state);
-          this.app.dashboardManager.updateDashboard();
-          this.app.dashboardManager.updateQuickSchedules();
-          
-          if (this.app.crmManager.currentCrmStudentName) {
-            this.app.crmManager.loadCrmStudent(this.app.crmManager.currentCrmStudentName);
+
+          // Compare data to see if anything actually changed
+          const oldDataStr = JSON.stringify({
+            students: this.app.state.students || [],
+            dailyLogs: this.app.state.dailyLogs || [],
+            textbooks: this.app.state.textbooks || [],
+            consultations: this.app.state.consultations || [],
+            memberAnalysis: this.app.state.memberAnalysis || [],
+            attendanceLogs: this.app.state.attendanceLogs || [],
+            accumulatedLogs: this.app.state.accumulatedLogs || []
+          });
+
+          const newDataStr = JSON.stringify({
+            students: incomingStudents,
+            dailyLogs: incomingDailyLogs,
+            textbooks: incomingTextbooks,
+            consultations: incomingConsultations,
+            memberAnalysis: incomingMemberAnalysis,
+            attendanceLogs: incomingAttendanceLogs,
+            accumulatedLogs: incomingAccumulatedLogs
+          });
+
+          if (oldDataStr !== newDataStr) {
+            console.log("Data changed. Re-rendering dashboard and sheet...");
+            this.app.state.students = incomingStudents;
+            this.app.state.dailyLogs = incomingDailyLogs;
+            this.app.state.textbooks = incomingTextbooks;
+            this.app.state.consultations = incomingConsultations;
+            this.app.state.memberAnalysis = incomingMemberAnalysis;
+            this.app.state.attendanceLogs = incomingAttendanceLogs;
+            this.app.state.accumulatedLogs = incomingAccumulatedLogs;
+            this.app.students = this.app.state.students;
+
+            this.app.saveState();
+            this.app.sheetSim.setData(this.app.state);
+            this.app.dashboardManager.updateDashboard();
+            this.app.dashboardManager.updateQuickSchedules();
+            
+            if (this.app.crmManager.currentCrmStudentName) {
+              this.app.crmManager.loadCrmStudent(this.app.crmManager.currentCrmStudentName);
+            }
+          } else {
+            console.log("No data change detected. Skipping re-render.");
           }
           
           if (isManual) {
