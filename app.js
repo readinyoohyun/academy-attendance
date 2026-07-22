@@ -548,7 +548,13 @@ class AttendanceApp {
     const importBtn = document.getElementById("btnImportConfig");
     const fileSelector = document.getElementById("importConfigFileSelector");
 
-    if (!passwordSection || !contentSection) return;
+    if (!passwordSection || !contentSection || !verifyBtn || !passwordInput || !passwordErrorMsg || 
+        !setAcademyName || !setLogoUrl || !setSheetUrl || !setSheetId || !setSolapiApiKey || 
+        !setSolapiApiSecret || !setSolapiSenderPhone || !saveSettingsBtn || !exportBtn || 
+        !importBtn || !fileSelector) {
+      console.warn("Some Master Settings UI components are missing from the DOM (likely due to index.html browser cache). Skipping initialization.");
+      return;
+    }
 
     // 1. Check password protection
     if (!this.masterPassword) {
