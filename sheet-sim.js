@@ -129,12 +129,13 @@ class SheetSimulator {
     if (!this.container) return;
 
     // Cache scroll positions before rendering to prevent layout jump twitching
-    const scrollPositions = [];
+    this.scrollPositions = [];
     const wrappers = this.container.querySelectorAll(".sheet-table-wrapper");
     wrappers.forEach((w, index) => {
-      scrollPositions.push({ index, left: w.scrollLeft, top: w.scrollTop });
+      this.scrollPositions.push({ index, left: w.scrollLeft, top: w.scrollTop });
     });
-    const windowScrollTop = window.scrollY;
+    this.windowScrollTop = typeof window.scrollY !== 'undefined' ? window.scrollY : (window.pageYOffset || 0);
+    this.windowScrollLeft = typeof window.scrollX !== 'undefined' ? window.scrollX : (window.pageXOffset || 0);
 
     const capacities = this.calculateCapacities();
 
@@ -1249,14 +1250,18 @@ class SheetSimulator {
 
     // Restore scroll positions after rendering
     const newWrappers = this.container.querySelectorAll(".sheet-table-wrapper");
-    newWrappers.forEach((w, index) => {
-      const pos = scrollPositions.find(p => p.index === index);
-      if (pos) {
-        w.scrollLeft = pos.left;
-        w.scrollTop = pos.top;
-      }
-    });
-    window.scrollTo(window.scrollX, windowScrollTop);
+    if (this.scrollPositions) {
+      newWrappers.forEach((w, index) => {
+        const pos = this.scrollPositions.find(p => p.index === index);
+        if (pos) {
+          w.scrollLeft = pos.left;
+          w.scrollTop = pos.top;
+        }
+      });
+    }
+    if (typeof this.windowScrollTop === 'number' && typeof this.windowScrollLeft === 'number') {
+      window.scrollTo(this.windowScrollLeft, this.windowScrollTop);
+    }
   }
 
   makeColumnsResizable() {
