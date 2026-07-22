@@ -613,7 +613,9 @@
     };
     
     let academyName = localStorage.getItem("academy_name") || "유현리드인 한그루역사";
+    if (academyName === "undefined" || academyName === "null") academyName = "유현리드인 한그루역사";
     let logoUrl = localStorage.getItem("logo_url") || "";
+    if (logoUrl === "undefined" || logoUrl === "null") logoUrl = "";
     
     let config = {
       gasWebhookUrl: "",

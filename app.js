@@ -302,6 +302,15 @@ class AttendanceApp {
     this.smsTemplateIn = "{name}학생이 유현리드인 한그루역사학원에 {time}에 등원하여 수업중입니다.";
     this.smsTemplateOut = "{name}학생이 유현리드인 한그루역사학원에 {time}에 수업을 마치고 하원하였습니다.";
 
+    this.academyName = "유현리드인 한그루역사학원";
+    this.logoUrl = "";
+    this.masterPassword = "";
+    this.googleSheetUrl = "";
+    this.googleSheetId = "";
+    this.solapiApiKey = "";
+    this.solapiApiSecret = "";
+    this.solapiSenderPhone = "";
+
     this.selectedDay = "월요일";
     this.selectedTime = "14:00";
     this.autoTimeEnabled = true;
@@ -408,13 +417,28 @@ class AttendanceApp {
 
     // Load master settings
     this.academyName = localStorage.getItem("academy_name") || "유현리드인 한그루역사학원";
+    if (this.academyName === "undefined" || this.academyName === "null") this.academyName = "유현리드인 한그루역사학원";
+    
     this.logoUrl = localStorage.getItem("logo_url") || "";
+    if (this.logoUrl === "undefined" || this.logoUrl === "null") this.logoUrl = "";
+    
     this.masterPassword = localStorage.getItem("master_password") || "";
+    if (this.masterPassword === "undefined" || this.masterPassword === "null") this.masterPassword = "";
+    
     this.googleSheetUrl = localStorage.getItem("google_sheet_url") || "";
+    if (this.googleSheetUrl === "undefined" || this.googleSheetUrl === "null") this.googleSheetUrl = "";
+    
     this.googleSheetId = localStorage.getItem("google_sheet_id") || "";
+    if (this.googleSheetId === "undefined" || this.googleSheetId === "null") this.googleSheetId = "";
+    
     this.solapiApiKey = localStorage.getItem("solapi_api_key") || "";
+    if (this.solapiApiKey === "undefined" || this.solapiApiKey === "null") this.solapiApiKey = "";
+    
     this.solapiApiSecret = localStorage.getItem("solapi_api_secret") || "";
+    if (this.solapiApiSecret === "undefined" || this.solapiApiSecret === "null") this.solapiApiSecret = "";
+    
     this.solapiSenderPhone = localStorage.getItem("solapi_sender_phone") || "";
+    if (this.solapiSenderPhone === "undefined" || this.solapiSenderPhone === "null") this.solapiSenderPhone = "";
 
     // Apply branding to header
     const brandAcademyNameEl = document.getElementById("brandAcademyName");
