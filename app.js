@@ -406,11 +406,35 @@ class AttendanceApp {
     this.smsTemplateOut = localStorage.getItem("sms_template_out") || this.smsTemplateOut;
     this.autoTimeEnabled = localStorage.getItem("auto_time_enabled") !== "false";
 
+    // Load master settings
+    this.academyName = localStorage.getItem("academy_name") || "유현리드인 한그루역사학원";
+    this.logoUrl = localStorage.getItem("logo_url") || "";
+    this.masterPassword = localStorage.getItem("master_password") || "";
+    this.googleSheetUrl = localStorage.getItem("google_sheet_url") || "";
+    this.googleSheetId = localStorage.getItem("google_sheet_id") || "";
+    this.solapiApiKey = localStorage.getItem("solapi_api_key") || "";
+    this.solapiApiSecret = localStorage.getItem("solapi_api_secret") || "";
+    this.solapiSenderPhone = localStorage.getItem("solapi_sender_phone") || "";
+
+    // Apply branding to header
+    const brandAcademyNameEl = document.getElementById("brandAcademyName");
+    if (brandAcademyNameEl) brandAcademyNameEl.innerText = this.academyName;
+
+    const brandLogoSpanEl = document.getElementById("brandLogoSpan");
+    if (brandLogoSpanEl) {
+      if (this.logoUrl) {
+        brandLogoSpanEl.innerHTML = `<img src="${this.logoUrl}" style="height: 32px; border-radius: 4px; object-fit: contain;" alt="Logo">`;
+      } else {
+        brandLogoSpanEl.innerHTML = `<span id="brandLogoEmoji">🏫</span>`;
+      }
+    }
+
     document.getElementById("inputGasUrl").value = this.gasWebhookUrl;
     document.getElementById("autoTimeSwitch").checked = this.autoTimeEnabled;
     this.updateGasUrlQrCode();
 
     this.sheetSim.setData(this.state);
+    this.initMasterSettings();
   }
 
   resetToInitialState() {
@@ -437,6 +461,15 @@ class AttendanceApp {
     localStorage.setItem("sms_template_in", this.smsTemplateIn);
     localStorage.setItem("sms_template_out", this.smsTemplateOut);
     localStorage.setItem("auto_time_enabled", String(this.autoTimeEnabled));
+
+    localStorage.setItem("academy_name", this.academyName);
+    localStorage.setItem("logo_url", this.logoUrl);
+    localStorage.setItem("master_password", this.masterPassword);
+    localStorage.setItem("google_sheet_url", this.googleSheetUrl);
+    localStorage.setItem("google_sheet_id", this.googleSheetId);
+    localStorage.setItem("solapi_api_key", this.solapiApiKey);
+    localStorage.setItem("solapi_api_secret", this.solapiApiSecret);
+    localStorage.setItem("solapi_sender_phone", this.solapiSenderPhone);
   }
 
   showToast(message, isError = false) {
@@ -469,6 +502,178 @@ class AttendanceApp {
         container.style.display = "none";
       }
     }
+  }
+
+  initMasterSettings() {
+    const passwordSection = document.getElementById("settingsPasswordSection");
+    const contentSection = document.getElementById("settingsContentSection");
+    const verifyBtn = document.getElementById("btnVerifyPassword");
+    const passwordInput = document.getElementById("inputMasterPassword");
+    const passwordErrorMsg = document.getElementById("passwordErrorMsg");
+
+    const setAcademyName = document.getElementById("setAcademyName");
+    const setLogoUrl = document.getElementById("setLogoUrl");
+    const setSheetUrl = document.getElementById("setSheetUrl");
+    const setSheetId = document.getElementById("setSheetId");
+    const setSolapiApiKey = document.getElementById("setSolapiApiKey");
+    const setSolapiApiSecret = document.getElementById("setSolapiApiSecret");
+    const setSolapiSenderPhone = document.getElementById("setSolapiSenderPhone");
+
+    const saveSettingsBtn = document.getElementById("btnSaveMasterSettings");
+    const exportBtn = document.getElementById("btnExportConfig");
+    const importBtn = document.getElementById("btnImportConfig");
+    const fileSelector = document.getElementById("importConfigFileSelector");
+
+    if (!passwordSection || !contentSection) return;
+
+    // 1. Check password protection
+    if (!this.masterPassword) {
+      passwordSection.style.display = "none";
+      contentSection.style.display = "block";
+    } else {
+      passwordSection.style.display = "block";
+      contentSection.style.display = "none";
+    }
+
+    // 2. Pre-populate existing configuration values
+    setAcademyName.value = this.academyName || "";
+    setLogoUrl.value = this.logoUrl || "";
+    setSheetUrl.value = this.googleSheetUrl || "";
+    setSheetId.value = this.googleSheetId || "";
+    setSolapiApiKey.value = this.solapiApiKey || "";
+    setSolapiApiSecret.value = this.solapiApiSecret || "";
+    setSolapiSenderPhone.value = this.solapiSenderPhone || "";
+
+    // 3. Verify Master Password
+    verifyBtn.onclick = () => {
+      const entered = passwordInput.value.trim();
+      if (entered === this.masterPassword) {
+        passwordSection.style.display = "none";
+        contentSection.style.display = "block";
+        passwordErrorMsg.style.display = "none";
+        this.showToast("마스터 패키지 설정 잠금이 해제되었습니다.");
+      } else {
+        passwordErrorMsg.style.display = "block";
+      }
+    };
+
+    // 4. Auto extract Google Sheet ID from URL
+    setSheetUrl.oninput = (e) => {
+      const url = e.target.value.trim();
+      const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) {
+        setSheetId.value = match[1];
+      } else {
+        setSheetId.value = "";
+      }
+    };
+
+    // 5. Save all settings
+    saveSettingsBtn.onclick = () => {
+      const newPass = document.getElementById("setNewMasterPassword").value.trim();
+      const newPassConfirm = document.getElementById("setNewMasterPasswordConfirm").value.trim();
+
+      if (newPass) {
+        if (newPass !== newPassConfirm) {
+          alert("❌ 새 비밀번호와 확인 비밀번호가 서로 일치하지 않습니다!");
+          return;
+        }
+        this.masterPassword = newPass;
+      }
+
+      this.academyName = setAcademyName.value.trim() || "유현리드인 한그루역사학원";
+      this.logoUrl = setLogoUrl.value.trim();
+      this.googleSheetUrl = setSheetUrl.value.trim();
+      this.googleSheetId = setSheetId.value.trim();
+      this.solapiApiKey = setSolapiApiKey.value.trim();
+      this.solapiApiSecret = setSolapiApiSecret.value.trim();
+      this.solapiSenderPhone = setSolapiSenderPhone.value.trim();
+
+      // Save state to local storage
+      this.saveState();
+
+      // Apply branding dynamically to header
+      const brandAcademyNameEl = document.getElementById("brandAcademyName");
+      if (brandAcademyNameEl) brandAcademyNameEl.innerText = this.academyName;
+
+      const brandLogoSpanEl = document.getElementById("brandLogoSpan");
+      if (brandLogoSpanEl) {
+        if (this.logoUrl) {
+          brandLogoSpanEl.innerHTML = `<img src="${this.logoUrl}" style="height: 32px; border-radius: 4px; object-fit: contain;" alt="Logo">`;
+        } else {
+          brandLogoSpanEl.innerHTML = `<span id="brandLogoEmoji">🏫</span>`;
+        }
+      }
+
+      // If Google Sheet ID is updated, notify SheetAPI
+      if (this.googleSheetId) {
+        this.showToast("구글 스프레드시트 연동 ID가 갱신되었습니다.");
+      }
+
+      alert("🎉 학원 마스터 설정이 성공적으로 저장 및 적용되었습니다!");
+      location.reload(); // Reload to fully re-initialize Sheet data with new sheet ID
+    };
+
+    // 6. Export configuration as JSON
+    exportBtn.onclick = () => {
+      const configObj = {
+        academy_name: this.academyName,
+        logo_url: this.logoUrl,
+        master_password: this.masterPassword,
+        google_sheet_url: this.googleSheetUrl,
+        google_sheet_id: this.googleSheetId,
+        solapi_api_key: this.solapiApiKey,
+        solapi_api_secret: this.solapiApiSecret,
+        solapi_sender_phone: this.solapiSenderPhone,
+        gas_webhook_url: this.gasWebhookUrl,
+        sms_mode: this.smsMode,
+        sms_local_ip: this.smsLocalIp
+      };
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(configObj, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `academy_config_${this.academyName.replace(/\s+/g, '_')}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      this.showToast("설정 백업 파일(JSON)을 내보냈습니다.");
+    };
+
+    // 7. Import configuration from JSON
+    importBtn.onclick = () => {
+      fileSelector.click();
+    };
+
+    fileSelector.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const imported = JSON.parse(event.target.result);
+          if (imported.academy_name) this.academyName = imported.academy_name;
+          if (imported.logo_url !== undefined) this.logoUrl = imported.logo_url;
+          if (imported.master_password !== undefined) this.masterPassword = imported.master_password;
+          if (imported.google_sheet_url !== undefined) this.googleSheetUrl = imported.google_sheet_url;
+          if (imported.google_sheet_id !== undefined) this.googleSheetId = imported.google_sheet_id;
+          if (imported.solapi_api_key !== undefined) this.solapiApiKey = imported.solapi_api_key;
+          if (imported.solapi_api_secret !== undefined) this.solapiApiSecret = imported.solapi_api_secret;
+          if (imported.solapi_sender_phone !== undefined) this.solapiSenderPhone = imported.solapi_sender_phone;
+          if (imported.gas_webhook_url !== undefined) this.gasWebhookUrl = imported.gas_webhook_url;
+          if (imported.sms_mode !== undefined) this.smsMode = imported.sms_mode;
+          if (imported.sms_local_ip !== undefined) this.smsLocalIp = imported.sms_local_ip;
+
+          this.saveState();
+          alert("🎉 설정 복원이 완료되었습니다! 새 설정을 적용하기 위해 화면을 새로고침합니다.");
+          location.reload();
+        } catch (err) {
+          alert("❌ 올바른 설정 백업 JSON 파일이 아닙니다: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    };
   }
 
   syncAttendanceFromDailyLogs() {

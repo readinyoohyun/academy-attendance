@@ -612,12 +612,15 @@
       memberAnalysis: []
     };
     
+    let academyName = localStorage.getItem("academy_name") || "유현리드인 한그루역사";
+    let logoUrl = localStorage.getItem("logo_url") || "";
+    
     let config = {
       gasWebhookUrl: "",
       smsMode: "local",
       smsLocalIp: "http://192.168.219.148:8080/send-sms",
-      smsTemplateIn: "{name}학생이 유현리드인 한그루역사학원에 {time}에 등원하여 수업중입니다.",
-      smsTemplateOut: "{name}학생이 유현리드인 한그루역사학원에 {time}에 수업을 마치고 하원하였습니다."
+      smsTemplateIn: `{name}학생이 ${academyName}에 {time}에 등원하여 수업중입니다.`,
+      smsTemplateOut: `{name}학생이 ${academyName}에 {time}에 수업을 마치고 하원하였습니다.`
     };
 
     let selectedStudent = null;
@@ -735,6 +738,23 @@
       config.smsLocalIp = localStorage.getItem("sms_local_ip") || "http://192.168.219.148:8080/send-sms";
       config.smsTemplateIn = localStorage.getItem("sms_template_in") || config.smsTemplateIn;
       config.smsTemplateOut = localStorage.getItem("sms_template_out") || config.smsTemplateOut;
+
+      // Apply dynamic branding to DOM
+      document.title = academyName + " 출결 키오스크";
+      
+      const logoTitleBtn = document.getElementById("btnLogoTitle");
+      if (logoTitleBtn) {
+        if (logoUrl) {
+          logoTitleBtn.innerHTML = `<img src="${logoUrl}" style="height: 35px; border-radius: 4px; vertical-align: middle; margin-right: 8px;" alt="Logo"> ${academyName} 출결 키오스크`;
+        } else {
+          logoTitleBtn.innerHTML = `🏫 ${academyName} 출결 키오스크`;
+        }
+      }
+
+      const footerEl = document.querySelector("footer");
+      if (footerEl) {
+        footerEl.innerHTML = `${academyName} • Kiosk Mode <button class="btn-settings-cog" id="btnOpenSettings" title="구글시트 연동 주소 설정">⚙️</button>`;
+      }
 
       // Try reading local cached state first
       const cached = localStorage.getItem("academy_attendance_state");
@@ -1422,7 +1442,7 @@
       if (type === 'in') {
         icon.className = "success-icon";
         title.innerText = "등원 완료! 🏫";
-        msg.innerHTML = `<strong>${name}</strong> 학생이 안전하게 등원하였습니다.<br>오늘도 유현리드인 한그루역사에서 즐겁게 공부해 봅시다!`;
+        msg.innerHTML = `<strong>${name}</strong> 학생이 안전하게 등원하였습니다.<br>오늘도 ${academyName}에서 즐겁게 공부해 봅시다!`;
         icon.innerHTML = `
           <svg width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />

@@ -10,7 +10,11 @@
 
   <header class="glass-panel" style="border-radius: 0 0 16px 16px; padding: 1.2rem 1.8rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border);">
     <h1 style="margin: 0; font-family: var(--font-title); font-size: 1.8rem; font-weight: 700; background: linear-gradient(to right, var(--accent), #818cf8, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 0.5rem;">
-      🏫 학원 출결 관리 <span style="font-size: 0.9rem; font-weight: 400; padding: 0.2rem 0.6rem; border-radius: 20px; background: rgba(129, 140, 248, 0.15); border: 1px solid rgba(129, 140, 248, 0.3); color: #c7d2fe;">Live Sync</span>
+      <span id="brandLogoSpan" style="display:flex; align-items:center; gap:0.5rem;">
+        <span id="brandLogoEmoji">🏫</span>
+      </span>
+      <span id="brandAcademyName">학원 출결 관리</span>
+      <span style="font-size: 0.9rem; font-weight: 400; padding: 0.2rem 0.6rem; border-radius: 20px; background: rgba(129, 140, 248, 0.15); border: 1px solid rgba(129, 140, 248, 0.3); color: #c7d2fe;">Live Sync</span>
     </h1>
     
     <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
@@ -50,7 +54,13 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          설정 및 연동 가이드
+          연동 가이드
+        </button>
+        <button class="tab-btn" data-view="view-package-settings" style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); color: var(--accent);">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+          ⚙️ 패키지 설정
         </button>
       </nav>
     </div>
@@ -2636,6 +2646,103 @@ function onOpen() {
                 <img id="gasUrlQrImg" src="" style="width: 150px; height: 150px;" alt="QR Code">
               </div>
             </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VIEW 4: MASTER PACKAGE SETTINGS -->
+    <div id="view-package-settings" class="view-content">
+      <div class="guide-container glass-panel">
+        <h2 class="panel-title" style="font-size: 1.4rem;">⚙️ 학원 마스터 패키지 설정</h2>
+        <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
+          이 관리자 화면은 학원의 이름, 로고 및 구글 스프레드시트 연동 정보를 동적으로 수정하는 설정 창입니다. 일반 교직원이나 학생들이 볼 수 없도록 마스터 비밀번호가 설정되어 있습니다. (기본 비밀번호: <strong>없음</strong>)
+        </p>
+
+        <!-- PASSWORD ACCESS AREA -->
+        <div id="settingsPasswordSection" style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.05); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.2); max-width: 450px;">
+          <h3 style="margin-top:0; font-size: 1rem; color: var(--accent); margin-bottom: 0.8rem;">🔒 마스터 비밀번호 입력</h3>
+          <div style="display:flex; gap: 0.5rem;">
+            <input type="password" id="inputMasterPassword" class="input-custom" placeholder="비밀번호를 입력하세요 (설정이 없으면 즉시 진입 가능)" style="flex:1;">
+            <button class="btn-primary" id="btnVerifyPassword" style="height: 42px;">확인</button>
+          </div>
+          <div id="passwordErrorMsg" style="color: var(--danger); font-size: 0.8rem; margin-top: 0.4rem; display:none;">❌ 비밀번호가 올바르지 않습니다.</div>
+        </div>
+
+        <!-- ACTUAL SETTINGS CONTENT (HIDDEN BY DEFAULT UNTIL UNLOCKED) -->
+        <div id="settingsContentSection" style="display: none;">
+          <div class="responsive-two-column-grid" style="gap: 2rem; display:grid; grid-template-columns: 1fr 1fr;">
+            
+            <!-- Left Column: Academy Info & Sheet Connection -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+              <div style="background: rgba(255,255,255,0.02); padding: 1.2rem; border-radius: 12px; border: 1px solid var(--panel-border);">
+                <h3 style="margin-top: 0; font-size: 1.05rem; color: var(--accent); border-bottom: 1px dashed var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 1rem;">🏫 학원 브랜딩 정보</h3>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="setAcademyName" style="font-weight:600;">학원명</label>
+                  <input type="text" id="setAcademyName" class="input-custom" placeholder="예: 유현리드인 한그루역사학원">
+                </div>
+                <div class="form-group">
+                  <label for="setLogoUrl" style="font-weight:600;">학원 로고 이미지 주소 (URL)</label>
+                  <input type="url" id="setLogoUrl" class="input-custom" placeholder="예: https://example.com/logo.png">
+                  <small style="display:block; color:var(--text-muted); margin-top:0.3rem;">로고 파일 주소나 인터넷 링크를 등록하세요.</small>
+                </div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.02); padding: 1.2rem; border-radius: 12px; border: 1px solid var(--panel-border);">
+                <h3 style="margin-top: 0; font-size: 1.05rem; color: var(--accent); border-bottom: 1px dashed var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 1rem;">📊 구글 스프레드시트 연동</h3>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="setSheetUrl" style="font-weight:600;">구글 스프레드시트 전체 주소 (URL)</label>
+                  <input type="url" id="setSheetUrl" class="input-custom" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+                  <small style="display:block; color:var(--text-muted); margin-top:0.3rem;">스프레드시트 주소를 입력하면 자동으로 연동 ID를 추출합니다.</small>
+                </div>
+                <div class="form-group">
+                  <label for="setSheetId" style="font-weight:600;">추출된 스프레드시트 ID</label>
+                  <input type="text" id="setSheetId" class="input-custom" readonly style="background: rgba(255,255,255,0.05); color: var(--text-secondary);">
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: API credentials & Password Config -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+              <div style="background: rgba(255,255,255,0.02); padding: 1.2rem; border-radius: 12px; border: 1px solid var(--panel-border);">
+                <h3 style="margin-top: 0; font-size: 1.05rem; color: var(--accent); border-bottom: 1px dashed var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 1rem;">💬 솔라피(Solapi) 카카오 알림톡/문자 API</h3>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="setSolapiApiKey" style="font-weight:600;">Solapi API Key</label>
+                  <input type="text" id="setSolapiApiKey" class="input-custom" placeholder="API Key 입력 (from solapi.com)">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="setSolapiApiSecret" style="font-weight:600;">Solapi API Secret</label>
+                  <input type="password" id="setSolapiApiSecret" class="input-custom" placeholder="API Secret 입력">
+                </div>
+                <div class="form-group">
+                  <label for="setSolapiSenderPhone" style="font-weight:600;">대표 발신번호</label>
+                  <input type="text" id="setSolapiSenderPhone" class="input-custom" placeholder="예: 01012345678 (하이픈 없이 입력)">
+                  <small style="display:block; color:var(--text-muted); margin-top:0.3rem;">솔라피 발신번호에 사전 등록 완료된 대표 번호여야 합니다.</small>
+                </div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.02); padding: 1.2rem; border-radius: 12px; border: 1px solid var(--panel-border);">
+                <h3 style="margin-top: 0; font-size: 1.05rem; color: var(--accent); border-bottom: 1px dashed var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 1rem;">🔒 패키지 마스터 비밀번호 변경</h3>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="setNewMasterPassword" style="font-weight:600;">신규 비밀번호</label>
+                  <input type="password" id="setNewMasterPassword" class="input-custom" placeholder="설정할 새 비밀번호">
+                </div>
+                <div class="form-group">
+                  <label for="setNewMasterPasswordConfirm" style="font-weight:600;">신규 비밀번호 확인</label>
+                  <input type="password" id="setNewMasterPasswordConfirm" class="input-custom" placeholder="새 비밀번호 확인">
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Save and Backup Buttons -->
+          <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; display: flex; gap: 0.8rem; flex-wrap: wrap;">
+            <button class="btn-primary" id="btnSaveMasterSettings" style="background: var(--success); border-color: rgba(16, 185, 129, 0.3);">💾 마스터 설정 저장 및 적용</button>
+            <button class="btn-secondary" id="btnExportConfig" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.2); color: var(--accent);">📤 설정 내보내기 (JSON 백업)</button>
+            <button class="btn-secondary" id="btnImportConfig" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.2); color: #f59e0b;">📥 설정 불러오기 (JSON 복원)</button>
+            <input type="file" id="importConfigFileSelector" style="display: none;" accept=".json">
           </div>
         </div>
 
