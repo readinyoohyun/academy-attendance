@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -747,8 +747,8 @@ function ensureColumns(sheet, requiredCols) {
 function doGet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // 1. 전체 시간표 (students)
-  var sheetStudents = ss.getSheetByName("전체 시간표");
+  // 1. 전체시간표 (students)
+  var sheetStudents = ss.getSheetByName("전체시간표");
   var studentsData = [];
   if (sheetStudents) {
     var lastRow = sheetStudents.getLastRow();
@@ -811,8 +811,8 @@ function doGet() {
     }
   }
 
-  // 2. 오늘 출석부 (dailyLogs)
-  var sheetDaily = ss.getSheetByName("오늘 출석부");
+  // 2. 출결보강관리 (dailyLogs)
+  var sheetDaily = ss.getSheetByName("출결보강관리");
   var dailyLogsData = [];
   if (sheetDaily) {
     var lastRow = sheetDaily.getLastRow();
@@ -842,8 +842,8 @@ function doGet() {
     }
   }
 
-  // 3. 문해력교재관리 (textbooks)
-  var sheetTextbooks = ss.getSheetByName("문해력교재관리");
+  // 3. 교재단계관리 (textbooks)
+  var sheetTextbooks = ss.getSheetByName("교재단계관리");
   var textbooksData = [];
   if (sheetTextbooks) {
     var lastRow = sheetTextbooks.getLastRow();
@@ -884,8 +884,8 @@ function doGet() {
     }
   }
 
-  // 4. 상담내용/리포트발송/채널발송 (consultations)
-  var sheetConsult = ss.getSheetByName("상담내용/리포트발송/채널발송");
+  // 4. 학부모상담/채널발송 (consultations)
+  var sheetConsult = ss.getSheetByName("학부모상담/채널발송");
   var consultationsData = [];
   if (sheetConsult) {
     var lastRow = sheetConsult.getLastRow();
@@ -910,8 +910,8 @@ function doGet() {
     }
   }
 
-  // 5. 회원 분석/레벨변동/전화상담 (memberAnalysis)
-  var sheetMember = ss.getSheetByName("회원 분석/레벨변동/전화상담");
+  // 5. 월별상담내역 (memberAnalysis)
+  var sheetMember = ss.getSheetByName("월별상담내역");
   var memberAnalysisData = [];
   if (sheetMember) {
     var lastRow = sheetMember.getLastRow();
@@ -949,8 +949,8 @@ function doGet() {
   // 6. 누적출결데이터 (attendanceLogs)
   var attendanceLogsData = []; // Removed sheet query since it is no longer used
 
-  // 7. 누적일일수업관리 (accumulatedLogs)
-  var sheetAccumulated = ss.getSheetByName("누적일일수업관리");
+  // 7. 학생수업관리 (accumulatedLogs)
+  var sheetAccumulated = ss.getSheetByName("학생수업관리");
   var accumulatedLogsData = [];
   if (sheetAccumulated) {
     var lastRow = sheetAccumulated.getLastRow();
@@ -993,8 +993,8 @@ function doGet() {
 }
 
 function processSingleUpdate(ss, tab, row, field, value) {
-  if (tab === "students" || tab === "전체 시간표") {
-    var sheet = ss.getSheetByName("전체 시간표");
+  if (tab === "students" || tab === "전체시간표") {
+    var sheet = ss.getSheetByName("전체시간표");
     if (sheet) {
       ensureColumns(sheet, 32);
       if (field === "absentDates") {
@@ -1021,8 +1021,8 @@ function processSingleUpdate(ss, tab, row, field, value) {
         }
       }
     }
-  } else if (tab === "textbooks" || tab === "문해력교재관리") {
-    var sheet = ss.getSheetByName("문해력교재관리");
+  } else if (tab === "textbooks" || tab === "교재단계관리") {
+    var sheet = ss.getSheetByName("교재단계관리");
     if (sheet) {
       ensureColumns(sheet, 22);
       var cols = {
@@ -1038,8 +1038,8 @@ function processSingleUpdate(ss, tab, row, field, value) {
         sheet.getRange(row, col).setValue(value);
       }
     }
-  } else if (tab === "consultations" || tab === "상담내용/리포트발송/채널발송") {
-    var sheet = ss.getSheetByName("상담내용/리포트발송/채널발송");
+  } else if (tab === "consultations" || tab === "학부모상담/채널발송") {
+    var sheet = ss.getSheetByName("학부모상담/채널발송");
     if (sheet) {
       ensureColumns(sheet, 6);
       var cols = {
@@ -1050,8 +1050,8 @@ function processSingleUpdate(ss, tab, row, field, value) {
         sheet.getRange(row, col).setValue(value);
       }
     }
-  } else if (tab === "memberAnalysis" || tab === "회원 분석/레벨변동/전화상담") {
-    var sheet = ss.getSheetByName("회원 분석/레벨변동/전화상담");
+  } else if (tab === "memberAnalysis" || tab === "월별상담내역") {
+    var sheet = ss.getSheetByName("월별상담내역");
     if (sheet) {
       ensureColumns(sheet, 16);
       if (field === "15" || field === 15 || field === "P") {
@@ -1081,8 +1081,8 @@ function processSingleUpdate(ss, tab, row, field, value) {
         }
       }
     }
-  } else if (tab === "dailyLogs" || tab === "오늘 출석부") {
-    var sheet = ss.getSheetByName("오늘 출석부");
+  } else if (tab === "dailyLogs" || tab === "출결보강관리") {
+    var sheet = ss.getSheetByName("출결보강관리");
     if (sheet) {
       ensureColumns(sheet, 11);
       var cols = {
@@ -1131,7 +1131,7 @@ function doPost(e) {
     } 
     
     else if (postData.action === "add") {
-      var sheet = ss.getSheetByName("전체 시간표");
+      var sheet = ss.getSheetByName("전체시간표");
       var lastRow = sheet.getLastRow();
       var nextRow = lastRow + 1;
       ensureColumns(sheet, 32);
@@ -1157,9 +1157,9 @@ function doPost(e) {
     }
     
     else if (postData.action === "addDailyLog") {
-      var sheet = ss.getSheetByName("오늘 출석부");
+      var sheet = ss.getSheetByName("출결보강관리");
       if (!sheet) {
-        sheet = ss.insertSheet("오늘 출석부");
+        sheet = ss.insertSheet("출결보강관리");
         sheet.appendRow([
           "날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유",
           "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
@@ -1186,9 +1186,9 @@ function doPost(e) {
     }
     
     else if (postData.action === "addTextbook") {
-      var sheet = ss.getSheetByName("문해력교재관리");
+      var sheet = ss.getSheetByName("교재단계관리");
       if (!sheet) {
-        sheet = ss.insertSheet("문해력교재관리");
+        sheet = ss.insertSheet("교재단계관리");
         sheet.appendRow([
           "학년", "이름", 
           "비문학 교재명", "시작일", "마침일", "정답률", 
@@ -1238,9 +1238,9 @@ function doPost(e) {
     }
     
     else if (postData.action === "addConsultation") {
-      var sheet = ss.getSheetByName("상담내용/리포트발송/채널발송");
+      var sheet = ss.getSheetByName("학부모상담/채널발송");
       if (!sheet) {
-        sheet = ss.insertSheet("상담내용/리포트발송/채널발송");
+        sheet = ss.insertSheet("학부모상담/채널발송");
         sheet.appendRow(["학년", "이름", "작성기간", "작성인", "상담내용 / 분석지 / 채널 보냄", "부모님의 need / 학생 특이사항"]);
       }
       var lastRow = sheet.getLastRow();
@@ -1280,7 +1280,7 @@ function doPost(e) {
     }
     
     else if (postData.action === "addMemberAnalysis") {
-      var sheet = ss.getSheetByName("회원 분석/레벨변동/전화상담");
+      var sheet = ss.getSheetByName("월별상담내역");
       var lastRow = sheet.getLastRow();
       var nextRow = lastRow + 1;
       
@@ -1312,12 +1312,12 @@ function doPost(e) {
       var tab = postData.tab;
       var row = parseInt(postData.row);
       var tabName = "";
-      if (tab === "textbooks") tabName = "문해력교재관리";
-      else if (tab === "consultations") tabName = "상담내용/리포트발송/채널발송";
-      else if (tab === "memberAnalysis") tabName = "회원 분석/레벨변동/전화상담";
-      else if (tab === "dailyLogs") tabName = "오늘 출석부";
-      else if (tab === "students") tabName = "전체 시간표";
-      else if (tab === "accumulatedLogs") tabName = "누적일일수업관리";
+      if (tab === "textbooks") tabName = "교재단계관리";
+      else if (tab === "consultations") tabName = "학부모상담/채널발송";
+      else if (tab === "memberAnalysis") tabName = "월별상담내역";
+      else if (tab === "dailyLogs") tabName = "출결보강관리";
+      else if (tab === "students") tabName = "전체시간표";
+      else if (tab === "accumulatedLogs") tabName = "학생수업관리";
       
       if (tabName) {
         var sheet = ss.getSheetByName(tabName);
@@ -1375,13 +1375,13 @@ function formatAbsentCell(cell, value) {
 // 매일 오전 6시 자동 실행용 일일 출석부 자동 생성 함수 (기존 기록 백업 후 초기화)
 function generateDailyAttendance() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheetStudents = ss.getSheetByName("전체 시간표");
+  var sheetStudents = ss.getSheetByName("전체시간표");
   if (!sheetStudents) return;
   ensureColumns(sheetStudents, 32);
   
-  var sheetDaily = ss.getSheetByName("오늘 출석부");
+  var sheetDaily = ss.getSheetByName("출결보강관리");
   if (!sheetDaily) {
-    sheetDaily = ss.insertSheet("오늘 출석부");
+    sheetDaily = ss.insertSheet("출결보강관리");
     sheetDaily.appendRow([
       "날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유",
       "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
@@ -1422,17 +1422,17 @@ function generateDailyAttendance() {
       var checkM = parseInt(checkDateMatch[1], 10);
       var checkD = parseInt(checkDateMatch[2], 10);
       if (checkM === m && checkD === d) {
-        Logger.log("오늘 출석부가 이미 생성되어 작동 중입니다. 중복 백업 및 초기화를 건너뜁니다.");
+        Logger.log("출결보강관리가 이미 생성되어 작동 중입니다. 중복 백업 및 초기화를 건너뜁니다.");
         return;
       }
     }
   }
   
-  // 2행은 고정해 두고, 3행 이하 기존 데이터를 '누적일일수업관리'로 백업 후 지움
+  // 2행은 고정해 두고, 3행 이하 기존 데이터를 '학생수업관리'로 백업 후 지움
   if (lastRowDaily >= 3) {
-    var sheetAccumulated = ss.getSheetByName("누적일일수업관리");
+    var sheetAccumulated = ss.getSheetByName("학생수업관리");
     if (!sheetAccumulated) {
-      sheetAccumulated = ss.insertSheet("누적일일수업관리");
+      sheetAccumulated = ss.insertSheet("학생수업관리");
       sheetAccumulated.appendRow([
         "날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유",
         "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
@@ -1639,10 +1639,10 @@ function generateDailyAttendance() {
   }
 }
 
-// 전체 시간표를 기반으로 요일별/시간대별/학년별(초등저, 초등고, 중등, 한국사) visual 주간 시간표 보드를 자동 생성하는 함수
+// 전체시간표를 기반으로 요일별/시간대별/학년별(초등저, 초등고, 중등, 한국사) visual 주간 시간표 보드를 자동 생성하는 함수
 function generateWeeklyTimetable() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheetStudents = ss.getSheetByName("전체 시간표");
+  var sheetStudents = ss.getSheetByName("전체시간표");
   if (!sheetStudents) return;
   var lastRowSt = sheetStudents.getLastRow();
   if (lastRowSt < 2) return;
@@ -2024,29 +2024,29 @@ function generateWeeklyTimetable() {
 function setupSheetsAndHeaders() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  var sheetStudents = ss.getSheetByName("전체 시간표");
+  var sheetStudents = ss.getSheetByName("전체시간표");
   if (sheetStudents) {
     if (sheetStudents.getRange("AE1").getValue() !== "보강일시") sheetStudents.getRange("AE1").setValue("보강일시");
     if (sheetStudents.getRange("AF1").getValue() !== "보강완료") sheetStudents.getRange("AF1").setValue("보강완료");
   }
   
-  // 오늘 출석부 셋업
-  var sheetDaily = ss.getSheetByName("오늘 출석부");
+  // 출결보강관리 셋업
+  var sheetDaily = ss.getSheetByName("출결보강관리");
   if (!sheetDaily) {
-    sheetDaily = ss.insertSheet("오늘 출석부");
+    sheetDaily = ss.insertSheet("출결보강관리");
     sheetDaily.getRange(1, 1, 1, 11).setValues([["날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유", "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"]]);
   }
   
-  // 누적일일수업관리 셋업
-  var sheetAccumulated = ss.getSheetByName("누적일일수업관리");
+  // 학생수업관리 셋업
+  var sheetAccumulated = ss.getSheetByName("학생수업관리");
   if (!sheetAccumulated) {
-    sheetAccumulated = ss.insertSheet("누적일일수업관리");
+    sheetAccumulated = ss.insertSheet("학생수업관리");
     sheetAccumulated.getRange(1, 1, 1, 11).setValues([["날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유", "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"]]);
   }
   
-  var sheetTextbooks = ss.getSheetByName("문해력교재관리");
+  var sheetTextbooks = ss.getSheetByName("교재단계관리");
   if (!sheetTextbooks) {
-    sheetTextbooks = ss.insertSheet("문해력교재관리");
+    sheetTextbooks = ss.insertSheet("교재단계관리");
     sheetTextbooks.appendRow([
       "학년", "이름", 
       "비문학 교재명", "시작일", "마침일", "정답율/다음교재", 
@@ -2057,15 +2057,15 @@ function setupSheetsAndHeaders() {
     ]);
   }
   
-  var sheetConsult = ss.getSheetByName("상담내용/리포트발송/채널발송");
+  var sheetConsult = ss.getSheetByName("학부모상담/채널발송");
   if (!sheetConsult) {
-    sheetConsult = ss.insertSheet("상담내용/리포트발송/채널발송");
+    sheetConsult = ss.insertSheet("학부모상담/채널발송");
     sheetConsult.getRange(1, 1, 1, 6).setValues([["학년", "이름", "작성기간", "작성인", "상담내용 / 분석지 / 채널 보냄", "부모님의 need / 학생 특이사항"]]);
   }
   
-  var sheetMember = ss.getSheetByName("회원 분석/레벨변동/전화상담");
+  var sheetMember = ss.getSheetByName("월별상담내역");
   if (!sheetMember) {
-    sheetMember = ss.insertSheet("회원 분석/레벨변동/전화상담");
+    sheetMember = ss.insertSheet("월별상담내역");
     sheetMember.appendRow([
       "순번", "이름", "학년", "등록일", "상담/채널", "학생 특이 사항\n리드인 코칭 방향\n글쓰기 방향",
       "진도 관리\n(날짜. 제목. 진단점수)", "교과지수 / 로켓\n코스업 / 레벨업\n진로검사", "레벨\n일시변동",
@@ -2129,10 +2129,10 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   }
   
   // 2. 각 데이터 시트에서 검색 학생의 매칭 행 수 계산 (최소 1행 확보)
-  var memberRows = countMatchingRows("회원 분석/레벨변동/전화상담", 2, studentName);
+  var memberRows = countMatchingRows("월별상담내역", 2, studentName);
   if (memberRows === 0) memberRows = 1;
   
-  var textbookRows = countMatchingRows("문해력교재관리", 2, studentName);
+  var textbookRows = countMatchingRows("교재단계관리", 2, studentName);
   if (textbookRows === 0) textbookRows = 1;
   
   // 3. 섹션 1: 회원 종합 분석 및 레벨 관리 배치
@@ -2147,7 +2147,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   ];
   sheet.getRange(6, 1, 1, 15).setValues([header1]);
   sheet.getRange("A6:O6").setFontWeight("bold").setBackground("#f8f9fa").setHorizontalAlignment("center").setVerticalAlignment("middle");
-  sheet.getRange("A7").setFormula("=IFERROR(FILTER('회원 분석/레벨변동/전화상담'!A2:O, TRIM('회원 분석/레벨변동/전화상담'!B2:B) = TRIM(B3)), \"검색된 학생이 없습니다.\")");
+  sheet.getRange("A7").setFormula("=IFERROR(FILTER('월별상담내역'!A2:O, TRIM('월별상담내역'!B2:B) = TRIM(B3)), \"검색된 학생이 없습니다.\")");
   
   // 4. 섹션 2: 문해력 교재 관리 현황 계산 및 배치
   var sec2TitleRow = 8 + memberRows;
@@ -2165,7 +2165,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   ];
   sheet.getRange(sec2HeaderRow, 1, 1, 18).setValues([header2]);
   sheet.getRange(sec2HeaderRow, 1, 1, 18).setFontWeight("bold").setBackground("#f8f9fa").setHorizontalAlignment("center").setVerticalAlignment("middle");
-  sheet.getRange(sec2DataRow, 1).setFormula("=IFERROR(FILTER('문해력교재관리'!A2:R, TRIM('문해력교재관리'!B2:B) = TRIM(B3)), \"등록된 교재가 없습니다.\")");
+  sheet.getRange(sec2DataRow, 1).setFormula("=IFERROR(FILTER('교재단계관리'!A2:R, TRIM('교재단계관리'!B2:B) = TRIM(B3)), \"등록된 교재가 없습니다.\")");
   
   // 5. 섹션 3: 상담 및 리포트 발송 기록 계산 및 배치
   var sec3TitleRow = 11 + memberRows + textbookRows;
@@ -2182,7 +2182,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   sheet.getRange(sec3HeaderRow, 1, 1, 6).setFontWeight("bold").setBackground("#f8f9fa").setHorizontalAlignment("center").setVerticalAlignment("middle");
   
   // 이름이 B열에 있으므로 FILTER의 기준을 B열로 설정
-  sheet.getRange(sec3DataRow, 1).setFormula("=IFERROR(FILTER('상담내용/리포트발송/채널발송'!A2:F, TRIM('상담내용/리포트발송/채널발송'!B2:B) = TRIM(B3)), \"등록된 상담 기록이 없습니다.\")");
+  sheet.getRange(sec3DataRow, 1).setFormula("=IFERROR(FILTER('학부모상담/채널발송'!A2:F, TRIM('학부모상담/채널발송'!B2:B) = TRIM(B3)), \"등록된 상담 기록이 없습니다.\")");
   
   // 기본 서식 폰트 설정
   sheet.getRange(5, 1, sec3DataRow - 5 + 20, 20).setFontFamily("Malgun Gothic");
@@ -2206,10 +2206,10 @@ function countMatchingRows(sheetName, nameColIdx, studentName) {
   return count;
 }
 
-// 오늘 출석부의 숫자(H열/8열), 이벤트(I열/9열) 또는 진단/글쓰기(J열/10열) 입력 시 회원 분석 시트로 자동 누적 기록하는 함수
+// 출결보강관리의 숫자(H열/8열), 이벤트(I열/9열) 또는 진단/글쓰기(J열/10열) 입력 시 회원 분석 시트로 자동 누적 기록하는 함수
 function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheetMember = ss.getSheetByName("회원 분석/레벨변동/전화상담");
+  var sheetMember = ss.getSheetByName("월별상담내역");
   if (!sheetMember) return;
 
   var rowValues = sheetDaily.getRange(rowNumber, 1, 1, 11).getValues()[0];
@@ -2496,7 +2496,7 @@ function isSameDateGAS(d1, d2) {
   return false;
 }
 
-// B3 셀 입력 수정 시 자동 레이아웃 조정 및 오늘 출석부 편집 시 이벤트 누적 트리거
+// B3 셀 입력 수정 시 자동 레이아웃 조정 및 출결보강관리 편집 시 이벤트 누적 트리거
 function onEdit(e) {
   if (!e) return;
   var range = e.range;
@@ -2508,7 +2508,7 @@ function onEdit(e) {
     updateSingleSearchSheetLayout(sheet, studentName);
   }
   
-  if (sheetName === "오늘 출석부") {
+  if (sheetName === "출결보강관리") {
     var startCol = range.getColumn();
     var endCol = range.getLastColumn();
     var startRow = range.getRow();
@@ -2517,7 +2517,7 @@ function onEdit(e) {
     // 1. 구글 시트에서 직접 등원여부(E열/5열)를 변경할 때 등원시간(F열/6열) 자동 기입 및 결석일자 동기화
     if (startCol <= 5 && endCol >= 5) {
       var ss = SpreadsheetApp.getActiveSpreadsheet();
-      var sheetStudents = ss.getSheetByName("전체 시간표");
+      var sheetStudents = ss.getSheetByName("전체시간표");
       for (var r = startRow; r <= endRow; r++) {
         if (r > 1) {
           var statusCell = sheet.getRange(r, 5);
@@ -2533,7 +2533,7 @@ function onEdit(e) {
             timeCell.setValue("");
           }
 
-          // 결석일자 전체 시간표 연동 로직
+          // 결석일자 전체시간표 연동 로직
           if (studentName && sheetStudents) {
             var lastRowSt = sheetStudents.getLastRow();
             if (lastRowSt >= 2) {
@@ -2615,7 +2615,7 @@ function onEdit(e) {
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu("♣ 학원 연동 메뉴")
-    .addItem("1. 오늘 출석부 생성 (기존 기록 누적 백업)", "generateDailyAttendance")
+    .addItem("1. 출결보강관리 생성 (기존 기록 누적 백업)", "generateDailyAttendance")
     .addItem("2. 주간 시간표 보드 생성", "generateWeeklyTimetable")
     .addItem("3. 연동 시트 초기 셋업", "setupSheetsAndHeaders")
     .addItem("4. 한명 검색 시트 만들기", "createSingleSearchSheet")

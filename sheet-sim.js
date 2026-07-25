@@ -4,7 +4,7 @@ class SheetSimulator {
     this.container = document.getElementById(containerId);
     this.onDataChanged = onDataChanged; // Callback when data changes: (tabName, updatedData)
     this.searchQuery = "";
-    this.activeTab = "전체 시간표";
+    this.activeTab = "전체시간표";
     
     // Internal data storage
     this.dataMap = {
@@ -167,13 +167,13 @@ class SheetSimulator {
 
         <!-- Google Sheets Tab Bar -->
         <div class="sheet-tabs">
-          <button class="sheet-tab-item ${this.activeTab === '전체 시간표' ? 'active' : ''}" data-tab="전체 시간표">전체 시간표 📑</button>
-          <button class="sheet-tab-item ${this.activeTab === '오늘 출석부' ? 'active' : ''}" data-tab="오늘 출석부">오늘 출석부 📅</button>
-          <button class="sheet-tab-item ${this.activeTab === '문해력교재관리' ? 'active' : ''}" data-tab="문해력교재관리">문해력교재관리 📚</button>
-          <button class="sheet-tab-item ${this.activeTab === '상담내용/리포트발송/채널발송' ? 'active' : ''}" data-tab="상담내용/리포트발송/채널발송">상담내용/리포트발송/채널발송 💬</button>
-          <button class="sheet-tab-item ${this.activeTab === '회원 분석/레벨변동/전화상담' ? 'active' : ''}" data-tab="회원 분석/레벨변동/전화상담">회원 분석/레벨변동/전화상담 👤</button>
+          <button class="sheet-tab-item ${this.activeTab === '전체시간표' ? 'active' : ''}" data-tab="전체시간표">전체시간표 📑</button>
+          <button class="sheet-tab-item ${this.activeTab === '출결보강관리' ? 'active' : ''}" data-tab="출결보강관리">출결보강관리 📅</button>
+          <button class="sheet-tab-item ${this.activeTab === '교재단계관리' ? 'active' : ''}" data-tab="교재단계관리">교재단계관리 📚</button>
+          <button class="sheet-tab-item ${this.activeTab === '학부모상담/채널발송' ? 'active' : ''}" data-tab="학부모상담/채널발송">학부모상담/채널발송 💬</button>
+          <button class="sheet-tab-item ${this.activeTab === '월별상담내역' ? 'active' : ''}" data-tab="월별상담내역">월별상담내역 👤</button>
           <button class="sheet-tab-item ${this.activeTab === '한명 검색' ? 'active' : ''}" data-tab="한명 검색">한명 검색 🔍</button>
-          <button class="sheet-tab-item ${this.activeTab === '누적일일수업관리' ? 'active' : ''}" data-tab="누적일일수업관리">누적일일수업관리 📝</button>
+          <button class="sheet-tab-item ${this.activeTab === '학생수업관리' ? 'active' : ''}" data-tab="학생수업관리">학생수업관리 📝</button>
         </div>
 
         <!-- Sheet Table Wrapper -->
@@ -202,7 +202,7 @@ class SheetSimulator {
 
   renderTableHeader() {
     switch (this.activeTab) {
-      case "전체 시간표":
+      case "전체시간표":
         return `
           <tr>
             <th class="row-num-col">행</th>
@@ -223,7 +223,7 @@ class SheetSimulator {
           </tr>
         `;
 
-      case "오늘 출석부":
+      case "출결보강관리":
         return `
           <tr>
             <th class="row-num-col">행</th>
@@ -242,7 +242,7 @@ class SheetSimulator {
           </tr>
         `;
 
-      case "문해력교재관리":
+      case "교재단계관리":
         return `
           <tr>
             <th class="row-num-col">행</th>
@@ -271,7 +271,7 @@ class SheetSimulator {
             <th>동작</th>
           </tr>
         `;
-      case "상담내용/리포트발송/채널발송":
+      case "학부모상담/채널발송":
         return `
           <tr>
             <th class="row-num-col" style="width: 40px; text-align:center;">행</th>
@@ -284,7 +284,7 @@ class SheetSimulator {
             <th style="width: 60px; text-align:center;">동작</th>
           </tr>
         `;
-      case "회원 분석/레벨변동/전화상담":
+      case "월별상담내역":
         return `
           <tr>
             <th class="row-num-col">행</th>
@@ -331,7 +331,7 @@ class SheetSimulator {
             <th>R</th>
           </tr>
         `;
-      case "누적일일수업관리":
+      case "학생수업관리":
         return `
           <tr>
             <th class="row-num-col">행</th>
@@ -349,6 +349,17 @@ class SheetSimulator {
             <th>동작</th>
           </tr>
         `;
+      case "교사":
+        return `
+          <tr>
+            <th class="row-num-col">행</th>
+            <th>교사 이름 (A)</th>
+            <th>연락처 (B)</th>
+            <th>담당 과목 (C)</th>
+            <th>비고 (D)</th>
+            <th>동작</th>
+          </tr>
+        `;
     }
   }
 
@@ -356,7 +367,7 @@ class SheetSimulator {
     const query = this.searchQuery;
     
     switch (this.activeTab) {
-      case "전체 시간표": {
+      case "전체시간표": {
         const filtered = this.dataMap.students.filter(row => {
           const nameVal = row.name ? String(row.name).toLowerCase() : "";
           const gradeVal = row.grade ? String(row.grade).toLowerCase() : "";
@@ -448,7 +459,7 @@ class SheetSimulator {
         }).join('');
       }
       
-      case "오늘 출석부": {
+      case "출결보강관리": {
         const filtered = this.dataMap.dailyLogs.filter(row => {
           if (!row) return false;
           if (row.row <= 2 || row.name === '이름' || row.date === '날짜요일' || row.date === '날짜') return false;
@@ -529,7 +540,7 @@ class SheetSimulator {
         }).join('');
       }
 
-      case "문해력교재관리": {
+      case "교재단계관리": {
         const filtered = this.dataMap.textbooks.filter(row => {
           const nameVal = row.name ? String(row.name).toLowerCase() : "";
           const nonfictionVal = row.nonfictionTitle ? String(row.nonfictionTitle).toLowerCase() : "";
@@ -605,7 +616,7 @@ class SheetSimulator {
 
 
 
-      case "상담내용/리포트발송/채널발송": {
+      case "학부모상담/채널발송": {
         const filtered = this.dataMap.consultations.filter(row => {
           const nameVal = row.name ? String(row.name).toLowerCase() : "";
           const contentVal = row.content ? String(row.content).toLowerCase() : "";
@@ -658,7 +669,7 @@ class SheetSimulator {
         `).join('');
       }
 
-      case "회원 분석/레벨변동/전화상담": {
+      case "월별상담내역": {
         const filtered = this.dataMap.memberAnalysis.filter(row => {
           const nameVal = row.name ? String(row.name).toLowerCase() : "";
           const notesVal = row.notes ? String(row.notes).toLowerCase() : "";
@@ -829,7 +840,7 @@ class SheetSimulator {
           <tr>
             <td class="row-num-col">5</td>
             <td colspan="18" style="font-weight:bold; background:rgba(16,185,129,0.15); color:#10b981; padding:0.4rem 0.8rem; text-align:left;">
-              🟢 1. 회원 종합 분석 및 레벨 관리 (수식: FILTER('회원 분석/레벨변동/전화상담'!A2:P, TRIM(이름) = TRIM(B3)))
+              🟢 1. 회원 종합 분석 및 레벨 관리 (수식: FILTER('월별상담내역'!A2:P, TRIM(이름) = TRIM(B3)))
             </td>
           </tr>
         `;
@@ -891,7 +902,7 @@ class SheetSimulator {
             <tr>
               <td class="row-num-col">7</td>
               <td colspan="18" style="color:var(--danger); padding:0.5rem; text-align:left; font-style:italic;">
-                ➔ 결과: 검색된 회원 종합 분석이 없습니다. (회원 분석/레벨변동/전화상담 시트 확인 필요)
+                ➔ 결과: 검색된 회원 종합 분석이 없습니다. (월별상담내역 시트 확인 필요)
               </td>
             </tr>
           `;
@@ -914,7 +925,7 @@ class SheetSimulator {
           <tr>
             <td class="row-num-col">${sec2TitleRow}</td>
             <td colspan="18" style="font-weight:bold; background:rgba(245,158,11,0.15); color:#f59e0b; padding:0.4rem 0.8rem; text-align:left;">
-              🟠 2. 문해력 교재 관리 현황 (수식: FILTER('문해력교재관리'!A2:R, TRIM(이름) = TRIM(B3)))
+              🟠 2. 문해력 교재 관리 현황 (수식: FILTER('교재단계관리'!A2:R, TRIM(이름) = TRIM(B3)))
             </td>
           </tr>
         `;
@@ -976,7 +987,7 @@ class SheetSimulator {
             <tr>
               <td class="row-num-col">${sec2DataStartRow}</td>
               <td colspan="18" style="color:var(--danger); padding:0.5rem; text-align:left; font-style:italic;">
-                ➔ 결과: 등록된 문해력 교재 현황이 없습니다. (문해력교재관리 시트 확인 필요)
+                ➔ 결과: 등록된 문해력 교재 현황이 없습니다. (교재단계관리 시트 확인 필요)
               </td>
             </tr>
           `;
@@ -999,7 +1010,7 @@ class SheetSimulator {
           <tr>
             <td class="row-num-col">${sec3TitleRow}</td>
             <td colspan="18" style="font-weight:bold; background:rgba(99,102,241,0.08); color:var(--accent); padding:0.4rem 0.8rem; text-align:left;">
-              🔵 3. 상담 및 리포트 발송 기록 (수식: FILTER('상담내용/리포트발송/채널발송'!A2:F, TRIM(이름) = TRIM(B3)))
+              🔵 3. 상담 및 리포트 발송 기록 (수식: FILTER('학부모상담/채널발송'!A2:F, TRIM(이름) = TRIM(B3)))
             </td>
           </tr>
         `;
@@ -1039,7 +1050,7 @@ class SheetSimulator {
             <tr>
               <td class="row-num-col">${sec3DataStartRow}</td>
               <td colspan="18" style="color:var(--danger); padding:0.5rem; text-align:left; font-style:italic;">
-                ➔ 결과: 등록된 상담/리포트 기록이 없습니다. (상담내용/리포트발송/채널발송 시트 확인 필요)
+                ➔ 결과: 등록된 상담/리포트 기록이 없습니다. (학부모상담/채널발송 시트 확인 필요)
               </td>
             </tr>
           `;
@@ -1048,13 +1059,13 @@ class SheetSimulator {
         return rowsHtml;
       }
 
-      case "누적일일수업관리": {
+      case "학생수업관리": {
         const filtered = this.dataMap.accumulatedLogs.filter(row => {
           const nameVal = row.name ? String(row.name).toLowerCase() : "";
           const dateVal = row.date ? String(row.date).toLowerCase() : "";
           return nameVal.includes(query) || dateVal.includes(query);
         });
-        if (filtered.length === 0) return `<tr><td colspan="14" style="text-align:center; padding:2rem; color:var(--text-muted);">누적일일수업관리 데이터가 없습니다.</td></tr>`;
+        if (filtered.length === 0) return `<tr><td colspan="14" style="text-align:center; padding:2rem; color:var(--text-muted);">학생수업관리 데이터가 없습니다.</td></tr>`;
         
         // Limit rendering to the first 100 entries to prevent performance freeze
         const sliced = filtered.slice(0, 100);
@@ -1109,40 +1120,70 @@ class SheetSimulator {
           `;
         }).join('');
       }
+      case "교사": {
+        const filtered = this.dataMap.teachers.filter(row => {
+          const nameVal = row.name ? String(row.name).toLowerCase() : "";
+          const subjectVal = row.subject ? String(row.subject).toLowerCase() : "";
+          return nameVal.includes(query) || subjectVal.includes(query);
+        });
+        if (filtered.length === 0) return `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">등록된 교사가 없습니다.</td></tr>`;
+        
+        return filtered.map(row => {
+          const rowId = row.id || `teacher_${row.row}`;
+          return `
+            <tr data-id="${rowId}">
+              <td class="row-num-col" style="text-align:center; font-weight:600;">${row.row}</td>
+              <td>
+                <input type="text" class="sheet-input-teacher-name" value="${this.escapeHtml(row.name || '')}" style="width: 100px;">
+              </td>
+              <td>
+                <input type="text" class="sheet-input-teacher-phone" value="${this.escapeHtml(row.phone || '')}" style="width: 130px;">
+              </td>
+              <td>
+                <input type="text" class="sheet-input-teacher-subject" value="${this.escapeHtml(row.subject || '')}" style="width: 150px;">
+              </td>
+              <td>
+                <input type="text" class="sheet-input-teacher-notes" value="${this.escapeHtml(row.notes || '')}" style="width: 200px;">
+              </td>
+              <td><button class="btn-delete-row" data-id="${rowId}">🗑️</button></td>
+            </tr>
+          `;
+        }).join('');
+      }
     }
   }
 
   renderFooterLegend() {
     switch (this.activeTab) {
-      case "전체 시간표":
+      case "전체시간표":
         return `
           <div class="sheet-capacity-legend" style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
             <div>💡 <strong>정원:</strong> 초등 저학년(초1-3) 10명 이하 / 고학년(초4-중3) 10명 이하 (과밀 발생 시 붉은색 줄 표시)</div>
             <div>✏️ <strong>결석 일자:</strong> <code>6/17, 6/18</code> 처럼 쉼표로 작성하면 결석 처리됩니다.</div>
           </div>
         `;
-      case "오늘 출석부":
+      case "출결보강관리":
         return `
           <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
             <div>💡 <strong>일일 출석부:</strong> 매일 아침 트리거 작동 시 오늘 자 해당 요일 학생들이 자동 로드됩니다. 직접 편집 및 수동 등록도 가능합니다.</div>
           </div>
         `;
-      case "문해력교재관리":
+      case "교재단계관리":
         return `
           <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
-            <div>💡 <strong>문해력교재관리:</strong> 비문학, 문학, 어휘, 복합 영역별 학습 중인 교재 정보(시작일, 마침일, 정답률)를 기입하여 학생별 진도를 관리합니다.</div>
+            <div>💡 <strong>교재단계관리:</strong> 비문학, 문학, 어휘, 복합 영역별 학습 중인 교재 정보(시작일, 마침일, 정답률)를 기입하여 학생별 진도를 관리합니다.</div>
           </div>
         `;
-      case "상담내용/리포트발송/채널발송":
+      case "학부모상담/채널발송":
         return `
           <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
-            <div>💡 <strong>상담내용/리포트발송/채널발송:</strong> 매월/매주 학부모님께 채널로 발송한 상담내용, 리포트 발송 일시, 이전 독서 리포트 등을 상세하게 누적하는 공간입니다.</div>
+            <div>💡 <strong>학부모상담/채널발송:</strong> 매월/매주 학부모님께 채널로 발송한 상담내용, 리포트 발송 일시, 이전 독서 리포트 등을 상세하게 누적하는 공간입니다.</div>
           </div>
         `;
-      case "회원 분석/레벨변동/전화상담":
+      case "월별상담내역":
         return `
           <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
-            <div>💡 <strong>회원 분석/레벨변동/전화상담:</strong> 등하원, 코칭 방향, 진도 상태, 레벨 업 일자, 훈민정음 완료 진도 등 학생 프로필과 개별 분석이 총망라된 마스터 테이블입니다.</div>
+            <div>💡 <strong>월별상담내역:</strong> 등하원, 코칭 방향, 진도 상태, 레벨 업 일자, 훈민정음 완료 진도 등 학생 프로필과 개별 분석이 총망라된 마스터 테이블입니다.</div>
           </div>
         `;
       case "한명 검색":
@@ -1151,10 +1192,10 @@ class SheetSimulator {
             <div>💡 <strong>한명 검색 대시보드:</strong> B3 셀에 이름을 적고 Enter를 치시면, 회원 분석, 문해력 교재, 상담 내용을 한 곳에 콕 찍어 모아 볼 수 있습니다.</div>
           </div>
         `;
-      case "누적일일수업관리":
+      case "학생수업관리":
         return `
           <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
-            <div>💡 <strong>누적일일수업관리:</strong> 구글 시트의 "누적일일수업관리" 시트와 연동되는 공간입니다. (※ 브라우저 속도 최적화를 위해 최근 100개 항목만 로드되며, 상단 검색창에 이름이나 날짜를 입력하여 전체 기록을 안전하게 조회하실 수 있습니다.)</div>
+            <div>💡 <strong>학생수업관리:</strong> 구글 시트의 "학생수업관리" 시트와 연동되는 공간입니다. (※ 브라우저 속도 최적화를 위해 최근 100개 항목만 로드되며, 상단 검색창에 이름이나 날짜를 입력하여 전체 기록을 안전하게 조회하실 수 있습니다.)</div>
           </div>
         `;
     }
@@ -1419,7 +1460,7 @@ class SheetSimulator {
     let newRow = {};
 
     switch (this.activeTab) {
-      case "전체 시간표":
+      case "전체시간표":
         dataset = this.dataMap.students;
         nextRowIndex = dataset.length > 0 ? Math.max(...dataset.map(r => r.row)) + 1 : 2;
         newRow = {
@@ -1438,7 +1479,7 @@ class SheetSimulator {
         this.onDataChanged("students", dataset);
         break;
         
-      case "오늘 출석부":
+      case "출결보강관리":
         dataset = this.dataMap.dailyLogs;
         nextRowIndex = dataset.length > 0 ? Math.max(...dataset.map(r => r.row)) + 1 : 2;
         const today = new Date();
@@ -1459,7 +1500,7 @@ class SheetSimulator {
         this.onDataChanged("dailyLogs", dataset);
         break;
 
-      case "문해력교재관리":
+      case "교재단계관리":
         dataset = this.dataMap.textbooks;
         nextRowIndex = dataset.length > 0 ? Math.max(...dataset.map(r => r.row)) + 1 : 2;
         newRow = {
@@ -1476,7 +1517,7 @@ class SheetSimulator {
         this.onDataChanged("textbooks", dataset);
         break;
 
-      case "상담내용/리포트발송/채널발송":
+      case "학부모상담/채널발송":
         dataset = this.dataMap.consultations;
         nextRowIndex = dataset.length > 0 ? Math.max(...dataset.map(r => r.row)) + 1 : 2;
         newRow = {
@@ -1493,7 +1534,7 @@ class SheetSimulator {
         this.onDataChanged("consultations", dataset);
         break;
 
-      case "회원 분석/레벨변동/전화상담":
+      case "월별상담내역":
         dataset = this.dataMap.memberAnalysis;
         nextRowIndex = dataset.length > 0 ? Math.max(...dataset.map(r => r.row)) + 1 : 20;
         newRow = {
@@ -1527,7 +1568,7 @@ class SheetSimulator {
         alert("한명 검색 시트에서는 직접 행을 추가하실 수 없습니다. 대신 검색 학생 이름 셀(B3)의 이름을 수정해 주세요.");
         return;
 
-      case "누적일일수업관리":
+      case "학생수업관리":
         dataset = this.dataMap.accumulatedLogs;
         nextRowIndex = dataset.length > 0 ? Math.max(...dataset.map(r => r.row || 0)) + 1 : 2;
         if (nextRowIndex < 2) nextRowIndex = dataset.length + 2;
@@ -1550,6 +1591,20 @@ class SheetSimulator {
         dataset.push(newRow);
         this.onDataChanged("accumulatedLogs", dataset);
         break;
+      case "교사":
+        dataset = this.dataMap.teachers;
+        nextRowIndex = dataset.length > 0 ? Math.max(...dataset.map(r => r.row || 0)) + 1 : 2;
+        newRow = {
+          id: 'teacher_' + Date.now(),
+          row: nextRowIndex,
+          name: '새 교사',
+          phone: '',
+          subject: '',
+          notes: ''
+        };
+        dataset.push(newRow);
+        this.onDataChanged("teachers", dataset);
+        break;
     }
     this.render();
   }
@@ -1557,29 +1612,33 @@ class SheetSimulator {
   handleDeleteRow(id) {
     let dataset = [];
     switch (this.activeTab) {
-      case "전체 시간표":
+      case "전체시간표":
         this.dataMap.students = this.dataMap.students.filter(r => r.id !== id);
         this.onDataChanged("students", this.dataMap.students);
         break;
-      case "오늘 출석부":
+      case "출결보강관리":
         this.dataMap.dailyLogs = this.dataMap.dailyLogs.filter(r => r.id !== id);
         this.onDataChanged("dailyLogs", this.dataMap.dailyLogs);
         break;
-      case "문해력교재관리":
+      case "교재단계관리":
         this.dataMap.textbooks = this.dataMap.textbooks.filter(r => r.id !== id);
         this.onDataChanged("textbooks", this.dataMap.textbooks);
         break;
-      case "상담내용/리포트발송/채널발송":
+      case "학부모상담/채널발송":
         this.dataMap.consultations = this.dataMap.consultations.filter(r => r.id !== id);
         this.onDataChanged("consultations", this.dataMap.consultations);
         break;
-      case "회원 분석/레벨변동/전화상담":
+      case "월별상담내역":
         this.dataMap.memberAnalysis = this.dataMap.memberAnalysis.filter(r => r.id !== id);
         this.onDataChanged("memberAnalysis", this.dataMap.memberAnalysis);
         break;
-      case "누적일일수업관리":
+      case "학생수업관리":
         this.dataMap.accumulatedLogs = this.dataMap.accumulatedLogs.filter((r, idx) => r.id !== id && `acc_${idx}` !== id);
         this.onDataChanged("accumulatedLogs", this.dataMap.accumulatedLogs);
+        break;
+      case "교사":
+        this.dataMap.teachers = this.dataMap.teachers.filter(r => r.id !== id);
+        this.onDataChanged("teachers", this.dataMap.teachers);
         break;
     }
     this.render();
@@ -1673,7 +1732,7 @@ class SheetSimulator {
       const id = tr.getAttribute("data-id");
 
       switch (this.activeTab) {
-        case "전체 시간표": {
+        case "전체시간표": {
           const rowArray = this.dataMap.students;
           tr.querySelector(".sheet-input-grade").addEventListener("change", (e) => updateField(id, "students", rowArray, "grade", e.target.value.trim()));
           tr.querySelector(".sheet-input-name").addEventListener("change", (e) => updateField(id, "students", rowArray, "name", e.target.value.trim()));
@@ -1749,7 +1808,7 @@ class SheetSimulator {
           break;
         }
 
-        case "오늘 출석부": {
+        case "출결보강관리": {
           const rowArray = this.dataMap.dailyLogs;
           const dateInput = tr.querySelector(".sheet-input-date");
           if (dateInput) dateInput.addEventListener("change", (e) => updateField(id, "dailyLogs", rowArray, "date", e.target.value.trim()));
@@ -1821,7 +1880,7 @@ class SheetSimulator {
           break;
         }
 
-        case "문해력교재관리": {
+        case "교재단계관리": {
           const rowArray = this.dataMap.textbooks;
           tr.querySelector(".sheet-input-grade").addEventListener("change", (e) => {
             updateField(id, "textbooks", rowArray, "grade", e.target.value.trim());
@@ -1841,7 +1900,7 @@ class SheetSimulator {
           break;
         }
 
-        case "상담내용/리포트발송/채널발송": {
+        case "학부모상담/채널발송": {
           const rowArray = this.dataMap.consultations;
           tr.querySelector(".sheet-input-grade").addEventListener("change", (e) => updateField(id, "consultations", rowArray, "grade", e.target.value.trim()));
           tr.querySelector(".sheet-input-name").addEventListener("change", (e) => updateField(id, "consultations", rowArray, "name", e.target.value.trim()));
@@ -1852,7 +1911,7 @@ class SheetSimulator {
           break;
         }
 
-        case "회원 분석/레벨변동/전화상담": {
+        case "월별상담내역": {
           const rowArray = this.dataMap.memberAnalysis;
           tr.querySelector(".sheet-input-num").addEventListener("change", (e) => updateField(id, "memberAnalysis", rowArray, "num", e.target.value.trim()));
           tr.querySelector(".sheet-input-name").addEventListener("change", (e) => updateField(id, "memberAnalysis", rowArray, "name", e.target.value.trim()));
@@ -1873,7 +1932,7 @@ class SheetSimulator {
           break;
         }
 
-        case "누적일일수업관리": {
+        case "학생수업관리": {
           const rowArray = this.dataMap.accumulatedLogs;
           const rowObj = rowArray.find(r => r.id === id || `acc_${rowArray.indexOf(r)}` === id);
           if (rowObj) {
@@ -1925,6 +1984,14 @@ class SheetSimulator {
             const contentsInput = tr.querySelector(".sheet-input-contents");
             if (contentsInput) contentsInput.addEventListener("change", (e) => updateAccField("contents", e.target.value.trim()));
           }
+          break;
+        }
+        case "교사": {
+          const rowArray = this.dataMap.teachers;
+          tr.querySelector(".sheet-input-teacher-name").addEventListener("change", (e) => updateField(id, "teachers", rowArray, "name", e.target.value.trim()));
+          tr.querySelector(".sheet-input-teacher-phone").addEventListener("change", (e) => updateField(id, "teachers", rowArray, "phone", e.target.value.trim()));
+          tr.querySelector(".sheet-input-teacher-subject").addEventListener("change", (e) => updateField(id, "teachers", rowArray, "subject", e.target.value.trim()));
+          tr.querySelector(".sheet-input-teacher-notes").addEventListener("change", (e) => updateField(id, "teachers", rowArray, "notes", e.target.value.trim()));
           break;
         }
       }
@@ -2128,7 +2195,7 @@ class SheetSimulator {
       <div class="decoupled-section-card" style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.2rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm);">
         <div style="font-weight:bold; color:#10b981; margin-bottom: 0.8rem; font-size:0.95rem; display: flex; align-items: center; gap: 0.5rem;">
           <span style="display:inline-block; width:10px; height:10px; background:#10b981; border-radius:50%;"></span>
-          🟢 1. 회원 종합 분석 및 레벨 관리 (회원 분석/레벨변동/전화상담 시트 연동)
+          🟢 1. 회원 종합 분석 및 레벨 관리 (월별상담내역 시트 연동)
         </div>
         <div class="sheet-table-wrapper" style="overflow-x: auto; max-width: 100%; border: 1px solid var(--table-border); border-radius: 8px;">
           <table class="sheet-table" style="width: 100%; min-width: 1200px; border-collapse: collapse;">
@@ -2202,7 +2269,7 @@ class SheetSimulator {
       <div class="decoupled-section-card" style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.2rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm);">
         <div style="font-weight:bold; color:#f59e0b; margin-bottom: 0.8rem; font-size:0.95rem; display: flex; align-items: center; gap: 0.5rem;">
           <span style="display:inline-block; width:10px; height:10px; background:#f59e0b; border-radius:50%;"></span>
-          🟠 2. 문해력 교재 관리 현황 (문해력교재관리 시트 연동)
+          🟠 2. 문해력 교재 관리 현황 (교재단계관리 시트 연동)
         </div>
         <div class="sheet-table-wrapper" style="overflow-x: auto; max-width: 100%; border: 1px solid var(--table-border); border-radius: 8px;">
           <table class="sheet-table" style="width: 100%; min-width: 1200px; border-collapse: collapse;">
@@ -2289,7 +2356,7 @@ class SheetSimulator {
       <div class="decoupled-section-card" style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.2rem; box-shadow: var(--shadow-sm);">
         <div style="font-weight:bold; color:var(--accent); margin-bottom: 0.8rem; font-size:0.95rem; display: flex; align-items: center; gap: 0.5rem;">
           <span style="display:inline-block; width:10px; height:10px; background:var(--accent); border-radius:50%;"></span>
-          🔵 3. 상담 및 리포트 발송 기록 (상담내용/리포트발송/채널발송 시트 연동)
+          🔵 3. 상담 및 리포트 발송 기록 (학부모상담/채널발송 시트 연동)
         </div>
         <div class="sheet-table-wrapper" style="overflow-x: auto; max-width: 100%; border: 1px solid var(--table-border); border-radius: 8px;">
           <table class="sheet-table" style="width: 100%; min-width: 800px; border-collapse: collapse;">
