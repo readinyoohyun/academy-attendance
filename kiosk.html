@@ -222,16 +222,28 @@
       color: var(--text-secondary); /* #475569 */
     }
 
-    /* 수업중 (수업 진행 학생 - 연한 초록빛 바탕으로 구분) */
+    /* 수업중 (수업 진행 학생 - 원장앱과 똑같이 진한 초록빛 바탕으로 변경) */
     .student-card.status-수업중 {
-      background: #f0fdf4;
-      border-color: #a7f3d0;
+      background: #059669 !important;
+      border-color: transparent !important;
     }
     .student-card.status-수업중 .student-name {
-      color: #064e3b;
+      color: #ffffff !important;
     }
     .student-card.status-수업중 .student-grade {
-      color: #047857;
+      color: #ffffff !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+      background: rgba(255, 255, 255, 0.15) !important;
+    }
+    .student-card.status-수업중 .remaining-time-tag {
+      color: #ffffff !important;
+      background: rgba(255, 255, 255, 0.25) !important;
+      border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    }
+    .student-card.status-수업중 .status-badge.status-수업중 {
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.3) !important;
     }
 
     /* 수업완료 (네이비 바탕색에 반투명화, 단 테두리는 흐릿하게 노출) */
