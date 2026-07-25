@@ -1377,11 +1377,21 @@
         );
       }
       
-      // Fallback: match by name and date to reuse the daily log and avoid duplicate rows
+      // 1. Primary match: search by name, date, and exact time slot (to match the specific class if they have multiple classes today)
       if (!dailyLog) {
         dailyLog = state.dailyLogs.find(log => 
           (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
+          log.time.trim() === activeTime.trim() && 
           isSameDate(log.date, dailyLogDateStr)
+        );
+      }
+      
+      // 2. Secondary fallback: if no exact time match, match any log for today that is not completed to avoid duplicate rows
+      if (!dailyLog) {
+        dailyLog = state.dailyLogs.find(log => 
+          (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
+          isSameDate(log.date, dailyLogDateStr) &&
+          log.status !== "수업완료" && log.status !== "보강완료"
         );
       }
 

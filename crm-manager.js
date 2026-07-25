@@ -1451,10 +1451,21 @@ class CRMManager {
     const activeTime = student.times && student.times[todayDay] ? student.times[todayDay].trim() : currentTime;
 
     // Check if they already have a log for today
+    // 1. Primary match: search by name, date, and exact time slot
     let dailyLog = this.app.state.dailyLogs.find(log => 
       log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, '') && 
+      log.time.trim() === activeTime.trim() &&
       this.isSameDate(log.date, dailyLogDateStr)
     );
+
+    // 2. Secondary fallback: if no exact time match, match any log for today that is not completed
+    if (!dailyLog) {
+      dailyLog = this.app.state.dailyLogs.find(log => 
+        log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, '') && 
+        this.isSameDate(log.date, dailyLogDateStr) &&
+        log.status !== "수업완료" && log.status !== "보강완료"
+      );
+    }
 
     if (dailyLog) {
       dailyLog.status = "수업중";
