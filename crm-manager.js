@@ -520,7 +520,7 @@ class CRMManager {
         }
         student.absentDates = datesList.join(', ');
         
-        const activeTime = student.times ? student.times[this.app.selectedDay] || this.app.selectedTime : this.app.selectedTime;
+        const activeTime = student.times ? (student.times[this.app.selectedDay] || student.times[this.app.selectedDay.substring(0, 1)] || this.app.selectedTime) : this.app.selectedTime;
         this.app.dashboardManager.logAttendanceEvent(name, "결석", activeTime);
 
         let dailyLog = this.app.state.dailyLogs.find(log => 
@@ -1448,7 +1448,7 @@ class CRMManager {
 
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const activeTime = student.times && student.times[todayDay] ? student.times[todayDay].trim() : currentTime;
+    const activeTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]) ? (student.times[todayDay] || student.times[todayDay.substring(0, 1)]).trim() : currentTime;
 
     // Check if they already have a log for today
     // 1. Primary match: search by name, date, and exact time slot

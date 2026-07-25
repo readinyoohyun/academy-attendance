@@ -75,7 +75,7 @@ class DashboardManager {
       }
       
       // 3. Case B: Regular Class
-      const regularTimeStr = student.times && student.times[this.selectedDay];
+      const regularTimeStr = student.times && (student.times[this.selectedDay] || student.times[this.selectedDay.substring(0, 1)]);
       let isRegularActive = false;
       if (regularTimeStr) {
         const parts = regularTimeStr.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
@@ -114,7 +114,7 @@ class DashboardManager {
             sMakeup.time === timeStr && 
             (sMakeup.isWeekly || sMakeup.formattedSlash === dates.slashFormat || sMakeup.formattedDot === dates.dotFormat)
           );
-          const sRegTime = s.times && s.times[this.selectedDay];
+          const sRegTime = s.times && (s.times[this.selectedDay] || s.times[this.selectedDay.substring(0, 1)]);
           let sIsRegActive = false;
           if (sRegTime) {
             const parts = sRegTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
@@ -157,7 +157,7 @@ class DashboardManager {
     
     const activeTimesSet = new Set();
     this.app.state.students.forEach(st => {
-      const regTime = st.times && st.times[this.selectedDay];
+      const regTime = st.times && (st.times[this.selectedDay] || st.times[this.selectedDay.substring(0, 1)]);
       if (regTime && regTime.trim() !== "") {
         const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
         parts.forEach(p => activeTimesSet.add(p));
@@ -882,7 +882,7 @@ class DashboardManager {
     // Get all times that are active on this day
     const activeTimesSet = new Set();
     this.app.state.students.forEach(st => {
-      const regTime = st.times && st.times[this.selectedDay];
+      const regTime = st.times && (st.times[this.selectedDay] || st.times[this.selectedDay.substring(0, 1)]);
       if (regTime && regTime.trim() !== "") {
         const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
         parts.forEach(p => activeTimesSet.add(p));

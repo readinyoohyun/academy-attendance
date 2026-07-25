@@ -928,7 +928,7 @@
         const name = (student.name || "").trim();
         if (!name) return;
         
-        const regTime = student.times && student.times[todayDay];
+        const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
         const isScheduledToday = regTime && regTime.trim() !== "";
         
         let isMakeupToday = false;
@@ -972,7 +972,7 @@
           } else {
             // Prefer the student record that has an active schedule today
             const existing = uniqueNameMap.get(name);
-            const existingScheduled = (existing.times && existing.times[todayDay] && existing.times[todayDay].trim() !== "");
+            const existingScheduled = (existing.times && (existing.times[todayDay] || existing.times[todayDay.substring(0, 1)]) && (existing.times[todayDay] || existing.times[todayDay.substring(0, 1)]).trim() !== "");
             const currentScheduled = isScheduledToday;
             if (!existingScheduled && currentScheduled) {
               uniqueNameMap.set(name, student);
@@ -1068,7 +1068,7 @@
           if (activeMakeup && activeMakeup.time) {
             rawSlots.push(activeMakeup.time.trim());
           } else {
-            const regTime = student.times && student.times[todayDay];
+            const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
             if (regTime && regTime.trim() !== "") {
               const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
               parts.forEach(p => rawSlots.push(p));
@@ -1362,7 +1362,7 @@
       
       const s = getSeoulTime();
       const currentTime = `${s.hour}:${s.minute}`;
-      const activeTime = student.times && student.times[todayDay] ? student.times[todayDay].trim() : currentTime;
+      const activeTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]) ? (student.times[todayDay] || student.times[todayDay.substring(0, 1)]).trim() : currentTime;
       
       let dailyStatus = type === 'in' ? '수업중' : '수업완료';
 
