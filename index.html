@@ -1639,7 +1639,7 @@ function generateDailyAttendance() {
   }
 }
 
-// 전체시간표를 기반으로 요일별/시간대별/학년별(초등저, 초등고, 중등, 한국사) visual 주간 시간표 보드를 자동 생성하는 함수
+// 전체시간표를 기반으로 요일별/시간대별/학년별(초등저, 초등고, 중등, 한국사) visual 오늘 시간표 보드를 자동 생성하는 함수
 function generateWeeklyTimetable() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheetStudents = ss.getSheetByName("전체시간표");
@@ -1649,12 +1649,12 @@ function generateWeeklyTimetable() {
   
   var studentsData = sheetStudents.getRange(2, 1, lastRowSt - 1, 32).getDisplayValues();
   
-  var sheetWeekly = ss.getSheetByName("주간 시간표");
+  var sheetWeekly = ss.getSheetByName("오늘 시간표");
   if (sheetWeekly) {
     sheetWeekly.clear();
     sheetWeekly.clearFormats();
   } else {
-    sheetWeekly = ss.insertSheet("주간 시간표");
+    sheetWeekly = ss.insertSheet("오늘 시간표");
   }
   sheetWeekly.setHiddenGridlines(false);
   
@@ -1767,7 +1767,7 @@ function generateWeeklyTimetable() {
   
   var titleRow = [];
   for (var c = 0; c < 30; c++) {
-    titleRow.push(c === 0 ? "♣ 주간 시간표 (학생 정원 파악 보드) - 정원 12명 제한" : "");
+    titleRow.push(c === 0 ? "♣ 오늘 시간표 (학생 정원 파악 보드) - 정원 12명 제한" : "");
   }
   grid.push(titleRow);
   
@@ -2082,15 +2082,15 @@ function setupSheetsAndHeaders() {
   }
 }
 
-// B3 검색 학생을 기준으로 매칭 행 수량만큼 수식을 계산해 밀어내는 동적 한명 검색 시트 생성 함수
+// B3 검색 학생을 기준으로 매칭 행 수량만큼 수식을 계산해 밀어내는 동적 한명검색 시트 생성 함수
 function createSingleSearchSheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("한명 검색");
+  var sheet = ss.getSheetByName("한명검색");
   if (sheet) {
     sheet.clear();
     sheet.clearFormats();
   } else {
-    sheet = ss.insertSheet("한명 검색");
+    sheet = ss.insertSheet("한명검색");
   }
   
   sheet.setHiddenGridlines(false);
@@ -2503,7 +2503,7 @@ function onEdit(e) {
   var sheet = range.getSheet();
   var sheetName = sheet.getName();
   
-  if (sheetName === "한명 검색" && range.getA1Notation() === "B3") {
+  if (sheetName === "한명검색" && range.getA1Notation() === "B3") {
     var studentName = String(range.getValue()).trim();
     updateSingleSearchSheetLayout(sheet, studentName);
   }
@@ -2616,9 +2616,9 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu("♣ 학원 연동 메뉴")
     .addItem("1. 출결보강관리 생성 (기존 기록 누적 백업)", "generateDailyAttendance")
-    .addItem("2. 주간 시간표 보드 생성", "generateWeeklyTimetable")
+    .addItem("2. 오늘 시간표 보드 생성", "generateWeeklyTimetable")
     .addItem("3. 연동 시트 초기 셋업", "setupSheetsAndHeaders")
-    .addItem("4. 한명 검색 시트 만들기", "createSingleSearchSheet")
+    .addItem("4. 한명검색 시트 만들기", "createSingleSearchSheet")
     .addToUi();
 }
             </pre>

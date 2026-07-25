@@ -14,7 +14,9 @@ class SheetSimulator {
       consultations: [],
       memberAnalysis: [],
       attendanceLogs: [],
-      accumulatedLogs: []
+      accumulatedLogs: [],
+      weeklySchedule: [],
+      teachers: []
     };
   }
 
@@ -46,7 +48,15 @@ class SheetSimulator {
       consultations: dataMap.consultations || [],
       memberAnalysis: dataMap.memberAnalysis || [],
       attendanceLogs: dataMap.attendanceLogs || [],
-      accumulatedLogs: dataMap.accumulatedLogs || []
+      accumulatedLogs: dataMap.accumulatedLogs || [],
+      weeklySchedule: dataMap.weeklySchedule || [
+        { id: 'ws_1', row: 2, time: '15:00', mon: '김독서', tue: '이국어', wed: '박역사', thu: '최논술', fri: '강문해', sat: '', sun: '' },
+        { id: 'ws_2', row: 3, time: '16:00', mon: '강문해', tue: '김독서', wed: '이국어', thu: '박역사', fri: '최논술', sat: '', sun: '' }
+      ],
+      teachers: dataMap.teachers || [
+        { id: 't_1', row: 2, name: '김원장', phone: '010-1234-5678', subject: '국어', notes: '원장' },
+        { id: 't_2', row: 3, name: '이교사', phone: '010-9876-5432', subject: '역사/논술', notes: '파트타임' }
+      ]
     };
     this.render();
   }
@@ -140,7 +150,7 @@ class SheetSimulator {
     const capacities = this.calculateCapacities();
 
     let html = `
-      <div class="sheet-container glass-panel ${this.activeTab === '한명 검색' ? 'decoupled-view' : ''}">
+      <div class="sheet-container glass-panel ${this.activeTab === '한명검색' ? 'decoupled-view' : ''}">
         <!-- Sheet Header Toolbar -->
         <div class="sheet-toolbar">
           <h2 class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
@@ -168,17 +178,19 @@ class SheetSimulator {
         <!-- Google Sheets Tab Bar -->
         <div class="sheet-tabs">
           <button class="sheet-tab-item ${this.activeTab === '전체시간표' ? 'active' : ''}" data-tab="전체시간표">전체시간표 📑</button>
-          <button class="sheet-tab-item ${this.activeTab === '출결보강관리' ? 'active' : ''}" data-tab="출결보강관리">출결보강관리 📅</button>
+          <button class="sheet-tab-item ${this.activeTab === '오늘 시간표' ? 'active' : ''}" data-tab="오늘 시간표">오늘 시간표 ⏰</button>
           <button class="sheet-tab-item ${this.activeTab === '교재단계관리' ? 'active' : ''}" data-tab="교재단계관리">교재단계관리 📚</button>
           <button class="sheet-tab-item ${this.activeTab === '학부모상담/채널발송' ? 'active' : ''}" data-tab="학부모상담/채널발송">학부모상담/채널발송 💬</button>
           <button class="sheet-tab-item ${this.activeTab === '월별상담내역' ? 'active' : ''}" data-tab="월별상담내역">월별상담내역 👤</button>
-          <button class="sheet-tab-item ${this.activeTab === '한명 검색' ? 'active' : ''}" data-tab="한명 검색">한명 검색 🔍</button>
+          <button class="sheet-tab-item ${this.activeTab === '출결보강관리' ? 'active' : ''}" data-tab="출결보강관리">출결보강관리 📅</button>
           <button class="sheet-tab-item ${this.activeTab === '학생수업관리' ? 'active' : ''}" data-tab="학생수업관리">학생수업관리 📝</button>
+          <button class="sheet-tab-item ${this.activeTab === '교사' ? 'active' : ''}" data-tab="교사">교사 👩‍🏫</button>
+          <button class="sheet-tab-item ${this.activeTab === '한명검색' ? 'active' : ''}" data-tab="한명검색">한명검색 🔍</button>
         </div>
 
         <!-- Sheet Table Wrapper -->
         <div class="sheet-table-wrapper" style="border: none; background: transparent; padding: 0; display: block;">
-          ${this.activeTab === "한명 검색" ? this.renderDecoupledSingleSearch(capacities) : `
+          ${this.activeTab === "한명검색" ? this.renderDecoupledSingleSearch(capacities) : `
           <table class="sheet-table">
             <thead>
               ${this.renderTableHeader()}
@@ -219,6 +231,20 @@ class SheetSimulator {
             <th>결석 일자들 (L)</th>
             <th style="background:rgba(236,72,153,0.1);">보강일시 (AE)</th>
             <th style="background:rgba(236,72,153,0.1);">보강완료 (AF)</th>
+            <th>동작</th>
+          </tr>
+        `;
+      case "오늘 시간표":
+        return `
+          <tr>
+            <th class="row-num-col">행</th>
+            <th>시간대 (A)</th>
+            <th>월요일 (B)</th>
+            <th>화요일 (C)</th>
+            <th>수요일 (D)</th>
+            <th>목요일 (E)</th>
+            <th>금요일 (F)</th>
+            <th>토요일 (G)</th>
             <th>동작</th>
           </tr>
         `;
@@ -307,7 +333,7 @@ class SheetSimulator {
             <th>동작</th>
           </tr>
         `;
-      case "한명 검색":
+      case "한명검색":
         return `
           <tr>
             <th class="row-num-col">행</th>
@@ -454,6 +480,32 @@ class SheetSimulator {
                 </select>
               </td>
               <td><button class="btn-delete-row" data-id="${row.id}">🗑️</button></td>
+            </tr>
+          `;
+        }).join('');
+      }
+      
+      case "오늘 시간표": {
+        const filtered = this.dataMap.weeklySchedule.filter(row => {
+          const timeVal = row.time ? String(row.time).toLowerCase() : "";
+          const monVal = row.mon ? String(row.mon).toLowerCase() : "";
+          return timeVal.includes(query) || monVal.includes(query);
+        });
+        if (filtered.length === 0) return `<tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted);">시간표 데이터가 없습니다.</td></tr>`;
+        
+        return filtered.map(row => {
+          const rowId = row.id || `ws_${row.row}`;
+          return `
+            <tr data-id="${rowId}">
+              <td class="row-num-col" style="text-align:center; font-weight:600;">${row.row}</td>
+              <td><input type="text" class="sheet-input-ws-time" value="${this.escapeHtml(row.time || '')}" style="width: 70px; text-align:center;"></td>
+              <td><input type="text" class="sheet-input-ws-mon" value="${this.escapeHtml(row.mon || '')}" style="width: 110px;"></td>
+              <td><input type="text" class="sheet-input-ws-tue" value="${this.escapeHtml(row.tue || '')}" style="width: 110px;"></td>
+              <td><input type="text" class="sheet-input-ws-wed" value="${this.escapeHtml(row.wed || '')}" style="width: 110px;"></td>
+              <td><input type="text" class="sheet-input-ws-thu" value="${this.escapeHtml(row.thu || '')}" style="width: 110px;"></td>
+              <td><input type="text" class="sheet-input-ws-fri" value="${this.escapeHtml(row.fri || '')}" style="width: 110px;"></td>
+              <td><input type="text" class="sheet-input-ws-sat" value="${this.escapeHtml(row.sat || '')}" style="width: 110px;"></td>
+              <td><button class="btn-delete-row" data-id="${rowId}">🗑️</button></td>
             </tr>
           `;
         }).join('');
@@ -777,7 +829,7 @@ class SheetSimulator {
         `).join('');
       }
 
-      case "한명 검색": {
+      case "한명검색": {
         const searchName = (query || "신나라").toLowerCase().trim();
         const members = this.dataMap.memberAnalysis.filter(m => {
           const nameVal = m.name ? String(m.name).toLowerCase().trim() : "";
@@ -1186,10 +1238,10 @@ class SheetSimulator {
             <div>💡 <strong>월별상담내역:</strong> 등하원, 코칭 방향, 진도 상태, 레벨 업 일자, 훈민정음 완료 진도 등 학생 프로필과 개별 분석이 총망라된 마스터 테이블입니다.</div>
           </div>
         `;
-      case "한명 검색":
+      case "한명검색":
         return `
           <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
-            <div>💡 <strong>한명 검색 대시보드:</strong> B3 셀에 이름을 적고 Enter를 치시면, 회원 분석, 문해력 교재, 상담 내용을 한 곳에 콕 찍어 모아 볼 수 있습니다.</div>
+            <div>💡 <strong>한명검색 대시보드:</strong> B3 셀에 이름을 적고 Enter를 치시면, 회원 분석, 문해력 교재, 상담 내용을 한 곳에 콕 찍어 모아 볼 수 있습니다.</div>
           </div>
         `;
       case "학생수업관리":
@@ -1479,6 +1531,19 @@ class SheetSimulator {
         this.onDataChanged("students", dataset);
         break;
         
+      case "오늘 시간표":
+        dataset = this.dataMap.weeklySchedule;
+        nextRowIndex = dataset.length > 0 ? Math.max(...dataset.map(r => r.row)) + 1 : 2;
+        newRow = {
+          id: 'ws_' + Date.now(),
+          row: nextRowIndex,
+          time: '15:00',
+          mon: '', tue: '', wed: '', thu: '', fri: '', sat: ''
+        };
+        dataset.push(newRow);
+        this.onDataChanged("weeklySchedule", dataset);
+        break;
+        
       case "출결보강관리":
         dataset = this.dataMap.dailyLogs;
         nextRowIndex = dataset.length > 0 ? Math.max(...dataset.map(r => r.row)) + 1 : 2;
@@ -1564,8 +1629,8 @@ class SheetSimulator {
         }
         break;
 
-      case "한명 검색":
-        alert("한명 검색 시트에서는 직접 행을 추가하실 수 없습니다. 대신 검색 학생 이름 셀(B3)의 이름을 수정해 주세요.");
+      case "한명검색":
+        alert("한명검색 시트에서는 직접 행을 추가하실 수 없습니다. 대신 검색 학생 이름 셀(B3)의 이름을 수정해 주세요.");
         return;
 
       case "학생수업관리":
@@ -1615,6 +1680,10 @@ class SheetSimulator {
       case "전체시간표":
         this.dataMap.students = this.dataMap.students.filter(r => r.id !== id);
         this.onDataChanged("students", this.dataMap.students);
+        break;
+      case "오늘 시간표":
+        this.dataMap.weeklySchedule = this.dataMap.weeklySchedule.filter(r => r.id !== id);
+        this.onDataChanged("weeklySchedule", this.dataMap.weeklySchedule);
         break;
       case "출결보강관리":
         this.dataMap.dailyLogs = this.dataMap.dailyLogs.filter(r => r.id !== id);
@@ -1808,6 +1877,18 @@ class SheetSimulator {
           break;
         }
 
+        case "오늘 시간표": {
+          const rowArray = this.dataMap.weeklySchedule;
+          tr.querySelector(".sheet-input-ws-time").addEventListener("change", (e) => updateField(id, "weeklySchedule", rowArray, "time", e.target.value.trim()));
+          tr.querySelector(".sheet-input-ws-mon").addEventListener("change", (e) => updateField(id, "weeklySchedule", rowArray, "mon", e.target.value.trim()));
+          tr.querySelector(".sheet-input-ws-tue").addEventListener("change", (e) => updateField(id, "weeklySchedule", rowArray, "tue", e.target.value.trim()));
+          tr.querySelector(".sheet-input-ws-wed").addEventListener("change", (e) => updateField(id, "weeklySchedule", rowArray, "wed", e.target.value.trim()));
+          tr.querySelector(".sheet-input-ws-thu").addEventListener("change", (e) => updateField(id, "weeklySchedule", rowArray, "thu", e.target.value.trim()));
+          tr.querySelector(".sheet-input-ws-fri").addEventListener("change", (e) => updateField(id, "weeklySchedule", rowArray, "fri", e.target.value.trim()));
+          tr.querySelector(".sheet-input-ws-sat").addEventListener("change", (e) => updateField(id, "weeklySchedule", rowArray, "sat", e.target.value.trim()));
+          break;
+        }
+        
         case "출결보강관리": {
           const rowArray = this.dataMap.dailyLogs;
           const dateInput = tr.querySelector(".sheet-input-date");
