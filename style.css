@@ -724,7 +724,7 @@ main {
   max-height: 75vh;
   border-radius: 12px;
   border: 1px solid var(--panel-border);
-  background: var(--box-bg);
+  background: #ffffff !important;
 }
 
 .sheet-table {
@@ -747,12 +747,12 @@ main {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #f8fafc !important; /* solid background for sticky row 1 freezing */
-  color: var(--text-secondary);
+  background: var(--accent) !important;
+  color: #ffffff !important;
   font-weight: 600;
-  padding: 1rem 0.8rem;
-  border-bottom: 2px solid var(--panel-border);
-  border-right: 1px solid var(--panel-border);
+  padding: 0.5rem 0.6rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
   font-family: var(--font-title);
   white-space: nowrap;
   /* Hardware acceleration hacks to fix iOS Safari sticky lag/rendering bugs */
@@ -790,20 +790,22 @@ th.resizing .resize-handle {
 }
 
 .sheet-table td {
-  padding: 0.8rem;
-  color: var(--text-primary);
+  padding: 0.4rem 0.6rem;
+  background: #ffffff !important;
+  color: #0f172a;
   white-space: nowrap;
-  border-bottom: 1px solid var(--panel-border);
-  border-right: 1px solid var(--panel-border);
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
 }
 
 .sheet-table td input, .sheet-table td select, .sheet-table td textarea {
-  background: transparent;
+  background: #ffffff;
   border: 1px solid transparent;
-  color: var(--text-primary);
+  color: #0f172a;
   width: 100%;
-  padding: 0.4rem;
-  border-radius: 6px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.85rem;
+  border-radius: 4px;
   font-family: var(--font-main);
   outline: none;
   transition: var(--transition);
@@ -1830,19 +1832,20 @@ th.resizing {
 
 /* Sheet Simulator Textarea auto-expanding cell styling */
 .sheet-table td textarea {
-  height: 32px;
-  min-height: 32px;
+  height: 24px;
+  min-height: 24px;
   resize: vertical;
   transition: height 0.2s ease, background-color 0.2s, border-color 0.2s;
   overflow-y: hidden;
   border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 0.4rem;
+  border-radius: 4px;
+  padding: 0.2rem 0.4rem;
   width: 100%;
   outline: none;
   background: transparent;
-  color: var(--text-primary);
+  color: #0f172a;
   font-family: var(--font-main);
+  font-size: 0.85rem;
 }
 
 .sheet-table td textarea:focus {
