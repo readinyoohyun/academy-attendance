@@ -673,6 +673,36 @@
       return 60;
     }
 
+    // Helper: Normalize time string (supporting "11시", "1시" -> "13:00", "15:30", etc.)
+    function normalizeTimeStr(timeStr) {
+      if (!timeStr) return "14:00";
+      let clean = timeStr.replace("시", "").trim();
+      if (!clean.includes(":")) {
+        const hr = parseInt(clean, 10);
+        if (!isNaN(hr)) {
+          let finalHr = hr;
+          if (hr >= 1 && hr <= 7) {
+            finalHr = hr + 12;
+          }
+          clean = `${String(finalHr).padStart(2, '0')}:00`;
+        }
+      } else {
+        const parts = clean.split(":");
+        if (parts.length === 2) {
+          const hr = parseInt(parts[0], 10);
+          const min = parseInt(parts[1], 10);
+          if (!isNaN(hr) && !isNaN(min)) {
+            let finalHr = hr;
+            if (hr >= 1 && hr <= 7) {
+              finalHr = hr + 12;
+            }
+            clean = `${String(finalHr).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+          }
+        }
+      }
+      return clean;
+    }
+
     // Helper: Parse makeup date string into Day of week and Hour
     function parseMakeupDate(makeupStr) {
       if (!makeupStr) return null;
@@ -683,12 +713,15 @@
           return { day: simpleMatch[1], time: simpleMatch[2], isWeekly: true };
         }
         
-        // Korean month/day format: e.g. "7월 14일 14:30" or "7월14일"
-        const koMatch = cleanStr.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일(\s*(\d{1,2}:\d{2}))?/);
+        // Strip weekdays and parentheses so they don't break time parsing (e.g. "8/1토11시" -> "8/1  11시")
+        cleanStr = cleanStr.replace(/요일/g, "").replace(/[\(]?[월화수목금토일][\)]?/g, " ").trim();
+
+        // Korean month/day format: e.g. "7월 14일 14:30", "7월14일 11시", "7월14일"
+        const koMatch = cleanStr.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일(\s*(\d{1,2}(?::\d{2}|시)?))?/);
         if (koMatch) {
           const m = parseInt(koMatch[1], 10);
           const d = parseInt(koMatch[2], 10);
-          const time = koMatch[4] || "14:00";
+          const time = normalizeTimeStr(koMatch[4]);
           const currentYear = new Date().getFullYear();
           const tempDate = new Date(currentYear, m - 1, d);
           const day = WEEKDAYS[tempDate.getDay()];
@@ -701,18 +734,19 @@
           };
         }
 
-        // Standard digit separator format: e.g. "7/14 14:30", "7.14 14:30", "2026-07-14 14:30"
-        const stdMatch = cleanStr.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?(\s*(\d{1,2}:\d{2}))?/);
+        // Standard digit separator format: e.g. "7/14 14:30", "7.14 11시", "2026-07-14 14:30"
+        const stdMatch = cleanStr.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?(\s*(\d{1,2}(?::\d{2}|시)?))?/);
         if (stdMatch) {
           let y = new Date().getFullYear();
           let m = parseInt(stdMatch[1], 10);
           let d = parseInt(stdMatch[2], 10);
-          let time = stdMatch[6] || "14:00";
+          let timeVal = stdMatch[6];
           if (stdMatch[3]) {
             y = parseInt(stdMatch[1], 10);
             m = parseInt(stdMatch[2], 10);
             d = parseInt(stdMatch[4], 10);
           }
+          const time = normalizeTimeStr(timeVal);
           const tempDate = new Date(y, m - 1, d);
           const day = WEEKDAYS[tempDate.getDay()];
           return {

@@ -189,42 +189,88 @@ function getFormattedDateOfWeekday(targetDayName) {
 }
 
 // Helper: Parse makeup date string into Day of week and Hour (with yearless/dot/slash/parentheses support)
+// Helper: Normalize time string (supporting "11시", "1시" -> "13:00", "15:30", etc.)
+function normalizeTimeStr(timeStr) {
+  if (!timeStr) return "14:00";
+  let clean = timeStr.replace("시", "").trim();
+  if (!clean.includes(":")) {
+    const hr = parseInt(clean, 10);
+    if (!isNaN(hr)) {
+      let finalHr = hr;
+      if (hr >= 1 && hr <= 7) {
+        finalHr = hr + 12;
+      }
+      clean = `${String(finalHr).padStart(2, '0')}:00`;
+    }
+  } else {
+    const parts = clean.split(":");
+    if (parts.length === 2) {
+      const hr = parseInt(parts[0], 10);
+      const min = parseInt(parts[1], 10);
+      if (!isNaN(hr) && !isNaN(min)) {
+        let finalHr = hr;
+        if (hr >= 1 && hr <= 7) {
+          finalHr = hr + 12;
+        }
+        clean = `${String(finalHr).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+      }
+    }
+  }
+  return clean;
+}
+
+// Helper: Parse makeup date string into Day of week and Hour (with yearless/dot/slash/parentheses support)
 function parseMakeupDate(makeupStr) {
   if (!makeupStr) return null;
   try {
     let cleanStr = String(makeupStr).trim();
-    
-    // 1. Check if it's weekly format (e.g. "목요일 16:00" or "수요일 15:30")
     const simpleMatch = cleanStr.match(/^([가-힣]{3})\s+(\d{2}:\d{2})$/);
     if (simpleMatch) {
       return { day: simpleMatch[1], time: simpleMatch[2], isWeekly: true };
     }
     
-    // 2. Strip weekday in parentheses if any, e.g. "7/25(토) 16:00" -> "7/25 16:00"
-    cleanStr = cleanStr.replace(/\([가-힣]+\)/g, ' ').replace(/\s+/g, ' ').trim();
-    
-    // 3. Replace dots or dashes with slashes, e.g. "7.25 16:00" -> "7/25 16:00"
-    cleanStr = cleanStr.replace(/\./g, '/').replace(/-/g, '/');
-    
-    // 4. If year is omitted (like "7/25 16:00"), prepend the current year to ensure reliable parsing on Safari/Chrome
-    if (cleanStr.match(/^\d{1,2}\/\d{1,2}/)) {
+    // Strip weekdays and parentheses so they don't break time parsing (e.g. "8/1토11시" -> "8/1  11시")
+    cleanStr = cleanStr.replace(/요일/g, "").replace(/[\(]?[월화수목금토일][\)]?/g, " ").trim();
+
+    // Korean month/day format: e.g. "7월 14일 14:30", "7월14일 11시", "7월14일"
+    const koMatch = cleanStr.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일(\s*(\d{1,2}(?::\d{2}|시)?))?/);
+    if (koMatch) {
+      const m = parseInt(koMatch[1], 10);
+      const d = parseInt(koMatch[2], 10);
+      const time = normalizeTimeStr(koMatch[4]);
       const currentYear = new Date().getFullYear();
-      cleanStr = `${currentYear}/${cleanStr}`;
-    }
-    
-    const d = new Date(cleanStr);
-    if (!isNaN(d.getTime())) {
-      const day = WEEKDAYS[d.getDay()];
-      const hours = String(d.getHours()).padStart(2, '0');
-      const minutes = String(d.getMinutes()).padStart(2, '0');
-      const month = d.getMonth() + 1;
-      const date = d.getDate();
-      return { 
-        day, 
-        time: `${hours}:${minutes}`, 
+      const tempDate = new Date(currentYear, m - 1, d);
+      const day = WEEKDAYS[tempDate.getDay()];
+      return {
+        day,
+        time,
         isWeekly: false,
-        formattedSlash: `${month}/${date}`,
-        formattedDot: `${month}.${date}`
+        formattedSlash: `${m}/${d}`,
+        formattedDot: `${m}.${d}`
+      };
+    }
+
+    // Standard digit separator format: e.g. "7/14 14:30", "7.14 11시", "2026-07-14 14:30"
+    const stdMatch = cleanStr.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?(\s*(\d{1,2}(?::\d{2}|시)?))?/);
+    if (stdMatch) {
+      let y = new Date().getFullYear();
+      let m = parseInt(stdMatch[1], 10);
+      let d = parseInt(stdMatch[2], 10);
+      let timeVal = stdMatch[6];
+      if (stdMatch[3]) {
+        y = parseInt(stdMatch[1], 10);
+        m = parseInt(stdMatch[2], 10);
+        d = parseInt(stdMatch[4], 10);
+      }
+      const time = normalizeTimeStr(timeVal);
+      const tempDate = new Date(y, m - 1, d);
+      const day = WEEKDAYS[tempDate.getDay()];
+      return {
+        day,
+        time,
+        isWeekly: false,
+        formattedSlash: `${m}/${d}`,
+        formattedDot: `${m}.${d}`
       };
     }
   } catch (e) {
