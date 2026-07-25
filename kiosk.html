@@ -999,6 +999,12 @@
         
         let status = "대기";
         
+        let isAbsent = false;
+        if (student.absentDates) {
+          const cleanAbs = student.absentDates.replace(/\s+/g, '');
+          isAbsent = cleanAbs.includes(todayDateSlash) || cleanAbs.includes(todayDateSlash.replace('/', '.'));
+        }
+        
         const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
         const isMakeup = parsedMakeups.some(m => 
           m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
@@ -1006,6 +1012,9 @@
         
         if (isMakeup) {
           status = "보강";
+        }
+        if (isAbsent) {
+          status = "결석";
         }
 
         if (log) {
@@ -1151,6 +1160,12 @@
           let statusClass = "대기";
           let remainingTimeHtml = "";
 
+          let isAbsent = false;
+          if (student.absentDates) {
+            const cleanAbs = student.absentDates.replace(/\s+/g, '');
+            isAbsent = cleanAbs.includes(todayDateSlash) || cleanAbs.includes(todayDateSlash.replace('/', '.'));
+          }
+
           const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
           const isMakeup = parsedMakeups.some(m => 
             m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
@@ -1159,6 +1174,10 @@
           if (isMakeup) {
             status = "보강";
             statusClass = "보강";
+          }
+          if (isAbsent) {
+            status = "결석";
+            statusClass = "결석";
           }
 
           if (log) {
