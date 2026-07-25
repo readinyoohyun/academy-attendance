@@ -489,6 +489,11 @@
       color: #ffffff !important;
       border-color: rgba(255, 255, 255, 0.4) !important;
     }
+    .btn-undo-custom:hover {
+      background: #dc2626 !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(220, 38, 38, 0.4) !important;
+    }
   </style>
 </head>
 <body>
@@ -571,7 +576,8 @@
     <div id="successMessage" class="success-message">
       강성모 학생, 안전하게 등원하였습니다.
     </div>
-    <div id="successTimer" class="success-timer">3초 뒤 자동으로 화면이 닫힙니다...</div>
+    <div id="successTimer" class="success-timer">5초 뒤 자동으로 화면이 닫힙니다...</div>
+    <button id="btnUndoAttendance" class="btn-undo-custom" style="margin-top: 1.5rem; display: none; padding: 0.6rem 1.5rem; background: #ef4444; border: none; color: white; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: all 0.2s; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.25);">잘못 눌렀어요! 실행 취소 (Undo)</button>
   </div>
 
   <!-- Footer with Settings Cog -->
@@ -657,6 +663,7 @@
 
     let selectedStudent = null;
     let selectedDayOverride = null;
+    let lastAttendanceAction = null;
 
     // Helper: Get student class duration in minutes based on classes string or grade
     function getClassDuration(student) {
@@ -1423,6 +1430,9 @@
     function showTemporaryNotice(name, message, isWarning = false) {
       clearActiveOverlayTimers();
       
+      const undoBtn = document.getElementById("btnUndoAttendance");
+      if (undoBtn) undoBtn.style.display = "none";
+      
       const overlay = document.getElementById("successOverlay");
       const icon = document.getElementById("successIcon");
       const title = document.getElementById("successTitle");
@@ -1513,6 +1523,24 @@
           log.status !== "수업완료" && log.status !== "보강완료"
         );
       }
+
+      // Save state before modification for undo
+      const prevStudentStatus = student.attendanceStatus || (type === 'in' ? '대기' : '수업중');
+      const isNewRow = !dailyLog;
+      const previousLogStatus = dailyLog ? dailyLog.status : "";
+      const previousInTime = dailyLog ? dailyLog.inTime : "";
+      const previousOutTime = dailyLog ? dailyLog.outTime : "";
+      const logRow = dailyLog ? dailyLog.row : (state.dailyLogs.length > 0 ? Math.max(...state.dailyLogs.map(l => l.row)) + 1 : 2);
+
+      lastAttendanceAction = {
+        studentId: student.id,
+        logRow: logRow,
+        isNewRow: isNewRow,
+        previousStudentStatus: prevStudentStatus,
+        previousLogStatus: previousLogStatus,
+        previousInTime: previousInTime,
+        previousOutTime: previousOutTime
+      };
 
       // Perform local updates
       if (dailyLog) {
@@ -1614,10 +1642,21 @@
         `;
       }
       
-      timerText.innerText = "화면을 터치하면 바로 닫힙니다.";
+      timerText.innerText = "5초 뒤 자동으로 화면이 닫힙니다 (또는 화면 터치시 바로 닫기).";
+      
+      const undoBtn = document.getElementById("btnUndoAttendance");
+      if (undoBtn) {
+        undoBtn.style.display = "block";
+        undoBtn.onclick = (e) => {
+          e.stopPropagation();
+          undoLastAttendanceAction();
+        };
+      }
+
       overlay.classList.add("active");
       
-      overlay.onclick = () => {
+      overlay.onclick = (e) => {
+        if (e.target.id === "btnUndoAttendance") return;
         clearActiveOverlayTimers();
         overlay.classList.remove("active");
         selectedStudent = null;
@@ -1628,7 +1667,84 @@
         overlay.classList.remove("active");
         selectedStudent = null;
         renderStudentCards();
-      }, 1200);
+      }, 5000);
+    }
+
+    // Undo action handler
+    function undoLastAttendanceAction() {
+      if (!lastAttendanceAction) return;
+
+      const act = lastAttendanceAction;
+      lastAttendanceAction = null; // Clear so they can't double undo
+
+      // 1. Hide the undo button
+      const undoBtn = document.getElementById("btnUndoAttendance");
+      if (undoBtn) undoBtn.style.display = "none";
+
+      // 2. Find the student
+      const student = state.students.find(s => s.id === act.studentId);
+      if (student) {
+        student.attendanceStatus = act.previousStudentStatus;
+      }
+
+      // 3. Revert the dailyLog in local state
+      if (act.isNewRow) {
+        // Remove the log from local array
+        state.dailyLogs = state.dailyLogs.filter(l => l.row !== act.logRow);
+        
+        // Remove from Google Sheets
+        if (config.gasWebhookUrl) {
+          fetch(config.gasWebhookUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "deleteRow",
+              tab: "dailyLogs",
+              row: act.logRow
+            })
+          })
+          .then(() => console.log(`Google Sheets row deleted: Tab dailyLogs, Row ${act.logRow}`))
+          .catch(err => console.error("Undo deleteRow failed:", err));
+        }
+      } else {
+        // Revert existing log values
+        const log = state.dailyLogs.find(l => l.row === act.logRow);
+        if (log) {
+          log.status = act.previousLogStatus;
+          log.inTime = act.previousInTime;
+          log.outTime = act.previousOutTime;
+          
+          // Revert in Google Sheets
+          if (config.gasWebhookUrl) {
+            const updates = [
+              { tab: "dailyLogs", row: log.row, field: "status", value: act.previousLogStatus },
+              { tab: "dailyLogs", row: log.row, field: "inTime", value: act.previousInTime },
+              { tab: "dailyLogs", row: log.row, field: "outTime", value: act.previousOutTime }
+            ];
+            sendBatchUpdateToGoogleSheets(updates);
+          }
+        }
+      }
+
+      // Save local storage
+      const cached = localStorage.getItem("academy_attendance_state");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          parsed.dailyLogs = state.dailyLogs;
+          localStorage.setItem("academy_attendance_state", JSON.stringify(parsed));
+        } catch(e){}
+      }
+
+      // 4. Update UI
+      clearActiveOverlayTimers();
+      document.getElementById("successOverlay").classList.remove("active");
+      selectedStudent = null;
+      renderStudentCards();
+
+      // Show temporary warning notice to confirm undo success
+      showTemporaryNotice(student ? student.name : "학생", "출결 입력이 취소되었습니다. ↩️", false);
     }
 
     // Google Sheets API Helpers
