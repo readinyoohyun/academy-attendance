@@ -470,7 +470,7 @@ class CRMManager {
         const activeTime = student.times ? Object.values(student.times).find(t => t) || '15:00' : '15:00';
         this.app.dashboardManager.logAttendanceEvent(name, "결석", activeTime);
 
-        let dailyLog = this.app.state.dailyLogs.find(log => 
+        let dailyLog = [...this.app.state.dailyLogs].reverse().find(log => 
           log.name.trim() === name.trim() && 
           (log.date || '').trim() === dailyLogDateStr.trim()
         );
@@ -523,7 +523,7 @@ class CRMManager {
         const activeTime = student.times ? (student.times[this.app.selectedDay] || student.times[this.app.selectedDay.substring(0, 1)] || this.app.selectedTime) : this.app.selectedTime;
         this.app.dashboardManager.logAttendanceEvent(name, "결석", activeTime);
 
-        let dailyLog = this.app.state.dailyLogs.find(log => 
+        let dailyLog = [...this.app.state.dailyLogs].reverse().find(log => 
           log.name.trim() === name.trim() && 
           (log.date || '').trim() === dailyLogDateStr.trim()
         );
@@ -1452,7 +1452,7 @@ class CRMManager {
 
     // Check if they already have a log for today
     // 1. Primary match: search by name, date, and exact time slot
-    let dailyLog = this.app.state.dailyLogs.find(log => 
+    let dailyLog = [...this.app.state.dailyLogs].reverse().find(log => 
       log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, '') && 
       log.time.trim() === activeTime.trim() &&
       this.isSameDate(log.date, dailyLogDateStr)
@@ -1460,7 +1460,7 @@ class CRMManager {
 
     // 2. Secondary fallback: if no exact time match, match any log for today that is not completed
     if (!dailyLog) {
-      dailyLog = this.app.state.dailyLogs.find(log => 
+      dailyLog = [...this.app.state.dailyLogs].reverse().find(log => 
         log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, '') && 
         this.isSameDate(log.date, dailyLogDateStr) &&
         log.status !== "수업완료" && log.status !== "보강완료"

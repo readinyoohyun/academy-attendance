@@ -1178,7 +1178,7 @@
       filtered.forEach(student => {
         let rawSlots = [];
         
-        const log = state.dailyLogs.find(l => 
+        const log = [...state.dailyLogs].reverse().find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
           isSameDate(l.date, dailyLogDateStr)
         );
@@ -1377,7 +1377,7 @@
         processKioskAttendance("in");
       } 
       else if (currentStatus === "수업중") {
-        const log = state.dailyLogs.find(l => 
+        const log = [...state.dailyLogs].reverse().find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
           isSameDate(l.date, dailyLogDateStr)
         );
@@ -1499,7 +1499,7 @@
       // For check-out ('out'), search for any log for today that is currently '수업중' first.
       let dailyLog = null;
       if (type === 'out') {
-        dailyLog = state.dailyLogs.find(log => 
+        dailyLog = [...state.dailyLogs].reverse().find(log => 
           (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
           isSameDate(log.date, dailyLogDateStr) &&
           (log.status === "수업중" || log.status === "수업 중" || log.status === "보강 수업중")
@@ -1508,7 +1508,7 @@
       
       // 1. Primary match: search by name, date, and exact time slot (to match the specific class if they have multiple classes today)
       if (!dailyLog) {
-        dailyLog = state.dailyLogs.find(log => 
+        dailyLog = [...state.dailyLogs].reverse().find(log => 
           (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
           log.time.trim() === activeTime.trim() && 
           isSameDate(log.date, dailyLogDateStr)
@@ -1517,7 +1517,7 @@
       
       // 2. Secondary fallback: if no exact time match, match any log for today that is not completed to avoid duplicate rows
       if (!dailyLog) {
-        dailyLog = state.dailyLogs.find(log => 
+        dailyLog = [...state.dailyLogs].reverse().find(log => 
           (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
           isSameDate(log.date, dailyLogDateStr) &&
           log.status !== "수업완료" && log.status !== "보강완료"

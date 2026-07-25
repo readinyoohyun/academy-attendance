@@ -282,7 +282,7 @@ class DashboardManager {
             isAbsent = cleanAbs.includes(targetDates.slashFormat) || cleanAbs.includes(targetDates.dotFormat);
           }
 
-          const dailyLog = this.app.state.dailyLogs.find(l => 
+          const dailyLog = [...this.app.state.dailyLogs].reverse().find(l => 
             (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
             (l.time || '').trim() === timeStr.trim() &&
             (l.date || '').trim() === dailyLogDateStr.trim()
@@ -482,7 +482,7 @@ class DashboardManager {
     const shortDay = this.selectedDay.substring(0, 1);
     const dailyLogDateStr = `${targetDates.slashFormat}${shortDay}`;
 
-    let dailyLog = this.app.state.dailyLogs.find(log => 
+    let dailyLog = [...this.app.state.dailyLogs].reverse().find(log => 
       log.name.trim() === student.name.trim() && 
       log.time.trim() === activeTime.trim() && 
       (log.date || '').trim() === dailyLogDateStr.trim()
@@ -653,7 +653,7 @@ class DashboardManager {
     const memberRecForPhone = this.app.state.memberAnalysis.find(m => (m.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
     const parentPhoneVal = memberRecForPhone ? (memberRecForPhone.phone || "").trim() : "";
 
-    dailyLog = this.app.state.dailyLogs.find(log => 
+    dailyLog = [...this.app.state.dailyLogs].reverse().find(log => 
       (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
       log.time.trim() === activeTime.trim() && 
       (log.date || '').trim() === dailyLogDateStr.trim()

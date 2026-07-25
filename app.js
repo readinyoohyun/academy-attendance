@@ -758,7 +758,7 @@ class AttendanceApp {
     const dailyLogDateStr = `${dates.slashFormat}${shortDay}`;
 
     this.state.students.forEach(student => {
-      const dailyLog = this.state.dailyLogs.find(l => 
+      const dailyLog = [...this.state.dailyLogs].reverse().find(l => 
         ((l && l.name) || '').replace(/\s+/g, '') === ((student && student.name) || '').replace(/\s+/g, '') && 
         ((l && l.date) || '').trim() === dailyLogDateStr.trim()
       );
