@@ -484,6 +484,11 @@
       opacity: 1;
       color: #ffffff;
     }
+    .btn-day:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+      color: #ffffff !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+    }
   </style>
 </head>
 <body>
@@ -498,6 +503,19 @@
       <div id="kioskTime" class="current-time">00:00:00</div>
     </div>
   </header>
+
+  <!-- Weekday Selector Toggle Bar -->
+  <section class="weekday-selector-bar" style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; background: rgba(255,255,255,0.05); padding: 0.8rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+    <span style="align-self: center; font-weight: 600; color: #cbd5e1; margin-right: 0.5rem; font-size: 0.95rem;">📅 요일 선택:</span>
+    <button class="btn-day active" data-day="today" style="padding: 0.4rem 1rem; border-radius: 8px; border: 1px solid #4f46e5; background: #4f46e5; color: white; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">오늘</button>
+    <button class="btn-day" data-day="월요일" style="padding: 0.4rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #cbd5e1; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">월</button>
+    <button class="btn-day" data-day="화요일" style="padding: 0.4rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #cbd5e1; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">화</button>
+    <button class="btn-day" data-day="수요일" style="padding: 0.4rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #cbd5e1; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">수</button>
+    <button class="btn-day" data-day="목요일" style="padding: 0.4rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #cbd5e1; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">목</button>
+    <button class="btn-day" data-day="금요일" style="padding: 0.4rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #cbd5e1; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">금</button>
+    <button class="btn-day" data-day="토요일" style="padding: 0.4rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #cbd5e1; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">토</button>
+    <button class="btn-day" data-day="일요일" style="padding: 0.4rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #cbd5e1; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">일</button>
+  </section>
 
   <!-- Loader -->
   <div id="initialLoader" class="initial-loader">
@@ -638,6 +656,7 @@
     };
 
     let selectedStudent = null;
+    let selectedDayOverride = null;
 
     // Helper: Get student class duration in minutes based on classes string or grade
     function getClassDuration(student) {
@@ -801,6 +820,31 @@
         document.getElementById("loadingStatusText").innerHTML = 
           `<span style="color: #f59e0b; font-weight: 700;">⚠️ 연동 설정 필요!</span><br>하단의 ⚙️ 아이콘을 누르고 구글 Apps Script 연동 주소를 등록해주세요.`;
       }
+      // 5. Bind Weekday selector buttons
+      document.querySelectorAll(".btn-day").forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll(".btn-day").forEach(b => {
+            b.classList.remove("active");
+            b.style.background = "transparent";
+            b.style.borderColor = "rgba(255,255,255,0.2)";
+            b.style.color = "#cbd5e1";
+          });
+          btn.classList.add("active");
+          btn.style.background = "#4f46e5";
+          btn.style.borderColor = "#4f46e5";
+          btn.style.color = "white";
+
+          const day = btn.getAttribute("data-day");
+          if (day === "today") {
+            selectedDayOverride = null;
+          } else {
+            selectedDayOverride = day;
+          }
+          
+          updateClock();
+          renderStudentCards();
+        };
+      });
     }
 
     // Settings prompt handler
@@ -852,7 +896,13 @@
 
     function updateClock() {
       const s = getSeoulTime();
-      document.getElementById("kioskDate").innerText = `${s.year}년 ${s.month}월 ${s.date}일 (${s.day.substring(0, 1)})`;
+      if (selectedDayOverride) {
+        const dates = getFormattedDateOfWeekday(selectedDayOverride);
+        const parts = dates.slashFormat.split('/');
+        document.getElementById("kioskDate").innerText = `${s.year}년 ${parts[0]}월 ${parts[1]}일 (${selectedDayOverride.substring(0, 1)}) [요일선택]`;
+      } else {
+        document.getElementById("kioskDate").innerText = `${s.year}년 ${s.month}월 ${s.date}일 (${s.day.substring(0, 1)})`;
+      }
       document.getElementById("kioskTime").innerText = `${s.hour}:${s.minute}:${s.second}`;
     }
 
@@ -900,11 +950,34 @@
       renderStudentCards();
     }
 
+    function getFormattedDateOfWeekday(targetDayName) {
+      const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+      const today = new Date();
+      const todayDayIndex = today.getDay();
+      const targetDayIndex = dayNames.indexOf(targetDayName);
+      
+      const diff = targetDayIndex - todayDayIndex;
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + diff);
+      
+      const m = targetDate.getMonth() + 1;
+      const d = targetDate.getDate();
+      return {
+        slashFormat: `${m}/${d}`,
+        dotFormat: `${m}.${d}`
+      };
+    }
+
     function getTodayWeekday() {
+      if (selectedDayOverride) return selectedDayOverride;
       return getSeoulTime().day;
     }
 
     function getTodayDateStr() {
+      if (selectedDayOverride) {
+        const dates = getFormattedDateOfWeekday(selectedDayOverride);
+        return dates.slashFormat;
+      }
       const s = getSeoulTime();
       return `${s.month}/${s.date}`;
     }
