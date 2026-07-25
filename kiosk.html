@@ -1358,11 +1358,10 @@
         );
       }
       
-      // Fallback: match by name, time, and date
+      // Fallback: match by name and date to reuse the daily log and avoid duplicate rows
       if (!dailyLog) {
         dailyLog = state.dailyLogs.find(log => 
           (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
-          log.time.trim() === activeTime.trim() && 
           isSameDate(log.date, dailyLogDateStr)
         );
       }
@@ -1372,6 +1371,9 @@
         dailyLog.status = dailyStatus;
         if (type === 'in') {
           dailyLog.inTime = currentTime;
+          if (activeTime && dailyLog.time !== activeTime) {
+            dailyLog.time = activeTime;
+          }
         } else {
           dailyLog.outTime = currentTime;
         }
@@ -1382,6 +1384,9 @@
           ];
           if (type === 'in') {
             updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: currentTime });
+            if (activeTime && dailyLog.time !== activeTime) {
+              updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "time", value: activeTime });
+            }
           } else {
             updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "outTime", value: currentTime });
           }

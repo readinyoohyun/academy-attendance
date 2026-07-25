@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -1466,10 +1466,13 @@ function generateDailyAttendance() {
   
   var studentsData = sheetStudents.getRange(2, 1, lastRowSt - 1, 32).getDisplayValues();
   var dailyLogsToAdd = [];
+  var processedNames = {};
   
   for (var i = 0; i < studentsData.length; i++) {
     var name = String(studentsData[i][2] || "").trim();
     if (!name) continue;
+    if (processedNames[name]) continue;
+    processedNames[name] = true;
     
     var keywords = ["국어", "세계사", "한국사", "독서", "문해력", "내신", "초등", "중등", "특강"];
     var isGroup = false;

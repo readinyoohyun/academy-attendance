@@ -1463,6 +1463,10 @@ class CRMManager {
         { tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업중" },
         { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: currentTime }
       ];
+      if (activeTime && dailyLog.time !== activeTime) {
+        dailyLog.time = activeTime;
+        updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "time", value: activeTime });
+      }
       this.app.api.updateBatchInGoogleSheets(updates);
     } else {
       const nextRow = this.app.state.dailyLogs.length > 0 ? Math.max(...this.app.state.dailyLogs.map(l => l.row)) + 1 : 2;
