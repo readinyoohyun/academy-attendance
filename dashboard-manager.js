@@ -59,39 +59,33 @@ class DashboardManager {
     );
 
     if (todayLogs.length > 0) {
-      return this.app.state.students.filter(student => {
-        const hasLog = todayLogs.some(l => 
-          (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') &&
-          (l.time || '').trim() === timeStr.trim()
+      // 1:1 Map with daily logs for this time slot today
+      const logsForSlot = todayLogs.filter(l => (l.time || '').trim() === timeStr.trim());
+      
+      return logsForSlot.map(l => {
+        const studentMatch = this.app.state.students.find(s => 
+          (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, '')
         );
-        if (!hasLog) return false;
-
-        const regTime = student.times && (student.times[this.selectedDay] || student.times[this.selectedDay.substring(0, 1)]);
-        let isRegActive = false;
-        if (regTime) {
-          const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
-          isRegActive = parts.includes(timeStr);
-        }
-        let isMakeupActive = false;
-        if (student.makeupDate) {
-          const parsedMakeups = parseMultipleMakeups(student.makeupDate);
-          isMakeupActive = parsedMakeups.some(parsed => {
-            const isDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
-            return parsed && parsed.day === this.selectedDay && parsed.time === timeStr && isDateMatch;
-          });
-        }
         
-        if (isRegActive || isMakeupActive) {
-          return true;
-        }
-
-        const sameNameStudents = this.app.state.students.filter(s => (s.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
-        return student.id === sameNameStudents[0].id;
+        // Clone the student metadata or use a placeholder if not registered
+        const student = studentMatch ? { ...studentMatch } : {
+          id: 'temp_' + l.row,
+          row: -1,
+          name: l.name,
+          grade: '미등록',
+          classes: '임시 추가',
+          times: {},
+          notes: l.notes,
+          absentDates: '',
+          makeupDate: ''
+        };
+        student.dailyLog = l;
+        return student;
       });
     }
 
-    return this.app.state.students.filter(student => {
-      // 1. Is student absent on this specific day?
+    // Fallback if today's daily logs are not set up yet
+    const fallbackStudents = this.app.state.students.filter(student => {
       let isAbsent = false;
       if (student.absentDates) {
         const parts = String(student.absentDates).split(',').map(x => x.trim()).filter(Boolean);
@@ -101,7 +95,6 @@ class DashboardManager {
         });
       }
 
-      // 2. Case A: Makeup Class
       let isMakeupTodayAndTime = false;
       if (student.makeupDate) {
         const parsedMakeups = parseMultipleMakeups(student.makeupDate);
@@ -111,7 +104,6 @@ class DashboardManager {
         });
       }
       
-      // 3. Case B: Regular Class
       const regularTimeStr = student.times && (student.times[this.selectedDay] || student.times[this.selectedDay.substring(0, 1)]);
       let isRegularActive = false;
       if (regularTimeStr) {
@@ -119,7 +111,6 @@ class DashboardManager {
         isRegularActive = parts.includes(timeStr);
       }
       
-      // Show regular student here unless they have a makeup today
       let hasMakeupToday = false;
       if (student.makeupDate) {
         const parsedMakeups = parseMultipleMakeups(student.makeupDate);
@@ -129,53 +120,13 @@ class DashboardManager {
         });
       }
 
-      // Check if student has a daily log for this time slot today with active status (not standby)
-      const hasLog = this.app.state.dailyLogs.some(l => 
-        (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
-        (l.date || '').trim() === dailyLogDateStr.trim() &&
-        (l.time || '').trim() === timeStr.trim() &&
-        l.status && l.status !== '대기'
-      );
-
-      if (hasLog) {
-        const isScheduledToday = (isRegularActive && !hasMakeupToday) || isMakeupTodayAndTime;
-        if (isScheduledToday) {
-          return true;
-        }
-        // If they have a log but are not scheduled on this day/time, check if another student with the same name IS scheduled.
-        const sameNameStudents = this.app.state.students.filter(s => (s.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
-        const anyScheduled = sameNameStudents.some(s => {
-          const sParsedMakeups = s.makeupDate ? parseMultipleMakeups(s.makeupDate) : [];
-          const sIsMakeup = sParsedMakeups.some(sMakeup => 
-            sMakeup.day === this.selectedDay && 
-            sMakeup.time === timeStr && 
-            (sMakeup.isWeekly || sMakeup.formattedSlash === dates.slashFormat || sMakeup.formattedDot === dates.dotFormat)
-          );
-          const sRegTime = s.times && (s.times[this.selectedDay] || s.times[this.selectedDay.substring(0, 1)]);
-          let sIsRegActive = false;
-          if (sRegTime) {
-            const parts = sRegTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
-            sIsRegActive = parts.includes(timeStr);
-          }
-          let sHasMakeupToday = false;
-          if (s.makeupDate) {
-            const parsedMakeups = parseMultipleMakeups(s.makeupDate);
-            sHasMakeupToday = parsedMakeups.some(parsed => {
-              const sIsDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
-              return parsed && parsed.day === this.selectedDay && sIsDateMatch;
-            });
-          }
-          return (sIsRegActive && !sHasMakeupToday) || sIsMakeup;
-        });
-
-        if (anyScheduled) {
-          return false; // The scheduled one will be shown, don't show this duplicate.
-        }
-        // If none are scheduled, show the first one to represent this log.
-        return student.id === sameNameStudents[0].id;
-      }
-
       return (isRegularActive && !hasMakeupToday) || isMakeupTodayAndTime;
+    });
+
+    return fallbackStudents.map(student => {
+      const s = { ...student };
+      s.dailyLog = null;
+      return s;
     });
   }
 
@@ -318,13 +269,7 @@ class DashboardManager {
             const cleanAbs = student.absentDates.replace(/\s+/g, '');
             isAbsent = cleanAbs.includes(targetDates.slashFormat) || cleanAbs.includes(targetDates.dotFormat);
           }
-
-          const dailyLog = [...this.app.state.dailyLogs].reverse().find(l => 
-            (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
-            (l.time || '').trim() === timeStr.trim() &&
-            (l.date || '').trim() === dailyLogDateStr.trim()
-          );
-
+          const dailyLog = student.dailyLog;
           if (isMakeup) {
             const norm = dailyLog ? getNormalizedStatus(dailyLog.status) : "대기";
             if (norm === "보강완료" || norm === "수업완료") {
