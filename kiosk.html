@@ -1046,7 +1046,10 @@
       const todayDateSlash = getTodayDateStr(); // e.g. "7/1"
       const shortDay = todayDay.substring(0, 1);
       const dailyLogDateStr = `${todayDateSlash}${shortDay}`; // e.g. "7/1수"
-      
+            const todayLogs = state.dailyLogs.filter(l => 
+        isSameDate(l.date, dailyLogDateStr)
+      );
+
       // Filter list of students scheduled for today or active today, avoiding duplicates for same student names
       const uniqueNameMap = new Map();
       
@@ -1054,46 +1057,55 @@
         const name = (student.name || "").trim();
         if (!name) return;
         
-        const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
-        const isScheduledToday = regTime && regTime.trim() !== "";
-        
-        let isMakeupToday = false;
-        if (student.makeupDate) {
-          const makeups = student.makeupDate.split(/[\n,\r]+/).map(m => m.trim()).filter(Boolean);
-          const parts = todayDateSlash.split("/");
-          const tM = parseInt(parts[0], 10);
-          const tD = parseInt(parts[1], 10);
-          isMakeupToday = makeups.some(m => {
-            if (m.includes(todayDateSlash) || m.includes(todayDay)) return true;
-            
-            const koMatch = m.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
-            if (koMatch) {
-              return parseInt(koMatch[1], 10) === tM && parseInt(koMatch[2], 10) === tD;
-            }
-            
-            const numMatch = m.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?/);
-            if (numMatch) {
-              let matchM = parseInt(numMatch[1], 10);
-              let matchD = parseInt(numMatch[2], 10);
-              if (numMatch[4]) {
-                matchM = parseInt(numMatch[2], 10);
-                matchD = parseInt(numMatch[4], 10);
+        if (todayLogs.length > 0) {
+          // ONLY show if this student has a daily log row for today
+          const hasLog = todayLogs.some(l => 
+            (l.name || "").trim() === name
+          );
+          if (hasLog) {
+            uniqueNameMap.set(student.id, student);
+          }
+        } else {
+          // Fallback to regular schedule
+          const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
+          const isScheduledToday = regTime && regTime.trim() !== "";
+          
+          let isMakeupToday = false;
+          if (student.makeupDate) {
+            const makeups = student.makeupDate.split(/[\n,\r]+/).map(m => m.trim()).filter(Boolean);
+            const parts = todayDateSlash.split("/");
+            const tM = parseInt(parts[0], 10);
+            const tD = parseInt(parts[1], 10);
+            isMakeupToday = makeups.some(m => {
+              if (m.includes(todayDateSlash) || m.includes(todayDay)) return true;
+              
+              const koMatch = m.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+              if (koMatch) {
+                return parseInt(koMatch[1], 10) === tM && parseInt(koMatch[2], 10) === tD;
               }
-              return matchM === tM && matchD === tD;
-            }
-            
-            return false;
-          });
-        }
-        
-        const hasDailyLog = state.dailyLogs.some(log => 
-          (log.name || "").trim() === name && 
-          isSameDate(log.date, dailyLogDateStr)
-        );
-        
-        const isActiveToday = isScheduledToday || isMakeupToday || hasDailyLog;
-        if (isActiveToday) {
-          if (!uniqueNameMap.has(student.id)) {
+              
+              const numMatch = m.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?/);
+              if (numMatch) {
+                let matchM = parseInt(numMatch[1], 10);
+                let matchD = parseInt(numMatch[2], 10);
+                if (numMatch[4]) {
+                  matchM = parseInt(numMatch[2], 10);
+                  matchD = parseInt(numMatch[4], 10);
+                }
+                return matchM === tM && matchD === tD;
+              }
+              
+              return false;
+            });
+          }
+          
+          const hasDailyLog = state.dailyLogs.some(log => 
+            (log.name || "").trim() === name && 
+            isSameDate(log.date, dailyLogDateStr)
+          );
+          
+          const isActiveToday = isScheduledToday || isMakeupToday || hasDailyLog;
+          if (isActiveToday) {
             uniqueNameMap.set(student.id, student);
           }
         }

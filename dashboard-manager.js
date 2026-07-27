@@ -53,6 +53,43 @@ class DashboardManager {
     const shortDay = this.selectedDay.substring(0, 1);
     const dailyLogDateStr = `${dates.slashFormat}${shortDay}`;
     
+    // Check if daily logs are already generated for today
+    const todayLogs = this.app.state.dailyLogs.filter(l => 
+      (l.date || '').trim() === dailyLogDateStr.trim()
+    );
+
+    if (todayLogs.length > 0) {
+      return this.app.state.students.filter(student => {
+        const hasLog = todayLogs.some(l => 
+          (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') &&
+          (l.time || '').trim() === timeStr.trim()
+        );
+        if (!hasLog) return false;
+
+        const regTime = student.times && (student.times[this.selectedDay] || student.times[this.selectedDay.substring(0, 1)]);
+        let isRegActive = false;
+        if (regTime) {
+          const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
+          isRegActive = parts.includes(timeStr);
+        }
+        let isMakeupActive = false;
+        if (student.makeupDate) {
+          const parsedMakeups = parseMultipleMakeups(student.makeupDate);
+          isMakeupActive = parsedMakeups.some(parsed => {
+            const isDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
+            return parsed && parsed.day === this.selectedDay && parsed.time === timeStr && isDateMatch;
+          });
+        }
+        
+        if (isRegActive || isMakeupActive) {
+          return true;
+        }
+
+        const sameNameStudents = this.app.state.students.filter(s => (s.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, ''));
+        return student.id === sameNameStudents[0].id;
+      });
+    }
+
     return this.app.state.students.filter(student => {
       // 1. Is student absent on this specific day?
       let isAbsent = false;
@@ -374,6 +411,7 @@ class DashboardManager {
                 <div style="display:flex; align-items:center; gap:0.3rem;">
                   <span class="student-grade" style="color: rgba(255,255,255,0.9); font-weight: 600;">${student.grade}</span>
                   <span class="badge-time" style="background:rgba(255,255,255,0.25); color:#ffffff; border:1px solid rgba(255,255,255,0.3); padding:0.1rem 0.35rem; border-radius:4px; font-size:0.7rem; font-weight:700;">${timeStr}</span>
+                  ${dailyLog ? `<button class="btn-delete-card-daily" data-row="${dailyLog.row}" data-name="${this.escapeHtml(student.name)}" style="background:none; border:none; color:rgba(255,255,255,0.7); font-size:1.2rem; cursor:pointer; padding:0 0.2rem; line-height:1; margin-left:0.3rem; display:inline-flex; align-items:center; transition:color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(255,255,255,0.7)'" title="오늘 명단에서 삭제">×</button>` : ''}
                 </div>
               </div>
               <div class="card-meta">
@@ -395,6 +433,7 @@ class DashboardManager {
                 <div style="display:flex; align-items:center; gap:0.3rem;">
                   <span class="student-grade">${student.grade}</span>
                   <span class="badge-time" style="background:rgba(99,102,241,0.1); color:var(--accent); border:1px solid rgba(99,102,241,0.2); padding:0.1rem 0.35rem; border-radius:4px; font-size:0.7rem; font-weight:600;">${timeStr}</span>
+                  ${dailyLog ? `<button class="btn-delete-card-daily" data-row="${dailyLog.row}" data-name="${this.escapeHtml(student.name)}" style="background:none; border:none; color:var(--text-secondary); font-size:1.2rem; cursor:pointer; padding:0 0.2rem; line-height:1; margin-left:0.3rem; display:inline-flex; align-items:center; transition:color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-secondary)'" title="오늘 명단에서 삭제">×</button>` : ''}
                 </div>
               </div>
               <div class="card-meta">
@@ -418,7 +457,6 @@ class DashboardManager {
               </div>
             `;
           }
-
           card.addEventListener("click", (e) => {
             if (e.target.classList.contains("btn-absent-quick")) {
               e.stopPropagation();
@@ -469,8 +507,26 @@ class DashboardManager {
         </div>
       `;
     }
-
     this.updateStatusSummary();
+
+    // Bind delete daily log card events
+    container.querySelectorAll(".btn-delete-card-daily").forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const row = parseInt(btn.getAttribute("data-row"), 10);
+        const name = btn.getAttribute("data-name");
+        
+        if (confirm(`${name} 학생을 오늘 출석부 명단에서 제외하시겠습니까?\n(구글 시트에서도 해당 행이 완전히 삭제됩니다.)`)) {
+          this.app.api.deleteFieldInGoogleSheets(row, 'dailyLogs');
+          // Locally remove
+          this.app.state.dailyLogs = this.app.state.dailyLogs.filter(l => l.row !== row);
+          this.app.saveState();
+          this.app.sheetSim.setData(this.app.state);
+          this.updateDashboard();
+        }
+      };
+    });
   }
 
   handleCardClick(studentId, isMakeup, isAbsent, dateStr, activeTime) {

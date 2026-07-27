@@ -1002,6 +1002,87 @@ class AttendanceApp {
       alert(`${name} 학생이 성공적으로 등록되어 구글 시트로 전송되었습니다!`);
     };
 
+    // Modal Add Today Attendance triggers
+    const btnAddToToday = document.getElementById("btnAddToTodayAttendance");
+    if (btnAddToToday) {
+      btnAddToToday.onclick = () => {
+        const selectStudent = document.getElementById("selectTodayAttendanceStudent");
+        if (selectStudent) {
+          // Fill student dropdown sorted by name
+          selectStudent.innerHTML = "";
+          const sortedStudents = [...this.state.students].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+          sortedStudents.forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s.name;
+            opt.innerText = `${s.name} (${s.grade} - ${s.classes || ''})`;
+            selectStudent.appendChild(opt);
+          });
+        }
+        
+        // Fill time with current selection time slot or default
+        const timeInput = document.getElementById("inputTodayAttendanceTime");
+        if (timeInput) {
+          timeInput.value = this.dashboardManager.selectedTime || "14:00";
+        }
+        
+        document.getElementById("modalAddTodayAttendance").classList.add("active");
+      };
+    }
+
+    const closeAddToTodayBtn = document.getElementById("btnCloseAddTodayAttendanceModal");
+    const cancelAddToTodayBtn = document.getElementById("btnCancelAddTodayAttendanceModal");
+    if (closeAddToTodayBtn) closeAddToTodayBtn.onclick = () => document.getElementById("modalAddTodayAttendance").classList.remove("active");
+    if (cancelAddToTodayBtn) cancelAddToTodayBtn.onclick = () => document.getElementById("modalAddTodayAttendance").classList.remove("active");
+
+    const formAddToday = document.getElementById("formAddTodayAttendance");
+    if (formAddToday) {
+      formAddToday.onsubmit = (e) => {
+        e.preventDefault();
+        const name = document.getElementById("selectTodayAttendanceStudent").value;
+        const time = document.getElementById("inputTodayAttendanceTime").value.trim();
+        const statusType = document.getElementById("selectTodayAttendanceStatus").value;
+        const notes = document.getElementById("inputTodayAttendanceNotes").value.trim();
+
+        if (!name || !time) {
+          alert("학생과 수업 시간을 입력해 주세요.");
+          return;
+        }
+
+        const dates = getFormattedDateOfWeekday(this.selectedDay);
+        const shortDay = this.selectedDay.substring(0, 1);
+        const dailyLogDateStr = `${dates.slashFormat}${shortDay}`;
+
+        const nextRow = this.state.dailyLogs.length > 0 ? Math.max(...this.state.dailyLogs.map(l => l.row)) + 1 : 3;
+        const newLog = {
+          id: 'daily_' + nextRow,
+          row: nextRow,
+          date: dailyLogDateStr,
+          time: time,
+          name: name,
+          notes: notes,
+          status: statusType === "보강" ? "보강 수업중" : "대기", // or statusType
+          inTime: "",
+          reason: statusType === "보강" ? "보강" : "",
+          number: "",
+          event: "",
+          grammarDone: "",
+          contents: ""
+        };
+
+        this.state.dailyLogs.push(newLog);
+        this.saveState();
+        this.sheetSim.setData(this.state);
+        this.dashboardManager.updateDashboard();
+
+        // Send to Sheets API
+        this.api.addDailyLogToGoogleSheets(newLog);
+
+        document.getElementById("modalAddTodayAttendance").classList.remove("active");
+        formAddToday.reset();
+        alert(`${name} 학생이 오늘 출결 명단에 추가되어 구글 시트로 전송되었습니다!`);
+      };
+    }
+
     // CRM Textbook Edit Modal Event Bindings
     const closeEditBookBtn = document.getElementById("btnCloseEditCrmTextbookModal");
     const cancelEditBookBtn = document.getElementById("btnCancelEditCrmTextbookModal");
