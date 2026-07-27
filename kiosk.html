@@ -1093,16 +1093,8 @@
         
         const isActiveToday = isScheduledToday || isMakeupToday || hasDailyLog;
         if (isActiveToday) {
-          if (!uniqueNameMap.has(name)) {
-            uniqueNameMap.set(name, student);
-          } else {
-            // Prefer the student record that has an active schedule today
-            const existing = uniqueNameMap.get(name);
-            const existingScheduled = (existing.times && (existing.times[todayDay] || existing.times[todayDay.substring(0, 1)]) && (existing.times[todayDay] || existing.times[todayDay.substring(0, 1)]).trim() !== "");
-            const currentScheduled = isScheduledToday;
-            if (!existingScheduled && currentScheduled) {
-              uniqueNameMap.set(name, student);
-            }
+          if (!uniqueNameMap.has(student.id)) {
+            uniqueNameMap.set(student.id, student);
           }
         }
       });
@@ -1178,30 +1170,30 @@
       filtered.forEach(student => {
         let rawSlots = [];
         
-        const log = [...state.dailyLogs].reverse().find(l => 
-          (l.name || "").trim() === (student.name || "").trim() && 
-          isSameDate(l.date, dailyLogDateStr)
+        // 1. Collect scheduled times
+        const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
+        const activeMakeup = parsedMakeups.find(m => 
+          m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
         );
-        
-        // Determine time slot
-        if (log && log.time) {
-          rawSlots.push(log.time.trim());
+        if (activeMakeup && activeMakeup.time) {
+          rawSlots.push(activeMakeup.time.trim());
         } else {
-          const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
-          const activeMakeup = parsedMakeups.find(m => 
-            m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
-          );
-          if (activeMakeup && activeMakeup.time) {
-            rawSlots.push(activeMakeup.time.trim());
-          } else {
-            const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
-            if (regTime && regTime.trim() !== "") {
-              const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
-              parts.forEach(p => rawSlots.push(p));
-            }
+          const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
+          if (regTime && regTime.trim() !== "") {
+            const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
+            parts.forEach(p => rawSlots.push(p));
           }
         }
         
+        // 2. Collect actual daily log times for today
+        const studentLogsForToday = state.dailyLogs.filter(l => 
+          (l.name || "").trim() === (student.name || "").trim() && 
+          isSameDate(l.date, dailyLogDateStr)
+        );
+        studentLogsForToday.forEach(l => {
+          if (l.time) rawSlots.push(l.time.trim());
+        });
+
         if (rawSlots.length === 0) {
           rawSlots.push("시간 외");
         }
@@ -1209,7 +1201,13 @@
         rawSlots = Array.from(new Set(rawSlots));
         
         rawSlots.forEach(rawSlot => {
-          // Group by hourly slots, e.g. "14:30" or "14:00" -> "14:00"
+          // Find log matching name, date, and specific time slot
+          const log = [...state.dailyLogs].reverse().find(l => 
+            (l.name || "").trim() === (student.name || "").trim() && 
+            isSameDate(l.date, dailyLogDateStr) &&
+            (rawSlot === "시간 외" || (l.time || "").trim() === rawSlot.trim())
+          );
+          
           let hourSlot = "시간 외";
           if (rawSlot !== "시간 외") {
             const match = rawSlot.match(/^(\d{1,2})/);
@@ -1223,7 +1221,10 @@
             groups[hourSlot] = [];
           }
           
-          const alreadyAdded = groups[hourSlot].some(item => item.student.id === student.id);
+          // Allow duplicates with different exactTime (multiple slots)
+          const alreadyAdded = groups[hourSlot].some(item => 
+            item.student.id === student.id && item.exactTime === rawSlot
+          );
           if (!alreadyAdded) {
             groups[hourSlot].push({ student, log, exactTime: rawSlot });
           }

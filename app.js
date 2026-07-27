@@ -758,9 +758,22 @@ class AttendanceApp {
     const dailyLogDateStr = `${dates.slashFormat}${shortDay}`;
 
     this.state.students.forEach(student => {
+      let activeTimeOfRow = "";
+      const parsedM = student.makeupDate ? parseMakeupDate(student.makeupDate) : null;
+      if (student.makeupDate && parsedM && parsedM.day === this.selectedDay) {
+        activeTimeOfRow = parsedM.time || "14:00";
+      } else {
+        const regTime = student.times && (student.times[this.selectedDay] || student.times[this.selectedDay.substring(0, 1)]);
+        if (regTime) {
+          const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
+          activeTimeOfRow = parts[0] || "";
+        }
+      }
+
       const dailyLog = [...this.state.dailyLogs].reverse().find(l => 
         ((l && l.name) || '').replace(/\s+/g, '') === ((student && student.name) || '').replace(/\s+/g, '') && 
-        ((l && l.date) || '').trim() === dailyLogDateStr.trim()
+        ((l && l.date) || '').trim() === dailyLogDateStr.trim() &&
+        (!activeTimeOfRow || !l.time || l.time.trim() === activeTimeOfRow.trim())
       );
       if (dailyLog) {
         const norm = getNormalizedStatus(dailyLog.status);
