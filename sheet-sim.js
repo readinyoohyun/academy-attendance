@@ -4,7 +4,10 @@ class SheetSimulator {
     this.container = document.getElementById(containerId);
     this.onDataChanged = onDataChanged; // Callback when data changes: (tabName, updatedData)
     this.searchQuery = "";
-    this.activeTab = "전체시간표";
+    
+    const name = localStorage.getItem("academy_name") || "유현리드인 한그루역사학원";
+    this.isGeumbit = name.includes("금빛");
+    this.activeTab = this.isGeumbit ? "전체시간표" : "전체 시간표";
     
     // Internal data storage
     this.dataMap = {
@@ -18,6 +21,17 @@ class SheetSimulator {
       weeklySchedule: [],
       teachers: []
     };
+  }
+
+  getNormalizedTab(tab) {
+    if (tab === "전체 시간표") return "전체시간표";
+    if (tab === "오늘 출석부") return "출결보강관리";
+    if (tab === "문해력교재관리") return "교재단계관리";
+    if (tab === "상담내용/리포트발송/채널발송") return "학부모상담/채널발송";
+    if (tab === "회원 분석/레벨변동/전화상담") return "월별상담내역";
+    if (tab === "누적일일수업관리") return "학생수업관리";
+    if (tab === "한명 검색") return "한명검색";
+    return tab;
   }
 
   getNormalizedStatus(status) {
@@ -150,7 +164,7 @@ class SheetSimulator {
     const capacities = this.calculateCapacities();
 
     let html = `
-      <div class="sheet-container glass-panel ${this.activeTab === '한명검색' ? 'decoupled-view' : ''}">
+      <div class="sheet-container glass-panel ${this.getNormalizedTab(this.activeTab) === '한명검색' ? 'decoupled-view' : ''}">
         <!-- Sheet Header Toolbar -->
         <div class="sheet-toolbar">
           <h2 class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
@@ -177,20 +191,30 @@ class SheetSimulator {
 
         <!-- Google Sheets Tab Bar -->
         <div class="sheet-tabs">
-          <button class="sheet-tab-item ${this.activeTab === '전체시간표' ? 'active' : ''}" data-tab="전체시간표">전체시간표 📑</button>
-          <button class="sheet-tab-item ${this.activeTab === '오늘 시간표' ? 'active' : ''}" data-tab="오늘 시간표">오늘 시간표 ⏰</button>
-          <button class="sheet-tab-item ${this.activeTab === '교재단계관리' ? 'active' : ''}" data-tab="교재단계관리">교재단계관리 📚</button>
-          <button class="sheet-tab-item ${this.activeTab === '학부모상담/채널발송' ? 'active' : ''}" data-tab="학부모상담/채널발송">학부모상담/채널발송 💬</button>
-          <button class="sheet-tab-item ${this.activeTab === '월별상담내역' ? 'active' : ''}" data-tab="월별상담내역">월별상담내역 👤</button>
-          <button class="sheet-tab-item ${this.activeTab === '출결보강관리' ? 'active' : ''}" data-tab="출결보강관리">출결보강관리 📅</button>
-          <button class="sheet-tab-item ${this.activeTab === '학생수업관리' ? 'active' : ''}" data-tab="학생수업관리">학생수업관리 📝</button>
-          <button class="sheet-tab-item ${this.activeTab === '교사' ? 'active' : ''}" data-tab="교사">교사 👩‍🏫</button>
-          <button class="sheet-tab-item ${this.activeTab === '한명검색' ? 'active' : ''}" data-tab="한명검색">한명검색 🔍</button>
+          ${this.isGeumbit ? `
+            <button class="sheet-tab-item ${this.activeTab === '전체시간표' ? 'active' : ''}" data-tab="전체시간표">전체시간표 📑</button>
+            <button class="sheet-tab-item ${this.activeTab === '오늘 시간표' ? 'active' : ''}" data-tab="오늘 시간표">오늘 시간표 ⏰</button>
+            <button class="sheet-tab-item ${this.activeTab === '교재단계관리' ? 'active' : ''}" data-tab="교재단계관리">교재단계관리 📚</button>
+            <button class="sheet-tab-item ${this.activeTab === '학부모상담/채널발송' ? 'active' : ''}" data-tab="학부모상담/채널발송">학부모상담/채널발송 💬</button>
+            <button class="sheet-tab-item ${this.activeTab === '월별상담내역' ? 'active' : ''}" data-tab="월별상담내역">월별상담내역 👤</button>
+            <button class="sheet-tab-item ${this.activeTab === '출결보강관리' ? 'active' : ''}" data-tab="출결보강관리">출결보강관리 📅</button>
+            <button class="sheet-tab-item ${this.activeTab === '학생수업관리' ? 'active' : ''}" data-tab="학생수업관리">학생수업관리 📝</button>
+            <button class="sheet-tab-item ${this.activeTab === '교사' ? 'active' : ''}" data-tab="교사">교사 👩‍🏫</button>
+            <button class="sheet-tab-item ${this.activeTab === '한명검색' ? 'active' : ''}" data-tab="한명검색">한명검색 🔍</button>
+          ` : `
+            <button class="sheet-tab-item ${this.activeTab === '전체 시간표' ? 'active' : ''}" data-tab="전체 시간표">전체 시간표 📑</button>
+            <button class="sheet-tab-item ${this.activeTab === '문해력교재관리' ? 'active' : ''}" data-tab="문해력교재관리">문해력교재관리 📚</button>
+            <button class="sheet-tab-item ${this.activeTab === '상담내용/리포트발송/채널발송' ? 'active' : ''}" data-tab="상담내용/리포트발송/채널발송">상담내용/리포트발송/채널발송 💬</button>
+            <button class="sheet-tab-item ${this.activeTab === '회원 분석/레벨변동/전화상담' ? 'active' : ''}" data-tab="회원 분석/레벨변동/전화상담">회원 분석/레벨변동/전화상담 👤</button>
+            <button class="sheet-tab-item ${this.activeTab === '오늘 출석부' ? 'active' : ''}" data-tab="오늘 출석부">오늘 출석부 📅</button>
+            <button class="sheet-tab-item ${this.activeTab === '누적일일수업관리' ? 'active' : ''}" data-tab="누적일일수업관리">누적일일수업관리 📝</button>
+            <button class="sheet-tab-item ${this.activeTab === '한명 검색' ? 'active' : ''}" data-tab="한명 검색">한명 검색 🔍</button>
+          `}
         </div>
 
         <!-- Sheet Table Wrapper -->
         <div class="sheet-table-wrapper" style="border: none; background: transparent; padding: 0; display: block;">
-          ${this.activeTab === "한명검색" ? this.renderDecoupledSingleSearch(capacities) : `
+          ${this.getNormalizedTab(this.activeTab) === "한명검색" ? this.renderDecoupledSingleSearch(capacities) : `
           <table class="sheet-table">
             <thead>
               ${this.renderTableHeader()}
@@ -213,7 +237,8 @@ class SheetSimulator {
   }
 
   renderTableHeader() {
-    switch (this.activeTab) {
+    const activeTab = this.getNormalizedTab(this.activeTab);
+    switch (activeTab) {
       case "전체시간표":
         return `
           <tr>
@@ -392,7 +417,8 @@ class SheetSimulator {
   renderTableBody(capacities) {
     const query = this.searchQuery;
     
-    switch (this.activeTab) {
+    const activeTab = this.getNormalizedTab(this.activeTab);
+    switch (activeTab) {
       case "전체시간표": {
         const filtered = this.dataMap.students.filter(row => {
           const nameVal = row.name ? String(row.name).toLowerCase() : "";
@@ -1206,7 +1232,8 @@ class SheetSimulator {
   }
 
   renderFooterLegend() {
-    switch (this.activeTab) {
+    const activeTab = this.getNormalizedTab(this.activeTab);
+    switch (activeTab) {
       case "전체시간표":
         return `
           <div class="sheet-capacity-legend" style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
@@ -1511,7 +1538,8 @@ class SheetSimulator {
     let nextRowIndex = 2;
     let newRow = {};
 
-    switch (this.activeTab) {
+    const activeTab = this.getNormalizedTab(this.activeTab);
+    switch (activeTab) {
       case "전체시간표":
         dataset = this.dataMap.students;
         nextRowIndex = dataset.length > 0 ? Math.max(...dataset.map(r => r.row)) + 1 : 2;
@@ -1676,7 +1704,8 @@ class SheetSimulator {
 
   handleDeleteRow(id) {
     let dataset = [];
-    switch (this.activeTab) {
+    const activeTab = this.getNormalizedTab(this.activeTab);
+    switch (activeTab) {
       case "전체시간표":
         this.dataMap.students = this.dataMap.students.filter(r => r.id !== id);
         this.onDataChanged("students", this.dataMap.students);
@@ -1800,7 +1829,8 @@ class SheetSimulator {
     this.container.querySelectorAll("tr[data-id]").forEach(tr => {
       const id = tr.getAttribute("data-id");
 
-      switch (this.activeTab) {
+      const activeTab = this.getNormalizedTab(this.activeTab);
+      switch (activeTab) {
         case "전체시간표": {
           const rowArray = this.dataMap.students;
           tr.querySelector(".sheet-input-grade").addEventListener("change", (e) => updateField(id, "students", rowArray, "grade", e.target.value.trim()));
