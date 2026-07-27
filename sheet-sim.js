@@ -299,26 +299,26 @@ class SheetSimulator {
             <th class="row-num-col">행</th>
             <th>학년 (A)</th>
             <th>이름 (B)</th>
-            <th style="background:#e0f2fe !important; color:#0369a1;">비문학 교재명 (C)</th>
-            <th style="background:#e0f2fe !important; color:#0369a1;">시작일 (D)</th>
-            <th style="background:#e0f2fe !important; color:#0369a1;">마침일 (E)</th>
-            <th style="background:#e0f2fe !important; color:#0369a1;">정답률 (F)</th>
-            <th style="background:#ffe4e6 !important; color:#b91c1c;">문학교재명 (G)</th>
-            <th style="background:#ffe4e6 !important; color:#b91c1c;">시작일 (H)</th>
-            <th style="background:#ffe4e6 !important; color:#b91c1c;">마침일 (I)</th>
-            <th style="background:#ffe4e6 !important; color:#b91c1c;">정답률 (J)</th>
-            <th style="background:#fef3c7 !important; color:#b45309;">어휘 교재명 (K)</th>
-            <th style="background:#fef3c7 !important; color:#b45309;">시작일 (L)</th>
-            <th style="background:#fef3c7 !important; color:#b45309;">마침일 (M)</th>
-            <th style="background:#fef3c7 !important; color:#b45309;">정답률 (N)</th>
-            <th style="background:#f3e8ff !important; color:#6d28d9;">복합 교재명 (O)</th>
-            <th style="background:#f3e8ff !important; color:#6d28d9;">시작일 (P)</th>
-            <th style="background:#f3e8ff !important; color:#6d28d9;">마침일 (Q)</th>
-            <th style="background:#f3e8ff !important; color:#6d28d9;">정답률 (R)</th>
-            <th style="background:#d1fae5 !important; color:#047857;">음독 교재 (S)</th>
-            <th style="background:#d1fae5 !important; color:#047857;">시작일 (T)</th>
-            <th style="background:#d1fae5 !important; color:#047857;">마침일 (U)</th>
-            <th style="background:#d1fae5 !important; color:#047857;">정답률 (V)</th>
+            <th style="background:#e0f2fe !important; color:#0369a1 !important;">비문학 교재명 (C)</th>
+            <th style="background:#e0f2fe !important; color:#0369a1 !important;">시작일 (D)</th>
+            <th style="background:#e0f2fe !important; color:#0369a1 !important;">마침일 (E)</th>
+            <th style="background:#e0f2fe !important; color:#0369a1 !important;">정답률 (F)</th>
+            <th style="background:#ffe4e6 !important; color:#b91c1c !important;">문학교재명 (G)</th>
+            <th style="background:#ffe4e6 !important; color:#b91c1c !important;">시작일 (H)</th>
+            <th style="background:#ffe4e6 !important; color:#b91c1c !important;">마침일 (I)</th>
+            <th style="background:#ffe4e6 !important; color:#b91c1c !important;">정답률 (J)</th>
+            <th style="background:#fef3c7 !important; color:#b45309 !important;">어휘 교재명 (K)</th>
+            <th style="background:#fef3c7 !important; color:#b45309 !important;">시작일 (L)</th>
+            <th style="background:#fef3c7 !important; color:#b45309 !important;">마침일 (M)</th>
+            <th style="background:#fef3c7 !important; color:#b45309 !important;">정답률 (N)</th>
+            <th style="background:#f3e8ff !important; color:#6d28d9 !important;">복합 교재명 (O)</th>
+            <th style="background:#f3e8ff !important; color:#6d28d9 !important;">시작일 (P)</th>
+            <th style="background:#f3e8ff !important; color:#6d28d9 !important;">마침일 (Q)</th>
+            <th style="background:#f3e8ff !important; color:#6d28d9 !important;">정답률 (R)</th>
+            <th style="background:#d1fae5 !important; color:#047857 !important;">음독 교재 (S)</th>
+            <th style="background:#d1fae5 !important; color:#047857 !important;">시작일 (T)</th>
+            <th style="background:#d1fae5 !important; color:#047857 !important;">마침일 (U)</th>
+            <th style="background:#d1fae5 !important; color:#047857 !important;">정답률 (V)</th>
             <th>동작</th>
           </tr>
         `;
@@ -2389,26 +2389,26 @@ class SheetSimulator {
                 <th class="row-num-col" style="width: 40px;">행</th>
                 <th>학년 (A)</th>
                 <th>이름 (B)</th>
-                <th style="background:rgba(245,158,11,0.03);">비문학 교재 (C)</th>
-                <th style="background:rgba(245,158,11,0.03);">시작일 (D)</th>
-                <th style="background:rgba(245,158,11,0.03);">마침일 (E)</th>
-                <th style="background:rgba(245,158,11,0.03);">정답률 (F)</th>
-                <th style="background:rgba(99,102,241,0.03);">문학 교재 (G)</th>
-                <th style="background:rgba(99,102,241,0.03);">시작일 (H)</th>
-                <th style="background:rgba(99,102,241,0.03);">마침일 (I)</th>
-                <th style="background:rgba(99,102,241,0.03);">정답률 (J)</th>
-                <th style="background:rgba(16,185,129,0.03);">어휘 교재 (K)</th>
-                <th style="background:rgba(16,185,129,0.03);">시작일 (L)</th>
-                <th style="background:rgba(16,185,129,0.03);">마침일 (M)</th>
-                <th style="background:rgba(16,185,129,0.03);">정답률 (N)</th>
-                <th style="background:rgba(236,72,153,0.03);">복합 교재 (O)</th>
-                <th style="background:rgba(236,72,153,0.03);">시작일 (P)</th>
-                <th style="background:rgba(236,72,153,0.03);">마침일 (Q)</th>
-                <th style="background:rgba(236,72,153,0.03);">정답률 (R)</th>
-                <th style="background:rgba(99,102,241,0.03);">음독 교재 (S)</th>
-                <th style="background:rgba(99,102,241,0.03);">시작일 (T)</th>
-                <th style="background:rgba(99,102,241,0.03);">마침일 (U)</th>
-                <th style="background:rgba(99,102,241,0.03);">정답률 (V)</th>
+                <th style="background:#e0f2fe !important; color:#1e293b !important;">비문학 교재 (C)</th>
+                <th style="background:#e0f2fe !important; color:#1e293b !important;">시작일 (D)</th>
+                <th style="background:#e0f2fe !important; color:#1e293b !important;">마침일 (E)</th>
+                <th style="background:#e0f2fe !important; color:#1e293b !important;">정답률 (F)</th>
+                <th style="background:#ffe4e6 !important; color:#1e293b !important;">문학 교재 (G)</th>
+                <th style="background:#ffe4e6 !important; color:#1e293b !important;">시작일 (H)</th>
+                <th style="background:#ffe4e6 !important; color:#1e293b !important;">마침일 (I)</th>
+                <th style="background:#ffe4e6 !important; color:#1e293b !important;">정답률 (J)</th>
+                <th style="background:#fef3c7 !important; color:#1e293b !important;">어휘 교재 (K)</th>
+                <th style="background:#fef3c7 !important; color:#1e293b !important;">시작일 (L)</th>
+                <th style="background:#fef3c7 !important; color:#1e293b !important;">마침일 (M)</th>
+                <th style="background:#fef3c7 !important; color:#1e293b !important;">정답률 (N)</th>
+                <th style="background:#f3e8ff !important; color:#1e293b !important;">복합 교재 (O)</th>
+                <th style="background:#f3e8ff !important; color:#1e293b !important;">시작일 (P)</th>
+                <th style="background:#f3e8ff !important; color:#1e293b !important;">마침일 (Q)</th>
+                <th style="background:#f3e8ff !important; color:#1e293b !important;">정답률 (R)</th>
+                <th style="background:#d1fae5 !important; color:#1e293b !important;">음독 교재 (S)</th>
+                <th style="background:#d1fae5 !important; color:#1e293b !important;">시작일 (T)</th>
+                <th style="background:#d1fae5 !important; color:#1e293b !important;">마침일 (U)</th>
+                <th style="background:#d1fae5 !important; color:#1e293b !important;">정답률 (V)</th>
               </tr>
             </thead>
             <tbody>
