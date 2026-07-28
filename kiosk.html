@@ -1382,7 +1382,7 @@
             <span class="status-badge status-${statusClass}">${status}</span>
           `;
           
-          card.onclick = () => handleCardOneTouch(student, status);
+          card.onclick = () => handleCardOneTouch(student, status, exactTime);
           grid.appendChild(card);
         });
 
@@ -1392,7 +1392,7 @@
     }
 
     // Direct Check-in / Check-out on click without modal choices
-    function handleCardOneTouch(student, currentStatus) {
+    function handleCardOneTouch(student, currentStatus, scheduledTime) {
       const todayDay = getTodayWeekday();
       const todayDateSlash = getTodayDateStr();
       const shortDay = todayDay.substring(0, 1);
@@ -1400,12 +1400,13 @@
 
       if (currentStatus === "대기" || currentStatus === "보강") {
         selectedStudent = student;
-        processKioskAttendance("in");
+        processKioskAttendance("in", scheduledTime);
       } 
       else if (currentStatus === "수업중") {
         const log = [...state.dailyLogs].reverse().find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
-          isSameDate(l.date, dailyLogDateStr)
+          isSameDate(l.date, dailyLogDateStr) &&
+          (!scheduledTime || scheduledTime === "시간 외" || (l.time || "").trim() === scheduledTime.trim())
         );
 
         if (log && log.inTime) {
@@ -1427,7 +1428,7 @@
         }
 
         selectedStudent = student;
-        processKioskAttendance("out");
+        processKioskAttendance("out", scheduledTime);
       } 
       else if (currentStatus === "수업완료") {
         showTemporaryNotice(student.name, "오늘 일정이 수업완료되었습니다. 😊");
@@ -1506,7 +1507,7 @@
     }
 
     // Process attendance (in/out)
-    function processKioskAttendance(type) {
+    function processKioskAttendance(type, scheduledTime) {
       if (!selectedStudent) return;
       
       const student = selectedStudent;
@@ -1517,7 +1518,12 @@
       
       const s = getSeoulTime();
       const currentTime = `${s.hour}:${s.minute}`;
-      const activeTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]) ? (student.times[todayDay] || student.times[todayDay.substring(0, 1)]).trim() : currentTime;
+      
+      // Determine the target time slot (prioritize scheduledTime over registered student time)
+      let targetSlotTime = scheduledTime && scheduledTime !== "시간 외" ? scheduledTime.trim() : "";
+      if (!targetSlotTime) {
+        targetSlotTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]) ? (student.times[todayDay] || student.times[todayDay.substring(0, 1)]).trim() : currentTime;
+      }
       
       let dailyStatus = type === 'in' ? '수업중' : '수업완료';
 
@@ -1525,18 +1531,30 @@
       // For check-out ('out'), search for any log for today that is currently '수업중' first.
       let dailyLog = null;
       if (type === 'out') {
-        dailyLog = [...state.dailyLogs].reverse().find(log => 
-          (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
-          isSameDate(log.date, dailyLogDateStr) &&
-          (log.status === "수업중" || log.status === "수업 중" || log.status === "보강 수업중")
-        );
+        // Prioritize matching by student name, date, status, AND scheduledTime (if provided)
+        if (scheduledTime && scheduledTime !== "시간 외") {
+          dailyLog = [...state.dailyLogs].reverse().find(log => 
+            (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
+            isSameDate(log.date, dailyLogDateStr) &&
+            (log.time || '').trim() === scheduledTime.trim() &&
+            (log.status === "수업중" || log.status === "수업 중" || log.status === "보강 수업중")
+          );
+        }
+        
+        if (!dailyLog) {
+          dailyLog = [...state.dailyLogs].reverse().find(log => 
+            (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
+            isSameDate(log.date, dailyLogDateStr) &&
+            (log.status === "수업중" || log.status === "수업 중" || log.status === "보강 수업중")
+          );
+        }
       }
       
       // 1. Primary match: search by name, date, and exact time slot (to match the specific class if they have multiple classes today)
       if (!dailyLog) {
         dailyLog = [...state.dailyLogs].reverse().find(log => 
           (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
-          log.time.trim() === activeTime.trim() && 
+          log.time.trim() === targetSlotTime.trim() && 
           isSameDate(log.date, dailyLogDateStr)
         );
       }
@@ -1573,8 +1591,8 @@
         dailyLog.status = dailyStatus;
         if (type === 'in') {
           dailyLog.inTime = currentTime;
-          if (activeTime && dailyLog.time !== activeTime) {
-            dailyLog.time = activeTime;
+          if (targetSlotTime && dailyLog.time !== targetSlotTime) {
+            dailyLog.time = targetSlotTime;
           }
         } else {
           dailyLog.outTime = currentTime;
@@ -1586,8 +1604,8 @@
           ];
           if (type === 'in') {
             updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: currentTime });
-            if (activeTime && dailyLog.time !== activeTime) {
-              updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "time", value: activeTime });
+            if (targetSlotTime && dailyLog.time !== targetSlotTime) {
+              updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "time", value: targetSlotTime });
             }
           } else {
             updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "outTime", value: currentTime });
@@ -1600,7 +1618,7 @@
           id: 'daily_' + nextRow,
           row: nextRow,
           date: dailyLogDateStr,
-          time: activeTime,
+          time: targetSlotTime,
           name: student.name,
           notes: student.notes || "",
           status: dailyStatus,
