@@ -335,7 +335,7 @@ class DashboardManager {
               timerHtml = `
                 <div class="card-timer-container" style="margin-top: 0.6rem; font-size: 0.75rem; color: var(--text-secondary); width: 100%;">
                   <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
-                    <span>⏱️ ${elapsedMins}/${durationMins}분 경과</span>
+                    <span>⏱️ 진행 시간: ${elapsedMins}/${durationMins}분</span>
                     <span style="${isOvertime ? 'color:#dc2626; font-weight:700;' : ''}">${isOvertime ? '하원 지체!' : remainingMins + '분 남음'}</span>
                   </div>
                   <div class="progress-bar-bg" style="width:100%; height:6px; background:rgba(0,0,0,0.06); border-radius:3px; overflow:hidden;">
