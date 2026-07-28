@@ -1563,6 +1563,23 @@ function generateDailyAttendance() {
       }
     }
     
+    // 1. Regular class times
+    var regTimesAdded = [];
+    var regTime = times[todayDayName] || "";
+    if (regTime) {
+      var parts = regTime.split(/[,/; ]+/);
+      for (var p = 0; p < parts.length; p++) {
+        var t = parts[p].trim();
+        if (t) {
+          dailyLogsToAdd.push({
+            time: t, name: name, grade: grade, status: isAbsentToday ? "결석" : "대기", reason: isAbsentToday ? "정규 결석" : "", notes: notes
+          });
+          regTimesAdded.push(t);
+        }
+      }
+    }
+    
+    // 2. Makeup class time
     if (isMakeupToday) {
       if (!makeupTime) {
         makeupTime = "14:00"; // Fallback default time
@@ -1594,25 +1611,16 @@ function generateDailyAttendance() {
       }
       
       if (makeupCompleted !== "완료") {
-        dailyLogsToAdd.push({
-          time: makeupTime, name: name, grade: grade, status: "대기", reason: "보강 수업", notes: notes
+        var isDuplicateTime = regTimesAdded.some(function(rt) {
+          return rt.replace(/\s+/g, "") === makeupTime.replace(/\s+/g, "");
         });
-      }
-    } else {
-      var regTime = times[todayDayName] || "";
-      if (regTime) {
-        var parts = regTime.split(/[,/; ]+/);
-        for (var p = 0; p < parts.length; p++) {
-          var t = parts[p].trim();
-          if (t) {
-            dailyLogsToAdd.push({
-              time: t, name: name, grade: grade, status: isAbsentToday ? "결석" : "대기", reason: isAbsentToday ? "정규 결석" : "", notes: notes
-            });
-          }
+        if (!isDuplicateTime) {
+          dailyLogsToAdd.push({
+            time: makeupTime, name: name, grade: grade, status: "대기", reason: "보강 수업", notes: notes
+          });
         }
       }
     }
-  }
   
   dailyLogsToAdd.sort(function(a, b) {
     var timeComp = a.time.localeCompare(b.time);
