@@ -63,9 +63,20 @@ class DashboardManager {
       const logsForSlot = todayLogs.filter(l => (l.time || '').trim() === timeStr.trim());
       
       return logsForSlot.map(l => {
-        const studentMatch = this.app.state.students.find(s => 
-          (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, '')
-        );
+        let studentMatch = this.app.state.students.find(s => {
+          if ((s.name || '').replace(/\s+/g, '') !== (l.name || '').replace(/\s+/g, '')) return false;
+          const regTime = s.times && (s.times[this.selectedDay] || s.times[this.selectedDay.substring(0, 1)]);
+          if (regTime) {
+            const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
+            if (parts.includes(timeStr.trim())) return true;
+          }
+          return false;
+        });
+        if (!studentMatch) {
+          studentMatch = this.app.state.students.find(s => 
+            (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, '')
+          );
+        }
         
         // Clone the student metadata or use a placeholder if not registered
         const student = studentMatch ? { ...studentMatch } : {

@@ -1055,9 +1055,20 @@
       if (todayLogs.length > 0) {
         // 1:1 Map with today's daily log rows
         filtered = todayLogs.map(l => {
-          const studentMatch = state.students.find(s => 
-            (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, '')
-          );
+          let studentMatch = state.students.find(s => {
+            if ((s.name || '').replace(/\s+/g, '') !== (l.name || '').replace(/\s+/g, '')) return false;
+            const regTime = s.times && (s.times[todayDay] || s.times[todayDay.substring(0, 1)]);
+            if (regTime) {
+              const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
+              if (parts.includes((l.time || "").trim())) return true;
+            }
+            return false;
+          });
+          if (!studentMatch) {
+            studentMatch = state.students.find(s => 
+              (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, '')
+            );
+          }
           const student = studentMatch ? { ...studentMatch } : {
             id: 'temp_' + l.row,
             row: -1,
