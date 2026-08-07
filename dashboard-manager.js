@@ -372,12 +372,20 @@ class DashboardManager {
               </div>
               <div class="card-meta">
                 <div class="card-meta-row" style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top: 0.2rem;">
-                  <div style="display:flex; align-items:center; color: rgba(255,255,255,0.9); font-size: 0.8rem;">
+                  <div style="display:flex; flex-direction:column; gap:0.2rem; color: rgba(255,255,255,0.9); font-size: 0.8rem;">
                     <span>${student.classes || '수업'}</span>
+                    <div style="display:flex; gap:0.25rem;">
+                      ${student.makeupMinsRemaining > 0 ? `<span style="background:rgba(245,158,11,0.4); color:#fff; border:1px solid rgba(245,158,11,0.6); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">⏳ 잔여: ${student.makeupMinsRemaining}분</span>` : ''}
+                      ${student.todayExtensionMins > 0 ? `<span style="background:rgba(16,185,129,0.4); color:#fff; border:1px solid rgba(16,185,129,0.6); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${student.todayExtensionMins}분</span>` : ''}
+                    </div>
                   </div>
-                  <div style="display: flex; gap: 0.35rem;">
-                    <button class="btn-absent-quick" style="background: rgba(239, 68, 68, 0.45); border: 1px solid rgba(239, 68, 68, 0.55); color: #ffffff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">결석</button>
-                    <button class="btn-cancelled-quick" style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">휴강</button>
+                  <div style="display: flex; gap: 0.35rem; align-items: center;">
+                    ${student.todayExtensionMins > 0 
+                      ? `<button class="btn-extend-cancel-quick" style="background: rgba(239, 68, 68, 0.6); border: 1px solid rgba(239, 68, 68, 0.7); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">연장취소</button>`
+                      : `<button class="btn-extend-quick" style="background: rgba(16, 185, 129, 0.6); border: 1px solid rgba(16, 185, 129, 0.7); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+30분</button>`
+                    }
+                    <button class="btn-absent-quick" style="background: rgba(239, 68, 68, 0.45); border: 1px solid rgba(239, 68, 68, 0.55); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">결석</button>
+                    <button class="btn-cancelled-quick" style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">휴강</button>
                   </div>
                 </div>
               </div>
@@ -394,11 +402,13 @@ class DashboardManager {
               </div>
               <div class="card-meta">
                 <div class="card-meta-row" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-                  <div style="display:flex; align-items:center;">
+                  <div style="display:flex; align-items:center; flex-wrap:wrap; gap:0.25rem;">
                     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; margin-right:4px;">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>${student.classes || '수업'}</span>
+                    ${student.makeupMinsRemaining > 0 ? `<span style="background:rgba(245,158,11,0.1); color:var(--accent); border:1px solid rgba(245,158,11,0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">⏳ 잔여: ${student.makeupMinsRemaining}분</span>` : ''}
+                    ${student.todayExtensionMins > 0 ? `<span style="background:rgba(16,185,129,0.1); color:var(--success); border:1px solid rgba(16,185,129,0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${student.todayExtensionMins}분</span>` : ''}
                   </div>
                 </div>
                 ${timerHtml}
@@ -414,6 +424,16 @@ class DashboardManager {
             `;
           }
           card.addEventListener("click", (e) => {
+            if (e.target.classList.contains("btn-extend-quick")) {
+              e.stopPropagation();
+              this.handleExtendQuickClick(student.id, 30);
+              return;
+            }
+            if (e.target.classList.contains("btn-extend-cancel-quick")) {
+              e.stopPropagation();
+              this.handleExtendQuickClick(student.id, 0);
+              return;
+            }
             if (e.target.classList.contains("btn-absent-quick")) {
               e.stopPropagation();
               this.handleAbsentQuickClick(student.id, targetDates.slashFormat, timeStr);
@@ -525,7 +545,14 @@ class DashboardManager {
           return !pure || (pure.slashFormat !== dateStr && pure.dotFormat !== dateStr);
         });
         student.absentDates = datesList.join(', ');
+        
+        // Subtract absent minutes from Makeup Bank
+        const durationMins = getClassDuration(student);
+        student.absentMinsAcc = Math.max(0, (student.absentMinsAcc || 0) - durationMins);
+        student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
+
         this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+        this.app.api.updateFieldInGoogleSheets(student.row, "absentMinsAcc", student.absentMinsAcc, "students");
       }
       finalStatus = "대기";
     } else if (currentStatus === "휴강") {
@@ -567,7 +594,14 @@ class DashboardManager {
             datesList.push(`${dateStr}(${shortDay})`);
           }
           student.absentDates = datesList.join(', ');
+          
+          // Add absent minutes to Makeup Bank
+          const durationMins = getClassDuration(student);
+          student.absentMinsAcc = (student.absentMinsAcc || 0) + durationMins;
+          student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
+
           this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+          this.app.api.updateFieldInGoogleSheets(student.row, "absentMinsAcc", student.absentMinsAcc, "students");
         }
         finalStatus = "결석";
       }
@@ -631,22 +665,34 @@ class DashboardManager {
         } else {
           if (isMakeup) {
             student.makeupCompleted = '완료';
+            
+            // Add base class duration to completed makeups
+            const durationMins = getClassDuration(student);
+            student.makeupMinsDone = (student.makeupMinsDone || 0) + durationMins;
+            this.syncMakeupStrikethroughs(student);
+
             this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "완료", "students");
-            if (student.absentDates) {
-              const datesList = student.absentDates.split(',').map(d => d.trim()).filter(Boolean);
-              for (let i = 0; i < datesList.length; i++) {
-                const item = datesList[i];
-                if (item.indexOf('~~') !== 0 || item.slice(-2) !== '~~') {
-                  datesList[i] = `~~${item}~~`;
-                  break;
-                }
-              }
-              student.absentDates = datesList.join(', ');
-              this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
-            }
+            this.app.api.updateFieldInGoogleSheets(student.row, "makeupMinsDone", student.makeupMinsDone, "students");
+            this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+
             finalStatus = "보강완료";
           } else {
             student.attendanceStatus = '수업완료';
+            
+            // Process today's extension if active
+            if (student.todayExtensionMins > 0) {
+              student.makeupMinsDone = (student.makeupMinsDone || 0) + parseInt(student.todayExtensionMins, 10);
+              this.syncMakeupStrikethroughs(student);
+              
+              const batchUpdates = [
+                { tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone },
+                { tab: "students", row: student.row, field: "absentDates", value: student.absentDates },
+                { tab: "students", row: student.row, field: "todayExtensionMins", value: 0 }
+              ];
+              this.app.api.updateBatchInGoogleSheets(batchUpdates);
+              student.todayExtensionMins = 0;
+            }
+            
             finalStatus = "수업완료";
           }
         }
@@ -743,6 +789,59 @@ class DashboardManager {
     this.updateDashboard();
   }
 
+  syncMakeupStrikethroughs(student) {
+    const baseDuration = getClassDuration(student) - (student.todayExtensionMins || 0);
+    if (baseDuration <= 0) return;
+    const targetStrikethroughsCount = Math.floor((student.makeupMinsDone || 0) / baseDuration);
+    
+    let datesList = student.absentDates ? student.absentDates.split(',').map(d => d.trim()).filter(Boolean) : [];
+    let updatedDates = [];
+    let strikedCount = 0;
+    
+    for (let i = 0; i < datesList.length; i++) {
+      let item = datesList[i];
+      const isStriked = item.startsWith("~~") && item.endsWith("~~");
+      const cleanDate = isStriked ? item.slice(2, -2) : item;
+      
+      if (strikedCount < targetStrikethroughsCount) {
+        updatedDates.push(`~~${cleanDate}~~`);
+        strikedCount++;
+      } else {
+        updatedDates.push(cleanDate);
+      }
+    }
+    student.absentDates = updatedDates.join(', ');
+    student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
+  }
+
+  handleExtendQuickClick(studentId, extensionMins) {
+    const student = this.app.state.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    student.todayExtensionMins = extensionMins;
+    this.app.api.updateFieldInGoogleSheets(student.row, "todayExtensionMins", extensionMins, "students");
+    
+    const todayDay = this.selectedDay;
+    const todayDateSlash = this.app.getTodayDateStr();
+    const shortDay = todayDay.substring(0, 1);
+    const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
+    
+    const dailyLog = this.app.state.dailyLogs.find(l => 
+      (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') &&
+      (l.date || '').trim() === dailyLogDateStr.trim()
+    );
+    
+    if (dailyLog) {
+      const reasonStr = extensionMins > 0 ? `연장 (${extensionMins}분)` : "";
+      dailyLog.reason = reasonStr;
+      this.app.api.updateFieldInGoogleSheets(dailyLog.row, "reason", reasonStr, "dailyLogs");
+    }
+
+    this.app.saveState();
+    this.app.sheetSim.setData(this.app.state);
+    this.updateDashboard();
+  }
+
   handleAbsentQuickClick(studentId, dateStr, activeTime) {
     const student = this.app.state.students.find(s => s.id === studentId);
     if (!student) return;
@@ -756,8 +855,14 @@ class DashboardManager {
     }
     student.absentDates = datesList.join(', ');
     student.attendanceStatus = '대기';
+    
+    // Add absent minutes to Makeup Bank
+    const durationMins = getClassDuration(student);
+    student.absentMinsAcc = (student.absentMinsAcc || 0) + durationMins;
+    student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
 
     this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+    this.app.api.updateFieldInGoogleSheets(student.row, "absentMinsAcc", student.absentMinsAcc, "students");
 
     const targetDates = getFormattedDateOfWeekday(this.selectedDay);
     const shortDay = this.selectedDay.substring(0, 1);

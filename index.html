@@ -760,8 +760,12 @@ function doGet() {
       // Ensure makeup cols
       if (sheetStudents.getRange("AE1").getValue() !== "보강일시") sheetStudents.getRange("AE1").setValue("보강일시");
       if (sheetStudents.getRange("AF1").getValue() !== "보강완료") sheetStudents.getRange("AF1").setValue("보강완료");
+      if (sheetStudents.getRange("AG1").getValue() !== "결석 누적(분)") sheetStudents.getRange("AG1").setValue("결석 누적(분)");
+      if (sheetStudents.getRange("AH1").getValue() !== "보강 완료(분)") sheetStudents.getRange("AH1").setValue("보강 완료(분)");
+      if (sheetStudents.getRange("AI1").getValue() !== "보강 잔여(분)") sheetStudents.getRange("AI1").setValue("보강 잔여(분)");
+      if (sheetStudents.getRange("AJ1").getValue() !== "오늘 연장(분)") sheetStudents.getRange("AJ1").setValue("오늘 연장(분)");
       
-      var range = sheetStudents.getRange(2, 1, lastRow - 1, 32);
+      var range = sheetStudents.getRange(2, 1, lastRow - 1, 36);
       var data = range.getDisplayValues();
       var studentMap = {};
       var keywords = ["국어", "세계사", "한국사", "독서", "문해력", "내신", "초등", "중등", "특강"];
@@ -787,6 +791,10 @@ function doGet() {
         var absentDates = String(data[i][11] || "").trim(); // Col L (index 11)
         var makeupDate = String(data[i][30] || "").trim(); // Col AE (index 30)
         var makeupCompleted = String(data[i][31] || "").trim(); // Col AF (index 31)
+        var absentMinsAcc = parseInt(data[i][32] || "0", 10) || 0; // Col AG (index 32)
+        var makeupMinsDone = parseInt(data[i][33] || "0", 10) || 0; // Col AH (index 33)
+        var makeupMinsRemaining = parseInt(data[i][34] || "0", 10) || 0; // Col AI (index 34)
+        var todayExtensionMins = parseInt(data[i][35] || "0", 10) || 0; // Col AJ (index 35)
         
         var times = {
           "월요일": String(data[i][4] || "").trim(),
@@ -808,7 +816,11 @@ function doGet() {
           notes: notes,
           absentDates: absentDates,
           makeupDate: makeupDate,
-          makeupCompleted: makeupCompleted
+          makeupCompleted: makeupCompleted,
+          absentMinsAcc: absentMinsAcc,
+          makeupMinsDone: makeupMinsDone,
+          makeupMinsRemaining: makeupMinsRemaining,
+          todayExtensionMins: todayExtensionMins
         });
       }
     }
@@ -952,34 +964,8 @@ function doGet() {
   // 6. 누적출결데이터 (attendanceLogs)
   var attendanceLogsData = []; // Removed sheet query since it is no longer used
 
-  // 7. 학생수업관리 (accumulatedLogs)
-  var sheetAccumulated = ss.getSheetByName("학생수업관리");
+  // 7. 학생수업관리 (accumulatedLogs) - 원장앱 경량화를 위해 앱 조회 데이터 제외
   var accumulatedLogsData = [];
-  if (sheetAccumulated) {
-    var lastRow = sheetAccumulated.getLastRow();
-    if (lastRow > 1) {
-      ensureColumns(sheetAccumulated, 11);
-      var range = sheetAccumulated.getRange(2, 1, lastRow - 1, 11);
-      var data = range.getDisplayValues();
-      for (var i = 0; i < data.length; i++) {
-        var name = String(data[i][2] || "").trim();
-        if (!name) continue;
-        accumulatedLogsData.push({
-          date: String(data[i][0] || ""),
-          time: String(data[i][1] || ""),
-          name: name,
-          notes: String(data[i][3] || ""),
-          status: String(data[i][4] || ""),
-          inTime: String(data[i][5] || ""),
-          reason: String(data[i][6] || ""),
-          number: String(data[i][7] || ""),
-          event: String(data[i][8] || ""),
-          grammarDone: String(data[i][9] || ""), // Col J (진단글쓰기/특별수업)
-          contents: String(data[i][10] || "") // Col K (수업내용 및 특이사항)
-        });
-      }
-    }
-  }
 
   var responseObj = {
     students: studentsData,
@@ -999,7 +985,7 @@ function processSingleUpdate(ss, tab, row, field, value) {
   if (tab === "students" || tab === "전체시간표") {
     var sheet = ss.getSheetByName("전체시간표");
     if (sheet) {
-      ensureColumns(sheet, 32);
+      ensureColumns(sheet, 36);
       if (field === "absentDates") {
         var cell = sheet.getRange(row, 12);
         cell.setValue(value);
@@ -1008,6 +994,12 @@ function processSingleUpdate(ss, tab, row, field, value) {
         sheet.getRange(row, 32).setValue(value);
       } else if (field === "makeupDate") {
         sheet.getRange(row, 31).setValue(value);
+      } else if (field === "absentMinsAcc") {
+        sheet.getRange(row, 33).setValue(value);
+      } else if (field === "makeupMinsDone") {
+        sheet.getRange(row, 34).setValue(value);
+      } else if (field === "todayExtensionMins") {
+        sheet.getRange(row, 36).setValue(value);
       } else if (field === "grade") {
         sheet.getRange(row, 2).setValue(value);
       } else if (field === "name") {
@@ -1393,6 +1385,12 @@ function generateDailyAttendance() {
   ensureColumns(sheetDaily, 11);
   
   var today = new Date();
+  var currentHour = parseInt(Utilities.formatDate(today, "Asia/Seoul", "H"), 10);
+  // 만약 저녁 6시(18시) 이후라면 내일 시간표를 미리 생성합니다.
+  if (currentHour >= 18) {
+    today = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  }
+  
   var todayDayName = Utilities.formatDate(today, "Asia/Seoul", "EEEE");
   var dayShort = "";
   if (todayDayName.indexOf("Monday") !== -1 || todayDayName.indexOf("월") !== -1) { todayDayName = "월요일"; dayShort = "월"; }
@@ -1467,7 +1465,7 @@ function generateDailyAttendance() {
   var lastRowSt = sheetStudents.getLastRow();
   if (lastRowSt < 2) return;
   
-  var studentsData = sheetStudents.getRange(2, 1, lastRowSt - 1, 32).getDisplayValues();
+  var studentsData = sheetStudents.getRange(2, 1, lastRowSt - 1, 36).getDisplayValues();
   var dailyLogsToAdd = [];
   
   for (var i = 0; i < studentsData.length; i++) {
@@ -1489,6 +1487,7 @@ function generateDailyAttendance() {
     var absentDates = String(studentsData[i][11] || "").trim().replace(/\s+/g, '');
     var makeupDateStr = String(studentsData[i][30] || "").trim();
     var makeupCompleted = String(studentsData[i][31] || "").trim();
+    var todayExtensionMinsVal = parseInt(studentsData[i][35] || "0", 10) || 0;
     
     var times = {
       "월요일": String(studentsData[i][4] || "").trim(),
@@ -1571,8 +1570,9 @@ function generateDailyAttendance() {
       for (var p = 0; p < parts.length; p++) {
         var t = parts[p].trim();
         if (t) {
+          var reasonStr = isAbsentToday ? "정규 결석" : (todayExtensionMinsVal > 0 ? "연장 (" + todayExtensionMinsVal + "분)" : "");
           dailyLogsToAdd.push({
-            time: t, name: name, grade: grade, status: isAbsentToday ? "결석" : "대기", reason: isAbsentToday ? "정규 결석" : "", notes: notes
+            time: t, name: name, grade: grade, status: isAbsentToday ? "결석" : "대기", reason: reasonStr, notes: notes
           });
           regTimesAdded.push(t);
         }
@@ -2035,10 +2035,20 @@ function generateWeeklyTimetable() {
 function setupSheetsAndHeaders() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  var sheetStudents = ss.getSheetByName("전체시간표");
+  var sheetStudents = ss.getSheetByName("전체시간표") || ss.getSheetByName("전체 시간표");
   if (sheetStudents) {
+    ensureColumns(sheetStudents, 36);
     if (sheetStudents.getRange("AE1").getValue() !== "보강일시") sheetStudents.getRange("AE1").setValue("보강일시");
     if (sheetStudents.getRange("AF1").getValue() !== "보강완료") sheetStudents.getRange("AF1").setValue("보강완료");
+    if (sheetStudents.getRange("AG1").getValue() !== "결석 누적(분)") sheetStudents.getRange("AG1").setValue("결석 누적(분)");
+    if (sheetStudents.getRange("AH1").getValue() !== "보강 완료(분)") sheetStudents.getRange("AH1").setValue("보강 완료(분)");
+    if (sheetStudents.getRange("AI1").getValue() !== "보강 잔여(분)") sheetStudents.getRange("AI1").setValue("보강 잔여(분)");
+    if (sheetStudents.getRange("AJ1").getValue() !== "오늘 연장(분)") sheetStudents.getRange("AJ1").setValue("오늘 연장(분)");
+    
+    var lastRowSt = sheetStudents.getLastRow();
+    if (lastRowSt >= 2) {
+      sheetStudents.getRange(2, 35, lastRowSt - 1, 1).setFormulaR1C1("=RC[-2]-RC[-1]");
+    }
   }
   
   // 출결보강관리 셋업
@@ -2148,7 +2158,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   
   // 3. 섹션 1: 회원 종합 분석 및 레벨 관리 배치
   sheet.getRange("A5").setValue("🟢 1. 회원 종합 분석 및 레벨 관리");
-  sheet.getRange("A5").setBackground("#e6f4ea").setFontColor("#137333").setFontWeight("bold").setFontSize(11);
+  sheet.getRange("A5:Z5").setBackground("#e6f4ea").setFontColor("#137333").setFontWeight("bold").setFontSize(11);
   
   var header1 = [
     "순번", "이름", "학년", "등록일", "상담/채널", "학생 특이 사항\n리드인 코칭 방향\n글쓰기 방향", 
@@ -2166,7 +2176,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   var sec2DataRow = 10 + memberRows;
   
   sheet.getRange(sec2TitleRow, 1).setValue("🟠 2. 문해력 교재 관리 현황");
-  sheet.getRange(sec2TitleRow, 1).setBackground("#fef7e0").setFontColor("#b06000").setFontWeight("bold").setFontSize(11);
+  sheet.getRange(sec2TitleRow, 1, 1, 26).setBackground("#fef7e0").setFontColor("#b06000").setFontWeight("bold").setFontSize(11);
   
   var header2 = [
     "학년", "이름", "비문학 교재명", "시작일", "마침일", "정답률", 
@@ -2184,7 +2194,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   var sec3DataRow = 13 + memberRows + textbookRows;
   
   sheet.getRange(sec3TitleRow, 1).setValue("🔵 3. 상담 및 리포트 발송 기록");
-  sheet.getRange(sec3TitleRow, 1).setBackground("#e8f0fe").setFontColor("#1a73e8").setFontWeight("bold").setFontSize(11);
+  sheet.getRange(sec3TitleRow, 1, 1, 26).setBackground("#e8f0fe").setFontColor("#1a73e8").setFontWeight("bold").setFontSize(11);
   
   var header3 = [
     "학년", "이름", "작성기간", "작성인", "상담내용 / 분석지 / 채널 보냄 / 발송 완료 노란색 표시", "부모님의 need / 학생 특이사항"
@@ -2195,8 +2205,11 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   // 이름이 B열에 있으므로 FILTER의 기준을 B열로 설정
   sheet.getRange(sec3DataRow, 1).setFormula("=IFERROR(FILTER('학부모상담/채널발송'!A2:F, TRIM('학부모상담/채널발송'!B2:B) = TRIM(B3)), \"등록된 상담 기록이 없습니다.\")");
   
-  // 기본 서식 폰트 설정
-  sheet.getRange(5, 1, sec3DataRow - 5 + 20, 20).setFontFamily("Malgun Gothic");
+  // 기본 서식 폰트 설정 및 세로 정렬 상단화 고정
+  sheet.getRange(5, 1, sec3DataRow - 5 + 20, 26).setFontFamily("Malgun Gothic").setVerticalAlignment("top");
+  sheet.getRange("A6:O6").setVerticalAlignment("middle");
+  sheet.getRange(sec2HeaderRow, 1, 1, 18).setVerticalAlignment("middle");
+  sheet.getRange(sec3HeaderRow, 1, 1, 6).setVerticalAlignment("middle");
 }
 
 // 특정 시트의 이름 컬럼에서 학생 매칭 행수를 구하는 헬퍼 함수
@@ -2630,7 +2643,25 @@ function onOpen() {
     .addItem("2. 오늘 시간표 보드 생성", "generateWeeklyTimetable")
     .addItem("3. 연동 시트 초기 셋업", "setupSheetsAndHeaders")
     .addItem("4. 한명검색 시트 만들기", "createSingleSearchSheet")
+    .addItem("5. 매일 밤 9시 30분 자동 생성 설정", "createDailyAttendanceTrigger")
     .addToUi();
+}
+
+// 매일 밤 9시 30분에 내일 출석부를 자동으로 생성하도록 트리거 등록하는 함수
+function createDailyAttendanceTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "generateDailyAttendance") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  ScriptApp.newTrigger("generateDailyAttendance")
+    .timeBased()
+    .everyDays(1)
+    .atHour(21)
+    .nearMinute(30)
+    .create();
+  SpreadsheetApp.getUi().alert("매일 밤 9시 30분(21:30) 자동 시간표 생성 트리거가 등록되었습니다! ⏰");
 }
             </pre>
           </div>

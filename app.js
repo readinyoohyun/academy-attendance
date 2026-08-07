@@ -313,18 +313,23 @@ function parseAbsentDatePure(absentStr) {
 // Helper: Get student class duration in minutes based on classes string or grade
 function getClassDuration(student) {
   if (!student) return 60;
+  let duration = 60;
   const classesStr = student.classes || "";
-  
   const match = classesStr.match(/(60|70|90|100|120|180)\s*분/);
   if (match) {
-    return parseInt(match[1], 10);
+    duration = parseInt(match[1], 10);
+  } else {
+    const grade = student.grade || "";
+    if (grade.includes("중") || grade.includes("고") || grade.includes("예비중")) {
+      duration = 90;
+    } else {
+      duration = 60;
+    }
   }
-  
-  const grade = student.grade || "";
-  if (grade.includes("중") || grade.includes("고") || grade.includes("예비중")) {
-    return 90;
+  if (student.todayExtensionMins) {
+    duration += parseInt(student.todayExtensionMins, 10);
   }
-  return 60;
+  return duration;
 }
 
 // Main Coordinator Application Class

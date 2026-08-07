@@ -668,16 +668,23 @@
     // Helper: Get student class duration in minutes based on classes string or grade
     function getClassDuration(student) {
       if (!student) return 60;
+      let duration = 60;
       const classesStr = student.classes || "";
       const match = classesStr.match(/(60|70|90|100|120|180)\s*분/);
       if (match) {
-        return parseInt(match[1], 10);
+        duration = parseInt(match[1], 10);
+      } else {
+        const grade = student.grade || "";
+        if (grade.includes("중") || grade.includes("고") || grade.includes("예비중")) {
+          duration = 90;
+        } else {
+          duration = 60;
+        }
       }
-      const grade = student.grade || "";
-      if (grade.includes("중") || grade.includes("고") || grade.includes("예비중")) {
-        return 90;
+      if (student.todayExtensionMins) {
+        duration += parseInt(student.todayExtensionMins, 10);
       }
-      return 60;
+      return duration;
     }
 
     // Helper: Normalize time string (supporting "11시", "1시" -> "13:00", "15:30", etc.)
@@ -1620,6 +1627,50 @@
             }
           } else {
             updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "outTime", value: currentTime });
+            
+            // Makeup Bank integration on Kiosk checkout
+            const isMakeupClass = dailyLog && dailyLog.reason === "보강 수업";
+            const isExtendedClass = student.todayExtensionMins > 0;
+            if (isMakeupClass || isExtendedClass) {
+              let addedMins = 0;
+              if (isMakeupClass) {
+                addedMins = getClassDuration(student); // Base duration (e.g. 60 or 90)
+              } else if (isExtendedClass) {
+                addedMins = parseInt(student.todayExtensionMins, 10);
+              }
+              if (addedMins > 0) {
+                student.makeupMinsDone = (student.makeupMinsDone || 0) + addedMins;
+                const baseDuration = getClassDuration(student) - (student.todayExtensionMins || 0);
+                const targetStrikethroughsCount = Math.floor((student.makeupMinsDone || 0) / baseDuration);
+                let datesList = student.absentDates ? student.absentDates.split(',').map(d => d.trim()).filter(Boolean) : [];
+                let updatedDates = [];
+                let strikedCount = 0;
+                for (let i = 0; i < datesList.length; i++) {
+                  let item = datesList[i];
+                  const isStriked = item.startsWith("~~") && item.endsWith("~~");
+                  const cleanDate = isStriked ? item.slice(2, -2) : item;
+                  if (strikedCount < targetStrikethroughsCount) {
+                    updatedDates.push(`~~${cleanDate}~~`);
+                    strikedCount++;
+                  } else {
+                    updatedDates.push(cleanDate);
+                  }
+                }
+                student.absentDates = updatedDates.join(', ');
+                student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
+                
+                updates.push({ tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone });
+                updates.push({ tab: "students", row: student.row, field: "absentDates", value: student.absentDates });
+                if (isExtendedClass) {
+                  updates.push({ tab: "students", row: student.row, field: "todayExtensionMins", value: 0 });
+                  student.todayExtensionMins = 0;
+                }
+                if (isMakeupClass) {
+                  updates.push({ tab: "students", row: student.row, field: "makeupCompleted", value: "완료" });
+                  student.makeupCompleted = '완료';
+                }
+              }
+            }
           }
           sendBatchUpdateToGoogleSheets(updates);
         }
