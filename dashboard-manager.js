@@ -381,8 +381,8 @@ class DashboardManager {
                   </div>
                   <div style="display: flex; gap: 0.35rem; align-items: center;">
                     ${student.todayExtensionMins > 0 
-                      ? `<button class="btn-extend-cancel-quick" style="background: rgba(239, 68, 68, 0.6); border: 1px solid rgba(239, 68, 68, 0.7); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">연장취소</button>`
-                      : `<button class="btn-extend-quick" style="background: rgba(16, 185, 129, 0.6); border: 1px solid rgba(16, 185, 129, 0.7); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+30분</button>`
+                      ? `<button class="btn-extend-cycle" style="background: rgba(245, 158, 11, 0.85); border: 1px solid rgba(245, 158, 11, 0.95); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+${student.todayExtensionMins}분</button>`
+                      : `<button class="btn-extend-cycle" style="background: rgba(16, 185, 129, 0.6); border: 1px solid rgba(16, 185, 129, 0.7); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+연장</button>`
                     }
                     <button class="btn-absent-quick" style="background: rgba(239, 68, 68, 0.45); border: 1px solid rgba(239, 68, 68, 0.55); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">결석</button>
                     <button class="btn-cancelled-quick" style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">휴강</button>
@@ -424,14 +424,14 @@ class DashboardManager {
             `;
           }
           card.addEventListener("click", (e) => {
-            if (e.target.classList.contains("btn-extend-quick")) {
+            if (e.target.classList.contains("btn-extend-cycle")) {
               e.stopPropagation();
-              this.handleExtendQuickClick(student.id, 30);
-              return;
-            }
-            if (e.target.classList.contains("btn-extend-cancel-quick")) {
-              e.stopPropagation();
-              this.handleExtendQuickClick(student.id, 0);
+              const current = parseInt(student.todayExtensionMins, 10) || 0;
+              const sequence = [0, 10, 15, 20, 30, 60, 90];
+              const currentIndex = sequence.indexOf(current);
+              const nextIndex = (currentIndex + 1) % sequence.length;
+              const nextVal = sequence[nextIndex];
+              this.handleExtendQuickClick(student.id, nextVal);
               return;
             }
             if (e.target.classList.contains("btn-absent-quick")) {
