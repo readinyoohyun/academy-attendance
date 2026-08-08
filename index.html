@@ -2675,11 +2675,11 @@ function onOpen() {
     .addItem("2. 오늘 시간표 보드 생성", "generateWeeklyTimetable")
     .addItem("3. 연동 시트 초기 셋업", "setupSheetsAndHeaders")
     .addItem("4. 한명 검색 시트 만들기", "createSingleSearchSheet")
-    .addItem("5. 매일 밤 9시 30분 자동 생성 설정", "createDailyAttendanceTrigger")
+    .addItem("5. 매일 밤 11시 자동 생성 설정", "createDailyAttendanceTrigger")
     .addToUi();
 }
 
-// 매일 밤 9시 30분에 내일 출석부를 자동으로 생성하도록 트리거 등록하는 함수
+// 매일 밤 11시(23:00)에 내일 출석부를 자동으로 생성하도록 트리거 등록하는 함수
 function createDailyAttendanceTrigger() {
   var triggers = ScriptApp.getProjectTriggers();
   for (var i = 0; i < triggers.length; i++) {
@@ -2690,10 +2690,9 @@ function createDailyAttendanceTrigger() {
   ScriptApp.newTrigger("generateDailyAttendance")
     .timeBased()
     .everyDays(1)
-    .atHour(21)
-    .nearMinute(30)
+    .atHour(23)
     .create();
-  SpreadsheetApp.getUi().alert("매일 밤 9시 30분(21:30) 자동 시간표 생성 트리거가 등록되었습니다! ⏰");
+  SpreadsheetApp.getUi().alert("매일 밤 11시(23:00) 자동 시간표 생성 트리거가 등록되었습니다! ⏰");
 }
             </pre>
           </div>
