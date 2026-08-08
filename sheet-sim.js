@@ -256,6 +256,10 @@ class SheetSimulator {
             <th>결석 일자들 (L)</th>
             <th style="background:rgba(236,72,153,0.1);">보강일시 (AE)</th>
             <th style="background:rgba(236,72,153,0.1);">보강완료 (AF)</th>
+            <th style="background:rgba(245,158,11,0.1);">결석 누적(분) (AG)</th>
+            <th style="background:rgba(245,158,11,0.1);">보강 완료(분) (AH)</th>
+            <th style="background:rgba(245,158,11,0.15); font-weight:bold; color:#d97706;">보강 잔여(분) (AI)</th>
+            <th style="background:rgba(245,158,11,0.1);">오늘 연장(분) (AJ)</th>
             <th>동작</th>
           </tr>
         `;
@@ -505,6 +509,10 @@ class SheetSimulator {
                   <option value="완료" ${row.makeupCompleted === '완료' ? 'selected' : ''}>완료</option>
                 </select>
               </td>
+              <td><input type="number" class="sheet-input-absent-mins-acc" value="${row.absentMinsAcc || 0}" style="text-align:center; width:55px;"></td>
+              <td><input type="number" class="sheet-input-makeup-mins-done" value="${row.makeupMinsDone || 0}" style="text-align:center; width:55px;"></td>
+              <td style="text-align:center; font-weight:bold; color:#d97706; background:rgba(245,158,11,0.05);">${row.makeupMinsRemaining || 0}</td>
+              <td><input type="number" class="sheet-input-today-extension-mins" value="${row.todayExtensionMins || 0}" style="text-align:center; width:55px;"></td>
               <td><button class="btn-delete-row" data-id="${row.id}">🗑️</button></td>
             </tr>
           `;
@@ -1886,6 +1894,36 @@ class SheetSimulator {
                   }
                 }
               }
+              this.render();
+            }
+          });
+          
+          tr.querySelector(".sheet-input-absent-mins-acc").addEventListener("change", (e) => {
+            const val = parseInt(e.target.value, 10) || 0;
+            const rowObj = rowArray.find(r => r.id === id);
+            if (rowObj) {
+              rowObj.absentMinsAcc = val;
+              rowObj.makeupMinsRemaining = (rowObj.absentMinsAcc || 0) - (rowObj.makeupMinsDone || 0);
+              updateField(id, "students", rowArray, "absentMinsAcc", val);
+              this.render();
+            }
+          });
+          tr.querySelector(".sheet-input-makeup-mins-done").addEventListener("change", (e) => {
+            const val = parseInt(e.target.value, 10) || 0;
+            const rowObj = rowArray.find(r => r.id === id);
+            if (rowObj) {
+              rowObj.makeupMinsDone = val;
+              rowObj.makeupMinsRemaining = (rowObj.absentMinsAcc || 0) - (rowObj.makeupMinsDone || 0);
+              updateField(id, "students", rowArray, "makeupMinsDone", val);
+              this.render();
+            }
+          });
+          tr.querySelector(".sheet-input-today-extension-mins").addEventListener("change", (e) => {
+            const val = parseInt(e.target.value, 10) || 0;
+            const rowObj = rowArray.find(r => r.id === id);
+            if (rowObj) {
+              rowObj.todayExtensionMins = val;
+              updateField(id, "students", rowArray, "todayExtensionMins", val);
               this.render();
             }
           });

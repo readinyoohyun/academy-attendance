@@ -46,9 +46,13 @@ class SheetAPI {
     const separator = this.gasWebhookUrl.indexOf("?") !== -1 ? "&" : "?";
     const cacheBusterUrl = this.gasWebhookUrl + separator + "_t=" + Date.now();
 
-    fetch(cacheBusterUrl)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    fetch(cacheBusterUrl, { signal: controller.signal })
       .then(res => res.json())
       .then(data => {
+        clearTimeout(timeoutId);
         if (data && typeof data === 'object') {
           let incomingStudents = [];
           let incomingDailyLogs = [];
@@ -124,9 +128,14 @@ class SheetAPI {
         }
       })
       .catch(err => {
+        if (typeof timeoutId !== 'undefined') clearTimeout(timeoutId);
         console.error("Fetch Google Sheets Error: ", err);
         if (isManual) {
-          alert("구글 시트 데이터를 가져오는데 실패했습니다. 웹 앱 배포 권한을 다시 한번 확인해 주세요.");
+          if (err.name === 'AbortError') {
+            alert("구글 시트 연동 시간이 초과되었습니다. 웹 앱 배포 권한이나 URL 주소를 확인해 주세요. (15초 제한)");
+          } else {
+            alert("구글 시트 데이터를 가져오는데 실패했습니다. 웹 앱 배포 권한을 다시 한번 확인해 주세요.");
+          }
         }
       })
       .finally(() => {

@@ -2166,10 +2166,15 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   }
   
   // 2. 각 데이터 시트에서 검색 학생의 매칭 행 수 계산 (최소 1행 확보)
-  var memberRows = countMatchingRows("월별상담내역", 2, studentName);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var memberSheetName = ss.getSheetByName("월별상담내역") ? "월별상담내역" : "회원 분석/레벨변동/전화상담";
+  var textbookSheetName = ss.getSheetByName("교재단계관리") ? "교재단계관리" : "문해력교재관리";
+  var consultSheetName = ss.getSheetByName("학부모상담/채널발송") ? "학부모상담/채널발송" : "상담내용/리포트발송/채널발송";
+
+  var memberRows = countMatchingRows(memberSheetName, 2, studentName);
   if (memberRows === 0) memberRows = 1;
   
-  var textbookRows = countMatchingRows("교재단계관리", 2, studentName);
+  var textbookRows = countMatchingRows(textbookSheetName, 2, studentName);
   if (textbookRows === 0) textbookRows = 1;
   
   // 3. 섹션 1: 회원 종합 분석 및 레벨 관리 배치
@@ -2184,7 +2189,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   ];
   sheet.getRange(6, 1, 1, 15).setValues([header1]);
   sheet.getRange("A6:O6").setFontWeight("bold").setBackground("#f8f9fa").setHorizontalAlignment("center").setVerticalAlignment("middle");
-  sheet.getRange("A7").setFormula("=IFERROR(FILTER('월별상담내역'!A2:O, TRIM('월별상담내역'!B2:B) = TRIM(B3)), \"검색된 학생이 없습니다.\")");
+  sheet.getRange("A7").setFormula("=IFERROR(FILTER('" + memberSheetName + "'!A2:O, TRIM('" + memberSheetName + "'!B2:B) = TRIM(B3)), \"검색된 학생이 없습니다.\")");
   
   // 4. 섹션 2: 문해력 교재 관리 현황 계산 및 배치
   var sec2TitleRow = 8 + memberRows;
@@ -2202,7 +2207,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   ];
   sheet.getRange(sec2HeaderRow, 1, 1, 18).setValues([header2]);
   sheet.getRange(sec2HeaderRow, 1, 1, 18).setFontWeight("bold").setBackground("#f8f9fa").setHorizontalAlignment("center").setVerticalAlignment("middle");
-  sheet.getRange(sec2DataRow, 1).setFormula("=IFERROR(FILTER('교재단계관리'!A2:R, TRIM('교재단계관리'!B2:B) = TRIM(B3)), \"등록된 교재가 없습니다.\")");
+  sheet.getRange(sec2DataRow, 1).setFormula("=IFERROR(FILTER('" + textbookSheetName + "'!A2:R, TRIM('" + textbookSheetName + "'!B2:B) = TRIM(B3)), \"등록된 교재가 없습니다.\")");
   
   // 5. 섹션 3: 상담 및 리포트 발송 기록 계산 및 배치
   var sec3TitleRow = 11 + memberRows + textbookRows;
@@ -2219,7 +2224,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   sheet.getRange(sec3HeaderRow, 1, 1, 6).setFontWeight("bold").setBackground("#f8f9fa").setHorizontalAlignment("center").setVerticalAlignment("middle");
   
   // 이름이 B열에 있으므로 FILTER의 기준을 B열로 설정
-  sheet.getRange(sec3DataRow, 1).setFormula("=IFERROR(FILTER('학부모상담/채널발송'!A2:F, TRIM('학부모상담/채널발송'!B2:B) = TRIM(B3)), \"등록된 상담 기록이 없습니다.\")");
+  sheet.getRange(sec3DataRow, 1).setFormula("=IFERROR(FILTER('" + consultSheetName + "'!A2:F, TRIM('" + consultSheetName + "'!B2:B) = TRIM(B3)), \"등록된 상담 기록이 없습니다.\")");
   
   // 기본 서식 폰트 설정 및 세로 정렬 상단화, 가로 정렬 좌측화 고정
   sheet.getRange(5, 1, sec3DataRow - 5 + 20, 26).setFontFamily("Malgun Gothic").setVerticalAlignment("top").setHorizontalAlignment("left");
