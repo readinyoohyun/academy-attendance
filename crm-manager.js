@@ -454,7 +454,7 @@ class CRMManager {
           makeupList.push(newMakeupStr);
         }
         student.makeupDate = makeupList.join(', ');
-        student.makeupCompleted = "대기";
+        student.makeupCompleted = "보강대기";
         
         this.app.dashboardManager.logAttendanceEvent(name, "보강대기", timeSelect);
         let datesList = student.absentDates ? student.absentDates.split(',').map(x => x.trim()).filter(Boolean) : [];
@@ -477,7 +477,7 @@ class CRMManager {
 
         const makeupUpdates = [
           { tab: "students", row: student.row, field: "makeupDate", value: student.makeupDate },
-          { tab: "students", row: student.row, field: "makeupCompleted", value: "대기" },
+          { tab: "students", row: student.row, field: "makeupCompleted", value: "보강대기" },
           { tab: "students", row: student.row, field: "absentDates", value: student.absentDates }
         ];
 
@@ -722,8 +722,8 @@ class CRMManager {
 
     document.getElementById("crmAttendanceCounts").innerText = `출석 ${presentCount}회, 결석 ${absentCount}회, 보강 완료 ${makeupCount}회`;
     
-    if (student.makeupDate && student.makeupCompleted !== '완료') {
-      document.getElementById("crmMakeupPendingText").innerText = `${student.makeupDate} (대기)`;
+    if (student.makeupDate && student.makeupCompleted !== '완료' && student.makeupCompleted !== '보강완료') {
+      document.getElementById("crmMakeupPendingText").innerText = `${student.makeupDate} (보강대기)`;
       document.getElementById("crmMakeupPendingText").style.color = "var(--color-makeup)";
     } else {
       document.getElementById("crmMakeupPendingText").innerText = "없음";

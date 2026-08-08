@@ -207,7 +207,6 @@ class SheetSimulator {
             <button class="sheet-tab-item ${this.activeTab === '상담내용/리포트발송/채널발송' ? 'active' : ''}" data-tab="상담내용/리포트발송/채널발송">상담내용/리포트발송/채널발송 💬</button>
             <button class="sheet-tab-item ${this.activeTab === '회원 분석/레벨변동/전화상담' ? 'active' : ''}" data-tab="회원 분석/레벨변동/전화상담">회원 분석/레벨변동/전화상담 👤</button>
             <button class="sheet-tab-item ${this.activeTab === '오늘 출석부' ? 'active' : ''}" data-tab="오늘 출석부">오늘 출석부 📅</button>
-            <button class="sheet-tab-item ${this.activeTab === '누적일일수업관리' ? 'active' : ''}" data-tab="누적일일수업관리">누적일일수업관리 📝</button>
             <button class="sheet-tab-item ${this.activeTab === '한명 검색' ? 'active' : ''}" data-tab="한명 검색">한명 검색 🔍</button>
           `}
         </div>
@@ -503,10 +502,10 @@ class SheetSimulator {
                 </div>
               </td>
               <td>
-                <select class="sheet-select-makeup-done" style="width: 80px;">
+                <select class="sheet-select-makeup-done" style="width: 82px; background: ${row.makeupCompleted === '보강대기' || row.makeupCompleted === '대기' ? '#fce7f3' : row.makeupCompleted === '보강완료' || row.makeupCompleted === '완료' ? '#dcfce7' : 'inherit'}; color: ${row.makeupCompleted === '보강대기' || row.makeupCompleted === '대기' ? '#db2777' : row.makeupCompleted === '보강완료' || row.makeupCompleted === '완료' ? '#15803d' : 'inherit'}; font-weight: bold; border-radius: 4px; border: 1px solid var(--panel-border); font-size: 0.75rem;">
                   <option value="" ${row.makeupCompleted === '' ? 'selected' : ''}>-</option>
-                  <option value="대기" ${row.makeupCompleted === '대기' ? 'selected' : ''}>대기</option>
-                  <option value="완료" ${row.makeupCompleted === '완료' ? 'selected' : ''}>완료</option>
+                  <option value="보강대기" ${row.makeupCompleted === '보강대기' || row.makeupCompleted === '대기' ? 'selected' : ''}>보강대기</option>
+                  <option value="보강완료" ${row.makeupCompleted === '보강완료' || row.makeupCompleted === '완료' ? 'selected' : ''}>보강완료</option>
                 </select>
               </td>
               <td><input type="number" class="sheet-input-absent-mins-acc" value="${row.absentMinsAcc || 0}" style="text-align:center; width:55px;"></td>
@@ -605,7 +604,7 @@ class SheetSimulator {
               <td>
                 <select class="sheet-select-event" style="width:100%; height:32px; font-size:0.85rem; border-radius:4px; border:1px solid var(--panel-border); background:var(--input-bg); color:var(--text-primary); text-align:center;">
                   <option value="" ${!row.event ? 'selected' : ''}>- 선택 -</option>
-                  ${['진단', '진도', '코스업', '레벨업', '진로검사', '훈민정음', '한자', '교재', '읽트', '독트', '독서계획표', '친구', '탐험가', '고수', '챔피언', '마스터', '달성', '스티커'].map(evt => `<option value="${evt}" ${row.event === evt ? 'selected' : ''}>${evt}</option>`).join('')}
+                  ${['진단', '진도', '코스업', '레벨업', '진로검사', '훈민정음/숙제교재 완료', '한자', '교재', '읽트', '독트', '독서계획표', '친구', '탐험가', '고수', '챔피언', '마스터', '달성', '스티커'].map(evt => `<option value="${evt}" ${row.event === evt ? 'selected' : ''}>${evt}</option>`).join('')}
                 </select>
               </td>
               <td>
@@ -1853,7 +1852,7 @@ class SheetSimulator {
             updateField(id, "students", rowArray, "makeupDate", e.target.value.trim());
             const rowObj = rowArray.find(r => r.id === id);
             if (rowObj && rowObj.makeupDate && rowObj.makeupCompleted === '') {
-              updateField(id, "students", rowArray, "makeupCompleted", "대기");
+              updateField(id, "students", rowArray, "makeupCompleted", "보강대기");
             }
             this.render();
           });
@@ -1865,7 +1864,7 @@ class SheetSimulator {
               if (window.app && window.app.updateFieldInGoogleSheets) {
                 window.app.updateFieldInGoogleSheets(rowObj.row, "makeupCompleted", val, "students");
               }
-              if (val === "완료") {
+              if (val === "완료" || val === "보강완료") {
                 if (rowObj.absentDates) {
                   const datesList = rowObj.absentDates.split(',').map(d => d.trim()).filter(Boolean);
                   for (let i = 0; i < datesList.length; i++) {

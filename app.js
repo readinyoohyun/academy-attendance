@@ -430,6 +430,13 @@ class AttendanceApp {
   }
 
   loadState() {
+    let storedUrl = localStorage.getItem("gas_webhook_url");
+    if (!storedUrl || !storedUrl.startsWith("https://script.google.com")) {
+      storedUrl = "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec";
+      localStorage.setItem("gas_webhook_url", storedUrl);
+    }
+    this.gasWebhookUrl = storedUrl;
+
     const saved = localStorage.getItem("academy_attendance_state");
     if (saved) {
       try {
@@ -451,13 +458,6 @@ class AttendanceApp {
     } else {
       this.resetToInitialState();
     }
-
-    let storedUrl = localStorage.getItem("gas_webhook_url");
-    if (!storedUrl || !storedUrl.startsWith("https://script.google.com")) {
-      storedUrl = "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec";
-      localStorage.setItem("gas_webhook_url", storedUrl);
-    }
-    this.gasWebhookUrl = storedUrl;
     this.smsMode = localStorage.getItem("sms_mode") || "local";
     this.smsApiKey = localStorage.getItem("sms_api_key") || "";
     this.smsDeviceId = localStorage.getItem("sms_device_id") || "";

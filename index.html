@@ -1608,7 +1608,7 @@ function generateDailyAttendance() {
       
       // Self-healing check: if Column AF (makeupCompleted) is "완료", but they are NOT in today's daily log as completed,
       // it means this "완료" was left over from a previous makeup class. Reset it to "대기"!
-      if (makeupCompleted === "완료") {
+      if (makeupCompleted === "완료" || makeupCompleted === "보강완료") {
         var alreadyCompletedToday = false;
         if (sheetDaily) {
           var lastRowDaily = sheetDaily.getLastRow();
@@ -1626,12 +1626,12 @@ function generateDailyAttendance() {
           }
         }
         if (!alreadyCompletedToday) {
-          makeupCompleted = "대기";
-          sheetStudents.getRange(i + 2, 32).setValue("대기"); // Reset Column AF to "대기"
+          makeupCompleted = "보강대기";
+          sheetStudents.getRange(i + 2, 32).setValue("보강대기"); // Reset Column AF to "보강대기"
         }
       }
       
-      if (makeupCompleted !== "완료") {
+      if (makeupCompleted !== "완료" && makeupCompleted !== "보강완료") {
         var isDuplicateTime = regTimesAdded.some(function(rt) {
           return rt.replace(/\s+/g, "") === makeupTime.replace(/\s+/g, "");
         });
@@ -2570,7 +2570,23 @@ function onEdit(e) {
     updateSingleSearchSheetLayout(sheet, studentName);
   }
   
-  if (sheetName === "출결보강관리") {
+  if (sheetName === "전체시간표" || sheetName === "전체 시간표") {
+    var col = range.getColumn();
+    var row = range.getRow();
+    if (col === 31) { // AE열 (보강일시)
+      var val = range.getValue();
+      var statusRange = sheet.getRange(row, 32); // AF열 (보강완료)
+      if (val) {
+        if (!statusRange.getValue()) {
+          statusRange.setValue("보강대기");
+        }
+      } else {
+        statusRange.setValue("");
+      }
+    }
+  }
+  
+  if (sheetName === "출결보강관리" || sheetName === "오늘 출석부") {
     var startCol = range.getColumn();
     var endCol = range.getLastColumn();
     var startRow = range.getRow();
@@ -2579,7 +2595,7 @@ function onEdit(e) {
     // 1. 구글 시트에서 직접 등원여부(E열/5열)를 변경할 때 등원시간(F열/6열) 자동 기입 및 결석일자 동기화
     if (startCol <= 5 && endCol >= 5) {
       var ss = SpreadsheetApp.getActiveSpreadsheet();
-      var sheetStudents = ss.getSheetByName("전체시간표");
+      var sheetStudents = ss.getSheetByName("전체시간표") || ss.getSheetByName("전체 시간표");
       for (var r = startRow; r <= endRow; r++) {
         if (r > 1) {
           var statusCell = sheet.getRange(r, 5);
