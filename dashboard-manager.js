@@ -822,7 +822,7 @@ class DashboardManager {
     this.app.api.updateFieldInGoogleSheets(student.row, "todayExtensionMins", extensionMins, "students");
     
     const todayDay = this.selectedDay;
-    const todayDateSlash = this.app.getTodayDateStr();
+    const todayDateSlash = getFormattedDateOfWeekday(todayDay).slashFormat;
     const shortDay = todayDay.substring(0, 1);
     const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
     
