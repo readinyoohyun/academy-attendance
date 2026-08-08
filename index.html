@@ -756,7 +756,7 @@ function doGet() {
   if (sheetStudents) {
     var lastRow = sheetStudents.getLastRow();
     if (lastRow > 1) {
-      ensureColumns(sheetStudents, 32);
+      ensureColumns(sheetStudents, 36);
       // Ensure makeup cols
       if (sheetStudents.getRange("AE1").getValue() !== "보강일시") sheetStudents.getRange("AE1").setValue("보강일시");
       if (sheetStudents.getRange("AF1").getValue() !== "보강완료") sheetStudents.getRange("AF1").setValue("보강완료");
@@ -1129,7 +1129,7 @@ function doPost(e) {
       var sheet = ss.getSheetByName("전체시간표");
       var lastRow = sheet.getLastRow();
       var nextRow = lastRow + 1;
-      ensureColumns(sheet, 32);
+      ensureColumns(sheet, 36);
       
       sheet.getRange(nextRow, 1).setValue(nextRow - 1);
       sheet.getRange(nextRow, 2).setValue(postData.grade);
@@ -1372,7 +1372,7 @@ function generateDailyAttendance() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheetStudents = ss.getSheetByName("전체시간표");
   if (!sheetStudents) return;
-  ensureColumns(sheetStudents, 32);
+  ensureColumns(sheetStudents, 36);
   
   var sheetDaily = ss.getSheetByName("출결보강관리");
   if (!sheetDaily) {
