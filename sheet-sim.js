@@ -30,7 +30,7 @@ class SheetSimulator {
     if (tab === "상담내용/리포트발송/채널발송") return "학부모상담/채널발송";
     if (tab === "회원 분석/레벨변동/전화상담") return "월별상담내역";
     if (tab === "누적일일수업관리") return "학생수업관리";
-    if (tab === "한명 검색") return "한명검색";
+    if (tab === "한명 검색") return "한명 검색";
     return tab;
   }
 
@@ -200,7 +200,7 @@ class SheetSimulator {
             <button class="sheet-tab-item ${this.activeTab === '출결보강관리' ? 'active' : ''}" data-tab="출결보강관리">출결보강관리 📅</button>
             <button class="sheet-tab-item ${this.activeTab === '학생수업관리' ? 'active' : ''}" data-tab="학생수업관리">학생수업관리 📝</button>
             <button class="sheet-tab-item ${this.activeTab === '교사' ? 'active' : ''}" data-tab="교사">교사 👩‍🏫</button>
-            <button class="sheet-tab-item ${this.activeTab === '한명검색' ? 'active' : ''}" data-tab="한명검색">한명검색 🔍</button>
+            <button class="sheet-tab-item ${this.activeTab === '한명 검색' ? 'active' : ''}" data-tab="한명 검색">한명 검색 🔍</button>
           ` : `
             <button class="sheet-tab-item ${this.activeTab === '전체 시간표' ? 'active' : ''}" data-tab="전체 시간표">전체 시간표 📑</button>
             <button class="sheet-tab-item ${this.activeTab === '문해력교재관리' ? 'active' : ''}" data-tab="문해력교재관리">문해력교재관리 📚</button>
@@ -214,7 +214,7 @@ class SheetSimulator {
 
         <!-- Sheet Table Wrapper -->
         <div class="sheet-table-wrapper" style="border: none; background: transparent; padding: 0; display: block;">
-          ${this.getNormalizedTab(this.activeTab) === "한명검색" ? this.renderDecoupledSingleSearch(capacities) : `
+          ${this.getNormalizedTab(this.activeTab) === "한명 검색" ? this.renderDecoupledSingleSearch(capacities) : `
           <table class="sheet-table">
             <thead>
               ${this.renderTableHeader()}
@@ -358,7 +358,7 @@ class SheetSimulator {
             <th>동작</th>
           </tr>
         `;
-      case "한명검색":
+      case "한명 검색":
         return `
           <tr>
             <th class="row-num-col">행</th>
@@ -855,7 +855,7 @@ class SheetSimulator {
         `).join('');
       }
 
-      case "한명검색": {
+      case "한명 검색": {
         const searchName = (query || "신나라").toLowerCase().trim();
         const members = this.dataMap.memberAnalysis.filter(m => {
           const nameVal = m.name ? String(m.name).toLowerCase().trim() : "";
@@ -1265,7 +1265,7 @@ class SheetSimulator {
             <div>💡 <strong>월별상담내역:</strong> 등하원, 코칭 방향, 진도 상태, 레벨 업 일자, 훈민정음 완료 진도 등 학생 프로필과 개별 분석이 총망라된 마스터 테이블입니다.</div>
           </div>
         `;
-      case "한명검색":
+      case "한명 검색":
         return `
           <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
             <div>💡 <strong>한명검색 대시보드:</strong> B3 셀에 이름을 적고 Enter를 치시면, 회원 분석, 문해력 교재, 상담 내용을 한 곳에 콕 찍어 모아 볼 수 있습니다.</div>
@@ -1657,7 +1657,7 @@ class SheetSimulator {
         }
         break;
 
-      case "한명검색":
+      case "한명 검색":
         alert("한명검색 시트에서는 직접 행을 추가하실 수 없습니다. 대신 검색 학생 이름 셀(B3)의 이름을 수정해 주세요.");
         return;
 

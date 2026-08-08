@@ -729,6 +729,15 @@ class CRMManager {
       document.getElementById("crmMakeupPendingText").innerText = "없음";
       document.getElementById("crmMakeupPendingText").style.color = "var(--text-secondary)";
     }
+    
+    const makeupBankText = document.getElementById("crmMakeupBankText");
+    if (makeupBankText) {
+      const rem = student.makeupMinsRemaining || 0;
+      const acc = student.absentMinsAcc || 0;
+      const done = student.makeupMinsDone || 0;
+      makeupBankText.innerText = `잔여 ${rem}분 (누적 ${acc}분 / 완료 ${done}분)`;
+      makeupBankText.style.color = rem > 0 ? "#f59e0b" : "var(--text-secondary)";
+    }
 
     const tableBody = document.getElementById("crmAttendanceListBody");
     tableBody.innerHTML = "";

@@ -307,7 +307,7 @@
                   </div>
                 </div>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; background: var(--box-bg); padding: 1rem; border-radius: 10px;">
+                <div style="display: grid; grid-template-columns: 1.1fr 0.9fr 1.2fr; gap: 1rem; margin-bottom: 1rem; background: var(--box-bg); padding: 1rem; border-radius: 10px;">
                   <div>
                     <span style="display:block; font-size: 0.8rem; color: var(--text-muted);">출석 / 결석 / 보강완료 건수</span>
                     <span id="crmAttendanceCounts" style="font-size: 0.95rem; font-weight: 500;">출석 12회, 결석 2회, 보강 1회</span>
@@ -315,6 +315,10 @@
                   <div>
                     <span style="display:block; font-size: 0.8rem; color: var(--text-muted);">보강 대기 일정</span>
                     <span id="crmMakeupPendingText" style="font-size: 0.95rem; font-weight: 600; color: var(--color-makeup);">없음</span>
+                  </div>
+                  <div>
+                    <span style="display:block; font-size: 0.8rem; color: var(--text-muted);">보강 시간 은행</span>
+                    <span id="crmMakeupBankText" style="font-size: 0.9rem; font-weight: 600; color: #f59e0b;">잔여 0분 (누적 0분 / 완료 0분)</span>
                   </div>
                 </div>
 
@@ -2159,7 +2163,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   
   // 3. 섹션 1: 회원 종합 분석 및 레벨 관리 배치
   sheet.getRange("A5").setValue("🟢 1. 회원 종합 분석 및 레벨 관리");
-  sheet.getRange("A5:Z5").setBackground("#e6f4ea").setFontColor("#137333").setFontWeight("bold").setFontSize(11);
+  sheet.getRange("A5:Z5").setBackground("#2e7d32").setFontColor("#ffffff").setFontWeight("bold").setFontSize(11);
   
   var header1 = [
     "순번", "이름", "학년", "등록일", "상담/채널", "학생 특이 사항\n리드인 코칭 방향\n글쓰기 방향", 
@@ -2177,7 +2181,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   var sec2DataRow = 10 + memberRows;
   
   sheet.getRange(sec2TitleRow, 1).setValue("🟠 2. 문해력 교재 관리 현황");
-  sheet.getRange(sec2TitleRow, 1, 1, 26).setBackground("#fef7e0").setFontColor("#b06000").setFontWeight("bold").setFontSize(11);
+  sheet.getRange(sec2TitleRow, 1, 1, 26).setBackground("#e65100").setFontColor("#ffffff").setFontWeight("bold").setFontSize(11);
   
   var header2 = [
     "학년", "이름", "비문학 교재명", "시작일", "마침일", "정답률", 
@@ -2195,7 +2199,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   var sec3DataRow = 13 + memberRows + textbookRows;
   
   sheet.getRange(sec3TitleRow, 1).setValue("🔵 3. 상담 및 리포트 발송 기록");
-  sheet.getRange(sec3TitleRow, 1, 1, 26).setBackground("#e8f0fe").setFontColor("#1a73e8").setFontWeight("bold").setFontSize(11);
+  sheet.getRange(sec3TitleRow, 1, 1, 26).setBackground("#0d47a1").setFontColor("#ffffff").setFontWeight("bold").setFontSize(11);
   
   var header3 = [
     "학년", "이름", "작성기간", "작성인", "상담내용 / 분석지 / 채널 보냄 / 발송 완료 노란색 표시", "부모님의 need / 학생 특이사항"
@@ -2206,11 +2210,11 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   // 이름이 B열에 있으므로 FILTER의 기준을 B열로 설정
   sheet.getRange(sec3DataRow, 1).setFormula("=IFERROR(FILTER('학부모상담/채널발송'!A2:F, TRIM('학부모상담/채널발송'!B2:B) = TRIM(B3)), \"등록된 상담 기록이 없습니다.\")");
   
-  // 기본 서식 폰트 설정 및 세로 정렬 상단화 고정
-  sheet.getRange(5, 1, sec3DataRow - 5 + 20, 26).setFontFamily("Malgun Gothic").setVerticalAlignment("top");
-  sheet.getRange("A6:O6").setVerticalAlignment("middle");
-  sheet.getRange(sec2HeaderRow, 1, 1, 18).setVerticalAlignment("middle");
-  sheet.getRange(sec3HeaderRow, 1, 1, 6).setVerticalAlignment("middle");
+  // 기본 서식 폰트 설정 및 세로 정렬 상단화, 가로 정렬 좌측화 고정
+  sheet.getRange(5, 1, sec3DataRow - 5 + 20, 26).setFontFamily("Malgun Gothic").setVerticalAlignment("top").setHorizontalAlignment("left");
+  sheet.getRange("A6:O6").setHorizontalAlignment("center").setVerticalAlignment("middle");
+  sheet.getRange(sec2HeaderRow, 1, 1, 18).setHorizontalAlignment("center").setVerticalAlignment("middle");
+  sheet.getRange(sec3HeaderRow, 1, 1, 6).setHorizontalAlignment("center").setVerticalAlignment("middle");
 }
 
 // 특정 시트의 이름 컬럼에서 학생 매칭 행수를 구하는 헬퍼 함수
@@ -2528,7 +2532,7 @@ function onEdit(e) {
   var sheet = range.getSheet();
   var sheetName = sheet.getName();
   
-  if (sheetName === "한명검색" && range.getA1Notation() === "B3") {
+  if (sheetName === "한명 검색" && range.getA1Notation() === "B3") {
     var studentName = String(range.getValue()).trim();
     updateSingleSearchSheetLayout(sheet, studentName);
   }
@@ -2643,7 +2647,7 @@ function onOpen() {
     .addItem("1. 출결보강관리 생성 (기존 기록 누적 백업)", "generateDailyAttendance")
     .addItem("2. 오늘 시간표 보드 생성", "generateWeeklyTimetable")
     .addItem("3. 연동 시트 초기 셋업", "setupSheetsAndHeaders")
-    .addItem("4. 한명검색 시트 만들기", "createSingleSearchSheet")
+    .addItem("4. 한명 검색 시트 만들기", "createSingleSearchSheet")
     .addItem("5. 매일 밤 9시 30분 자동 생성 설정", "createDailyAttendanceTrigger")
     .addToUi();
 }
