@@ -2107,12 +2107,12 @@ function setupSheetsAndHeaders() {
 // B3 검색 학생을 기준으로 매칭 행 수량만큼 수식을 계산해 밀어내는 동적 한명검색 시트 생성 함수
 function createSingleSearchSheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("한명검색");
+  var sheet = ss.getSheetByName("한명 검색") || ss.getSheetByName("한명검색");
   if (sheet) {
     sheet.clear();
     sheet.clearFormats();
   } else {
-    sheet = ss.insertSheet("한명검색");
+    sheet = ss.insertSheet("한명 검색");
   }
   
   sheet.setHiddenGridlines(false);
