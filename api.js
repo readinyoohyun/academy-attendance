@@ -15,6 +15,40 @@ if (typeof window !== 'undefined') {
 class SheetAPI {
   constructor(app) {
     this.app = app;
+    setTimeout(() => {
+      if (!this.gasWebhookUrl) {
+        this.updateDiagnosticWidget('error', '구글 Apps Script URL이 설정되지 않았습니다. [연동 가이드] 또는 [패키지 설정] 탭에서 입력해 주세요.');
+      } else {
+        this.updateDiagnosticWidget('error', '대기 중: 첫 동기화를 시도하고 있습니다.');
+      }
+    }, 500);
+  }
+
+  updateDiagnosticWidget(status, detail) {
+    const dot = document.getElementById("diagnosticStatusDot");
+    const txt = document.getElementById("diagnosticStatusText");
+    const widget = document.getElementById("diagnosticWidget");
+    if (!widget) return;
+
+    widget.onclick = () => {
+      alert(`📊 [구글 시트 연동 실시간 진단]\n\n` +
+            `• 상태: ${status === 'success' ? '정상 연결됨 🟢' : status === 'timeout' ? '연결 시간 초과 🟡' : '연동 실패/설정 오류 🔴'}\n` +
+            `• 웹앱 URL: ${this.gasWebhookUrl || '미설정됨'}\n` +
+            `• 상세 정보: ${detail}\n` +
+            `• 마지막 동기화 시도: ${new Date().toLocaleTimeString()}\n\n` +
+            `💡 팁: 무한 대기가 발생하거나 빨간색 표시가 뜨면 [연동 가이드] 탭의 지침에 따라 구글 시트의 최신 웹앱 URL을 복사하여 [패키지 설정]에 저장해 주세요.`);
+    };
+
+    if (status === 'success') {
+      if (dot) { dot.style.background = "#10b981"; }
+      if (txt) { txt.innerText = "정상 연결됨"; txt.style.color = "#cbd5e1"; }
+    } else if (status === 'timeout') {
+      if (dot) { dot.style.background = "#eab308"; }
+      if (txt) { txt.innerText = "연동 시간 초과 (15초)"; txt.style.color = "#fef08a"; }
+    } else {
+      if (dot) { dot.style.background = "#ef4444"; }
+      if (txt) { txt.innerText = "연동 실패 / 오류"; txt.style.color = "#fecaca"; }
+    }
   }
   
   get gasWebhookUrl() {
@@ -23,6 +57,7 @@ class SheetAPI {
   
   fetchFromGoogleSheets(isManual = false) {
     if (!this.gasWebhookUrl) {
+      this.updateDiagnosticWidget('error', '구글 Apps Script URL이 설정되지 않았습니다.');
       if (isManual) {
         alert("구글 Apps Script URL이 설정되지 않았습니다. [실제 구글 시트 연동 가이드] 탭에서 입력해 주세요.");
       }
@@ -118,10 +153,12 @@ class SheetAPI {
             console.log("No data change detected. Skipping re-render.");
           }
           
+          this.updateDiagnosticWidget('success', '구글 시트와 정상적으로 동기화가 이루어졌습니다.');
           if (isManual) {
             alert(`성공적으로 구글 시트에서 전체 데이터를 동기화했습니다!`);
           }
         } else {
+          this.updateDiagnosticWidget('error', '구글 시트로부터 빈 데이터 또는 유효하지 않은 응답을 받았습니다.');
           if (isManual) {
             alert("시트에서 데이터를 읽어오지 못했습니다. 스프레드시트 탭 이름을 확인해 주세요.");
           }
@@ -130,10 +167,14 @@ class SheetAPI {
       .catch(err => {
         if (typeof timeoutId !== 'undefined') clearTimeout(timeoutId);
         console.error("Fetch Google Sheets Error: ", err);
-        if (isManual) {
-          if (err.name === 'AbortError') {
+        if (err.name === 'AbortError') {
+          this.updateDiagnosticWidget('timeout', '구글 시트 웹앱이 15초 동안 응답하지 않아 연동 시간 초과 처리되었습니다. 배포 시 액세스 권한을 [Anyone](모든 사람)으로 지정했는지 확인해 주세요.');
+          if (isManual) {
             alert("구글 시트 연동 시간이 초과되었습니다. 웹 앱 배포 권한이나 URL 주소를 확인해 주세요. (15초 제한)");
-          } else {
+          }
+        } else {
+          this.updateDiagnosticWidget('error', '네트워크 연결 오류 또는 CORS 제한으로 데이터 로드에 실패했습니다. 에러내용: ' + err.message);
+          if (isManual) {
             alert("구글 시트 데이터를 가져오는데 실패했습니다. 웹 앱 배포 권한을 다시 한번 확인해 주세요.");
           }
         }

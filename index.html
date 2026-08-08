@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>학원 출결 관리 시스템 (Google Sheets Sync)</title>
+  <script>
+    window.addEventListener('error', function(e) {
+      if (e.filename && (e.filename.indexOf('chrome-extension') !== -1 || e.filename.indexOf('extension') !== -1)) return;
+      alert("⚠️ 원장앱 실행 오류 감지:\n\n메시지: " + e.message + "\n파일: " + (e.filename ? e.filename.split('/').pop() : '알수없음') + "\n라인: " + e.lineno + "줄\n\n이 팝업 내용을 캡처해서 개발자에게 전달해 주세요.");
+    });
+  </script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="fixed-layout">
@@ -3253,6 +3259,15 @@ function createDailyAttendanceTrigger() {
 
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
+
+  <!-- Live Sync Diagnostic Widget -->
+  <div id="diagnosticWidget" class="glass-panel" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; padding: 0.6rem 0.9rem; border-radius: 12px; display: flex; align-items: center; gap: 0.6rem; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border: 1px solid var(--panel-border); font-size: 0.8rem; background: rgba(30, 41, 59, 0.85); color: white; cursor: pointer; transition: all 0.2s;">
+    <span id="diagnosticStatusDot" style="width: 8px; height: 8px; background: #eab308; border-radius: 50%; display: inline-block;"></span>
+    <div style="display:flex; flex-direction:column; gap:1px;">
+      <span style="font-weight: 600; font-size: 0.75rem;">연동 실시간 진단</span>
+      <span id="diagnosticStatusText" style="font-size:0.65rem; color:#cbd5e1;">로딩 중...</span>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script src="sheet-sim.js"></script>
