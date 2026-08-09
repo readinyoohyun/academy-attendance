@@ -2474,12 +2474,14 @@ body.fixed-layout .view-content.active {
   .ai-report-paper {
     visibility: visible !important;
     box-shadow: none !important;
-    padding: 0 !important;
+    padding: 12mm 15mm 20mm 15mm !important;
     margin: 0 !important;
     width: 210mm !important;
-    height: auto !important;
+    height: 297mm !important; /* Force exactly one A4 page height */
     min-height: 297mm !important;
+    overflow: hidden !important; /* Prevent page 2 generation */
     box-sizing: border-box !important;
+    position: relative !important;
   }
 
   .ai-report-paper * {
@@ -2488,16 +2490,49 @@ body.fixed-layout .view-content.active {
     print-color-adjust: exact !important;
   }
 
+  .ai-report-header {
+    margin-bottom: 0.5rem !important;
+    padding-bottom: 0.3rem !important;
+  }
+
+  .ai-report-title {
+    font-size: 1.6rem !important;
+  }
+
+  .ai-report-meta {
+    margin-bottom: 0.5rem !important;
+    padding: 0.3rem 0.8rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .ai-report-stat-grid {
+    margin-bottom: 0.5rem !important;
+    padding: 0.4rem 0.6rem !important;
+    gap: 0.6rem !important;
+  }
+
+  .stat-bar-container {
+    margin-bottom: 0.3rem !important;
+  }
+
   .ai-report-section {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    margin-bottom: 0.8rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+
+  .ai-report-section-title {
+    font-size: 0.9rem !important;
+    margin-bottom: 0.2rem !important;
+    padding-bottom: 0.1rem !important;
   }
 
   .ai-report-textarea {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     margin-bottom: 0px !important;
+    font-size: 0.8rem !important;
+    line-height: 1.4 !important;
   }
 
   .ai-report-buttons-panel {
@@ -2506,22 +2541,22 @@ body.fixed-layout .view-content.active {
   }
 
   .ai-report-footer {
-    position: fixed !important;
-    bottom: 5mm !important;
+    position: absolute !important;
+    bottom: 12mm !important;
     left: 15mm !important;
     right: 15mm !important;
     text-align: center !important;
     background: white !important;
-    padding-top: 0.5rem !important;
+    padding-top: 0.4rem !important;
     border-top: 1px solid #cbd5e1 !important;
-    font-size: 0.85rem !important;
+    font-size: 0.82rem !important;
     font-weight: 600 !important;
     color: #64748b !important;
   }
 
   @page {
     size: A4 portrait;
-    margin: 12mm 15mm 20mm 15mm;
+    margin: 0mm; /* Since .ai-report-paper defines absolute paddings and height */
   }
 }
 
