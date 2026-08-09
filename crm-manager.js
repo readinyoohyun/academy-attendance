@@ -2101,21 +2101,21 @@ ${textbookSummary}
           <div style="font-size: 0.82rem; color: #475569; margin-bottom: 0.4rem; line-height: 1.45;" contenteditable="true">
             본 분석표는 학생의 읽기 행동 패턴 및 학습 속도를 진단하기 위해 아래와 같은 기준의 색상표로 구분되어 있습니다.
           </div>
-          <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.82rem;">
-              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#ef4444; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 0 3px #ef4444; flex-shrink:0;"></span>
-              <strong style="color: #ef4444; font-weight: 700; width: 85px;">빨간색 원형:</strong>
-              <span contenteditable="true" style="padding: 1px 4px; border-radius: 4px; background: rgba(239, 68, 68, 0.05); flex: 1;">처리속도 지연 (집중도 및 코칭 필요)</span>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.4rem; margin-bottom: 0.4rem; justify-content: space-between;">
+            <div style="flex: 1; display: flex; align-items: center; gap: 0.3rem; font-size: 0.76rem; background: #fee2e2; border: 1px solid #fca5a5; padding: 0.3rem 0.5rem; border-radius: 6px; white-space: nowrap;">
+              <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 0 3px #ef4444; flex-shrink:0;"></span>
+              <strong style="color: #ef4444; font-weight: 700; flex-shrink:0;">빨간색 원형:</strong>
+              <span contenteditable="true" style="padding: 1px 3px; border-radius: 4px; flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis;">처리속도 지연</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.82rem;">
-              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#22c55e; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 0 3px #22c55e; flex-shrink:0;"></span>
-              <strong style="color: #22c55e; font-weight: 700; width: 85px;">초록색 원형:</strong>
-              <span contenteditable="true" style="padding: 1px 4px; border-radius: 4px; background: rgba(34, 197, 94, 0.05); flex: 1;">적당한 속도 (양호)</span>
+            <div style="flex: 1; display: flex; align-items: center; gap: 0.3rem; font-size: 0.76rem; background: #dcfce7; border: 1px solid #bbf7d0; padding: 0.3rem 0.5rem; border-radius: 6px; white-space: nowrap;">
+              <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#22c55e; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 0 3px #22c55e; flex-shrink:0;"></span>
+              <strong style="color: #22c55e; font-weight: 700; flex-shrink:0;">초록색 원형:</strong>
+              <span contenteditable="true" style="padding: 1px 3px; border-radius: 4px; flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis;">적당한 속도 (양호)</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.82rem;">
-              <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#cbd5e1; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 0 3px #94a3b8; flex-shrink:0;"></span>
-              <strong style="color: #64748b; font-weight: 700; width: 85px;">회색 원형:</strong>
-              <span contenteditable="true" style="padding: 1px 4px; border-radius: 4px; background: rgba(148, 163, 184, 0.05); flex: 1;">기민한 속도 (빠름)</span>
+            <div style="flex: 1; display: flex; align-items: center; gap: 0.3rem; font-size: 0.76rem; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.3rem 0.5rem; border-radius: 6px; white-space: nowrap;">
+              <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#cbd5e1; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 0 3px #94a3b8; flex-shrink:0;"></span>
+              <strong style="color: #64748b; font-weight: 700; flex-shrink:0;">회색 원형:</strong>
+              <span contenteditable="true" style="padding: 1px 3px; border-radius: 4px; flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis;">기민한 속도 (빠름)</span>
             </div>
           </div>
         `;
