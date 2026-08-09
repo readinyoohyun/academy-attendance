@@ -740,29 +740,31 @@ class CRMManager {
     }
 
     const tableBody = document.getElementById("crmAttendanceListBody");
-    tableBody.innerHTML = "";
-    if (studentLogs.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.85rem;">출결 로그가 존재하지 않습니다.</td></tr>`;
-    } else {
-      const sortedLogs = [...studentLogs].sort((a, b) => {
-        const timeA = a.timestamp || `${a.date || ''} ${a.time || ''}`;
-        const timeB = b.timestamp || `${b.date || ''} ${b.time || ''}`;
-        return timeB.localeCompare(timeA);
-      });
-      sortedLogs.slice(0, 10).forEach(log => {
-        let badgeClass = "badge-success";
-        if (log.status === "결석") badgeClass = "badge-danger";
-        else if (log.status === "보강완료" || log.status === "보강대기") badgeClass = "badge-warning";
-        
-        const tr = document.createElement("tr");
-        tr.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
-        tr.innerHTML = `
-          <td style="padding: 0.5rem 0.8rem;">${log.date}${log.day ? ` (${log.day.substring(0,1)})` : ''}</td>
-          <td style="padding: 0.5rem 0.8rem;">${log.time}</td>
-          <td style="padding: 0.5rem 0.8rem; text-align: center;"><span class="${badgeClass}" style="font-size:0.75rem; padding: 0.1rem 0.3rem;">${log.status}</span></td>
-        `;
-        tableBody.appendChild(tr);
-      });
+    if (tableBody) {
+      tableBody.innerHTML = "";
+      if (studentLogs.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.85rem;">출결 로그가 존재하지 않습니다.</td></tr>`;
+      } else {
+        const sortedLogs = [...studentLogs].sort((a, b) => {
+          const timeA = a.timestamp || `${a.date || ''} ${a.time || ''}`;
+          const timeB = b.timestamp || `${b.date || ''} ${b.time || ''}`;
+          return timeB.localeCompare(timeA);
+        });
+        sortedLogs.slice(0, 10).forEach(log => {
+          let badgeClass = "badge-success";
+          if (log.status === "결석") badgeClass = "badge-danger";
+          else if (log.status === "보강완료" || log.status === "보강대기") badgeClass = "badge-warning";
+          
+          const tr = document.createElement("tr");
+          tr.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
+          tr.innerHTML = `
+            <td style="padding: 0.5rem 0.8rem;">${log.date}${log.day ? ` (${log.day.substring(0,1)})` : ''}</td>
+            <td style="padding: 0.5rem 0.8rem;">${log.time}</td>
+            <td style="padding: 0.5rem 0.8rem; text-align: center;"><span class="${badgeClass}" style="font-size:0.75rem; padding: 0.1rem 0.3rem;">${log.status}</span></td>
+          `;
+          tableBody.appendChild(tr);
+        });
+      }
     }
 
     // Render the monthly attendance calendar

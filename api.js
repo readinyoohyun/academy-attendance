@@ -72,7 +72,11 @@ class SheetAPI {
     }
     
     const loadBtn = document.getElementById("btnSyncGoogleSheets");
-    const originalText = loadBtn ? loadBtn.innerHTML : "구글시트 불러오기";
+    if (loadBtn && loadBtn.disabled) {
+      console.log("Sync already in progress. Skipping duplicate fetch call.");
+      return;
+    }
+    const originalText = (loadBtn && loadBtn.innerHTML && !loadBtn.innerHTML.includes("동기화")) ? loadBtn.innerHTML : "구글시트 불러오기";
     if (loadBtn) {
       loadBtn.innerHTML = "⏱️ 동기화 중...";
       loadBtn.disabled = true;

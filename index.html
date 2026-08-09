@@ -328,24 +328,7 @@
                   </div>
                 </div>
 
-                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">최근 출결 타임라인</div>
-                <div style="max-height: 180px; overflow-y: auto; border: 1px solid var(--panel-border); border-radius: 8px; background: var(--box-bg);">
-                  <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
-                    <thead>
-                      <tr style="background: var(--tab-bg); border-bottom: 1px solid var(--panel-border);">
-                        <th style="padding: 0.5rem 0.8rem;">날짜</th>
-                        <th style="padding: 0.5rem 0.8rem;">시간</th>
-                        <th style="padding: 0.5rem 0.8rem; text-align: center;">상태</th>
-                      </tr>
-                    </thead>
-                    <tbody id="crmAttendanceListBody">
-                      <!-- Dynamically populated -->
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Monthly Attendance Calendar Placeholder (CRM) -->
-                <div id="crmAttendanceCalendarContainer"></div>
+                <!-- Monthly Attendance Calendar & Timeline removed to achieve lightweight performance (available in 구글시트 출결달력검색 탭) -->
               </div>
 
               <!-- SECTION B: TEXTBOOK 진도 관리 -->
@@ -2123,6 +2106,27 @@ function setupSheetsAndHeaders() {
       ss.deleteSheet(sheetLogs);
     } catch(e) {}
   }
+  
+  // 출결달력검색 탭 셋업
+  var sheetCal = ss.getSheetByName("출결달력검색");
+  if (!sheetCal) {
+    sheetCal = ss.insertSheet("출결달력검색");
+    sheetCal.setHiddenGridlines(false);
+    
+    sheetCal.getRange("A2").setValue("학생 이름");
+    sheetCal.getRange("B2").setValue("강찬");
+    sheetCal.getRange("C2").setValue("년도");
+    sheetCal.getRange("D2").setValue(new Date().getFullYear());
+    sheetCal.getRange("E2").setValue("월");
+    sheetCal.getRange("F2").setValue(new Date().getMonth() + 1);
+    
+    sheetCal.getRange("A2:F2").setBackground("#f1f5f9").setFontWeight("bold").setHorizontalAlignment("center").setVerticalAlignment("middle");
+    sheetCal.getRange("B2").setBackground("#e8f0fe").setBorder(true, true, true, true, false, false, "#1a73e8", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    sheetCal.getRange("D2").setBackground("#e8f0fe");
+    sheetCal.getRange("F2").setBackground("#e8f0fe");
+    
+    updateAttendanceCalendarSheet(sheetCal, "강찬", new Date().getFullYear(), new Date().getMonth() + 1);
+  }
 }
 
 // B3 검색 학생을 기준으로 매칭 행 수량만큼 수식을 계산해 밀어내는 동적 한명검색 시트 생성 함수
@@ -2237,6 +2241,160 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   sheet.getRange("A6:O6").setHorizontalAlignment("center").setVerticalAlignment("middle");
   sheet.getRange(sec2HeaderRow, 1, 1, 18).setHorizontalAlignment("center").setVerticalAlignment("middle");
   sheet.getRange(sec3HeaderRow, 1, 1, 6).setHorizontalAlignment("center").setVerticalAlignment("middle");
+}
+
+// 6열 고정 넓이 달력 그리기용 출결 달력 검색 시트 생성 및 그리기 함수
+function updateAttendanceCalendarSheet(sheet, studentName, year, month) {
+  if (!sheet) return;
+  
+  // 1. 5행 이하 전체 삭제 및 초기화
+  var lastRow = sheet.getLastRow();
+  if (lastRow >= 5) {
+    sheet.getRange(5, 1, lastRow - 4, 7).clear();
+    sheet.getRange(5, 1, lastRow - 4, 7).clearFormat();
+  }
+  
+  // 2. 4행 요일 헤더 설정
+  sheet.getRange("A4:G4").setValues([["일", "월", "화", "수", "목", "금", "토"]])
+       .setFontWeight("bold")
+       .setBackground("#e2e8f0")
+       .setHorizontalAlignment("center")
+       .setVerticalAlignment("middle");
+       
+  for (var c = 1; c <= 7; c++) {
+    sheet.setColumnWidth(c, 110);
+  }
+  
+  // 3. 학생 데이터 수집
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetDaily = ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘 출석부");
+  var sheetAccum = ss.getSheetByName("학생수업관리") || ss.getSheetByName("누적일일수업관리");
+  
+  var logs = [];
+  
+  // 오늘 출석부에서 수집
+  if (sheetDaily) {
+    var lastDaily = sheetDaily.getLastRow();
+    if (lastDaily > 2) {
+      var dailyData = sheetDaily.getRange(3, 1, lastDaily - 2, 11).getDisplayValues();
+      for (var i = 0; i < dailyData.length; i++) {
+        var rowName = String(dailyData[i][2] || "").trim();
+        if (rowName.replace(/\s+/g, '') === studentName.replace(/\s+/g, '')) {
+          logs.push({
+            date: String(dailyData[i][0] || "").trim(),
+            time: String(dailyData[i][1] || "").trim(),
+            status: String(dailyData[i][4] || "").trim(),
+            inTime: String(dailyData[i][5] || "").trim()
+          });
+        }
+      }
+    }
+  }
+  
+  // 누적일일수업관리에서 수집
+  if (sheetAccum) {
+    var lastAccum = sheetAccum.getLastRow();
+    if (lastAccum > 1) {
+      // 최근 3000행만 조회 (로딩 속도 보존)
+      var startRow = Math.max(2, lastAccum - 3000);
+      var numRows = lastAccum - startRow + 1;
+      var accumData = sheetAccum.getRange(startRow, 1, numRows, 11).getDisplayValues();
+      for (var i = 0; i < accumData.length; i++) {
+        var rowName = String(accumData[i][2] || "").trim();
+        if (rowName.replace(/\s+/g, '') === studentName.replace(/\s+/g, '')) {
+          logs.push({
+            date: String(accumData[i][0] || "").trim(),
+            time: String(accumData[i][1] || "").trim(),
+            status: String(accumData[i][4] || "").trim(),
+            inTime: String(accumData[i][5] || "").trim()
+          });
+        }
+      }
+    }
+  }
+  
+  // 4. 달력 일자 루프 및 채우기
+  var firstDay = new Date(year, month - 1, 1);
+  var numDays = new Date(year, month, 0).getDate();
+  var startDayOfWeek = firstDay.getDay(); // 0: 일요일, 6: 토요일
+  
+  var gridRow = 5;
+  var gridCol = startDayOfWeek + 1;
+  
+  // 달력 행 높이 설정 (정사각형 느낌)
+  for (var r = 5; r <= 11; r++) {
+    sheet.setRowHeight(r, 65);
+  }
+  
+  // 이전 달 빈 칸 연한 회색 배경 처리
+  if (startDayOfWeek > 0) {
+    sheet.getRange(5, 1, 1, startDayOfWeek).setBackground("#f8fafc");
+  }
+  
+  for (var day = 1; day <= numDays; day++) {
+    var cell = sheet.getRange(gridRow, gridCol);
+    var cellText = day + "\n";
+    
+    // 이 날짜의 출결 로그 검색 (예: "8/9" 또는 "8/9일" 매칭)
+    var matchingLog = null;
+    var datePattern = new RegExp('^' + month + '[/\\.]' + day + '(\\D|$)');
+    
+    for (var l = 0; l < logs.length; l++) {
+      if (datePattern.test(logs[l].date)) {
+        matchingLog = logs[l];
+        break;
+      }
+    }
+    
+    if (matchingLog) {
+      var status = matchingLog.status;
+      var inTime = matchingLog.inTime || matchingLog.time || "";
+      if (status === "대기" || status === "수업중" || status === "수업 중" || status === "보강 수업중") {
+        cellText += status;
+        cell.setBackground("#f1f5f9").setFontColor("#475569");
+      } else if (status === "출석" || status === "수업완료") {
+        cellText += "출석 (" + inTime + ")";
+        cell.setBackground("#dcfce7").setFontColor("#15803d");
+      } else if (status === "결석") {
+        cellText += "결석";
+        cell.setBackground("#fee2e2").setFontColor("#b91c1c");
+      } else if (status === "보강대기") {
+        cellText += "보강대기";
+        cell.setBackground("#fce7f3").setFontColor("#be185d");
+      } else if (status === "보강완료" || status === "완료") {
+        cellText += "보강완료 (" + inTime + ")";
+        cell.setBackground("#e0f2fe").setFontColor("#0369a1");
+      } else if (status === "휴강") {
+        cellText += "휴강";
+        cell.setBackground("#f8fafc").setFontColor("#94a3b8");
+      } else {
+        cellText += status;
+      }
+    }
+    
+    cell.setValue(cellText)
+        .setFontSize(9)
+        .setFontFamily("Malgun Gothic")
+        .setHorizontalAlignment("center")
+        .setVerticalAlignment("top");
+        
+    gridCol++;
+    if (gridCol > 7) {
+      gridCol = 1;
+      gridRow++;
+    }
+  }
+  
+  // 다음 달 빈 칸 연한 회색 배경 처리
+  if (gridCol <= 7) {
+    sheet.getRange(gridRow, gridCol, 1, 8 - gridCol).setBackground("#f8fafc");
+  }
+  if (gridRow < 10) {
+    sheet.getRange(gridRow + 1, 1, 10 - gridRow, 7).setBackground("#f8fafc");
+  }
+  
+  // 전체 테두리선 추가
+  sheet.getRange(5, 1, gridRow - 5 + 1, 7).setBorder(true, true, true, true, true, true, "#e2e8f0", SpreadsheetApp.BorderStyle.SOLID);
 }
 
 // 특정 시트의 이름 컬럼에서 학생 매칭 행수를 구하는 헬퍼 함수
@@ -2568,6 +2726,16 @@ function onEdit(e) {
   if (sheetName === "한명 검색" && range.getA1Notation() === "B3") {
     var studentName = String(range.getValue()).trim();
     updateSingleSearchSheetLayout(sheet, studentName);
+  }
+  
+  if (sheetName === "출결달력검색") {
+    var notation = range.getA1Notation();
+    if (notation === "B2" || notation === "D2" || notation === "F2") {
+      var studentName = String(sheet.getRange("B2").getValue()).trim();
+      var year = parseInt(sheet.getRange("D2").getValue(), 10) || new Date().getFullYear();
+      var month = parseInt(sheet.getRange("F2").getValue(), 10) || (new Date().getMonth() + 1);
+      updateAttendanceCalendarSheet(sheet, studentName, year, month);
+    }
   }
   
   if (sheetName === "전체시간표" || sheetName === "전체 시간표") {
