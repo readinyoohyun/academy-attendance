@@ -2353,6 +2353,12 @@ body.fixed-layout .view-content.active {
 
 .ai-report-section {
   margin-bottom: 0.8rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #3b82f6;
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  box-sizing: border-box;
 }
 
 .ai-report-section-title {
@@ -2520,7 +2526,12 @@ body.fixed-layout .view-content.active {
   .ai-report-section {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    margin-bottom: 0.3rem !important;
+    margin-bottom: 0.35rem !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-left: 4px solid #3b82f6 !important;
+    border-radius: 6px !important;
+    padding: 0.4rem 0.6rem !important;
   }
 
   .ai-report-section-title {
