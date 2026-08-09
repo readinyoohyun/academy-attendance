@@ -100,6 +100,7 @@ class SheetAPI {
           let incomingMemberAnalysis = [];
           let incomingAttendanceLogs = [];
           let incomingAccumulatedLogs = [];
+          let incomingBriefings = [];
 
           if (Array.isArray(data)) {
             incomingStudents = data;
@@ -111,6 +112,7 @@ class SheetAPI {
             incomingMemberAnalysis = data.memberAnalysis || [];
             incomingAttendanceLogs = data.attendanceLogs || [];
             incomingAccumulatedLogs = data.accumulatedLogs || [];
+            incomingBriefings = data.briefings || [];
           }
 
           // Compare data to see if anything actually changed
@@ -121,7 +123,8 @@ class SheetAPI {
             consultations: this.app.state.consultations || [],
             memberAnalysis: this.app.state.memberAnalysis || [],
             attendanceLogs: this.app.state.attendanceLogs || [],
-            accumulatedLogs: this.app.state.accumulatedLogs || []
+            accumulatedLogs: this.app.state.accumulatedLogs || [],
+            briefings: this.app.state.briefings || []
           });
 
           const newDataStr = JSON.stringify({
@@ -131,7 +134,8 @@ class SheetAPI {
             consultations: incomingConsultations,
             memberAnalysis: incomingMemberAnalysis,
             attendanceLogs: incomingAttendanceLogs,
-            accumulatedLogs: incomingAccumulatedLogs
+            accumulatedLogs: incomingAccumulatedLogs,
+            briefings: incomingBriefings
           });
 
           if (oldDataStr !== newDataStr) {
@@ -143,6 +147,7 @@ class SheetAPI {
             this.app.state.memberAnalysis = incomingMemberAnalysis;
             this.app.state.attendanceLogs = incomingAttendanceLogs;
             this.app.state.accumulatedLogs = incomingAccumulatedLogs;
+            this.app.state.briefings = incomingBriefings;
             this.app.students = this.app.state.students;
 
             this.app.saveState();

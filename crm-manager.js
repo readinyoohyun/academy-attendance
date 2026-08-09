@@ -640,14 +640,57 @@ class CRMManager {
     document.getElementById("crmDashboard").style.display = "block";
 
     const days = this.getLastConsultationDays(student.name);
+    
+    // 신규브리핑관리 시트 데이터 매칭
+    const matchName = name.replace(/\s+/g, '').toLowerCase();
+    const briefings = (this.app.state.briefings || []).filter(b => {
+      for (const key in b) {
+        if (key.includes("이름") || key.includes("학생") || key.includes("Name")) {
+          if (String(b[key]).replace(/\s+/g, '').toLowerCase() === matchName) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    const getBriefingInfo = (b) => {
+      let date = "";
+      let memo = "";
+      for (const key in b) {
+        const k = key.trim();
+        if (k.includes("날짜") || k.includes("일자") || k.includes("Date") || k.includes("등록일") || k.includes("브리핑일")) {
+          date = b[key];
+        }
+        if (k.includes("내용") || k.includes("메모") || k.includes("브리핑") || k.includes("피드백") || k.includes("특이사항") || k.includes("Memo") || k.includes("Content")) {
+          memo = b[key];
+        }
+      }
+      return { date, memo };
+    };
+
     let badgeHtml = "";
-    if (days === Infinity) {
-      badgeHtml = ` <span class="badge-consultation" style="font-size: 0.75rem; font-weight: bold; background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">⚠️ 상담 기록 없음</span>`;
-    } else if (days > 30) {
-      badgeHtml = ` <span class="badge-consultation" style="font-size: 0.75rem; font-weight: bold; background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">⚠️ 상담 필요 (${days}일 경과)</span>`;
+    if (briefings.length > 0) {
+      const briefingListHtml = briefings.map(b => {
+        const info = getBriefingInfo(b);
+        return `<div style="margin-top: 3px; padding: 2px 0; border-bottom: 1px dashed rgba(255,255,255,0.15); font-size: 0.75rem; color: #ffffff;">📅 <strong>${info.date}</strong>: ${info.memo}</div>`;
+      }).join("");
+      
+      badgeHtml = `
+        <div class="briefing-history-badge" style="font-size: 0.8rem; background: rgba(99, 102, 241, 0.3); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.5); padding: 0.4rem 0.8rem; border-radius: 6px; margin-left: 0.8rem; display: inline-flex; flex-direction: column; gap: 3px; max-width: 450px; text-align: left; vertical-align: middle; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
+          <strong style="color: #fbbf24; display: flex; align-items: center; gap: 0.25rem;">💬 신규 브리핑 피드백 내역</strong>
+          ${briefingListHtml}
+        </div>
+      `;
+    } else {
+      if (days === Infinity) {
+        badgeHtml = ` <span class="badge-consultation" style="font-size: 0.75rem; font-weight: bold; background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">⚠️ 브리핑 기록 없음</span>`;
+      } else if (days > 30) {
+        badgeHtml = ` <span class="badge-consultation" style="font-size: 0.75rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">⚠️ 상담 필요 (${days}일 경과 / 브리핑 없음)</span>`;
+      }
     }
 
-    document.getElementById("crmStudentName").innerHTML = `${this.escapeHtml(student.name)} <span id="crmStudentGrade" style="font-size: 0.95rem; font-weight: 400; background: rgba(255, 255, 255, 0.1); padding: 0.2rem 0.6rem; border-radius: 20px; color: var(--text-primary);">${student.grade}</span>${badgeHtml}`;
+    document.getElementById("crmStudentName").innerHTML = `<span style="color: #fbbf24; font-weight: 800; text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);">${this.escapeHtml(student.name)}</span> <span id="crmStudentGrade" style="font-size: 0.95rem; font-weight: 500; background: rgba(255, 255, 255, 0.15); padding: 0.2rem 0.6rem; border-radius: 20px; color: #ffffff; margin-left: 0.3rem;">${student.grade}</span>${badgeHtml}`;
     
     const schedulesList = [];
     if (student.times) {
@@ -659,7 +702,12 @@ class CRMManager {
     }
     const scheduleStr = schedulesList.length > 0 ? schedulesList.join(", ") : "지정된 정규 일정 없음";
     const classesStr = student.classes || "과정 미지정";
-    document.getElementById("crmStudentSchedule").innerText = `정규 일정: ${scheduleStr} | 시수/과정: ${classesStr}`;
+    
+    const scheduleEl = document.getElementById("crmStudentSchedule");
+    scheduleEl.innerText = `정규 일정: ${scheduleStr} | 시수/과정: ${classesStr}`;
+    scheduleEl.style.color = "#ffffff";
+    scheduleEl.style.opacity = "1";
+    scheduleEl.style.fontWeight = "500";
 
     const studentAccumLogs = (this.app.state.accumulatedLogs || []).filter(log => log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
     const studentDailyLogs = (this.app.state.dailyLogs || []).filter(log => log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, '') && log.status !== '대기' && log.status !== '보강대기' && log.status !== '수업중');

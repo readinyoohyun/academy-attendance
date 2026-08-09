@@ -1015,6 +1015,30 @@ function doGet() {
   // 7. 학생수업관리 (accumulatedLogs) - 원장앱 경량화를 위해 앱 조회 데이터 제외
   var accumulatedLogsData = [];
 
+  // 8. 신규브리핑관리 (briefings)
+  var sheetBriefing = ss.getSheetByName("신규브리핑관리") || ss.getSheetByName("신규 브리핑 관리");
+  var briefingsData = [];
+  if (sheetBriefing) {
+    var lastRow = sheetBriefing.getLastRow();
+    if (lastRow > 1) {
+      var lastCol = sheetBriefing.getLastColumn();
+      var range = sheetBriefing.getRange(2, 1, lastRow - 1, lastCol);
+      var data = range.getDisplayValues();
+      var headers = sheetBriefing.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+      
+      for (var i = 0; i < data.length; i++) {
+        var rowObj = { row: 2 + i };
+        for (var j = 0; j < headers.length; j++) {
+          var header = String(headers[j]).trim();
+          if (header) {
+            rowObj[header] = String(data[i][j]).trim();
+          }
+        }
+        briefingsData.push(rowObj);
+      }
+    }
+  }
+
   var responseObj = {
     students: studentsData,
     dailyLogs: dailyLogsData,
@@ -1022,7 +1046,8 @@ function doGet() {
     consultations: consultationsData,
     memberAnalysis: memberAnalysisData,
     attendanceLogs: attendanceLogsData,
-    accumulatedLogs: accumulatedLogsData
+    accumulatedLogs: accumulatedLogsData,
+    briefings: briefingsData
   };
 
   return ContentService.createTextOutput(JSON.stringify(responseObj))
