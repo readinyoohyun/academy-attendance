@@ -1841,7 +1841,7 @@ ${textbookSummary}
 [수행 지시 사항]:
 1. 첨부된 이미지들(리드인 독서 로그 및 읽기 트레이닝 결과 화면 캡처, 레벨 조정 기간 분석표)을 판독(OCR)하여 학생의 학습 성과를 정확하게 분석하세요.
 2. 리포트 형식에 맞추어 적절한 JSON 구조로 응답해 주세요. 문체는 "~하였습니다.", "~이 필요합니다.", "~을 권장합니다." 와 같이 매우 신뢰감 있고 친절하며 전문적인 어조(존댓말)로 집필해야 합니다.
-3. 중요 지침 (분량 제한): 전체 리포트가 A4 딱 1페이지 내에 깔끔하게 들어갈 수 있도록 모든 문장을 매우 핵심만 추려 간결하게 집필해 주세요. introMessage는 최대 2줄 이내로, 각 section의 text는 최대 3줄 이내(130~150자 내외)로 대폭 압축하여 핵심 정보와 요점만 정밀하게 전달되도록 해야 합니다. 절대로 문장을 길게 늘이지 마세요.
+3. 중요 지침 (분량 조절): 전체 리포트가 A4 딱 1페이지 내에 최적의 비율로 차오르도록 집필해 주세요. 본문의 문장이 너무 짧거나 부실하면 문서 하단에 빈 공간이 크게 남아 엉성해 보이므로, 각 section의 text는 핵심 위주로 3~5줄 정도로 정밀하게 채워야 합니다 (160~220자 내외). 단, 1페이지 범위를 넘겨 2페이지로 넘어가지 않도록 간결함과 상세함의 완벽한 밸런스를 유지해 주세요.
 
    ※ 중요 교수법 및 키워드 반영 가이드 (집필 시 활용할 것):
    - **독서 지도법**: '집중독서 3:3' 독서법(3분씩 3회 끊어 읽기)을 제안해 주세요. 이는 어려운 내용의 반복 정독, 미처 발견하지 못한 인물/사건 흐름의 재발견, 속도 경험치 누적 및 이해도 향상에 큰 효과가 있습니다.
@@ -2072,22 +2072,10 @@ ${textbookSummary}
       introDiv.style.borderRadius = "6px";
       introDiv.style.borderLeft = "4px solid #1e3a8a";
       
-      const lineCount = report.introMessage.split("\n").length;
-      const rows = Math.max(3, lineCount + 1);
-      
       introDiv.innerHTML = `
-        <textarea class="ai-report-textarea" rows="${rows}" style="overflow-y:hidden; font-weight: 600; color: #1e293b; margin-bottom: 0px;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">${report.introMessage}</textarea>
+        <div class="ai-report-textarea" contenteditable="true" style="font-weight: 600; color: #1e293b; outline: none; white-space: pre-wrap; padding: 0.2rem; min-height: auto;">${report.introMessage.trim()}</div>
       `;
       sectionsContainer.appendChild(introDiv);
-      
-      // Auto-grow initial render
-      setTimeout(() => {
-        const ta = introDiv.querySelector('textarea');
-        if (ta) {
-          ta.style.height = 'auto';
-          ta.style.height = ta.scrollHeight + 'px';
-        }
-      }, 50);
     }
     
     const sections = report.sections || [];
@@ -2132,23 +2120,11 @@ ${textbookSummary}
         `;
         sectionsContainer.appendChild(secDiv);
       } else {
-        const lineCount = sec.text.split("\n").length;
-        const rows = Math.max(3, lineCount + 1);
-        
         secDiv.innerHTML = `
           <div class="ai-report-section-title">${sec.title}</div>
-          <textarea class="ai-report-textarea" rows="${rows}" style="overflow-y:hidden;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">${sec.text}</textarea>
+          <div class="ai-report-textarea" contenteditable="true" style="outline: none; white-space: pre-wrap; padding: 0.2rem; min-height: auto;">${sec.text.trim()}</div>
         `;
         sectionsContainer.appendChild(secDiv);
-        
-        // Auto-grow initial render
-        setTimeout(() => {
-          const ta = secDiv.querySelector('textarea');
-          if (ta) {
-            ta.style.height = 'auto';
-            ta.style.height = ta.scrollHeight + 'px';
-          }
-        }, 50);
       }
     });
     

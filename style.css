@@ -2351,6 +2351,13 @@ body.fixed-layout .view-content.active {
   color: #1e3a8a;
 }
 
+#aiReportSectionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  flex: 1;
+}
+
 .ai-report-section {
   margin-bottom: 0.8rem;
   background: #f8fafc;
@@ -2524,10 +2531,18 @@ body.fixed-layout .view-content.active {
     margin-bottom: 0.2rem !important;
   }
 
+  #aiReportSectionsContainer {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    flex: 1 !important;
+    gap: 0 !important;
+  }
+
   .ai-report-section {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    margin-bottom: 0.35rem !important;
+    margin-bottom: 0 !important;
     background: #f8fafc !important;
     border: 1px solid #e2e8f0 !important;
     border-left: 4px solid #3b82f6 !important;
