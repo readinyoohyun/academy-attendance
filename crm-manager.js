@@ -1715,7 +1715,7 @@ class CRMManager {
 조회 기간: ${start} ~ ${end}
 학생 이름: ${name}
 학년: ${grade}
-리포트 주기/형식: ${cycle === 'weekly' ? '일주일 주간 리포트' : cycle === 'biweekly' ? '이주일 격주 리포트' : '한달 월간 레벨 조정 및 확정 리포트'}
+리포트 형식: ${cycle === 'reading_training' ? '읽기 트레이닝 단독 분석 리포트' : cycle === 'weekly' ? '일주일 주간 리포트' : cycle === 'biweekly' ? '이주일 격주 리포트' : '한달 월간 레벨 조정 및 확정 리포트'}
 
 [원장님 추가 요구사항]:
 ${extra || '없음'}
@@ -1728,31 +1728,52 @@ ${textbookSummary}
 
 [수행 지시 사항]:
 1. 첨부된 이미지들(리드인 독서 로그 및 읽기 트레이닝 결과 화면 캡처, 레벨 조정 기간 분석표)을 판독(OCR)하여 학생의 학습 성과를 정확하게 분석하세요.
-2. 분석한 데이터를 바탕으로 다음 6가지 항목의 코멘트를 작성해 주세요. 문체는 "~하였습니다.", "~이 필요합니다.", "~을 권장합니다." 와 같이 매우 신뢰감 있고 친절하며 정중한 어조(존댓말)로 집필해야 합니다.
-   - 1. 학습 레벨 및 학습 코스: 현재 도서의 레벨과 읽는 도서 분류 성향 분석. (특히 '한달 레벨조정 및 확정' 형식인 경우, 학생이 다음 단계로 코스업/레벨업할지 아니면 다지기를 할지 확정 결과를 명시할 것)
-   - 2. 독서 이해도 및 영역별 점수 분석: 이미지에서 독서이해도 및 어휘, 사실, 추론, 비판 점수를 찾아 성취도를 분석하고 솔루션 제시.
-   - 3. 읽기 속도 및 읽기 트레이닝 현황: 분당 글자 수 및 읽기 트레이닝 진행 추이를 분석하여 또래 수준과 비교해 격려.
-   - 4. 문해력 PT 진행 상황: 교재 학습 진도와 문단 나누기, 요약 훈련 현황 요약.
-   - 5. 학습 속도 및 성장 과정: 장기적인 학습 태도 변화와 집중도에 관한 성장 스토리 서술.
-   - 6. 학부모님께 드리는 말씀: 가정에서의 지원 방법과 따뜻한 격려 및 인사.
+2. 리포트 형식에 맞추어 적절한 JSON 구조로 응답해 주세요. 문체는 "~하였습니다.", "~이 필요합니다.", "~을 권장합니다." 와 같이 매우 신뢰감 있고 친절하며 전문적인 어조(존댓말)로 집필해야 합니다.
+
+   ※ 중요 교수법 및 키워드 반영 가이드 (집필 시 반드시 활용할 것):
+   - **독서 지도법**: '집중독서 3:3' 독서법(3분씩 3회 끊어 읽기)을 제안해 주세요. 이는 어려운 내용의 반복 정독, 미처 발견하지 못한 인물/사건 흐름의 재발견, 속도 경험치 누적 및 이해도 향상에 큰 효과가 있습니다.
+   - **비문학 독해(PT/빠작)**: 중심 화제 찾기, 핵심어 정리, 문단 나누기, 구조화 및 요약 훈련을 설명해 주세요. 역사/과학/사회 영역 등 비문학 도서 독해 시 딱딱한 텍스트에 대한 친숙도를 높이고 배경지식을 확장해 줍니다.
+   - **글쓰기 지도**: 기본적인 원고지 부호 사용법, 문맥상 매끄러운 연결어 사용, 띄어쓰기/맞춤법 교정, 감정/생각을 조리 있게 서술하기 위한 문단별 주제 설정을 언급해 주세요.
+   - **읽기 트레이닝 행동 진단 (메타인지)**: '문제 확인' 단계는 아는 것과 모르는 것을 구분하는 메타인지 구간입니다. 만약 이 단계가 지나치게 빠르다면, 문제를 건성으로 읽고 정답을 보기에서 대충 끼워 맞추는 성급한 풀이 습관이 있음을 시사하므로, '알고 모르는 것을 구분하는 자기 점검 및 1:1 상담 집중 지도' 계획을 포함해야 합니다.
+
+   - 만약 리포트 형식이 '읽기 트레이닝 단독 분석 리포트' 인 경우:
+     * title: "읽기 트레이닝 단독 분석 리포트"
+     * introMessage: "[이름]이가 읽기트레이닝 [N]권 과정을 완료했습니다. 다음 등원시 교재와 분석표, 분석리포트를 전달하겠습니다. 1권부터 [N]권까지의 분석표를 보시면 빨간색 불에서 초록불로 점점 속도가 개선되고 있음을 보실 수 있습니다. 우리 [이름]이의 발전에 많은 칭찬해주시면 [이름]이에게 큰 격려와 성장의 동기가 될 것입니다. [이름], [형제이름(있는 경우)] 형제 맡겨 주셔서 감사드리며, 좋은 교육으로 보답하겠습니다~!" 형태의 알림 코멘트 작성.
+     * sections 배열:
+       1. title: "1. 학습 현황 보고" -> 완료 교재 보고.
+       2. title: "2. 읽기 분석표 해석 기준" -> 빨간색(처리속도 지연), 초록색(평균 수준으로 양호), 회색(평균보다 빠름) 등의 해석 기준 요약.
+       3. title: "3. 세부 분석 결과" -> 읽기 속도(분당 글자수), 정답률, 그리고 '처음 읽기', '문제 확인', '다시 읽기와 문제 풀이' 단계에 대한 이미지 기반 상세 독해 행동 진단 및 해결 방향 기술.
+       4. title: "4. 향후 학습 계획" -> 승급할 다음 권수(예: 읽트 5권 승급) 및 메타인지/자기점검을 위한 집중 지도 및 상담 계획.
+   
+   - 그 외 형식(주간, 격주, 월간 레벨조정)인 경우:
+     * title: "학업 성취 종합 분석 리포트" (또는 "레벨 조정 종합 리포트")
+     * introMessage: "안녕하세요, [학원명]입니다. 우리 [학생이름] 학생의 리드인 활동 리포트입니다." 형태의 가벼운 인사말.
+     * sections 배열:
+       1. title: "1. 학습 레벨 및 학습 코스" -> 현재 레벨/코스 분석 및 레벨 조정/확정 결과.
+       2. title: "2. 독서 이해도 및 영역별 점수 분석" -> 사실, 어휘, 추론, 비판 분석 및 해결책.
+       3. title: "3. 읽기 속도 및 읽기 트레이닝 현황" -> 분당 글자수 및 읽트 진도.
+       4. title: "4. 문해력 PT 진행 상황" -> 비문학 본문 해석 및 구조화 훈련.
+       5. title: "5. 학습 속도 및 성장 과정" -> 집중도 및 읽기 속도 태도 변화.
+       6. title: "6. 학부모님께 드리는 말씀" -> 응원 및 인사.
 
 3. 또한 이미지에서 다음 수치들을 찾아내어 JSON의 'stats' 객체로 반환해 주세요. (이미지에 없는 경우 0 또는 기본 수치로 추론하여 채워주세요):
-   - comprehension: 독서 이해도 (0~100 사이 숫자)
-   - readSpeed: 평소 읽기 속도 (분당 글자수, 예: 541)
+   - comprehension: 독서 이해도 또는 정답률 평균 (0~100 사이 숫자, 예: 95.71%인 경우 96)
+   - readSpeed: 평소 읽기 속도 (분당 글자수, 예: 351 또는 419)
    - vocab: 어휘 이해 점수 (0~100 사이 숫자)
    - fact: 사실 이해 점수 (0~100 사이 숫자)
    - infer: 추론 이해 점수 (0~100 사이 숫자)
    - critique: 비판 이해 점수 (0~100 사이 숫자)
 
-응답 포맷: 반드시 아래 구조의 JSON 데이터만 출력해 주세요. 다른 서론이나 설명 텍스트, 백틱 코드 블록(\`\`\`json)은 절대 붙이지 말고 순수 JSON 문자열만 응답하세요.
+응답 포맷: 반드시 아래 구조의 JSON 데이터만 출력해 주세요. 다른 설명 텍스트는 절대 붙이지 말고 순수 JSON 문자열만 응답하세요.
 {
-  "title": "학업 성취 종합 분석 리포트",
-  "levelCourse": "...",
-  "comprehensionText": "...",
-  "readingSpeedText": "...",
-  "grammarPtText": "...",
-  "growthProcessText": "...",
-  "teacherComment": "...",
+  "title": "...",
+  "introMessage": "...",
+  "sections": [
+    {
+      "title": "...",
+      "text": "..."
+    }
+  ],
   "stats": {
     "comprehension": 80,
     "readSpeed": 541,
@@ -1838,14 +1859,15 @@ ${textbookSummary}
     const titleEl = document.getElementById("aiReportTitle");
     const subtitleEl = document.getElementById("aiReportSubtitle");
     
+    titleEl.innerText = report.title || `${name} 학생의 학업 분석 리포트`;
+    
     if (cycle === 'weekly') {
-      titleEl.innerText = `${name} 학생의 주간 독후 활동 리포트`;
       subtitleEl.innerText = "학생이 책을 읽고 독서노트 작성 및 독서 진단 활동을 수행한 주간 내역입니다.";
     } else if (cycle === 'biweekly') {
-      titleEl.innerText = `${name} 학생의 격주 독서 분석 리포트`;
       subtitleEl.innerText = "학생의 격주간 독서 학습 태도와 영역별 진단 추이 분석표입니다.";
+    } else if (cycle === 'reading_training') {
+      subtitleEl.innerText = "읽기 트레이닝 완료에 따른 독해 속도 및 행동 유형 세부 분석 결과지입니다.";
     } else {
-      titleEl.innerText = `${name} 학생의 레벨 조정 종합 리포트`;
       subtitleEl.innerText = `${startDot} ~ ${endDot} 에 학생의 독서 능력을 분석하여 확정 레벨을 설정하는 기간 리포트입니다.`;
     }
     
@@ -1878,19 +1900,39 @@ ${textbookSummary}
       statGrid.style.display = "none";
     }
     
-    // Render the 6 evaluation sections
+    // Render evaluation sections
     const sectionsContainer = document.getElementById("aiReportSectionsContainer");
     sectionsContainer.innerHTML = "";
     
-    const sections = [
-      { num: 1, title: "학습 레벨 및 학습 코스", text: report.levelCourse || "" },
-      { num: 2, title: "독서 이해도 및 영역별 점수 분석", text: report.comprehensionText || "" },
-      { num: 3, title: "읽기 속도 및 읽기 트레이닝 현황", text: report.readingSpeedText || "" },
-      { num: 4, title: "문해력 PT 진행 상황", text: report.grammarPtText || "" },
-      { num: 5, title: "학습 속도 및 성장 과정", text: report.growthProcessText || "" },
-      { num: 6, title: "학부모님께 드리는 말씀", text: report.teacherComment || "" }
-    ];
+    // Render intro message if present (e.g. parent letter)
+    if (report.introMessage) {
+      const introDiv = document.createElement("div");
+      introDiv.className = "ai-report-section";
+      introDiv.style.marginBottom = "1.5rem";
+      introDiv.style.padding = "0.8rem 1.2rem";
+      introDiv.style.background = "#f1f5f9";
+      introDiv.style.borderRadius = "6px";
+      introDiv.style.borderLeft = "4px solid #1e3a8a";
+      
+      const lineCount = report.introMessage.split("\n").length;
+      const rows = Math.max(3, lineCount + 1);
+      
+      introDiv.innerHTML = `
+        <textarea class="ai-report-textarea" rows="${rows}" style="overflow-y:hidden; font-weight: 600; color: #1e293b;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">${report.introMessage}</textarea>
+      `;
+      sectionsContainer.appendChild(introDiv);
+      
+      // Auto-grow initial render
+      setTimeout(() => {
+        const ta = introDiv.querySelector('textarea');
+        if (ta) {
+          ta.style.height = 'auto';
+          ta.style.height = ta.scrollHeight + 'px';
+        }
+      }, 50);
+    }
     
+    const sections = report.sections || [];
     sections.forEach(sec => {
       const secDiv = document.createElement("div");
       secDiv.className = "ai-report-section";
@@ -1899,10 +1941,19 @@ ${textbookSummary}
       const rows = Math.max(3, lineCount + 1);
       
       secDiv.innerHTML = `
-        <div class="ai-report-section-title">${sec.num}. ${sec.title}</div>
+        <div class="ai-report-section-title">${sec.title}</div>
         <textarea class="ai-report-textarea" rows="${rows}" style="overflow-y:hidden;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">${sec.text}</textarea>
       `;
       sectionsContainer.appendChild(secDiv);
+      
+      // Auto-grow initial render
+      setTimeout(() => {
+        const ta = secDiv.querySelector('textarea');
+        if (ta) {
+          ta.style.height = 'auto';
+          ta.style.height = ta.scrollHeight + 'px';
+        }
+      }, 50);
     });
     
     // Show Modal
