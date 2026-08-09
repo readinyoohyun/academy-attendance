@@ -2328,10 +2328,23 @@ body.fixed-layout .view-content.active {
   border: 1px solid #e2e8f0;
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.5fr;
-  gap: 0.2rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 0.85rem;
+}
+
+.ai-report-meta-item {
+  flex: 1;
+}
+
+.ai-report-meta-item:nth-child(2) {
+  text-align: center;
+}
+
+.ai-report-meta-item:last-child {
+  text-align: right;
+  flex: 1.5;
 }
 
 .ai-report-meta-item strong {
