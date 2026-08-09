@@ -2507,28 +2507,28 @@ body.fixed-layout .view-content.active {
   }
 
   .ai-report-header {
-    margin-bottom: 0.4rem !important;
-    padding-bottom: 0.2rem !important;
+    margin-bottom: 0.25rem !important;
+    padding-bottom: 0.1rem !important;
   }
 
   .ai-report-title {
-    font-size: 1.5rem !important;
+    font-size: 1.35rem !important;
   }
 
   .ai-report-meta {
-    margin-bottom: 0.4rem !important;
-    padding: 0.3rem 0.8rem !important;
-    font-size: 0.8rem !important;
+    margin-bottom: 0.25rem !important;
+    padding: 0.25rem 0.6rem !important;
+    font-size: 0.76rem !important;
   }
 
   .ai-report-stat-grid {
-    margin-bottom: 0.4rem !important;
-    padding: 0.3rem 0.6rem !important;
-    gap: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
+    padding: 0.25rem 0.5rem !important;
+    gap: 0.4rem !important;
   }
 
   .stat-bar-container {
-    margin-bottom: 0.2rem !important;
+    margin-bottom: 0.15rem !important;
   }
 
   #aiReportSectionsContainer {
@@ -2547,7 +2547,7 @@ body.fixed-layout .view-content.active {
     border: 1px solid #e2e8f0 !important;
     border-left: 4px solid #3b82f6 !important;
     border-radius: 6px !important;
-    padding: 0.4rem 0.6rem !important;
+    padding: 0.35rem 0.55rem !important;
   }
 
   .ai-report-section-title {
@@ -2560,8 +2560,8 @@ body.fixed-layout .view-content.active {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     margin-bottom: 0px !important;
-    font-size: 0.78rem !important;
-    line-height: 1.35 !important;
+    font-size: 0.76rem !important;
+    line-height: 1.32 !important;
   }
 
   .ai-report-buttons-panel {
@@ -2575,7 +2575,7 @@ body.fixed-layout .view-content.active {
     padding-top: 0.4rem !important;
     border-top: 1px solid #cbd5e1 !important;
     text-align: center !important;
-    font-size: 0.8rem !important;
+    font-size: 0.78rem !important;
     font-weight: 600 !important;
     color: #64748b !important;
     bottom: auto !important;
@@ -2586,7 +2586,7 @@ body.fixed-layout .view-content.active {
 
   @page {
     size: A4 portrait;
-    margin: 10mm 15mm;
+    margin: 8mm 12mm;
   }
 }
 
