@@ -1963,8 +1963,7 @@ ${textbookSummary}
     document.getElementById("aiReportAcademyName").innerText = this.app.academyName;
     document.getElementById("aiReportFooterBrand").innerText = this.app.academyName;
     
-    const senderPhone = this.app.solapiSenderPhone || "010-000-0000";
-    document.getElementById("aiReportFooterPhone").innerText = `교육문의: ${senderPhone}`;
+    document.getElementById("aiReportFooterPhone").innerText = "";
     
     const cycle = document.getElementById("crmAiReportCycle").value;
     const titleEl = document.getElementById("aiReportTitle");
