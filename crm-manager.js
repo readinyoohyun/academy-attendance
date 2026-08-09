@@ -1658,6 +1658,38 @@ class CRMManager {
         window.print();
       };
     }
+
+    // 💡 A4 성적표 내의 수치 수정 시 실시간 그래프 반응 로직
+    const statValIds = [
+      { valId: "valComprehension", barId: "barComprehension", isSpeed: false },
+      { valId: "valReadSpeed", barId: "barReadSpeed", isSpeed: true },
+      { valId: "valVocab", barId: "barVocab", isSpeed: false },
+      { valId: "valFact", barId: "barFact", isSpeed: false },
+      { valId: "valInfer", barId: "barInfer", isSpeed: false },
+      { valId: "valCritique", barId: "barCritique", isSpeed: false }
+    ];
+
+    statValIds.forEach(({ valId, barId, isSpeed }) => {
+      const valEl = document.getElementById(valId);
+      if (valEl) {
+        valEl.oninput = () => {
+          let text = valEl.innerText.trim();
+          let num = parseInt(text.replace(/[^0-9]/g, ""), 10);
+          if (isNaN(num)) num = 0;
+
+          const barEl = document.getElementById(barId);
+          if (barEl) {
+            if (isSpeed) {
+              const speedPct = Math.min(100, Math.max(20, Math.round((num / 1000) * 100)));
+              barEl.style.width = `${speedPct}%`;
+            } else {
+              const pct = Math.min(100, Math.max(0, num));
+              barEl.style.width = `${pct}%`;
+            }
+          }
+        };
+      }
+    });
   }
 
   // 파일 업로드 핸들러 (이미지 및 PDF 지원)
@@ -1746,7 +1778,6 @@ class CRMManager {
       alert("조회할 학생이 선택되지 않았습니다.");
       return;
     }
-    
     if (this.crmAiReportImages.length === 0) {
       alert("❌ 리포트 작성을 위해 최소 1개 이상의 LMS 보고서 캡처 이미지를 드롭존에 업로드해 주세요!");
       return;
@@ -1811,9 +1842,8 @@ ${textbookSummary}
 1. 첨부된 이미지들(리드인 독서 로그 및 읽기 트레이닝 결과 화면 캡처, 레벨 조정 기간 분석표)을 판독(OCR)하여 학생의 학습 성과를 정확하게 분석하세요.
 2. 리포트 형식에 맞추어 적절한 JSON 구조로 응답해 주세요. 문체는 "~하였습니다.", "~이 필요합니다.", "~을 권장합니다." 와 같이 매우 신뢰감 있고 친절하며 전문적인 어조(존댓말)로 집필해야 합니다.
 
-   ※ 중요 교수법 및 키워드 반영 가이드 (집필 시 반드시 활용할 것):
+   ※ 중요 교수법 및 키워드 반영 가이드 (집필 시 활용할 것):
    - **독서 지도법**: '집중독서 3:3' 독서법(3분씩 3회 끊어 읽기)을 제안해 주세요. 이는 어려운 내용의 반복 정독, 미처 발견하지 못한 인물/사건 흐름의 재발견, 속도 경험치 누적 및 이해도 향상에 큰 효과가 있습니다.
-   - **비문학 독해(PT/빠작)**: 중심 화제 찾기, 핵심어 정리, 문단 나누기, 구조화 및 요약 훈련을 설명해 주세요. 역사/과학/사회 영역 등 비문학 도서 독해 시 딱딱한 텍스트에 대한 친숙도를 높이고 배경지식을 확장해 줍니다.
    - **글쓰기 지도**: 기본적인 원고지 부호 사용법, 문맥상 매끄러운 연결어 사용, 띄어쓰기/맞춤법 교정, 감정/생각을 조리 있게 서술하기 위한 문단별 주제 설정을 언급해 주세요.
    - **읽기 트레이닝 행동 진단 (메타인지)**: '문제 확인' 단계는 아는 것과 모르는 것을 구분하는 메타인지 구간입니다. 만약 이 단계가 지나치게 빠르다면, 문제를 건성으로 읽고 정답을 보기에서 대충 끼워 맞추는 성급한 풀이 습관이 있음을 시사하므로, '알고 모르는 것을 구분하는 자기 점검 및 1:1 상담 집중 지도' 계획을 포함해야 합니다.
 
@@ -1954,10 +1984,17 @@ ${textbookSummary}
     
     // Render Stats if present
     const statGrid = document.getElementById("aiReportStatGrid");
+    const rightTitle = document.getElementById("aiReportRightTitle");
+    const labelVocab = document.getElementById("labelVocab");
+    const labelFact = document.getElementById("labelFact");
+    const labelInfer = document.getElementById("labelInfer");
+    const labelCritique = document.getElementById("labelCritique");
+
     if (report.stats) {
       statGrid.style.display = "grid";
-      
       const stats = report.stats;
+
+      // 1. Common Left Column: Comprehension & WPM
       document.getElementById("barComprehension").style.width = `${stats.comprehension || 0}%`;
       document.getElementById("valComprehension").innerText = `${stats.comprehension || 0}%`;
       
@@ -1966,17 +2003,56 @@ ${textbookSummary}
       document.getElementById("barReadSpeed").style.width = `${speedPct}%`;
       document.getElementById("valReadSpeed").innerText = `${speed}자`;
       
-      document.getElementById("barVocab").style.width = `${stats.vocab || 0}%`;
-      document.getElementById("valVocab").innerText = `${stats.vocab || 0}%`;
-      
-      document.getElementById("barFact").style.width = `${stats.fact || 0}%`;
-      document.getElementById("valFact").innerText = `${stats.fact || 0}%`;
-      
-      document.getElementById("barInfer").style.width = `${stats.infer || 0}%`;
-      document.getElementById("valInfer").innerText = `${stats.infer || 0}%`;
-      
-      document.getElementById("barCritique").style.width = `${stats.critique || 0}%`;
-      document.getElementById("valCritique").innerText = `${stats.critique || 0}%`;
+      // 2. Dynamic Right Column: Reading Training vs Lead-In
+      if (cycle === 'reading_training') {
+        if (rightTitle) rightTitle.innerText = "⏱️ 읽기 단계별 행동 분석";
+        if (labelVocab) labelVocab.innerText = "처음 읽기 속도";
+        if (labelFact) labelFact.innerText = "문제 확인 시간";
+        if (labelInfer) labelInfer.innerText = "다시 읽기 시간";
+        if (labelCritique) labelCritique.innerText = "목표 속도";
+
+        // 처음 읽기 속도 (e.g. WPM)
+        const firstRead = stats.firstReadSpeed || stats.vocab || 0;
+        const firstReadPct = Math.min(100, Math.max(20, Math.round((firstRead / 1000) * 100)));
+        document.getElementById("barVocab").style.width = `${firstReadPct}%`;
+        document.getElementById("valVocab").innerText = `${firstRead}자`;
+
+        // 문제 확인 시간 (e.g. seconds)
+        const questTime = stats.questionTime || stats.fact || 0;
+        const questPct = Math.min(100, Math.max(10, Math.round((questTime / 60) * 100)));
+        document.getElementById("barFact").style.width = `${questPct}%`;
+        document.getElementById("valFact").innerText = `${questTime}초`;
+
+        // 다시 읽기 시간 (e.g. seconds)
+        const reRead = stats.reReadTime || stats.infer || 0;
+        const reReadPct = Math.min(100, Math.max(10, Math.round((reRead / 180) * 100)));
+        document.getElementById("barInfer").style.width = `${reReadPct}%`;
+        document.getElementById("valInfer").innerText = `${reRead}초`;
+
+        // 목표 속도 (e.g. WPM)
+        const targetSpeed = stats.targetSpeed || stats.critique || 0;
+        const targetSpeedPct = Math.min(100, Math.max(20, Math.round((targetSpeed / 1000) * 100)));
+        document.getElementById("barCritique").style.width = `${targetSpeedPct}%`;
+        document.getElementById("valCritique").innerText = `${targetSpeed}자`;
+      } else {
+        if (rightTitle) rightTitle.innerText = "🎯 영역별 세부 성취";
+        if (labelVocab) labelVocab.innerText = "어휘 이해";
+        if (labelFact) labelFact.innerText = "사실 이해";
+        if (labelInfer) labelInfer.innerText = "추론 이해";
+        if (labelCritique) labelCritique.innerText = "비판 이해";
+
+        document.getElementById("barVocab").style.width = `${stats.vocab || 0}%`;
+        document.getElementById("valVocab").innerText = `${stats.vocab || 0}%`;
+        
+        document.getElementById("barFact").style.width = `${stats.fact || 0}%`;
+        document.getElementById("valFact").innerText = `${stats.fact || 0}%`;
+        
+        document.getElementById("barInfer").style.width = `${stats.infer || 0}%`;
+        document.getElementById("valInfer").innerText = `${stats.infer || 0}%`;
+        
+        document.getElementById("barCritique").style.width = `${stats.critique || 0}%`;
+        document.getElementById("valCritique").innerText = `${stats.critique || 0}%`;
+      }
     } else {
       statGrid.style.display = "none";
     }

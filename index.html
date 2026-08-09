@@ -3546,16 +3546,16 @@ function createDailyAttendanceTrigger() {
 
       <!-- Report Card Document Body -->
       <div class="ai-report-header">
-        <h1 class="ai-report-title" id="aiReportTitle">학업 성취 종합 분석 리포트</h1>
-        <p style="font-size: 0.9rem; color: #64748b; margin-top: 0.2rem;" id="aiReportSubtitle">학생의 학습 결과 및 독서 태도 종합 리포트입니다.</p>
+        <h1 class="ai-report-title" id="aiReportTitle" contenteditable="true">학업 성취 종합 분석 리포트</h1>
+        <p style="font-size: 0.9rem; color: #64748b; margin-top: 0.2rem;" id="aiReportSubtitle" contenteditable="true">학생의 학습 결과 및 독서 태도 종합 리포트입니다.</p>
       </div>
 
       <!-- Metadata Box -->
       <div class="ai-report-meta">
-        <div class="ai-report-meta-item"><strong>이름 :</strong> <span id="aiReportStudentName">이찬열</span></div>
-        <div class="ai-report-meta-item"><strong>학년 :</strong> <span id="aiReportStudentGrade">초등 5학년</span></div>
-        <div class="ai-report-meta-item"><strong>조회 기간 :</strong> <span id="aiReportPeriodStr">2026.06.04 ~ 2026.07.02</span></div>
-        <div class="ai-report-meta-item"><strong>학원명 :</strong> <span id="aiReportAcademyName">유현리드인 한그루역사학원</span></div>
+        <div class="ai-report-meta-item"><strong>이름 :</strong> <span id="aiReportStudentName" contenteditable="true">이찬열</span></div>
+        <div class="ai-report-meta-item"><strong>학년 :</strong> <span id="aiReportStudentGrade" contenteditable="true">초등 5학년</span></div>
+        <div class="ai-report-meta-item"><strong>조회 기간 :</strong> <span id="aiReportPeriodStr" contenteditable="true">2026.06.04 ~ 2026.07.02</span></div>
+        <div class="ai-report-meta-item"><strong>학원명 :</strong> <span id="aiReportAcademyName" contenteditable="true">유현리드인 한그루역사학원</span></div>
       </div>
 
       <!-- Stats Grid (Visual comprehension bars) -->
@@ -3565,35 +3565,35 @@ function createDailyAttendanceTrigger() {
           <div class="stat-bar-container">
             <span class="stat-bar-label">독서 이해도</span>
             <div class="stat-bar-bg"><div class="stat-bar-fill" id="barComprehension" style="width: 80%;"></div></div>
-            <span class="stat-bar-value" id="valComprehension">80%</span>
+            <span class="stat-bar-value" id="valComprehension" contenteditable="true">80%</span>
           </div>
           <div class="stat-bar-container">
             <span class="stat-bar-label">평소 읽기속도</span>
             <div class="stat-bar-bg"><div class="stat-bar-fill" id="barReadSpeed" style="width: 70%; background: linear-gradient(90deg, #10b981 0%, #047857 100%);"></div></div>
-            <span class="stat-bar-value" id="valReadSpeed">541자</span>
+            <span class="stat-bar-value" id="valReadSpeed" contenteditable="true">541자</span>
           </div>
         </div>
         <div>
-          <h4 style="margin: 0 0 0.8rem 0; color: #1e3a8a; font-size: 0.95rem; border-bottom: 1px dashed #cbd5e1; padding-bottom: 0.3rem;">🎯 영역별 세부 성취</h4>
+          <h4 id="aiReportRightTitle" style="margin: 0 0 0.8rem 0; color: #1e3a8a; font-size: 0.95rem; border-bottom: 1px dashed #cbd5e1; padding-bottom: 0.3rem;">🎯 영역별 세부 성취</h4>
           <div class="stat-bar-container" style="margin-bottom:0.25rem;">
-            <span class="stat-bar-label" style="width:70px;">어휘 이해</span>
+            <span class="stat-bar-label" id="labelVocab">어휘 이해</span>
             <div class="stat-bar-bg" style="height:8px;"><div class="stat-bar-fill" id="barVocab" style="width: 66%;"></div></div>
-            <span class="stat-bar-value" id="valVocab" style="width:35px;">66%</span>
+            <span class="stat-bar-value" id="valVocab" contenteditable="true">66%</span>
           </div>
           <div class="stat-bar-container" style="margin-bottom:0.25rem;">
-            <span class="stat-bar-label" style="width:70px;">사실 이해</span>
+            <span class="stat-bar-label" id="labelFact">사실 이해</span>
             <div class="stat-bar-bg" style="height:8px;"><div class="stat-bar-fill" id="barFact" style="width: 86%;"></div></div>
-            <span class="stat-bar-value" id="valFact" style="width:35px;">86%</span>
+            <span class="stat-bar-value" id="valFact" contenteditable="true">86%</span>
           </div>
           <div class="stat-bar-container" style="margin-bottom:0.25rem;">
-            <span class="stat-bar-label" style="width:70px;">추론 이해</span>
+            <span class="stat-bar-label" id="labelInfer">추론 이해</span>
             <div class="stat-bar-bg" style="height:8px;"><div class="stat-bar-fill" id="barInfer" style="width: 55%;"></div></div>
-            <span class="stat-bar-value" id="valInfer" style="width:35px;">55%</span>
+            <span class="stat-bar-value" id="valInfer" contenteditable="true">55%</span>
           </div>
           <div class="stat-bar-container" style="margin-bottom:0.25rem;">
-            <span class="stat-bar-label" style="width:70px;">비판 이해</span>
+            <span class="stat-bar-label" id="labelCritique">비판 이해</span>
             <div class="stat-bar-bg" style="height:8px;"><div class="stat-bar-fill" id="barCritique" style="width: 33%;"></div></div>
-            <span class="stat-bar-value" id="valCritique" style="width:35px;">33%</span>
+            <span class="stat-bar-value" id="valCritique" contenteditable="true">33%</span>
           </div>
         </div>
       </div>

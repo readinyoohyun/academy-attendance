@@ -2464,12 +2464,27 @@ body.fixed-layout .view-content.active {
     padding: 0 !important;
     margin: 0 !important;
     width: 210mm !important;
-    height: 297mm !important;
+    height: auto !important;
+    min-height: 297mm !important;
     box-sizing: border-box !important;
   }
 
   .ai-report-paper * {
     visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .ai-report-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 0.8rem !important;
+  }
+
+  .ai-report-textarea {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 0px !important;
   }
 
   .ai-report-buttons-panel {
@@ -2479,6 +2494,32 @@ body.fixed-layout .view-content.active {
 
   @page {
     size: A4 portrait;
-    margin: 15mm;
+    margin: 12mm 15mm;
+  }
+}
+
+/* AI 리포트 내 편집 가능한 영역 스타일 */
+.ai-report-paper [contenteditable="true"] {
+  outline: none;
+  transition: all 0.2s;
+  padding: 1px 4px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.ai-report-paper [contenteditable="true"]:hover {
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+  cursor: pointer;
+}
+.ai-report-paper [contenteditable="true"]:focus {
+  background: white;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+  color: black !important;
+}
+@media print {
+  .ai-report-paper [contenteditable="true"] {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
   }
 }
