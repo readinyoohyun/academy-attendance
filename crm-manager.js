@@ -159,6 +159,8 @@ class CRMManager {
     if (this.crmInitialized) return;
     this.crmInitialized = true;
 
+    this.setupAiReportEvents();
+
     // Add Textbook
     document.getElementById("btnCrmAddTextbook").onclick = () => {
       const name = this.currentCrmStudentName;
@@ -1527,5 +1529,383 @@ class CRMManager {
     this.loadCrmStudent(name);
     
     alert(`${name} 학생의 오늘 등원 처리가 완료되었습니다.`);
+  }
+
+  // AI 학업 성취 종합 분석 리포트 이벤트 바인딩
+  setupAiReportEvents() {
+    this.crmAiReportImages = [];
+    
+    // 기본 조회 기간 설정 (최근 30일)
+    const periodStart = document.getElementById("crmAiReportPeriodStart");
+    const periodEnd = document.getElementById("crmAiReportPeriodEnd");
+    if (periodStart && periodEnd) {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      const pad = (n) => String(n).padStart(2, '0');
+      periodEnd.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+      periodStart.value = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
+    }
+    
+    const dropzone = document.getElementById("crmAiReportDropzone");
+    const fileInput = document.getElementById("crmAiReportFileInput");
+    
+    if (dropzone && fileInput) {
+      dropzone.onclick = () => fileInput.click();
+      
+      dropzone.ondragover = (e) => {
+        e.preventDefault();
+        dropzone.style.background = "rgba(99, 102, 241, 0.08)";
+        dropzone.style.borderColor = "var(--accent)";
+      };
+      
+      dropzone.ondragleave = () => {
+        dropzone.style.background = "rgba(99, 102, 241, 0.02)";
+        dropzone.style.borderColor = "rgba(99, 102, 241, 0.4)";
+      };
+      
+      dropzone.ondrop = (e) => {
+        e.preventDefault();
+        dropzone.style.background = "rgba(99, 102, 241, 0.02)";
+        dropzone.style.borderColor = "rgba(99, 102, 241, 0.4)";
+        if (e.dataTransfer.files.length > 0) {
+          this.handleAiReportFiles(e.dataTransfer.files);
+        }
+      };
+      
+      fileInput.onchange = (e) => {
+        if (e.target.files.length > 0) {
+          this.handleAiReportFiles(e.target.files);
+        }
+      };
+    }
+    
+    const btnGen = document.getElementById("btnCrmGenerateAiReport");
+    if (btnGen) {
+      btnGen.onclick = () => this.generateAiReport();
+    }
+    
+    // 모달 닫기/인쇄 이벤트 바인딩
+    const btnClose = document.getElementById("btnCrmCloseAiReport");
+    if (btnClose) {
+      btnClose.onclick = () => {
+        document.getElementById("modalAiReportPreview").classList.remove("active");
+      };
+    }
+    
+    const btnPrint = document.getElementById("btnCrmPrintAiReport");
+    if (btnPrint) {
+      btnPrint.onclick = () => {
+        window.print();
+      };
+    }
+  }
+
+  // 파일 업로드 핸들러
+  handleAiReportFiles(files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith("image/")) {
+        alert("이미지 파일만 업로드할 수 있습니다.");
+        continue;
+      }
+      
+      if (this.crmAiReportImages.length >= 5) {
+        alert("최대 5장까지만 업로드할 수 있습니다.");
+        break;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.crmAiReportImages.push({
+          name: file.name,
+          data: e.target.result
+        });
+        this.renderAiReportThumbnails();
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // 업로드 썸네일 렌더링
+  renderAiReportThumbnails() {
+    const listContainer = document.getElementById("crmAiReportFileList");
+    if (!listContainer) return;
+    listContainer.innerHTML = "";
+    
+    this.crmAiReportImages.forEach((img, idx) => {
+      const thumb = document.createElement("div");
+      thumb.className = "thumbnail-item";
+      thumb.style.backgroundImage = `url(${img.data})`;
+      
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "thumbnail-remove";
+      removeBtn.innerText = "×";
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.crmAiReportImages.splice(idx, 1);
+        this.renderAiReportThumbnails();
+      };
+      
+      thumb.appendChild(removeBtn);
+      listContainer.appendChild(thumb);
+    });
+  }
+
+  // AI 리포트 생성 코어 API 통신
+  async generateAiReport() {
+    const apiKey = this.app.geminiApiKey || localStorage.getItem("gemini_api_key");
+    if (!apiKey) {
+      alert("❌ Google Gemini API Key가 설정되어 있지 않습니다!\n화면 우측 상단의 [학원 마스터 패키지 설정] 탭에 비밀번호 해제 후 진입하셔서 API Key를 입력하고 저장해 주세요.");
+      return;
+    }
+    
+    const name = this.currentCrmStudentName;
+    if (!name) {
+      alert("조회할 학생이 선택되지 않았습니다.");
+      return;
+    }
+    
+    if (this.crmAiReportImages.length === 0) {
+      alert("❌ 리포트 작성을 위해 최소 1개 이상의 LMS 보고서 캡처 이미지를 드롭존에 업로드해 주세요!");
+      return;
+    }
+    
+    const btnGen = document.getElementById("btnCrmGenerateAiReport");
+    const originalText = btnGen.innerHTML;
+    btnGen.innerHTML = "⏳ AI 성적표 판독 및 종합 코멘트 집필 중 (약 10초)...";
+    btnGen.disabled = true;
+    
+    try {
+      const student = this.app.state.students.find(s => s.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+      const grade = student ? student.grade : "초등학생";
+      
+      const start = document.getElementById("crmAiReportPeriodStart").value;
+      const end = document.getElementById("crmAiReportPeriodEnd").value;
+      const cycle = document.getElementById("crmAiReportCycle").value;
+      const extra = document.getElementById("crmAiReportExtraInput").value.trim();
+      
+      // 구글 시트 학생 정보 및 수업 일지 데이터 취득
+      const studentAccumLogs = (this.app.state.accumulatedLogs || []).filter(log => log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+      const studentDailyLogs = (this.app.state.dailyLogs || []).filter(log => log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, '') && log.status !== '대기' && log.status !== '보강대기' && log.status !== '수업중');
+      const allLogs = [...studentAccumLogs, ...studentDailyLogs];
+      
+      let logsSummary = "";
+      if (allLogs.length > 0) {
+        logsSummary = allLogs.slice(0, 15).map(l => `- 날짜: ${l.date}, 수업내용/특이사항: ${l.contents || l.reason || '없음'}, 상태: ${l.status}`).join("\n");
+      } else {
+        logsSummary = "최근 출결 수업 일지 기록 없음";
+      }
+      
+      const textbookRec = this.app.state.textbooks.find(t => t && t.name && t.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+      let textbookSummary = "등록된 교재 진도 없음";
+      if (textbookRec) {
+        textbookSummary = `비문학: ${textbookRec.nonfictionTitle || '없음'} (정답률 ${textbookRec.nonfictionAccuracy || '없음'}), 문학: ${textbookRec.literatureTitle || '없음'} (정답률 ${textbookRec.literatureAccuracy || '없음'}), 어휘: ${textbookRec.vocabTitle || '없음'} (정답률 ${textbookRec.vocabAccuracy || '없음'})`;
+      }
+      
+      // Gemini API Multimodal request payload
+      const contents = [];
+      const userParts = [];
+      
+      // Add text details
+      userParts.push({
+        text: `역할: 당신은 한국의 최고급 독서 지도 학원의 원장이자 전문 독서코치입니다. 학부모님께 전달할 격식 있고 매우 정중하며 정교한 학업 성취 종합 분석 성적표를 집필해 주세요.
+        
+학원명: ${this.app.academyName || "유현리드인 한그루역사"}
+조회 기간: ${start} ~ ${end}
+학생 이름: ${name}
+학년: ${grade}
+리포트 주기/형식: ${cycle === 'weekly' ? '일주일 주간 리포트' : cycle === 'biweekly' ? '이주일 격주 리포트' : '한달 월간 레벨 조정 및 확정 리포트'}
+
+[원장님 추가 요구사항]:
+${extra || '없음'}
+
+[구글 시트 연동 데이터 (출결 및 진도)]:
+- 출결 및 일지 기록:
+${logsSummary}
+- 최근 진행 교재 현황:
+${textbookSummary}
+
+[수행 지시 사항]:
+1. 첨부된 이미지들(리드인 독서 로그 및 읽기 트레이닝 결과 화면 캡처, 레벨 조정 기간 분석표)을 판독(OCR)하여 학생의 학습 성과를 정확하게 분석하세요.
+2. 분석한 데이터를 바탕으로 다음 6가지 항목의 코멘트를 작성해 주세요. 문체는 "~하였습니다.", "~이 필요합니다.", "~을 권장합니다." 와 같이 매우 신뢰감 있고 친절하며 정중한 어조(존댓말)로 집필해야 합니다.
+   - 1. 학습 레벨 및 학습 코스: 현재 도서의 레벨과 읽는 도서 분류 성향 분석. (특히 '한달 레벨조정 및 확정' 형식인 경우, 학생이 다음 단계로 코스업/레벨업할지 아니면 다지기를 할지 확정 결과를 명시할 것)
+   - 2. 독서 이해도 및 영역별 점수 분석: 이미지에서 독서이해도 및 어휘, 사실, 추론, 비판 점수를 찾아 성취도를 분석하고 솔루션 제시.
+   - 3. 읽기 속도 및 읽기 트레이닝 현황: 분당 글자 수 및 읽기 트레이닝 진행 추이를 분석하여 또래 수준과 비교해 격려.
+   - 4. 문해력 PT 진행 상황: 교재 학습 진도와 문단 나누기, 요약 훈련 현황 요약.
+   - 5. 학습 속도 및 성장 과정: 장기적인 학습 태도 변화와 집중도에 관한 성장 스토리 서술.
+   - 6. 학부모님께 드리는 말씀: 가정에서의 지원 방법과 따뜻한 격려 및 인사.
+
+3. 또한 이미지에서 다음 수치들을 찾아내어 JSON의 'stats' 객체로 반환해 주세요. (이미지에 없는 경우 0 또는 기본 수치로 추론하여 채워주세요):
+   - comprehension: 독서 이해도 (0~100 사이 숫자)
+   - readSpeed: 평소 읽기 속도 (분당 글자수, 예: 541)
+   - vocab: 어휘 이해 점수 (0~100 사이 숫자)
+   - fact: 사실 이해 점수 (0~100 사이 숫자)
+   - infer: 추론 이해 점수 (0~100 사이 숫자)
+   - critique: 비판 이해 점수 (0~100 사이 숫자)
+
+응답 포맷: 반드시 아래 구조의 JSON 데이터만 출력해 주세요. 다른 서론이나 설명 텍스트, 백틱 코드 블록(\`\`\`json)은 절대 붙이지 말고 순수 JSON 문자열만 응답하세요.
+{
+  "title": "학업 성취 종합 분석 리포트",
+  "levelCourse": "...",
+  "comprehensionText": "...",
+  "readingSpeedText": "...",
+  "grammarPtText": "...",
+  "growthProcessText": "...",
+  "teacherComment": "...",
+  "stats": {
+    "comprehension": 80,
+    "readSpeed": 541,
+    "vocab": 66,
+    "fact": 86,
+    "infer": 55,
+    "critique": 33
+  }
+}`
+      });
+      
+      // Add images
+      this.crmAiReportImages.forEach(img => {
+        const parts = img.data.split(",");
+        const mimeType = parts[0].match(/:(.*?);/)[1];
+        const base64Data = parts[1];
+        
+        userParts.push({
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Data
+          }
+        });
+      });
+      
+      contents.push({
+        role: "user",
+        parts: userParts
+      });
+      
+      const payload = {
+        contents: contents,
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
+      };
+      
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Gemini API HTTP 에러: ${response.status}`);
+      }
+      
+      const resultData = await response.json();
+      const responseText = resultData.candidates[0].content.parts[0].text;
+      const report = JSON.parse(responseText.trim());
+      
+      // Render to UI Modal
+      this.renderAiReportPreview(report, start, end, name, grade);
+      
+    } catch(err) {
+      console.error(err);
+      alert(`❌ AI 리포트 생성에 실패했습니다: ${err.message}\nGemini API 키가 올바르거나 사용 가능한 상태인지 확인해 주세요.`);
+    } finally {
+      btnGen.innerHTML = originalText;
+      btnGen.disabled = false;
+    }
+  }
+
+  // AI 리포트 결과 미리보기 렌더링
+  renderAiReportPreview(report, start, end, name, grade) {
+    document.getElementById("aiReportStudentName").innerText = name;
+    document.getElementById("aiReportStudentGrade").innerText = grade;
+    
+    // Format dates to dot format (e.g. 2026.03.03)
+    const startDot = start.replace(/-/g, '.');
+    const endDot = end.replace(/-/g, '.');
+    document.getElementById("aiReportPeriodStr").innerText = `${startDot} ~ ${endDot}`;
+    document.getElementById("aiReportAcademyName").innerText = this.app.academyName;
+    document.getElementById("aiReportFooterBrand").innerText = this.app.academyName;
+    
+    const senderPhone = this.app.solapiSenderPhone || "010-000-0000";
+    document.getElementById("aiReportFooterPhone").innerText = `교육문의: ${senderPhone}`;
+    
+    const cycle = document.getElementById("crmAiReportCycle").value;
+    const titleEl = document.getElementById("aiReportTitle");
+    const subtitleEl = document.getElementById("aiReportSubtitle");
+    
+    if (cycle === 'weekly') {
+      titleEl.innerText = `${name} 학생의 주간 독후 활동 리포트`;
+      subtitleEl.innerText = "학생이 책을 읽고 독서노트 작성 및 독서 진단 활동을 수행한 주간 내역입니다.";
+    } else if (cycle === 'biweekly') {
+      titleEl.innerText = `${name} 학생의 격주 독서 분석 리포트`;
+      subtitleEl.innerText = "학생의 격주간 독서 학습 태도와 영역별 진단 추이 분석표입니다.";
+    } else {
+      titleEl.innerText = `${name} 학생의 레벨 조정 종합 리포트`;
+      subtitleEl.innerText = `${startDot} ~ ${endDot} 에 학생의 독서 능력을 분석하여 확정 레벨을 설정하는 기간 리포트입니다.`;
+    }
+    
+    // Render Stats if present
+    const statGrid = document.getElementById("aiReportStatGrid");
+    if (report.stats) {
+      statGrid.style.display = "grid";
+      
+      const stats = report.stats;
+      document.getElementById("barComprehension").style.width = `${stats.comprehension || 0}%`;
+      document.getElementById("valComprehension").innerText = `${stats.comprehension || 0}%`;
+      
+      const speed = stats.readSpeed || 0;
+      const speedPct = Math.min(100, Math.max(20, Math.round((speed / 1000) * 100)));
+      document.getElementById("barReadSpeed").style.width = `${speedPct}%`;
+      document.getElementById("valReadSpeed").innerText = `${speed}자`;
+      
+      document.getElementById("barVocab").style.width = `${stats.vocab || 0}%`;
+      document.getElementById("valVocab").innerText = `${stats.vocab || 0}%`;
+      
+      document.getElementById("barFact").style.width = `${stats.fact || 0}%`;
+      document.getElementById("valFact").innerText = `${stats.fact || 0}%`;
+      
+      document.getElementById("barInfer").style.width = `${stats.infer || 0}%`;
+      document.getElementById("valInfer").innerText = `${stats.infer || 0}%`;
+      
+      document.getElementById("barCritique").style.width = `${stats.critique || 0}%`;
+      document.getElementById("valCritique").innerText = `${stats.critique || 0}%`;
+    } else {
+      statGrid.style.display = "none";
+    }
+    
+    // Render the 6 evaluation sections
+    const sectionsContainer = document.getElementById("aiReportSectionsContainer");
+    sectionsContainer.innerHTML = "";
+    
+    const sections = [
+      { num: 1, title: "학습 레벨 및 학습 코스", text: report.levelCourse || "" },
+      { num: 2, title: "독서 이해도 및 영역별 점수 분석", text: report.comprehensionText || "" },
+      { num: 3, title: "읽기 속도 및 읽기 트레이닝 현황", text: report.readingSpeedText || "" },
+      { num: 4, title: "문해력 PT 진행 상황", text: report.grammarPtText || "" },
+      { num: 5, title: "학습 속도 및 성장 과정", text: report.growthProcessText || "" },
+      { num: 6, title: "학부모님께 드리는 말씀", text: report.teacherComment || "" }
+    ];
+    
+    sections.forEach(sec => {
+      const secDiv = document.createElement("div");
+      secDiv.className = "ai-report-section";
+      
+      const lineCount = sec.text.split("\n").length;
+      const rows = Math.max(3, lineCount + 1);
+      
+      secDiv.innerHTML = `
+        <div class="ai-report-section-title">${sec.num}. ${sec.title}</div>
+        <textarea class="ai-report-textarea" rows="${rows}" style="overflow-y:hidden;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">${sec.text}</textarea>
+      `;
+      sectionsContainer.appendChild(secDiv);
+    });
+    
+    // Show Modal
+    document.getElementById("modalAiReportPreview").classList.add("active");
   }
 }

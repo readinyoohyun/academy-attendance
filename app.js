@@ -361,6 +361,7 @@ class AttendanceApp {
     this.solapiApiKey = "";
     this.solapiApiSecret = "";
     this.solapiSenderPhone = "";
+    this.geminiApiKey = "";
 
     this.selectedDay = "월요일";
     this.selectedTime = "14:00";
@@ -490,6 +491,9 @@ class AttendanceApp {
     
     this.solapiSenderPhone = localStorage.getItem("solapi_sender_phone") || "";
     if (this.solapiSenderPhone === "undefined" || this.solapiSenderPhone === "null") this.solapiSenderPhone = "";
+    
+    this.geminiApiKey = localStorage.getItem("gemini_api_key") || "";
+    if (this.geminiApiKey === "undefined" || this.geminiApiKey === "null") this.geminiApiKey = "";
 
     // Apply branding to header
     const brandAcademyNameEl = document.getElementById("brandAcademyName");
@@ -545,6 +549,7 @@ class AttendanceApp {
     localStorage.setItem("solapi_api_key", this.solapiApiKey);
     localStorage.setItem("solapi_api_secret", this.solapiApiSecret);
     localStorage.setItem("solapi_sender_phone", this.solapiSenderPhone);
+    localStorage.setItem("gemini_api_key", this.geminiApiKey);
   }
 
   showToast(message, isError = false) {
@@ -593,6 +598,7 @@ class AttendanceApp {
     const setSolapiApiKey = document.getElementById("setSolapiApiKey");
     const setSolapiApiSecret = document.getElementById("setSolapiApiSecret");
     const setSolapiSenderPhone = document.getElementById("setSolapiSenderPhone");
+    const setGeminiApiKey = document.getElementById("setGeminiApiKey");
 
     const saveSettingsBtn = document.getElementById("btnSaveMasterSettings");
     const exportBtn = document.getElementById("btnExportConfig");
@@ -601,7 +607,7 @@ class AttendanceApp {
 
     if (!passwordSection || !contentSection || !verifyBtn || !passwordInput || !passwordErrorMsg || 
         !setAcademyName || !setLogoUrl || !setSheetUrl || !setSheetId || !setSolapiApiKey || 
-        !setSolapiApiSecret || !setSolapiSenderPhone || !saveSettingsBtn || !exportBtn || 
+        !setSolapiApiSecret || !setSolapiSenderPhone || !setGeminiApiKey || !saveSettingsBtn || !exportBtn || 
         !importBtn || !fileSelector) {
       console.warn("Some Master Settings UI components are missing from the DOM (likely due to index.html browser cache). Skipping initialization.");
       return;
@@ -624,6 +630,7 @@ class AttendanceApp {
     setSolapiApiKey.value = this.solapiApiKey || "";
     setSolapiApiSecret.value = this.solapiApiSecret || "";
     setSolapiSenderPhone.value = this.solapiSenderPhone || "";
+    setGeminiApiKey.value = this.geminiApiKey || "";
 
     // 3. Verify Master Password
     verifyBtn.onclick = () => {
@@ -669,6 +676,7 @@ class AttendanceApp {
       this.solapiApiKey = setSolapiApiKey.value.trim();
       this.solapiApiSecret = setSolapiApiSecret.value.trim();
       this.solapiSenderPhone = setSolapiSenderPhone.value.trim();
+      this.geminiApiKey = setGeminiApiKey.value.trim();
 
       // Save state to local storage
       this.saveState();
@@ -706,6 +714,7 @@ class AttendanceApp {
         solapi_api_key: this.solapiApiKey,
         solapi_api_secret: this.solapiApiSecret,
         solapi_sender_phone: this.solapiSenderPhone,
+        gemini_api_key: this.geminiApiKey,
         gas_webhook_url: this.gasWebhookUrl,
         sms_mode: this.smsMode,
         sms_local_ip: this.smsLocalIp
@@ -742,6 +751,7 @@ class AttendanceApp {
           if (imported.solapi_api_key !== undefined) this.solapiApiKey = imported.solapi_api_key;
           if (imported.solapi_api_secret !== undefined) this.solapiApiSecret = imported.solapi_api_secret;
           if (imported.solapi_sender_phone !== undefined) this.solapiSenderPhone = imported.solapi_sender_phone;
+          if (imported.gemini_api_key !== undefined) this.geminiApiKey = imported.gemini_api_key;
           if (imported.gas_webhook_url !== undefined) this.gasWebhookUrl = imported.gas_webhook_url;
           if (imported.sms_mode !== undefined) this.smsMode = imported.sms_mode;
           if (imported.sms_local_ip !== undefined) this.smsLocalIp = imported.sms_local_ip;
