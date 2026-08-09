@@ -2064,8 +2064,8 @@ ${textbookSummary}
     if (report.introMessage) {
       const introDiv = document.createElement("div");
       introDiv.className = "ai-report-section";
-      introDiv.style.marginBottom = "1.5rem";
-      introDiv.style.padding = "0.8rem 1.2rem";
+      introDiv.style.marginBottom = "0.8rem";
+      introDiv.style.padding = "0.5rem 0.8rem";
       introDiv.style.background = "#f1f5f9";
       introDiv.style.borderRadius = "6px";
       introDiv.style.borderLeft = "4px solid #1e3a8a";
@@ -2074,7 +2074,7 @@ ${textbookSummary}
       const rows = Math.max(3, lineCount + 1);
       
       introDiv.innerHTML = `
-        <textarea class="ai-report-textarea" rows="${rows}" style="overflow-y:hidden; font-weight: 600; color: #1e293b;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">${report.introMessage}</textarea>
+        <textarea class="ai-report-textarea" rows="${rows}" style="overflow-y:hidden; font-weight: 600; color: #1e293b; margin-bottom: 0px;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">${report.introMessage}</textarea>
       `;
       sectionsContainer.appendChild(introDiv);
       
@@ -2093,23 +2093,47 @@ ${textbookSummary}
       const secDiv = document.createElement("div");
       secDiv.className = "ai-report-section";
       
-      const lineCount = sec.text.split("\n").length;
-      const rows = Math.max(3, lineCount + 1);
-      
-      secDiv.innerHTML = `
-        <div class="ai-report-section-title">${sec.title}</div>
-        <textarea class="ai-report-textarea" rows="${rows}" style="overflow-y:hidden;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">${sec.text}</textarea>
-      `;
-      sectionsContainer.appendChild(secDiv);
-      
-      // Auto-grow initial render
-      setTimeout(() => {
-        const ta = secDiv.querySelector('textarea');
-        if (ta) {
-          ta.style.height = 'auto';
-          ta.style.height = ta.scrollHeight + 'px';
-        }
-      }, 50);
+      if (sec.title.includes("해석 기준")) {
+        secDiv.innerHTML = `
+          <div class="ai-report-section-title">${sec.title}</div>
+          <div style="font-size: 0.85rem; color: #475569; margin-bottom: 0.5rem; line-height: 1.5;" contenteditable="true">
+            본 분석표는 학생의 읽기 행동 패턴 및 학습 속도를 진단하기 위해 아래와 같은 기준의 색상표로 구분되어 있습니다.
+          </div>
+          <div style="display: flex; gap: 0.8rem; margin-top: 0.4rem; margin-bottom: 0.4rem;">
+            <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px;">
+              <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; box-shadow: 0 0 4px #ef4444; flex-shrink:0;"></span>
+              <div style="font-size:0.8rem; color:#991b1b; line-height:1.4;"><strong style="font-weight:700;">빨간색:</strong> <span contenteditable="true">처리속도 지연</span></div>
+            </div>
+            <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 6px;">
+              <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#22c55e; box-shadow: 0 0 4px #22c55e; flex-shrink:0;"></span>
+              <div style="font-size:0.8rem; color:#166534; line-height:1.4;"><strong style="font-weight:700;">초록색:</strong> <span contenteditable="true">적당한 속도 (양호)</span></div>
+            </div>
+            <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px;">
+              <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#94a3b8; box-shadow: 0 0 4px #94a3b8; flex-shrink:0;"></span>
+              <div style="font-size:0.8rem; color:#334155; line-height:1.4;"><strong style="font-weight:700;">회색:</strong> <span contenteditable="true">기민한 속도 (빠름)</span></div>
+            </div>
+          </div>
+        `;
+        sectionsContainer.appendChild(secDiv);
+      } else {
+        const lineCount = sec.text.split("\n").length;
+        const rows = Math.max(3, lineCount + 1);
+        
+        secDiv.innerHTML = `
+          <div class="ai-report-section-title">${sec.title}</div>
+          <textarea class="ai-report-textarea" rows="${rows}" style="overflow-y:hidden;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">${sec.text}</textarea>
+        `;
+        sectionsContainer.appendChild(secDiv);
+        
+        // Auto-grow initial render
+        setTimeout(() => {
+          const ta = secDiv.querySelector('textarea');
+          if (ta) {
+            ta.style.height = 'auto';
+            ta.style.height = ta.scrollHeight + 'px';
+          }
+        }, 50);
+      }
     });
     
     // Show Modal
