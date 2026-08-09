@@ -2374,7 +2374,8 @@ body.fixed-layout .view-content.active {
 }
 
 .ai-report-textarea {
-  width: 100%;
+  display: block !important;
+  width: 100% !important;
   border: 1px solid transparent;
   background: transparent;
   color: #334155;
