@@ -2329,7 +2329,7 @@ body.fixed-layout .view-content.active {
   padding: 0.5rem 1rem;
   border-radius: 6px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1.5fr;
   gap: 0.2rem 1.5rem;
   font-size: 0.85rem;
 }

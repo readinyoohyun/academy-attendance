@@ -1960,7 +1960,8 @@ ${textbookSummary}
     const startDot = start.replace(/-/g, '.');
     const endDot = end.replace(/-/g, '.');
     document.getElementById("aiReportPeriodStr").innerText = `${startDot} ~ ${endDot}`;
-    document.getElementById("aiReportAcademyName").innerText = this.app.academyName;
+    const academyNameEl = document.getElementById("aiReportAcademyName");
+    if (academyNameEl) academyNameEl.innerText = this.app.academyName;
     document.getElementById("aiReportFooterBrand").innerText = this.app.academyName;
     
     document.getElementById("aiReportFooterPhone").innerText = "";
