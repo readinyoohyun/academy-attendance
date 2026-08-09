@@ -1601,17 +1601,20 @@ class CRMManager {
     }
   }
 
-  // 파일 업로드 핸들러
+  // 파일 업로드 핸들러 (이미지 및 PDF 지원)
   handleAiReportFiles(files) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (!file.type.startsWith("image/")) {
-        alert("이미지 파일만 업로드할 수 있습니다.");
+      const isImage = file.type.startsWith("image/");
+      const isPdf = file.type === "application/pdf";
+      
+      if (!isImage && !isPdf) {
+        alert("이미지 또는 PDF 파일만 업로드할 수 있습니다.");
         continue;
       }
       
       if (this.crmAiReportImages.length >= 5) {
-        alert("최대 5장까지만 업로드할 수 있습니다.");
+        alert("최대 5개 파일까지만 업로드할 수 있습니다.");
         break;
       }
       
@@ -1619,6 +1622,7 @@ class CRMManager {
       reader.onload = (e) => {
         this.crmAiReportImages.push({
           name: file.name,
+          type: file.type,
           data: e.target.result
         });
         this.renderAiReportThumbnails();
@@ -1627,7 +1631,7 @@ class CRMManager {
     }
   }
 
-  // 업로드 썸네일 렌더링
+  // 업로드 썸네일 렌더링 (PDF 아이콘 스타일 포함)
   renderAiReportThumbnails() {
     const listContainer = document.getElementById("crmAiReportFileList");
     if (!listContainer) return;
@@ -1636,7 +1640,25 @@ class CRMManager {
     this.crmAiReportImages.forEach((img, idx) => {
       const thumb = document.createElement("div");
       thumb.className = "thumbnail-item";
-      thumb.style.backgroundImage = `url(${img.data})`;
+      
+      if (img.type === "application/pdf") {
+        thumb.style.background = "#fee2e2";
+        thumb.style.display = "flex";
+        thumb.style.flexDirection = "column";
+        thumb.style.alignItems = "center";
+        thumb.style.justifyContent = "center";
+        thumb.style.padding = "0.2rem";
+        thumb.style.border = "1px solid #fca5a5";
+        
+        thumb.innerHTML = `
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="2" style="margin-bottom: 2px;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          <span style="font-size:0.6rem; color:#b91c1c; font-weight:700; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width: 70px;" title="${this.escapeHtml(img.name)}">PDF</span>
+        `;
+      } else {
+        thumb.style.backgroundImage = `url(${img.data})`;
+      }
       
       const removeBtn = document.createElement("button");
       removeBtn.className = "thumbnail-remove";

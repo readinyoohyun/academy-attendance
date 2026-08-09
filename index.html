@@ -618,14 +618,14 @@
               </div>
               
               <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-weight: 600;">LMS 리포트 스크린샷 이미지 업로드 (최대 5장)</label>
+                <label style="font-weight: 600;">LMS 리포트 이미지 또는 PDF 업로드 (최대 5개)</label>
                 <div id="crmAiReportDropzone" class="dropzone-custom" style="border: 2px dashed rgba(99, 102, 241, 0.4); border-radius: 12px; padding: 2rem; text-align: center; background: rgba(99, 102, 241, 0.02); cursor: pointer; transition: all 0.2s;">
                   <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color: var(--accent); margin: 0 auto 0.5rem auto;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-secondary);">리드인 독서 로그, 읽기 트레이닝 결과, 분석표 이미지들을 마우스로 끌어다 놓으세요.</span>
-                  <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.4rem 0 0 0;">또는 클릭하여 파일 선택 (PNG, JPG, JPEG)</p>
-                  <input type="file" id="crmAiReportFileInput" multiple accept="image/*" style="display: none;">
+                  <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-secondary);">리드인 독서 로그, 읽기 트레이닝 결과, PDF 분석 리포트 파일들을 마우스로 끌어다 놓으세요.</span>
+                  <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.4rem 0 0 0;">또는 클릭하여 파일 선택 (PNG, JPG, JPEG, PDF)</p>
+                  <input type="file" id="crmAiReportFileInput" multiple accept="image/*,application/pdf" style="display: none;">
                 </div>
                 <div id="crmAiReportFileList" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem;">
                   <!-- Uploaded image thumbnails go here -->
