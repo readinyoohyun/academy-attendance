@@ -2101,21 +2101,32 @@ ${textbookSummary}
           <div style="font-size: 0.82rem; color: #475569; margin-bottom: 0.4rem; line-height: 1.45;" contenteditable="true">
             본 분석표는 학생의 읽기 행동 패턴 및 학습 속도를 진단하기 위해 아래와 같은 기준의 색상표로 구분되어 있습니다.
           </div>
-          <div style="display: flex; gap: 0.5rem; margin-top: 0.4rem; margin-bottom: 0.4rem; justify-content: space-between;">
-            <div style="flex: 1; display: flex; align-items: center; gap: 0.3rem; font-size: 0.76rem; background: #fee2e2; border: 1px solid #fca5a5; padding: 0.3rem 0.5rem; border-radius: 6px; white-space: nowrap;">
-              <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 0 3px #ef4444; flex-shrink:0;"></span>
-              <strong style="color: #ef4444; font-weight: 700; flex-shrink:0;">빨간색 원형:</strong>
-              <span contenteditable="true" style="padding: 1px 3px; border-radius: 4px; flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis;">처리속도 지연</span>
+          <div style="display: flex; gap: 0.6rem; margin-top: 0.4rem; margin-bottom: 0.4rem; justify-content: space-between;">
+            <!-- Red Circle -->
+            <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; background: #fff5f5; border: 1px solid #ffe3e3; border-radius: 6px;">
+              <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #ef4444; color: white; font-size: 0.72rem; font-weight: bold; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 2px 4px rgba(239, 68, 68, 0.3); flex-shrink: 0;">느림</div>
+              <div style="font-size: 0.78rem; color: #991b1b; line-height: 1.3;">
+                <span contenteditable="true" style="font-weight: 700; display: block;">처리속도 지연</span>
+                <span contenteditable="true" style="font-size: 0.7rem; color: #c53030;">(집중도 및 코칭 필요)</span>
+              </div>
             </div>
-            <div style="flex: 1; display: flex; align-items: center; gap: 0.3rem; font-size: 0.76rem; background: #dcfce7; border: 1px solid #bbf7d0; padding: 0.3rem 0.5rem; border-radius: 6px; white-space: nowrap;">
-              <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#22c55e; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 0 3px #22c55e; flex-shrink:0;"></span>
-              <strong style="color: #22c55e; font-weight: 700; flex-shrink:0;">초록색 원형:</strong>
-              <span contenteditable="true" style="padding: 1px 3px; border-radius: 4px; flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis;">적당한 속도 (양호)</span>
+
+            <!-- Green Circle -->
+            <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 6px;">
+              <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #22c55e; color: white; font-size: 0.72rem; font-weight: bold; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 2px 4px rgba(34, 197, 94, 0.3); flex-shrink: 0;">표준</div>
+              <div style="font-size: 0.78rem; color: #166534; line-height: 1.3;">
+                <span contenteditable="true" style="font-weight: 700; display: block;">적당한 속도</span>
+                <span contenteditable="true" style="font-size: 0.7rem; color: #15803d;">(평균 수준으로 양호)</span>
+              </div>
             </div>
-            <div style="flex: 1; display: flex; align-items: center; gap: 0.3rem; font-size: 0.76rem; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.3rem 0.5rem; border-radius: 6px; white-space: nowrap;">
-              <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#cbd5e1; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 0 3px #94a3b8; flex-shrink:0;"></span>
-              <strong style="color: #64748b; font-weight: 700; flex-shrink:0;">회색 원형:</strong>
-              <span contenteditable="true" style="padding: 1px 3px; border-radius: 4px; flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis;">기민한 속도 (빠름)</span>
+
+            <!-- Gray Circle -->
+            <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 6px;">
+              <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #94a3b8; color: white; font-size: 0.72rem; font-weight: bold; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 2px 4px rgba(148, 163, 184, 0.3); flex-shrink: 0;">빠름</div>
+              <div style="font-size: 0.78rem; color: #334155; line-height: 1.3;">
+                <span contenteditable="true" style="font-weight: 700; display: block;">기민한 속도</span>
+                <span contenteditable="true" style="font-size: 0.7rem; color: #475569;">(평균보다 신속함)</span>
+              </div>
             </div>
           </div>
         `;
