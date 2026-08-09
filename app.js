@@ -965,6 +965,14 @@ class AttendanceApp {
       };
     }
 
+    const forceGenBtn = document.getElementById("btnForceGenerateAttendance");
+    if (forceGenBtn) {
+      forceGenBtn.onclick = () => {
+        if (!confirm("어제 출결 기록을 백업하고 오늘자(혹은 내일자) 새로운 출석부 명단을 구글 시트에 즉시 강제 생성하시겠습니까?")) return;
+        this.api.forceGenerateDailyAttendance();
+      };
+    }
+
     // 6. Modal Add Student triggers
     document.getElementById("btnAddStudent").onclick = () => {
       const dayEl = document.getElementById("selectDay");

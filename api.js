@@ -433,4 +433,47 @@ class SheetAPI {
       this.app.showToast("구글 시트 저장 실패", true);
     });
   }
+
+  forceGenerateDailyAttendance() {
+    if (!this.gasWebhookUrl) {
+      alert("구글 Apps Script URL이 설정되지 않았습니다.");
+      return;
+    }
+    
+    const loadBtn = document.getElementById("btnForceGenerateAttendance");
+    const originalText = loadBtn ? loadBtn.innerHTML : "오늘 출석부 생성";
+    if (loadBtn) {
+      loadBtn.innerHTML = "⏱️ 생성 중...";
+      loadBtn.disabled = true;
+    }
+
+    fetch(this.gasWebhookUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action: "generateDailyAttendance"
+      })
+    })
+    .then(() => {
+      this.app.showToast("출석부 생성 명령 전송 완료");
+      setTimeout(() => {
+        // Automatically sync to pull the newly generated dailyLogs!
+        this.fetchFromGoogleSheets(false);
+        alert("구글 시트에 출석부가 성공적으로 강제 생성 및 동기화되었습니다!");
+      }, 3000);
+    })
+    .catch(err => {
+      console.error("Force generate attendance failed:", err);
+      alert("출석부 생성 요청 전송에 실패했습니다: " + err.message);
+    })
+    .finally(() => {
+      if (loadBtn) {
+        loadBtn.innerHTML = originalText;
+        loadBtn.disabled = false;
+      }
+    });
+  }
 }
