@@ -1024,17 +1024,16 @@ function doGet() {
       var lastCol = sheetBriefing.getLastColumn();
       var range = sheetBriefing.getRange(2, 1, lastRow - 1, lastCol);
       var data = range.getDisplayValues();
-      var headers = sheetBriefing.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
       
       for (var i = 0; i < data.length; i++) {
-        var rowObj = { row: 2 + i };
-        for (var j = 0; j < headers.length; j++) {
-          var header = String(headers[j]).trim();
-          if (header) {
-            rowObj[header] = String(data[i][j]).trim();
-          }
+        var rowValues = [];
+        for (var j = 0; j < lastCol; j++) {
+          rowValues.push(String(data[i][j] || "").trim());
         }
-        briefingsData.push(rowObj);
+        briefingsData.push({
+          row: 2 + i,
+          values: rowValues
+        });
       }
     }
   }

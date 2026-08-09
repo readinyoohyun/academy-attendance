@@ -641,48 +641,59 @@ class CRMManager {
 
     const days = this.getLastConsultationDays(student.name);
     
-    // 신규브리핑관리 시트 데이터 매칭
+    // 신규브리핑관리 시트 데이터 매칭 (컬럼 기반 파싱)
     const matchName = name.replace(/\s+/g, '').toLowerCase();
-    const briefings = (this.app.state.briefings || []).filter(b => {
-      for (const key in b) {
-        if (key.includes("이름") || key.includes("학생") || key.includes("Name")) {
-          if (String(b[key]).replace(/\s+/g, '').toLowerCase() === matchName) {
-            return true;
-          }
+    const briefingRow = (this.app.state.briefings || []).find(b => {
+      if (!b.values || !Array.isArray(b.values)) return false;
+      // 앞쪽 4개 열(학년, 이름 등) 중 매칭되는 이름이 있는지 확인
+      for (let idx = 0; idx < Math.min(b.values.length, 4); idx++) {
+        const val = String(b.values[idx]).replace(/\s+/g, '').toLowerCase();
+        if (val === matchName) {
+          return true;
         }
       }
       return false;
     });
 
-    const getBriefingInfo = (b) => {
-      let date = "";
-      let memo = "";
-      for (const key in b) {
-        const k = key.trim();
-        if (k.includes("날짜") || k.includes("일자") || k.includes("Date") || k.includes("등록일") || k.includes("브리핑일")) {
-          date = b[key];
-        }
-        if (k.includes("내용") || k.includes("메모") || k.includes("브리핑") || k.includes("피드백") || k.includes("특이사항") || k.includes("Memo") || k.includes("Content")) {
-          memo = b[key];
+    let badgeHtml = "";
+    if (briefingRow) {
+      const briefingList = [];
+      // 5번째 열(Index 4, Col E)부터 순차적으로 체크
+      for (let j = 4; j < briefingRow.values.length; j++) {
+        const val = briefingRow.values[j].trim();
+        if (val) {
+          // 셀 시작부분이 날짜 형식(예: 1/12, 7/30, 07/30, 7.30, 7월 30일)으로 시작하는지 정규식 매칭
+          const dateRegex = /^(\d{1,2}(?:\/\d{1,2}|\.\d{1,2}|월\s*\d{1,2}일))/i;
+          const match = val.match(dateRegex);
+          let dateStr = "";
+          let memoStr = "";
+          if (match) {
+            dateStr = match[1];
+            memoStr = val.substring(dateStr.length).replace(/^[\s,:\-\n]+/, '').trim();
+          } else {
+            dateStr = "기록";
+            memoStr = val;
+          }
+          memoStr = memoStr.replace(/\n+/g, ' '); // 줄바꿈 정리
+          briefingList.push({ date: dateStr, memo: memoStr });
         }
       }
-      return { date, memo };
-    };
 
-    let badgeHtml = "";
-    if (briefings.length > 0) {
-      const briefingListHtml = briefings.map(b => {
-        const info = getBriefingInfo(b);
-        return `<div style="margin-top: 3px; padding: 2px 0; border-bottom: 1px dashed rgba(255,255,255,0.15); font-size: 0.75rem; color: #ffffff;">📅 <strong>${info.date}</strong>: ${info.memo}</div>`;
-      }).join("");
-      
-      badgeHtml = `
-        <div class="briefing-history-badge" style="font-size: 0.8rem; background: rgba(99, 102, 241, 0.3); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.5); padding: 0.4rem 0.8rem; border-radius: 6px; margin-left: 0.8rem; display: inline-flex; flex-direction: column; gap: 3px; max-width: 450px; text-align: left; vertical-align: middle; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
-          <strong style="color: #fbbf24; display: flex; align-items: center; gap: 0.25rem;">💬 신규 브리핑 피드백 내역</strong>
-          ${briefingListHtml}
-        </div>
-      `;
-    } else {
+      if (briefingList.length > 0) {
+        const briefingListHtml = briefingList.map(item => {
+          return `<div style="margin-top: 3px; padding: 2px 0; border-bottom: 1px dashed rgba(255,255,255,0.15); font-size: 0.75rem; color: #ffffff;">📅 <strong>${item.date}</strong>: ${item.memo}</div>`;
+        }).join("");
+        
+        badgeHtml = `
+          <div class="briefing-history-badge" style="font-size: 0.8rem; background: rgba(99, 102, 241, 0.3); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.5); padding: 0.4rem 0.8rem; border-radius: 6px; margin-left: 0.8rem; display: inline-flex; flex-direction: column; gap: 3px; max-width: 450px; text-align: left; vertical-align: middle; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
+            <strong style="color: #fbbf24; display: flex; align-items: center; gap: 0.25rem;">💬 신규 브리핑 피드백 내역</strong>
+            ${briefingListHtml}
+          </div>
+        `;
+      }
+    }
+
+    if (!badgeHtml) {
       if (days === Infinity) {
         badgeHtml = ` <span class="badge-consultation" style="font-size: 0.75rem; font-weight: bold; background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">⚠️ 브리핑 기록 없음</span>`;
       } else if (days > 30) {
