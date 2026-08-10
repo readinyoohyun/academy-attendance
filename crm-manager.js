@@ -1,4 +1,4 @@
-﻿// crm-manager.js - CRMManager Class to handle student profiles (CRM) & accordions
+// crm-manager.js - CRMManager Class to handle student profiles (CRM) & accordions
 class CRMManager {
   constructor(app) {
     this.app = app;
@@ -852,6 +852,65 @@ class CRMManager {
     // Bind Data to Accordions (Request 1 - renderAccordion)
     this.renderAccordion(memberRec);
 
+    // [Draft Auto-Save & Saved Reports render]
+    const draftBanner = document.getElementById("crmAiReportDraftBanner");
+    if (draftBanner) {
+      const hasDraft = localStorage.getItem(`ai_report_draft_${name}`);
+      draftBanner.style.display = hasDraft ? "flex" : "none";
+    }
+
+    const savedSection = document.getElementById("crmAiReportSavedListSection");
+    const savedListContainer = document.getElementById("crmAiReportSavedList");
+    if (savedSection && savedListContainer) {
+      const savedStr = localStorage.getItem(`saved_ai_reports_${name}`);
+      const savedList = savedStr ? JSON.parse(savedStr) : [];
+      
+      savedListContainer.innerHTML = "";
+      if (savedList.length > 0) {
+        savedSection.style.display = "block";
+        savedList.forEach(report => {
+          const item = document.createElement("div");
+          item.style.display = "flex";
+          item.style.justifyContent = "space-between";
+          item.style.alignItems = "center";
+          item.style.background = "rgba(255, 255, 255, 0.05)";
+          item.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+          item.style.borderRadius = "8px";
+          item.style.padding = "0.6rem 0.8rem";
+          item.style.gap = "1rem";
+
+          item.innerHTML = `
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 0.85rem; font-weight: 700; color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(report.title)}</div>
+              <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem;">📅 저장: ${report.savedAt} | 📅 학습기간: ${report.period}</div>
+            </div>
+            <div style="display: flex; gap: 0.4rem; flex-shrink: 0;">
+              <button type="button" class="btn-primary btn-load-saved-report" data-id="${report.id}" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: #1e3a8a; border-color: #1e3a8a; height: auto;">보기</button>
+              <button type="button" class="btn-secondary btn-delete-saved-report" data-id="${report.id}" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: transparent; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; height: auto;">삭제</button>
+            </div>
+          `;
+          savedListContainer.appendChild(item);
+        });
+
+        // Attach action buttons
+        savedListContainer.querySelectorAll(".btn-load-saved-report").forEach(btn => {
+          btn.onclick = () => {
+            const reportId = btn.getAttribute("data-id");
+            this.loadSavedAiReport(name, reportId);
+          };
+        });
+
+        savedListContainer.querySelectorAll(".btn-delete-saved-report").forEach(btn => {
+          btn.onclick = () => {
+            const reportId = btn.getAttribute("data-id");
+            this.deleteSavedAiReport(name, reportId);
+          };
+        });
+      } else {
+        savedSection.style.display = "none";
+      }
+    }
+
     // Textbooks render
     const textbookContainer = document.getElementById("crmTextbookContainer");
     textbookContainer.innerHTML = "";
@@ -1606,6 +1665,62 @@ class CRMManager {
       periodStart.value = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
     }
     
+    const btnGen = document.getElementById("btnCrmGenerateAiReport");
+    if (btnGen) {
+      btnGen.onclick = () => this.generateAiReport();
+    }
+    
+    // 모달 닫기/인쇄/저장 이벤트 바인딩
+    const btnClose = document.getElementById("btnCrmCloseAiReport");
+    if (btnClose) {
+      btnClose.onclick = () => {
+        document.getElementById("modalAiReportPreview").classList.remove("active");
+      };
+    }
+    
+    const btnPrint = document.getElementById("btnCrmPrintAiReport");
+    if (btnPrint) {
+      btnPrint.onclick = () => {
+        window.print();
+      };
+    }
+
+    const btnSaveReport = document.getElementById("btnCrmSaveAiReport");
+    if (btnSaveReport) {
+      btnSaveReport.onclick = () => {
+        this.saveFinalizedAiReport();
+      };
+    }
+
+    // 임시 저장(드래프트) 배너 버튼 바인딩
+    const btnLoadDraft = document.getElementById("btnCrmLoadAiReportDraft");
+    if (btnLoadDraft) {
+      btnLoadDraft.onclick = () => {
+        this.loadAiReportDraft(this.currentCrmStudentName);
+      };
+    }
+
+    const btnDeleteDraft = document.getElementById("btnCrmDeleteAiReportDraft");
+    if (btnDeleteDraft) {
+      btnDeleteDraft.onclick = () => {
+        if (confirm("작성 중이던 임시 저장 리포트를 정말로 삭제하시겠습니까?")) {
+          localStorage.removeItem(`ai_report_draft_${this.currentCrmStudentName}`);
+          const banner = document.getElementById("crmAiReportDraftBanner");
+          if (banner) banner.style.display = "none";
+        }
+      };
+    }
+
+    // 리포트 편집 시 실시간 드래프트 자동 저장 등록
+    const previewModal = document.getElementById("modalAiReportPreview");
+    if (previewModal) {
+      previewModal.addEventListener("input", (e) => {
+        if (e.target.hasAttribute("contenteditable") || e.target.closest("[contenteditable='true']")) {
+          this.saveAiReportDraft();
+        }
+      });
+    }
+
     const dropzone = document.getElementById("crmAiReportDropzone");
     const fileInput = document.getElementById("crmAiReportFileInput");
     
@@ -2139,5 +2254,329 @@ ${textbookSummary}
     
     // Show Modal
     document.getElementById("modalAiReportPreview").classList.add("active");
+  }
+
+  saveAiReportDraft() {
+    const name = this.currentCrmStudentName;
+    if (!name) return;
+
+    // Get stats
+    const stats = {
+      comprehension: document.getElementById("valComprehension") ? document.getElementById("valComprehension").innerText.trim() : "",
+      readSpeed: document.getElementById("valReadSpeed") ? document.getElementById("valReadSpeed").innerText.trim() : "",
+      vocab: document.getElementById("valVocab") ? document.getElementById("valVocab").innerText.trim() : "",
+      fact: document.getElementById("valFact") ? document.getElementById("valFact").innerText.trim() : "",
+      infer: document.getElementById("valInfer") ? document.getElementById("valInfer").innerText.trim() : "",
+      critique: document.getElementById("valCritique") ? document.getElementById("valCritique").innerText.trim() : ""
+    };
+
+    // Get all sections inside container
+    const sectionsContainer = document.getElementById("aiReportSectionsContainer");
+    const sectionsData = [];
+    if (sectionsContainer) {
+      const sectionDivs = sectionsContainer.querySelectorAll(".ai-report-section");
+      sectionDivs.forEach(div => {
+        const titleEl = div.querySelector(".ai-report-section-title");
+        const title = titleEl ? titleEl.innerText.trim() : "학부모 인사말";
+        
+        const textareaEl = div.querySelector(".ai-report-textarea");
+        if (textareaEl) {
+          sectionsData.push({
+            type: "text",
+            title: title,
+            content: textareaEl.innerHTML
+          });
+        } else {
+          const criteriaEl = div.querySelector("[contenteditable='true']");
+          if (criteriaEl) {
+            sectionsData.push({
+              type: "criteria",
+              title: title,
+              intro: criteriaEl.innerText.trim(),
+              circles: Array.from(div.querySelectorAll("span[contenteditable='true']")).map(span => span.innerText.trim())
+            });
+          }
+        }
+      });
+    }
+
+    const draft = {
+      studentName: name,
+      title: document.getElementById("aiReportTitle") ? document.getElementById("aiReportTitle").innerText.trim() : "",
+      subtitle: document.getElementById("aiReportSubtitle") ? document.getElementById("aiReportSubtitle").innerText.trim() : "",
+      grade: document.getElementById("aiReportStudentGrade") ? document.getElementById("aiReportStudentGrade").innerText.trim() : "",
+      period: document.getElementById("aiReportPeriodStr") ? document.getElementById("aiReportPeriodStr").innerText.trim() : "",
+      stats: stats,
+      sections: sectionsData,
+      savedAt: new Date().toISOString()
+    };
+
+    localStorage.setItem(`ai_report_draft_${name}`, JSON.stringify(draft));
+    console.log("Draft saved:", name);
+  }
+
+  loadAiReportDraft(name) {
+    const draftStr = localStorage.getItem(`ai_report_draft_${name}`);
+    if (!draftStr) return;
+    const draft = JSON.parse(draftStr);
+
+    document.getElementById("aiReportStudentName").innerText = draft.studentName;
+    document.getElementById("aiReportStudentGrade").innerText = draft.grade;
+    document.getElementById("aiReportPeriodStr").innerText = draft.period;
+    
+    if (document.getElementById("aiReportAcademyName")) {
+      document.getElementById("aiReportAcademyName").innerText = this.app.academyName;
+    }
+    if (document.getElementById("aiReportFooterBrand")) {
+      document.getElementById("aiReportFooterBrand").innerText = this.app.academyName;
+    }
+
+    document.getElementById("aiReportTitle").innerText = draft.title;
+    document.getElementById("aiReportSubtitle").innerText = draft.subtitle;
+
+    // Restore stats
+    const stats = draft.stats || {};
+    const barComprehension = document.getElementById("barComprehension");
+    const valComprehension = document.getElementById("valComprehension");
+    if (valComprehension) {
+      valComprehension.innerText = stats.comprehension || "";
+      if (barComprehension) barComprehension.style.width = stats.comprehension || "0%";
+    }
+
+    const barReadSpeed = document.getElementById("barReadSpeed");
+    const valReadSpeed = document.getElementById("valReadSpeed");
+    if (valReadSpeed) {
+      valReadSpeed.innerText = stats.readSpeed || "";
+      if (barReadSpeed) {
+        let speedNum = parseInt((stats.readSpeed || "").replace(/[^0-9]/g, ""), 10) || 0;
+        let speedPct = Math.min(100, Math.max(20, Math.round((speedNum / 1000) * 100)));
+        barReadSpeed.style.width = `${speedPct}%`;
+      }
+    }
+
+    const statFields = [
+      { key: "vocab", barId: "barVocab", valId: "valVocab" },
+      { key: "fact", barId: "barFact", valId: "valFact" },
+      { key: "infer", barId: "barInfer", valId: "valInfer" },
+      { key: "critique", barId: "barCritique", valId: "valCritique" }
+    ];
+
+    statFields.forEach(f => {
+      const valEl = document.getElementById(f.valId);
+      const barEl = document.getElementById(f.barId);
+      if (valEl) {
+        valEl.innerText = stats[f.key] || "";
+        if (barEl) {
+          let num = parseInt((stats[f.key] || "").replace(/[^0-9]/g, ""), 10) || 0;
+          barEl.style.width = `${num}%`;
+        }
+      }
+    });
+
+    // Restore sections
+    const sectionsContainer = document.getElementById("aiReportSectionsContainer");
+    if (sectionsContainer) {
+      sectionsContainer.innerHTML = "";
+      (draft.sections || []).forEach(sec => {
+        const secDiv = document.createElement("div");
+        secDiv.className = "ai-report-section";
+
+        if (sec.title === "학부모 인사말") {
+          secDiv.style.marginBottom = "0.8rem";
+          secDiv.style.padding = "0.5rem 0.8rem";
+          secDiv.style.background = "#f1f5f9";
+          secDiv.style.borderRadius = "6px";
+          secDiv.style.borderLeft = "4px solid #1e3a8a";
+          secDiv.innerHTML = `
+            <div class="ai-report-textarea" contenteditable="true" style="font-weight: 600; color: #1e293b; outline: none; white-space: pre-wrap; padding: 0.2rem; min-height: auto;">${sec.content}</div>
+          `;
+        } else if (sec.type === "criteria") {
+          const circles = sec.circles || ["처리속도 지연", "(집중도 및 코칭 필요)", "적당한 속도", "(평균 수준으로 양호)", "기민한 속도", "(평균보다 신속함)"];
+          secDiv.innerHTML = `
+            <div class="ai-report-section-title">${sec.title}</div>
+            <div style="font-size: 0.82rem; color: #475569; margin-bottom: 0.4rem; line-height: 1.45;" contenteditable="true">
+              ${sec.intro}
+            </div>
+            <div style="display: flex; gap: 0.6rem; margin-top: 0.4rem; margin-bottom: 0.4rem; justify-content: space-between;">
+              <!-- Red Circle -->
+              <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; background: #fff5f5; border: 1px solid #ffe3e3; border-radius: 6px;">
+                <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #ef4444; color: white; font-size: 0.72rem; font-weight: bold; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 2px 4px rgba(239, 68, 68, 0.3); flex-shrink: 0;">느림</div>
+                <div style="font-size: 0.78rem; color: #991b1b; line-height: 1.3;">
+                  <span contenteditable="true" style="font-weight: 700; display: block;">${circles[0] || "처리속도 지연"}</span>
+                  <span contenteditable="true" style="font-size: 0.7rem; color: #c53030;">${circles[1] || "(집중도 및 코칭 필요)"}</span>
+                </div>
+              </div>
+
+              <!-- Green Circle -->
+              <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 6px;">
+                <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #22c55e; color: white; font-size: 0.72rem; font-weight: bold; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 2px 4px rgba(34, 197, 94, 0.3); flex-shrink: 0;">표준</div>
+                <div style="font-size: 0.78rem; color: #166534; line-height: 1.3;">
+                  <span contenteditable="true" style="font-weight: 700; display: block;">${circles[2] || "적당한 속도"}</span>
+                  <span contenteditable="true" style="font-size: 0.7rem; color: #15803d;">${circles[3] || "(평균 수준으로 양호)"}</span>
+                </div>
+              </div>
+
+              <!-- Gray Circle -->
+              <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 6px;">
+                <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #94a3b8; color: white; font-size: 0.72rem; font-weight: bold; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.4), 0 2px 4px rgba(148, 163, 184, 0.3); flex-shrink: 0;">빠름</div>
+                <div style="font-size: 0.78rem; color: #334155; line-height: 1.3;">
+                  <span contenteditable="true" style="font-weight: 700; display: block;">${circles[4] || "기민한 속도"}</span>
+                  <span contenteditable="true" style="font-size: 0.7rem; color: #475569;">${circles[5] || "(평균보다 신속함)"}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          secDiv.innerHTML = `
+            <div class="ai-report-section-title">${sec.title}</div>
+            <div class="ai-report-textarea" contenteditable="true" style="outline: none; white-space: pre-wrap; padding: 0.2rem; min-height: auto;">${sec.content}</div>
+          `;
+        }
+        sectionsContainer.appendChild(secDiv);
+      });
+    }
+
+    document.getElementById("modalAiReportPreview").classList.add("active");
+  }
+
+  saveFinalizedAiReport() {
+    const name = this.currentCrmStudentName;
+    if (!name) return;
+
+    // Get stats
+    const stats = {
+      comprehension: document.getElementById("valComprehension") ? document.getElementById("valComprehension").innerText.trim() : "",
+      readSpeed: document.getElementById("valReadSpeed") ? document.getElementById("valReadSpeed").innerText.trim() : "",
+      vocab: document.getElementById("valVocab") ? document.getElementById("valVocab").innerText.trim() : "",
+      fact: document.getElementById("valFact") ? document.getElementById("valFact").innerText.trim() : "",
+      infer: document.getElementById("valInfer") ? document.getElementById("valInfer").innerText.trim() : "",
+      critique: document.getElementById("valCritique") ? document.getElementById("valCritique").innerText.trim() : ""
+    };
+
+    // Get all sections
+    const sectionsContainer = document.getElementById("aiReportSectionsContainer");
+    const sectionsData = [];
+    let textSummary = ""; // For Google Sheets consultation
+    if (sectionsContainer) {
+      const sectionDivs = sectionsContainer.querySelectorAll(".ai-report-section");
+      sectionDivs.forEach(div => {
+        const titleEl = div.querySelector(".ai-report-section-title");
+        const title = titleEl ? titleEl.innerText.trim() : "학부모 인사말";
+        
+        const textareaEl = div.querySelector(".ai-report-textarea");
+        if (textareaEl) {
+          const textVal = textareaEl.innerText.trim();
+          sectionsData.push({
+            type: "text",
+            title: title,
+            content: textareaEl.innerHTML
+          });
+          textSummary += `\n\n[${title}]\n${textVal}`;
+        } else {
+          const criteriaEl = div.querySelector("[contenteditable='true']");
+          if (criteriaEl) {
+            sectionsData.push({
+              type: "criteria",
+              title: title,
+              intro: criteriaEl.innerText.trim(),
+              circles: Array.from(div.querySelectorAll("span[contenteditable='true']")).map(span => span.innerText.trim())
+            });
+          }
+        }
+      });
+    }
+
+    const titleVal = document.getElementById("aiReportTitle") ? document.getElementById("aiReportTitle").innerText.trim() : "";
+    const subtitleVal = document.getElementById("aiReportSubtitle") ? document.getElementById("aiReportSubtitle").innerText.trim() : "";
+    const gradeVal = document.getElementById("aiReportStudentGrade") ? document.getElementById("aiReportStudentGrade").innerText.trim() : "";
+    const periodVal = document.getElementById("aiReportPeriodStr") ? document.getElementById("aiReportPeriodStr").innerText.trim() : "";
+
+    const reportId = "report_" + Date.now();
+    
+    // Format saved date as YY.MM.DD HH:mm
+    const dateObj = new Date();
+    const pad = (num) => String(num).padStart(2, '0');
+    const yy = String(dateObj.getFullYear()).substring(2);
+    const mm = pad(dateObj.getMonth() + 1);
+    const dd = pad(dateObj.getDate());
+    const hh = pad(dateObj.getHours());
+    const min = pad(dateObj.getMinutes());
+    const nowStr = `${yy}.${mm}.${dd} ${hh}:${min}`;
+
+    const newReport = {
+      id: reportId,
+      studentName: name,
+      title: titleVal,
+      subtitle: subtitleVal,
+      grade: gradeVal,
+      period: periodVal,
+      stats: stats,
+      sections: sectionsData,
+      savedAt: nowStr
+    };
+
+    // Save to localStorage
+    const savedStr = localStorage.getItem(`saved_ai_reports_${name}`);
+    const savedList = savedStr ? JSON.parse(savedStr) : [];
+    savedList.push(newReport);
+    localStorage.setItem(`saved_ai_reports_${name}`, JSON.stringify(savedList));
+
+    // Clear active draft since it's saved
+    localStorage.removeItem(`ai_report_draft_${name}`);
+    const banner = document.getElementById("crmAiReportDraftBanner");
+    if (banner) banner.style.display = "none";
+
+    // Auto-save to Google Sheets consultations for synchronization
+    const author = "AI 분석기";
+    const student = this.app.state.students.find(s => s.name === name);
+    const grade = student ? student.grade : gradeVal;
+    
+    const nextRow = this.app.state.consultations.length > 0 ? Math.max(...this.app.state.consultations.map(c => c.row)) + 1 : 2;
+    const cleanPeriod = periodVal.replace(/\s+/g, "");
+
+    const newConsult = {
+      id: 'consultation_' + nextRow,
+      row: nextRow,
+      grade: grade,
+      name: name,
+      period: cleanPeriod,
+      author: author,
+      content: `[AI 리포트 저장본: ${titleVal}]\n${subtitleVal}${textSummary}`,
+      needs: `지문이해: ${stats.comprehension}, 속도: ${stats.readSpeed}, 어휘: ${stats.vocab}, 사실: ${stats.fact}, 추론: ${stats.infer}, 비판: ${stats.critique}`
+    };
+
+    this.app.state.consultations.push(newConsult);
+    this.app.saveState();
+    if (this.app.sheetSim) this.app.sheetSim.setData(this.app.state);
+    
+    // Send to Google Sheets
+    this.app.api.addConsultationToGoogleSheets(newConsult);
+
+    alert("리포트가 성공적으로 저장되었습니다! 구글 시트 상담/리포트 발송 이력과 웹앱 보관함에 동시에 등록되었습니다.");
+    
+    // Refresh student view to show the new saved report in the list!
+    this.loadCrmStudent(name);
+  }
+
+  loadSavedAiReport(name, reportId) {
+    const savedStr = localStorage.getItem(`saved_ai_reports_${name}`);
+    if (!savedStr) return;
+    const savedList = JSON.parse(savedStr);
+    const report = savedList.find(r => r.id === reportId);
+    if (!report) return;
+
+    // Load to draft and open
+    localStorage.setItem(`ai_report_draft_${name}`, JSON.stringify(report));
+    this.loadAiReportDraft(name);
+  }
+
+  deleteSavedAiReport(name, reportId) {
+    if (!confirm("이 저장된 리포트를 삭제하시겠습니까? (구글 시트에 기록된 상담 내역은 유지됩니다)")) return;
+    const savedStr = localStorage.getItem(`saved_ai_reports_${name}`);
+    if (!savedStr) return;
+    let savedList = JSON.parse(savedStr);
+    savedList = savedList.filter(r => r.id !== reportId);
+    localStorage.setItem(`saved_ai_reports_${name}`, JSON.stringify(savedList));
+    this.loadCrmStudent(name);
   }
 }

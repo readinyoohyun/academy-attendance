@@ -603,6 +603,17 @@
             </div>
             
             <div style="display: flex; flex-direction: column; gap: 1rem;">
+              <!-- Draft Auto-Save Banner -->
+              <div id="crmAiReportDraftBanner" style="display: none; padding: 0.8rem 1rem; border-radius: 8px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; font-size: 0.85rem; align-items: center; justify-content: space-between; gap: 1rem;">
+                <span style="display: flex; align-items: center; gap: 0.4rem; font-weight: 500;">
+                  📝 작성 중이던 임시 저장 리포트가 있습니다.
+                </span>
+                <div style="display: flex; gap: 0.4rem; flex-shrink: 0;">
+                  <button type="button" id="btnCrmLoadAiReportDraft" class="btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: #2563eb; border-color: #2563eb; height: auto;">불러오기</button>
+                  <button type="button" id="btnCrmDeleteAiReportDraft" class="btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: transparent; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; height: auto;">삭제</button>
+                </div>
+              </div>
+
               <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                 <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
                   <label for="crmAiReportPeriodStart">분석 시작일</label>
@@ -646,6 +657,16 @@
               <button id="btnCrmGenerateAiReport" class="btn-primary" style="background: var(--accent); border-color: rgba(99, 102, 241, 0.4); font-weight: 700; height: 45px;">
                 ⚡ AI 학업 성취 종합 분석 리포트 생성
               </button>
+
+              <!-- Saved Reports Section -->
+              <div id="crmAiReportSavedListSection" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--panel-border); display: none;">
+                <h4 style="font-size: 0.95rem; color: #fbbf24; margin: 0 0 0.8rem 0; display: flex; align-items: center; gap: 0.3rem; font-weight: 600;">
+                  💾 저장된 분석 리포트 이력
+                </h4>
+                <div id="crmAiReportSavedList" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                  <!-- Dynamically populated saved reports -->
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3550,7 +3571,8 @@ function createDailyAttendanceTrigger() {
       <div class="ai-report-buttons-panel" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.8rem; background: #f8fafc; padding: 0.8rem; border-radius: 6px; box-sizing: border-box; width: 100%;">
         <span style="font-size: 0.9rem; font-weight: 600; color: #1e3a8a;">📄 학부모용 AI 학업 분석 리포트 미리보기 (A4 규격)</span>
         <div style="display: flex; gap: 0.5rem;">
-          <button class="btn-primary" id="btnCrmPrintAiReport" style="background: #1e3a8a; border-color: #1e3a8a; height: 36px; padding: 0 1rem; font-size: 0.85rem; color: white; cursor: pointer; border-radius: 6px; font-weight: 600;">💾 A4 인쇄 / PDF 저장</button>
+          <button class="btn-primary" id="btnCrmSaveAiReport" style="background: #10b981; border-color: #10b981; height: 36px; padding: 0 1rem; font-size: 0.85rem; color: white; cursor: pointer; border-radius: 6px; font-weight: 600;">💾 리포트 저장 완료</button>
+          <button class="btn-primary" id="btnCrmPrintAiReport" style="background: #1e3a8a; border-color: #1e3a8a; height: 36px; padding: 0 1rem; font-size: 0.85rem; color: white; cursor: pointer; border-radius: 6px; font-weight: 600;">🖨️ A4 인쇄 / PDF 저장</button>
           <button class="btn-secondary" id="btnCrmCloseAiReport" style="background: #e2e8f0; border-color: #cbd5e1; color: #475569; height: 36px; padding: 0 1rem; font-size: 0.85rem; cursor: pointer; border-radius: 6px; font-weight: 600;">닫기</button>
         </div>
       </div>
