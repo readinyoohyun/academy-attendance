@@ -681,8 +681,30 @@
           duration = 60;
         }
       }
-      if (student.todayExtensionMins) {
-        duration += parseInt(student.todayExtensionMins, 10);
+      
+      let extMins = parseInt(student.todayExtensionMins, 10) || 0;
+      
+      // Cross check dailyLog reason from local state in Kiosk
+      if (typeof state !== 'undefined' && state.dailyLogs) {
+        const todayDay = getTodayWeekday();
+        const todayDateSlash = getTodayDateStr();
+        const shortDay = todayDay.substring(0, 1);
+        const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
+        
+        const dailyLog = state.dailyLogs.find(log => 
+          (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
+          isSameDate(log.date, dailyLogDateStr)
+        );
+        if (dailyLog && dailyLog.reason && dailyLog.reason.startsWith("연장 (")) {
+          const rMatch = dailyLog.reason.match(/\d+/);
+          if (rMatch) {
+            extMins = Math.max(extMins, parseInt(rMatch[0], 10));
+          }
+        }
+      }
+
+      if (extMins > 0) {
+        duration += extMins;
       }
       return duration;
     }
@@ -1634,13 +1656,24 @@
               m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
             );
             const isMakeupClass = (dailyLog && dailyLog.reason === "보강 수업") || isScheduledMakeupToday;
-            const isExtendedClass = student.todayExtensionMins > 0;
+            
+            let logExtensionMins = 0;
+            if (dailyLog && dailyLog.reason && dailyLog.reason.startsWith("연장 (")) {
+              const rMatch = dailyLog.reason.match(/\d+/);
+              if (rMatch) {
+                logExtensionMins = parseInt(rMatch[0], 10);
+              }
+            }
+            const isExtendedClass = (student.todayExtensionMins > 0) || (logExtensionMins > 0);
+            
             if (isMakeupClass || isExtendedClass) {
               let addedMins = 0;
+              let extMins = 0;
               if (isMakeupClass) {
                 addedMins = getClassDuration(student); // Base duration (e.g. 60 or 90)
               } else if (isExtendedClass) {
-                addedMins = parseInt(student.todayExtensionMins, 10);
+                extMins = Math.max(parseInt(student.todayExtensionMins, 10) || 0, logExtensionMins);
+                addedMins = extMins;
               }
               if (addedMins > 0) {
                 student.makeupMinsDone = (student.makeupMinsDone || 0) + addedMins;
@@ -1667,8 +1700,8 @@
                 updates.push({ tab: "students", row: student.row, field: "absentDates", value: student.absentDates });
                 if (isExtendedClass) {
                   updates.push({ tab: "students", row: student.row, field: "todayExtensionMins", value: 0 });
-                  updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: `연장 (${student.todayExtensionMins}분)` });
-                  dailyLog.reason = `연장 (${student.todayExtensionMins}분)`;
+                  updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: `연장 (${extMins}분)` });
+                  dailyLog.reason = `연장 (${extMins}분)`;
                   student.todayExtensionMins = 0;
                 }
                 if (isMakeupClass) {

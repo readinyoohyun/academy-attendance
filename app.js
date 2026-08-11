@@ -326,8 +326,32 @@ function getClassDuration(student) {
       duration = 60;
     }
   }
-  if (student.todayExtensionMins) {
-    duration += parseInt(student.todayExtensionMins, 10);
+  
+  let extMins = parseInt(student.todayExtensionMins, 10) || 0;
+  
+  // Cross check dailyLog reason from global state if app instance is initialized
+  if (typeof app !== 'undefined' && app.state && app.state.dailyLogs) {
+    const today = new Date();
+    const todayDateSlash = `${today.getMonth()+1}/${today.getDate()}`;
+    const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+    const todayDay = dayNames[today.getDay()];
+    const shortDay = todayDay.substring(0, 1);
+    const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
+    
+    const dailyLog = app.state.dailyLogs.find(log => 
+      (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
+      (log.date || '').trim() === dailyLogDateStr.trim()
+    );
+    if (dailyLog && dailyLog.reason && dailyLog.reason.startsWith("연장 (")) {
+      const rMatch = dailyLog.reason.match(/\d+/);
+      if (rMatch) {
+        extMins = Math.max(extMins, parseInt(rMatch[0], 10));
+      }
+    }
+  }
+
+  if (extMins > 0) {
+    duration += extMins;
   }
   return duration;
 }
