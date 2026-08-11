@@ -520,6 +520,15 @@ class DashboardManager {
       (log.date || '').trim() === dailyLogDateStr.trim()
     );
 
+    const isMakeupClass = isMakeup || (dailyLog && dailyLog.reason === "보강 수업");
+    let logExtensionMins = 0;
+    if (dailyLog && dailyLog.reason && dailyLog.reason.startsWith("연장 (")) {
+      const match = dailyLog.reason.match(/\d+/);
+      if (match) {
+        logExtensionMins = parseInt(match[0], 10);
+      }
+    }
+
     let currentStatus = "대기";
     const norm = dailyLog ? getNormalizedStatus(dailyLog.status) : "대기";
     if (isAbsent || norm === "결석") {
@@ -535,7 +544,7 @@ class DashboardManager {
     if (currentStatus === "결석") {
       const confirmReset = confirm(`${student.name} 학생의 결석 상태를 해제하고 대기 상태로 변경하시겠습니까?`);
       if (!confirmReset) return;
-      if (isMakeup) {
+      if (isMakeupClass) {
         student.makeupCompleted = '대기';
         this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "대기", "students");
       } else {
@@ -558,7 +567,7 @@ class DashboardManager {
     } else if (currentStatus === "휴강") {
       const confirmReset = confirm(`${student.name} 학생의 휴강 상태를 해제하고 대기 상태로 변경하시겠습니까?`);
       if (!confirmReset) return;
-      if (isMakeup) {
+      if (isMakeupClass) {
         student.makeupCompleted = '대기';
         this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "대기", "students");
       } else {
@@ -570,7 +579,7 @@ class DashboardManager {
       if (!confirmAbsent) {
         const confirmReset = confirm("대기 상태로 변경하시겠습니까?");
         if (confirmReset) {
-          if (isMakeup) {
+          if (isMakeupClass) {
             student.makeupCompleted = '대기';
             this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "대기", "students");
           } else {
@@ -581,7 +590,7 @@ class DashboardManager {
           return;
         }
       } else {
-        if (isMakeup) {
+        if (isMakeupClass) {
           student.makeupCompleted = '대기';
           this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "대기", "students");
         } else {
@@ -612,7 +621,7 @@ class DashboardManager {
         // Prompt for undoing wrong click (rollback to standby)
         const confirmReset = confirm("대기 상태로 돌리시겠습니까? (오클릭 원복)");
         if (confirmReset) {
-          if (isMakeup) {
+          if (isMakeupClass) {
             student.makeupCompleted = '대기';
             this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "대기", "students");
             if (student.absentDates) {
@@ -640,7 +649,7 @@ class DashboardManager {
         if (!confirmComplete) {
           const confirmReset = confirm("대기 상태로 돌리시겠습니까? (오클릭 원복)");
           if (confirmReset) {
-            if (isMakeup) {
+            if (isMakeupClass) {
               student.makeupCompleted = '대기';
               this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "대기", "students");
               if (student.absentDates) {
@@ -663,7 +672,7 @@ class DashboardManager {
             return;
           }
         } else {
-          if (isMakeup) {
+          if (isMakeupClass) {
             student.makeupCompleted = '완료';
             
             // Add base class duration to completed makeups
@@ -684,9 +693,11 @@ class DashboardManager {
           } else {
             student.attendanceStatus = '수업완료';
             
+            const isExtendedClass = (student.todayExtensionMins > 0) || (logExtensionMins > 0);
             // Process today's extension if active
-            if (student.todayExtensionMins > 0) {
-              student.makeupMinsDone = (student.makeupMinsDone || 0) + parseInt(student.todayExtensionMins, 10);
+            if (isExtendedClass) {
+              const extMins = Math.max(parseInt(student.todayExtensionMins, 10) || 0, logExtensionMins);
+              student.makeupMinsDone = (student.makeupMinsDone || 0) + extMins;
               this.syncMakeupStrikethroughs(student);
               
               const batchUpdates = [
@@ -695,7 +706,7 @@ class DashboardManager {
                 { tab: "students", row: student.row, field: "todayExtensionMins", value: 0 }
               ];
               if (dailyLog) {
-                dailyLog.reason = `연장 (${student.todayExtensionMins}분)`;
+                dailyLog.reason = `연장 (${extMins}분)`;
                 batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
               }
               this.app.api.updateBatchInGoogleSheets(batchUpdates);
@@ -707,7 +718,7 @@ class DashboardManager {
         }
       }
     } else { // "대기"
-      if (isMakeup) {
+      if (isMakeupClass) {
         student.makeupCompleted = '수업중';
         this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "수업중", "students");
       } else {
@@ -775,7 +786,7 @@ class DashboardManager {
         notes: student.notes || "",
         status: dailyStatus,
         inTime: dailyInTime,
-        reason: isMakeup ? "보강 수업" : (finalStatus === "결석" ? "정규 결석" : ""),
+        reason: isMakeupClass ? "보강 수업" : (finalStatus === "결석" ? "정규 결석" : ""),
         number: "",
         event: "",
         grammarDone: "",
