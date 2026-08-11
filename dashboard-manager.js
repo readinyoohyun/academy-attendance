@@ -280,7 +280,17 @@ class DashboardManager {
             const cleanAbs = student.absentDates.replace(/\s+/g, '');
             isAbsent = cleanAbs.includes(targetDates.slashFormat) || cleanAbs.includes(targetDates.dotFormat);
           }
-          const dailyLog = student.dailyLog;
+           const dailyLog = student.dailyLog;
+          
+          let logExtensionMins = 0;
+          if (dailyLog && dailyLog.reason && dailyLog.reason.startsWith("연장 (")) {
+            const matchExt = dailyLog.reason.match(/\d+/);
+            if (matchExt) {
+              logExtensionMins = parseInt(matchExt[0], 10);
+            }
+          }
+          const displayExtensionMins = Math.max(parseInt(student.todayExtensionMins, 10) || 0, logExtensionMins);
+
           if (isMakeup) {
             const norm = dailyLog ? getNormalizedStatus(dailyLog.status) : "대기";
             if (norm === "보강완료" || norm === "수업완료") {
@@ -376,12 +386,12 @@ class DashboardManager {
                     <span>${student.classes || '수업'}</span>
                     <div style="display:flex; gap:0.25rem;">
                       ${student.makeupMinsRemaining > 0 ? `<span style="background:rgba(245,158,11,0.4); color:#fff; border:1px solid rgba(245,158,11,0.6); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">⏳ 잔여: ${student.makeupMinsRemaining}분</span>` : ''}
-                      ${student.todayExtensionMins > 0 ? `<span style="background:rgba(16,185,129,0.4); color:#fff; border:1px solid rgba(16,185,129,0.6); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${student.todayExtensionMins}분</span>` : ''}
+                      ${displayExtensionMins > 0 ? `<span style="background:rgba(16,185,129,0.4); color:#fff; border:1px solid rgba(16,185,129,0.6); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${displayExtensionMins}분</span>` : ''}
                     </div>
                   </div>
                   <div style="display: flex; gap: 0.35rem; align-items: center;">
-                    ${student.todayExtensionMins > 0 
-                      ? `<button class="btn-extend-cycle" style="background: rgba(245, 158, 11, 0.85); border: 1px solid rgba(245, 158, 11, 0.95); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+${student.todayExtensionMins}분</button>`
+                    ${displayExtensionMins > 0 
+                      ? `<button class="btn-extend-cycle" style="background: rgba(245, 158, 11, 0.85); border: 1px solid rgba(245, 158, 11, 0.95); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+${displayExtensionMins}분</button>`
                       : `<button class="btn-extend-cycle" style="background: rgba(16, 185, 129, 0.6); border: 1px solid rgba(16, 185, 129, 0.7); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+연장</button>`
                     }
                     <button class="btn-absent-quick" style="background: rgba(239, 68, 68, 0.45); border: 1px solid rgba(239, 68, 68, 0.55); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">결석</button>
@@ -408,7 +418,7 @@ class DashboardManager {
                     </svg>
                     <span>${student.classes || '수업'}</span>
                     ${student.makeupMinsRemaining > 0 ? `<span style="background:rgba(245,158,11,0.1); color:var(--accent); border:1px solid rgba(245,158,11,0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">⏳ 잔여: ${student.makeupMinsRemaining}분</span>` : ''}
-                    ${student.todayExtensionMins > 0 ? `<span style="background:rgba(16,185,129,0.1); color:var(--success); border:1px solid rgba(16,185,129,0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${student.todayExtensionMins}분</span>` : ''}
+                    ${displayExtensionMins > 0 ? `<span style="background:rgba(16,185,129,0.1); color:var(--success); border:1px solid rgba(16,185,129,0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${displayExtensionMins}분</span>` : ''}
                   </div>
                 </div>
                 ${timerHtml}
@@ -426,7 +436,7 @@ class DashboardManager {
           card.addEventListener("click", (e) => {
             if (e.target.classList.contains("btn-extend-cycle")) {
               e.stopPropagation();
-              const current = parseInt(student.todayExtensionMins, 10) || 0;
+              const current = displayExtensionMins;
               const sequence = [0, 10, 15, 20, 30, 60, 90];
               const currentIndex = sequence.indexOf(current);
               const nextIndex = (currentIndex + 1) % sequence.length;
