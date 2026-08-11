@@ -676,6 +676,11 @@ class DashboardManager {
             this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
 
             finalStatus = "보강완료";
+            
+            // Prepare reason update for dailyLogs
+            if (dailyLog) {
+              dailyLog.reason = "보강 수업";
+            }
           } else {
             student.attendanceStatus = '수업완료';
             
@@ -689,6 +694,10 @@ class DashboardManager {
                 { tab: "students", row: student.row, field: "absentDates", value: student.absentDates },
                 { tab: "students", row: student.row, field: "todayExtensionMins", value: 0 }
               ];
+              if (dailyLog) {
+                dailyLog.reason = `연장 (${student.todayExtensionMins}분)`;
+                batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+              }
               this.app.api.updateBatchInGoogleSheets(batchUpdates);
               student.todayExtensionMins = 0;
             }
@@ -748,6 +757,9 @@ class DashboardManager {
         { tab: "dailyLogs", row: dailyLog.row, field: "status", value: dailyStatus },
         { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: dailyInTime }
       ];
+      if (dailyLog.reason) {
+        attendanceUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+      }
       this.app.api.updateBatchInGoogleSheets(attendanceUpdates);
     } else {
       if (finalStatus === "수업중" || finalStatus === "보강완료") {

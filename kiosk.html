@@ -1629,7 +1629,11 @@
             updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "outTime", value: currentTime });
             
             // Makeup Bank integration on Kiosk checkout
-            const isMakeupClass = dailyLog && dailyLog.reason === "보강 수업";
+            const parsedMakeupsForOut = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
+            const isScheduledMakeupToday = parsedMakeupsForOut.some(m => 
+              m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
+            );
+            const isMakeupClass = (dailyLog && dailyLog.reason === "보강 수업") || isScheduledMakeupToday;
             const isExtendedClass = student.todayExtensionMins > 0;
             if (isMakeupClass || isExtendedClass) {
               let addedMins = 0;
@@ -1663,10 +1667,14 @@
                 updates.push({ tab: "students", row: student.row, field: "absentDates", value: student.absentDates });
                 if (isExtendedClass) {
                   updates.push({ tab: "students", row: student.row, field: "todayExtensionMins", value: 0 });
+                  updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: `연장 (${student.todayExtensionMins}분)` });
+                  dailyLog.reason = `연장 (${student.todayExtensionMins}분)`;
                   student.todayExtensionMins = 0;
                 }
                 if (isMakeupClass) {
                   updates.push({ tab: "students", row: student.row, field: "makeupCompleted", value: "완료" });
+                  updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: "보강 수업" });
+                  dailyLog.reason = "보강 수업";
                   student.makeupCompleted = '완료';
                 }
               }
@@ -1676,6 +1684,14 @@
         }
       } else {
         const nextRow = state.dailyLogs.length > 0 ? Math.max(...state.dailyLogs.map(l => l.row)) + 1 : 2;
+        
+        // Check if student is scheduled for a makeup class today
+        const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
+        const isMakeup = parsedMakeups.some(m => 
+          m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
+        );
+        const reasonVal = isMakeup ? "보강 수업" : "";
+
         dailyLog = {
           id: 'daily_' + nextRow,
           row: nextRow,
@@ -1686,7 +1702,7 @@
           status: dailyStatus,
           inTime: type === 'in' ? currentTime : "",
           outTime: type === 'out' ? currentTime : "",
-          reason: "", number: "", event: "", grammarDone: "", specialClass: "", contents: ""
+          reason: reasonVal, number: "", event: "", grammarDone: "", specialClass: "", contents: ""
         };
         state.dailyLogs.push(dailyLog);
         
@@ -1879,7 +1895,8 @@
           status: log.status,
           inTime: log.inTime || "",
           outTime: log.outTime || "",
-          notes: log.notes || ""
+          notes: log.notes || "",
+          reason: log.reason || ""
         })
       }).catch(err => console.error("Kiosk log add error:", err));
     }
