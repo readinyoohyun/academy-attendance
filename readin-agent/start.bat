@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 title Readin Local Scraper Agent
 cd /d "%~dp0"
 
