@@ -21,7 +21,7 @@ if %errorlevel% neq 0 (
 )
 
 :: 2. check if node_modules exists
-if not exist "node_modules\" (
+if not exist "node_modules\express\" (
     echo [INFO] 필요한 패키지가 없습니다. npm install을 진행합니다.
     echo 이 작업은 첫 실행 시에만 수행되며, 최대 1~2분이 걸릴 수 있습니다...
     call npm install
