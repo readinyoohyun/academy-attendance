@@ -1,4 +1,4 @@
-﻿// crm-manager.js - CRMManager Class to handle student profiles (CRM) & accordions
+// crm-manager.js - CRMManager Class to handle student profiles (CRM) & accordions
 class CRMManager {
   constructor(app) {
     this.app = app;
@@ -617,6 +617,144 @@ class CRMManager {
       };
     }
 
+    // ----------------------------------------------------
+    // 리드인 분석표 자동 수집 모달 및 버튼 바인딩
+    // ----------------------------------------------------
+    const btnCrmFetchLidin = document.getElementById("btnCrmFetchLidin");
+    if (btnCrmFetchLidin) {
+      btnCrmFetchLidin.onclick = () => {
+        const name = this.currentCrmStudentName;
+        if (!name) return;
+        
+        const today = new Date();
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+        
+        const toStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        document.getElementById("inputLidinStartDate").value = toStr(lastMonth);
+        document.getElementById("inputLidinEndDate").value = toStr(today);
+        
+        document.getElementById("modalLidinDateRange").classList.add("active");
+      };
+    }
+
+    const closeLidinDateModal = () => document.getElementById("modalLidinDateRange").classList.remove("active");
+    const elCloseDate = document.getElementById("btnCloseLidinDateModal");
+    if (elCloseDate) elCloseDate.onclick = closeLidinDateModal;
+    const elCancelDate = document.getElementById("btnCancelLidinDateModal");
+    if (elCancelDate) elCancelDate.onclick = closeLidinDateModal;
+
+    const closeLidinPreviewModal = () => document.getElementById("modalLidinPreview").classList.remove("active");
+    const elClosePreview = document.getElementById("btnCloseLidinPreviewModal");
+    if (elClosePreview) elClosePreview.onclick = closeLidinPreviewModal;
+    const elCancelPreview = document.getElementById("btnCancelLidinPreviewModal");
+    if (elCancelPreview) elCancelPreview.onclick = closeLidinPreviewModal;
+
+    const formLidinDateRange = document.getElementById("formLidinDateRange");
+    if (formLidinDateRange) {
+      formLidinDateRange.onsubmit = async (e) => {
+        e.preventDefault();
+        const name = this.currentCrmStudentName;
+        const startDate = document.getElementById("inputLidinStartDate").value;
+        const endDate = document.getElementById("inputLidinEndDate").value;
+        
+        closeLidinDateModal();
+        
+        // 로딩 상태 표시
+        const originalText = btnCrmFetchLidin.innerText;
+        btnCrmFetchLidin.innerText = "⏳ 수집 중...";
+        btnCrmFetchLidin.disabled = true;
+        
+        try {
+          const res = await fetch(`http://localhost:3010/fetch-analysis?name=${encodeURIComponent(name)}&startDate=${startDate}&endDate=${endDate}`);
+          const json = await res.json();
+          
+          if (json.success) {
+            this.tempScrapedData = json.data;
+            
+            // 프리뷰 모달 채우기
+            document.getElementById("inputLidinScrapedSpeed").value = json.data.textData.readingSpeed || 0;
+            document.getElementById("inputLidinScrapedComprehension").value = json.data.textData.comprehensionScore || 0;
+            
+            // 이미지 미리보기 세팅
+            document.getElementById("previewMarathonImg").src = json.data.images.marathon ? `data:image/png;base64,${json.data.images.marathon}` : '';
+            document.getElementById("previewActivityImg").src = json.data.images.activity ? `data:image/png;base64,${json.data.images.activity}` : '';
+            document.getElementById("previewPostReadingImg").src = json.data.images.postReading ? `data:image/png;base64,${json.data.images.postReading}` : '';
+            
+            // 프리뷰 모달 활성화
+            document.getElementById("modalLidinPreview").classList.add("active");
+          } else {
+            alert(`리드인 분석표 수집 실패:\n\n${json.error || '알 수 없는 오류'}`);
+          }
+        } catch (err) {
+          console.error(err);
+          alert(`리드인 분석표 수집 서버와 연동할 수 없습니다.\n\n로컬 크롤러 에이전트(readin-agent/start.bat)가 실행 중인지 확인해 주세요.`);
+        } finally {
+          btnCrmFetchLidin.innerText = originalText;
+          btnCrmFetchLidin.disabled = false;
+        }
+      };
+    }
+
+    const formLidinPreview = document.getElementById("formLidinPreview");
+    if (formLidinPreview) {
+      formLidinPreview.onsubmit = async (e) => {
+        e.preventDefault();
+        const student = this.app.state.students.find(s => s.name === this.currentCrmStudentName);
+        if (!student) return;
+        
+        const speed = parseInt(document.getElementById("inputLidinScrapedSpeed").value, 10);
+        const comp = parseInt(document.getElementById("inputLidinScrapedComprehension").value, 10);
+        
+        // 사용자가 최종 수정폼에서 가공한 값 반영
+        this.tempScrapedData.textData.readingSpeed = speed;
+        this.tempScrapedData.textData.comprehensionScore = comp;
+        
+        closeLidinPreviewModal();
+        
+        const originalText = btnCrmFetchLidin.innerText;
+        btnCrmFetchLidin.innerText = "⏳ 드라이브 전송 중...";
+        btnCrmFetchLidin.disabled = true;
+        
+        try {
+          const webhookUrl = this.app.gasWebhookUrl;
+          if (!webhookUrl) throw new Error("구글 웹훅 주소가 설정되어 있지 않습니다.");
+          
+          const payload = {
+            action: "uploadLidinAnalysis",
+            row: student.row,
+            name: student.name,
+            images: this.tempScrapedData.images,
+            textData: this.tempScrapedData.textData
+          };
+          
+          // 구글 시트 웹훅 호출 (Base64 이미지 드라이브 저장 및 컬럼 기입)
+          const proxyUrl = window.location.protocol !== 'file:' 
+            ? `/api/sync?url=${encodeURIComponent(webhookUrl)}`
+            : webhookUrl;
+            
+          const response = await fetch(proxyUrl, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          const result = await response.json();
+          
+          if (result.status === "success") {
+            alert("리드인 분석표 저장 및 구글 드라이브 연동이 최종 완료되었습니다!");
+            // 구글 시트로부터 최신 정보 강제 동기화 (화면 자동 갱신 트리거)
+            this.app.api.fetchFromGoogleSheets(true);
+          } else {
+            alert(`구글 드라이브 업로드 실패: ${result.message || '알 수 없는 서버 에러'}`);
+          }
+        } catch (err) {
+          console.error(err);
+          alert(`구글 시트 연동 중 에러가 발생했습니다: ${err.message}`);
+        } finally {
+          btnCrmFetchLidin.innerText = originalText;
+          btnCrmFetchLidin.disabled = false;
+        }
+      };
+    }
+
     this.initCrmAccordions();
   }
 
@@ -996,8 +1134,134 @@ class CRMManager {
       this.attachCrmEvaluationActions();
     }
     
+    // ----------------------------------------------------
+    // 리드인 분석표 및 수집 기록 렌더링
+    // ----------------------------------------------------
+    const scrapedDateEl = document.getElementById("crmLidinScrapedDate");
+    const speedEl = document.getElementById("crmLidinSpeed");
+    const compEl = document.getElementById("crmLidinComprehension");
+    const carouselEl = document.getElementById("crmLidinCarousel");
+    
+    if (scrapedDateEl) {
+      if (student.lidinScrapedDate) {
+        scrapedDateEl.innerText = `수집일: ${student.lidinScrapedDate}`;
+        scrapedDateEl.style.background = "rgba(99, 102, 241, 0.15)";
+        scrapedDateEl.style.color = "#4f46e5";
+        
+        if (student.lidinReadingSpeed) {
+          speedEl.innerText = `독서속도: ${student.lidinReadingSpeed} 자/분`;
+          speedEl.style.display = "inline-block";
+        } else {
+          speedEl.style.display = "none";
+        }
+        
+        if (student.lidinComprehension) {
+          compEl.innerText = `이해도: ${student.lidinComprehension}%`;
+          compEl.style.display = "inline-block";
+        } else {
+          compEl.style.display = "none";
+        }
+        
+        // 캐러셀 슬라이드 구성 (마라톤, 독서활동, 독후활동)
+        this.lidinSlides = [
+          { title: "마라톤 분석표", url: student.lidinMarathonUrl },
+          { title: "독서활동 리포트", url: student.lidinActivityUrl },
+          { title: "독후활동 리포트", url: student.lidinPostReadingUrl }
+        ].filter(slide => slide.url && slide.url.trim() !== "");
+        
+        if (this.lidinSlides.length > 0) {
+          carouselEl.style.display = "block";
+          this.lidinActiveSlideIndex = 0;
+          this.updateLidinCarousel();
+          this.setupLidinCarouselActions();
+        } else {
+          carouselEl.style.display = "none";
+        }
+      } else {
+        scrapedDateEl.innerText = "수집 기록 없음";
+        scrapedDateEl.style.background = "rgba(0, 0, 0, 0.05)";
+        scrapedDateEl.style.color = "var(--text-muted)";
+        speedEl.style.display = "none";
+        compEl.style.display = "none";
+        carouselEl.style.display = "none";
+        this.lidinSlides = [];
+      }
+    }
+
+    // 전역 이미지 확대 헬퍼 바인딩
+    window.zoomLidinImage = (type) => {
+      const imgEl = document.getElementById(`preview${type.charAt(0).toUpperCase() + type.slice(1)}Img`);
+      if (imgEl && imgEl.src) {
+        const modal = document.getElementById("modalLargeView");
+        const title = `🔍 이미지 크게 보기`;
+        const contentHtml = `
+          <div style="text-align: center; background: #fff; padding: 1rem; border-radius: 8px;">
+            <img src="${imgEl.src}" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 4px;" />
+          </div>
+        `;
+        const titleEl = document.getElementById("largeViewTitle");
+        const contentEl = document.getElementById("largeViewContentArea");
+        if (modal && titleEl && contentEl) {
+          titleEl.innerText = title;
+          contentEl.innerHTML = contentHtml;
+          modal.classList.add("active");
+        }
+      }
+    };
+    
     // Timeline render
     this.renderTimeline(name);
+  }
+
+  updateLidinCarousel() {
+    if (!this.lidinSlides || this.lidinSlides.length === 0) return;
+    const slide = this.lidinSlides[this.lidinActiveSlideIndex];
+    
+    const imgEl = document.getElementById("crmLidinSlideImg");
+    const titleEl = document.getElementById("crmLidinSlideTitle");
+    const indexEl = document.getElementById("crmLidinSlideIndex");
+    
+    if (imgEl && titleEl && indexEl) {
+      imgEl.src = slide.url;
+      titleEl.innerText = slide.title;
+      indexEl.innerText = `${this.lidinActiveSlideIndex + 1} / ${this.lidinSlides.length}`;
+      
+      // 이미지 클릭 시 확대 기능
+      imgEl.onclick = () => {
+        const modal = document.getElementById("modalLargeView");
+        const title = `📖 ${this.currentCrmStudentName} - ${slide.title}`;
+        const contentHtml = `
+          <div style="text-align: center; background: #fff; padding: 1rem; border-radius: 8px; overflow-y: auto; max-height: 75vh;">
+            <img src="${slide.url}" style="max-width: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.15);" />
+            <div style="margin-top: 1rem;">
+              <a href="${slide.url}" target="_blank" class="btn-primary" style="display: inline-block; padding: 0.5rem 1rem; text-decoration: none;">📥 이미지 원본 보기/다운로드</a>
+            </div>
+          </div>
+        `;
+        this.showLargeView(title, contentHtml);
+      };
+    }
+  }
+
+  setupLidinCarouselActions() {
+    const btnPrev = document.getElementById("btnCrmLidinPrev");
+    const btnNext = document.getElementById("btnCrmLidinNext");
+    
+    if (btnPrev && btnNext) {
+      btnPrev.onclick = (e) => {
+        e.preventDefault();
+        if (this.lidinSlides.length === 0) return;
+        this.lidinActiveSlideIndex = (this.lidinActiveSlideIndex - 1 + this.lidinSlides.length) % this.lidinSlides.length;
+        this.updateLidinCarousel();
+      };
+      
+      btnNext.onclick = (e) => {
+        e.preventDefault();
+        if (this.lidinSlides.length === 0) return;
+        this.lidinActiveSlideIndex = (this.lidinActiveSlideIndex + 1) % this.lidinSlides.length;
+        this.updateLidinCarousel();
+      };
+    }
   }
 
   // CRM Monthly Attendance Calendar renderer
