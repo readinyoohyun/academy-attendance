@@ -3,6 +3,9 @@ chcp 65001 >nul
 title Readin Local Scraper Agent
 cd /d "%~dp0"
 
+:: Explicitly add Node.js paths to local environment in case PATH is not refreshed yet
+set PATH=%PATH%;C:\Program Files\nodejs;C:\Program Files (x86)\nodejs;%AppData%\npm;%ProgramFiles%\nodejs
+
 echo ====================================================
 echo   Readin Local Scraper Agent Starting...
 echo ====================================================
