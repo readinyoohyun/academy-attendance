@@ -18,8 +18,8 @@
   --overlay-bg: rgba(15, 23, 42, 0.4);
   
   /* Status Colors (Optimized for light mode contrast) */
-  --color-regular: #ffffff; /* White text on yellow */
-  --color-regular-bg: #ca8a04; /* Solid Yellow */
+  --color-regular: #0f172a; /* Dark text on cream */
+  --color-regular-bg: #fef9c3; /* Soft Lemon Cream */
   --color-regular-border: transparent;
   
   --color-makeup: #ffffff; /* White text on pink */
@@ -421,26 +421,26 @@ main {
 /* Regular Student Card */
 .student-card.regular {
   background: var(--color-regular-bg);
-  border: 1px solid transparent;
-  border-left: 5px solid #b45309;
+  border: 1px solid var(--color-regular-border);
+  border-left: 5px solid #6366f1;
 }
 
 .student-card.regular:hover {
-  border-color: transparent;
-  box-shadow: none;
+  border-color: var(--color-regular-border);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
   transform: translateY(-4px);
 }
 
 /* Makeup Student Card */
 .student-card.makeup {
-  background: var(--color-makeup-bg);
-  border: 1px solid transparent;
-  border-left: 5px solid #be185d;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-left: 5px solid #db2777;
 }
 
 .student-card.makeup:hover {
-  border-color: transparent;
-  box-shadow: none;
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
   transform: translateY(-4px);
 }
 
@@ -449,12 +449,15 @@ main {
   background: var(--color-absent-bg);
   border: 1.5px solid var(--color-absent-border);
   border-left: 5px solid var(--color-absent);
+  opacity: 0.55;
+  transition: opacity 0.2s, transform 0.2s;
 }
 
 .student-card.absent:hover {
   border-color: var(--color-absent);
   box-shadow: none;
   transform: translateY(-4px);
+  opacity: 0.85;
 }
 
 /* Completed Card */
@@ -505,32 +508,41 @@ main {
 }
 
 .student-card.regular .student-name {
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .student-card.regular .student-grade {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.15);
+  color: #475569;
+  border-color: rgba(99, 102, 241, 0.15);
+  background: rgba(99, 102, 241, 0.06);
 }
 
 .student-card.regular .card-meta {
-  color: #ffffff;
+  color: #475569;
 }
 
 .student-card.regular .badge-tag {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  background: rgba(99, 102, 241, 0.08);
+  color: #4f46e5;
 }
 
 .student-card.makeup .student-name {
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .student-card.makeup .student-grade {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.15);
+  color: #475569;
+  border-color: rgba(219, 39, 119, 0.15);
+  background: rgba(219, 39, 119, 0.06);
+}
+
+.student-card.makeup .card-meta {
+  color: #475569;
+}
+
+.student-card.makeup .badge-tag {
+  background: rgba(219, 39, 119, 0.08);
+  color: #db2777;
 }
 
 .student-card.absent .student-grade {
@@ -609,12 +621,15 @@ main {
   background: var(--color-cancelled-bg);
   border: 1.5px solid var(--color-cancelled-border);
   border-left: 5px solid var(--color-cancelled);
+  opacity: 0.55;
+  transition: opacity 0.2s, transform 0.2s;
 }
 
 .student-card.cancelled:hover {
   border-color: var(--color-cancelled);
-  box-shadow: 0 6px 20px rgba(113, 128, 150, 0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
   transform: translateY(-4px);
+  opacity: 0.85;
 }
 
 .student-card.cancelled .student-name {

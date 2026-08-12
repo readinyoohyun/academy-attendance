@@ -373,29 +373,29 @@ class DashboardManager {
           if (typeClass === 'regular' || typeClass === 'makeup') {
             card.innerHTML = `
               <div class="card-header">
-                <span class="student-name" style="color: #ffffff;">${this.escapeHtml(student.name)}</span>
+                <span class="student-name" style="color: #0f172a;">${this.escapeHtml(student.name)}</span>
                 <div style="display:flex; align-items:center; gap:0.3rem;">
-                  <span class="student-grade" style="color: rgba(255,255,255,0.9); font-weight: 600;">${student.grade}</span>
-                  <span class="badge-time" style="background:rgba(255,255,255,0.25); color:#ffffff; border:1px solid rgba(255,255,255,0.3); padding:0.1rem 0.35rem; border-radius:4px; font-size:0.7rem; font-weight:700;">${timeStr}</span>
-                  ${dailyLog ? `<button class="btn-delete-card-daily" data-row="${dailyLog.row}" data-name="${this.escapeHtml(student.name)}" style="background:none; border:none; color:rgba(255,255,255,0.7); font-size:1.2rem; cursor:pointer; padding:0 0.2rem; line-height:1; margin-left:0.3rem; display:inline-flex; align-items:center; transition:color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(255,255,255,0.7)'" title="오늘 명단에서 삭제">×</button>` : ''}
+                  <span class="student-grade" style="color: #475569; font-weight: 600;">${student.grade}</span>
+                  <span class="badge-time" style="background:rgba(99,102,241,0.08); color:#4f46e5; border:1px solid rgba(99,102,241,0.15); padding:0.1rem 0.35rem; border-radius:4px; font-size:0.7rem; font-weight:700;">${timeStr}</span>
+                  ${dailyLog ? `<button class="btn-delete-card-daily" data-row="${dailyLog.row}" data-name="${this.escapeHtml(student.name)}" style="background:none; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer; padding:0 0.2rem; line-height:1; margin-left:0.3rem; display:inline-flex; align-items:center; transition:color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'" title="오늘 명단에서 삭제">×</button>` : ''}
                 </div>
               </div>
               <div class="card-meta">
                 <div class="card-meta-row" style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top: 0.2rem;">
-                  <div style="display:flex; flex-direction:column; gap:0.2rem; color: rgba(255,255,255,0.9); font-size: 0.8rem;">
+                  <div style="display:flex; flex-direction:column; gap:0.2rem; color: #475569; font-size: 0.8rem;">
                     <span>${student.classes || '수업'}</span>
                     <div style="display:flex; gap:0.25rem;">
-                      ${student.makeupMinsRemaining > 0 ? `<span style="background:rgba(245,158,11,0.4); color:#fff; border:1px solid rgba(245,158,11,0.6); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">⏳ 잔여: ${student.makeupMinsRemaining}분</span>` : ''}
-                      ${displayExtensionMins > 0 ? `<span style="background:rgba(16,185,129,0.4); color:#fff; border:1px solid rgba(16,185,129,0.6); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${displayExtensionMins}분</span>` : ''}
+                      ${student.makeupMinsRemaining > 0 ? `<span style="background:rgba(16,185,129,0.08); color:#047857; border:1px solid rgba(16,185,129,0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">⏳ 잔여: ${student.makeupMinsRemaining}분</span>` : ''}
+                      ${displayExtensionMins > 0 ? `<span style="background:rgba(13,148,136,0.08); color:#0f766e; border:1px solid rgba(13,148,136,0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${displayExtensionMins}분</span>` : ''}
                     </div>
                   </div>
                   <div style="display: flex; gap: 0.35rem; align-items: center;">
                     ${displayExtensionMins > 0 
-                      ? `<button class="btn-extend-cycle" style="background: rgba(245, 158, 11, 0.85); border: 1px solid rgba(245, 158, 11, 0.95); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+${displayExtensionMins}분</button>`
-                      : `<button class="btn-extend-cycle" style="background: rgba(16, 185, 129, 0.6); border: 1px solid rgba(16, 185, 129, 0.7); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+연장</button>`
+                      ? `<button class="btn-extend-cycle" style="background: rgba(13, 148, 136, 0.85); border: 1px solid rgba(13, 148, 136, 0.95); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+${displayExtensionMins}분</button>`
+                      : `<button class="btn-extend-cycle" style="background: rgba(13, 148, 136, 0.1); border: 1px solid rgba(13, 148, 136, 0.2); color: #0f766e; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">+연장</button>`
                     }
-                    <button class="btn-absent-quick" style="background: rgba(239, 68, 68, 0.45); border: 1px solid rgba(239, 68, 68, 0.55); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">결석</button>
-                    <button class="btn-cancelled-quick" style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">휴강</button>
+                    <button class="btn-absent-quick" style="background: rgba(194, 65, 12, 0.1); border: 1px solid rgba(194, 65, 12, 0.2); color: #c2410c; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">결석</button>
+                    <button class="btn-cancelled-quick" style="background: rgba(100, 116, 139, 0.1); border: 1px solid rgba(100, 116, 139, 0.2); color: #475569; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">휴강</button>
                   </div>
                 </div>
               </div>
@@ -417,8 +417,8 @@ class DashboardManager {
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>${student.classes || '수업'}</span>
-                    ${student.makeupMinsRemaining > 0 ? `<span style="background:rgba(245,158,11,0.1); color:var(--accent); border:1px solid rgba(245,158,11,0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">⏳ 잔여: ${student.makeupMinsRemaining}분</span>` : ''}
-                    ${displayExtensionMins > 0 ? `<span style="background:rgba(16,185,129,0.1); color:var(--success); border:1px solid rgba(16,185,129,0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${displayExtensionMins}분</span>` : ''}
+                    ${student.makeupMinsRemaining > 0 ? `<span style="background:rgba(16, 185, 129, 0.08); color:#047857; border:1px solid rgba(16, 185, 129, 0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">⏳ 잔여: ${student.makeupMinsRemaining}분</span>` : ''}
+                    ${displayExtensionMins > 0 ? `<span style="background:rgba(13, 148, 136, 0.08); color:#0f766e; border:1px solid rgba(13, 148, 136, 0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${displayExtensionMins}분</span>` : ''}
                   </div>
                 </div>
                 ${timerHtml}
