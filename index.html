@@ -1331,6 +1331,83 @@ function doPost(e) {
         }
         sheet.getRange(row, 42).setValue(new Date().toLocaleDateString("ko-KR"));
         
+        // 1. 회원 분석/레벨변동/전화상담 시트 Column M (13) 기록 및 prepend
+        var sheetMember = ss.getSheetByName("월별상담내역") || ss.getSheetByName("회원 분석/레벨변동/전화상담");
+        if (sheetMember) {
+          var memberRowIdx = -1;
+          var memberLastRow = sheetMember.getLastRow();
+          if (memberLastRow > 1) {
+            var memberNames = sheetMember.getRange(1, 2, memberLastRow, 1).getValues(); // Column B
+            var matchName = name.replace(/\s+/g, "").toLowerCase();
+            for (var rIdx = 1; rIdx < memberNames.length; rIdx++) {
+              var sheetName = String(memberNames[rIdx][0]).replace(/\s+/g, "").toLowerCase();
+              if (sheetName === matchName) {
+                memberRowIdx = rIdx + 1;
+                break;
+              }
+            }
+          }
+          if (memberRowIdx !== -1) {
+            var cellMember = sheetMember.getRange(memberRowIdx, 13); // Col M
+            var oldValMember = cellMember.getValue();
+            var dateStr = (new Date().getMonth() + 1) + "/" + new Date().getDate();
+            var speedVal = postData.textData.readingSpeed || "-";
+            var compVal = postData.textData.comprehensionScore || "-";
+            var newValMember = dateStr + " 분석표 수집완료 (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
+            if (oldValMember && String(oldValMember).trim() !== "") {
+              newValMember = newValMember + "\n" + oldValMember;
+            }
+            cellMember.setValue(newValMember);
+          }
+        }
+
+        // 2. 신규 브리핑 관리 시트 이번달 피드백 열 기록 및 prepend
+        var sheetBriefing = ss.getSheetByName("신규브리핑관리") || ss.getSheetByName("신규 브리핑 관리");
+        if (sheetBriefing) {
+          var briefingLastCol = sheetBriefing.getLastColumn();
+          if (briefingLastCol > 0) {
+            var headers = sheetBriefing.getRange(1, 1, 1, briefingLastCol).getValues()[0];
+            var currentMonth = (new Date().getMonth() + 1) + "월"; // 예: "8월"
+            var targetColIdx = -1;
+            for (var colIdx = 0; colIdx < headers.length; colIdx++) {
+              var headerVal = String(headers[colIdx]).trim();
+              if (headerVal.indexOf(currentMonth) !== -1 || headerVal === String(new Date().getMonth() + 1)) {
+                targetColIdx = colIdx + 1; // 1-based index
+                break;
+              }
+            }
+            
+            if (targetColIdx !== -1) {
+              var briefingLastRow = sheetBriefing.getLastRow();
+              if (briefingLastRow > 1) {
+                var briefingNames = sheetBriefing.getRange(1, 2, briefingLastRow, 1).getValues(); // Column B
+                var matchName = name.replace(/\s+/g, "").toLowerCase();
+                var briefingRowIdx = -1;
+                for (var rIdx = 1; rIdx < briefingNames.length; rIdx++) {
+                  var sheetName = String(briefingNames[rIdx][0]).replace(/\s+/g, "").toLowerCase();
+                  if (sheetName === matchName) {
+                    briefingRowIdx = rIdx + 1;
+                    break;
+                  }
+                }
+                
+                if (briefingRowIdx !== -1) {
+                  var cellBriefing = sheetBriefing.getRange(briefingRowIdx, targetColIdx);
+                  var oldValBriefing = cellBriefing.getValue();
+                  var dateStr = (new Date().getMonth() + 1) + "/" + new Date().getDate();
+                  var speedVal = postData.textData.readingSpeed || "-";
+                  var compVal = postData.textData.comprehensionScore || "-";
+                  var newValBriefing = dateStr + " 분석표 수집완료 (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
+                  if (oldValBriefing && String(oldValBriefing).trim() !== "") {
+                    newValBriefing = newValBriefing + "\n" + oldValBriefing;
+                  }
+                  cellBriefing.setValue(newValBriefing);
+                }
+              }
+            }
+          }
+        }
+        
         return ContentService.createTextOutput(JSON.stringify({ 
           status: "success", 
           urls: { marathon: marathonUrl, activity: activityUrl, postReading: postReadingUrl } 

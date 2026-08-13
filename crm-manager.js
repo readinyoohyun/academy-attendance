@@ -626,6 +626,23 @@ class CRMManager {
         const name = this.currentCrmStudentName;
         if (!name) return;
         
+        // 1. 임시 수집 데이터가 있고, 동일한 학생인지 체크하여 이어서 하기 지원
+        if (this.tempScrapedData && this.tempScrapedData.studentName === name) {
+          const resume = confirm("이전에 수집되었거나 오류로 인해 저장하지 못한 분석 데이터가 존재합니다.\n이 데이터를 이어서 편집하고 저장하시겠습니까?\n\n(취소를 누르시면 새로 리드인 수집을 시작합니다.)");
+          if (resume) {
+            // 프리뷰 모달값 채우고 바로 열기
+            document.getElementById("inputLidinScrapedSpeed").value = this.tempScrapedData.textData.readingSpeed || 0;
+            document.getElementById("inputLidinScrapedComprehension").value = this.tempScrapedData.textData.comprehensionScore || 0;
+            
+            document.getElementById("previewMarathonImg").src = this.tempScrapedData.images.marathon ? `data:image/png;base64,${this.tempScrapedData.images.marathon}` : '';
+            document.getElementById("previewActivityImg").src = this.tempScrapedData.images.activity ? `data:image/png;base64,${this.tempScrapedData.images.activity}` : '';
+            document.getElementById("previewPostReadingImg").src = this.tempScrapedData.images.postReading ? `data:image/png;base64,${this.tempScrapedData.images.postReading}` : '';
+            
+            document.getElementById("modalLidinPreview").classList.add("active");
+            return;
+          }
+        }
+        
         const today = new Date();
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
         
@@ -668,8 +685,8 @@ class CRMManager {
           const res = await fetch(`http://localhost:3010/fetch-analysis?name=${encodeURIComponent(name)}&startDate=${startDate}&endDate=${endDate}`);
           const json = await res.json();
           
-          if (json.success) {
             this.tempScrapedData = json.data;
+            this.tempScrapedData.studentName = name;
             
             // 프리뷰 모달 채우기
             document.getElementById("inputLidinScrapedSpeed").value = json.data.textData.readingSpeed || 0;
@@ -740,6 +757,7 @@ class CRMManager {
           
           if (result.status === "success") {
             alert("리드인 분석표 저장 및 구글 드라이브 연동이 최종 완료되었습니다!");
+            this.tempScrapedData = null; // Clear cached data on successful save
             // 구글 시트로부터 최신 정보 강제 동기화 (화면 자동 갱신 트리거)
             this.app.api.fetchFromGoogleSheets(true);
           } else {
