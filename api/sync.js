@@ -57,6 +57,8 @@ function fetchWithRedirect(url, method = 'GET', body = null) {
         const req = https.request(options, (res) => {
           if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
             const redirectUrl = new URL(res.headers.location, targetUrl).toString();
+            method = 'GET';
+            body = null;
             performRequest(redirectUrl);
             return;
           }
