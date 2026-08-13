@@ -50,7 +50,7 @@ function fetchWithRedirect(url, method = 'GET', body = null) {
         };
         
         if (method === 'POST' && body) {
-          options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+          options.headers['Content-Type'] = 'application/json';
           options.headers['Content-Length'] = Buffer.byteLength(body);
         }
 
