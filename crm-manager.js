@@ -2410,7 +2410,20 @@ ${textbookSummary}
       sectionsContainer.appendChild(introDiv);
     }
     
-    const sections = report.sections || [];
+    let sections = [];
+    if (report.sections) {
+      sections = report.sections;
+    } else {
+      sections = [
+        { title: "1. 학습 레벨 및 학습 코스", text: report.levelCourse || "" },
+        { title: "2. 독서 이해도 및 영역별 점수 분석", text: report.comprehensionText || "" },
+        { title: "3. 읽기 속도 및 읽기 트레이닝 현황", text: report.readingSpeedText || "" },
+        { title: "4. 문해력 PT 진행 상황", text: report.grammarPtText || "" },
+        { title: "5. 학습 속도 및 성장 과정", text: report.growthProcessText || "" },
+        { title: "6. 학부모님께 드리는 말씀", text: report.teacherComment || "" }
+      ];
+    }
+
     sections.forEach(sec => {
       const secDiv = document.createElement("div");
       secDiv.className = "ai-report-section";
