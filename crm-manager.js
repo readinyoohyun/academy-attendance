@@ -2020,10 +2020,24 @@ class CRMManager {
         const json = await res.json();
         if (json.success) {
           this.tempLidinScrapedData = json.data;
+        } else {
+          throw new Error(json.error || "수집기 응답 실패");
         }
       } catch (e) {
         console.error("Auto fetch Lidin text data failed:", e);
+        btnGen.innerHTML = originalText;
+        btnGen.disabled = false;
+        alert(`❌ 리드인 성적 자동 수집 실패: ${e.message || "에이전트 연결 오류"}\n\n우측 상단의 [🔄 리드인 성적 가져오기] 버튼을 클릭해 먼저 데이터를 수집 완료해 주세요. (로컬에서 readin-agent가 켜져 있어야 합니다.)`);
+        return;
       }
+    }
+
+    // 최종 안전 검사: 수집된 성적 데이터가 없는데 생성하려고 하면 차단
+    if (cycle === 'lidin_report' && !this.tempLidinScrapedData) {
+      btnGen.innerHTML = originalText;
+      btnGen.disabled = false;
+      alert("❌ 리드인 분석표 성적 데이터가 존재하지 않습니다.\n\n먼저 우측 상단의 [🔄 리드인 성적 가져오기] 버튼을 클릭하여 수집을 완료해 주세요.");
+      return;
     }
 
     try {
@@ -2367,16 +2381,41 @@ ${textbookSummary}
       };
       
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
       
-      if (!response.ok) {
-        throw new Error(`Gemini API HTTP 에러: ${response.status}`);
+      let response;
+      let lastError;
+      const maxRetries = 3;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          if (attempt > 1) {
+            btnGen.innerHTML = `⏳ Gemini API 지연으로 재시도 중 (${attempt}/${maxRetries})...`;
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Wait 1.5s
+          }
+          
+          response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+          
+          if (response.ok) {
+            lastError = null;
+            break;
+          } else {
+            lastError = new Error(`Gemini API HTTP 에러: ${response.status}`);
+            console.warn(`Gemini API attempt ${attempt} failed with status ${response.status}`);
+          }
+        } catch (e) {
+          lastError = e;
+          console.warn(`Gemini API attempt ${attempt} threw network error:`, e);
+        }
+      }
+      
+      if (lastError || !response || !response.ok) {
+        throw lastError || new Error(`Gemini API 호출에 실패했습니다 (최대 ${maxRetries}회 시도).`);
       }
       
       const resultData = await response.json();
