@@ -109,21 +109,15 @@ app.get('/fetch-analysis', async (req, res) => {
     await page.type(inputSelector, name);
     await new Promise(r => setTimeout(r, 500));
 
-    const searchBtnHandle = await page.evaluateHandle(() => {
+    await page.evaluate(() => {
       const elements = Array.from(document.querySelectorAll('*'));
-      return elements.find(el => {
+      const searchBtn = elements.find(el => {
         const txt = (el.innerText || '').trim();
         return (txt === '검색' || txt.includes('검색')) && txt.length < 15 && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA';
       });
+      if (searchBtn) searchBtn.click();
     });
-    
-    if (searchBtnHandle) {
-      const btn = searchBtnHandle.asElement();
-      if (btn) {
-        await btn.click();
-        console.log("[검색] 검색 버튼 클릭 완료.");
-      }
-    }
+    console.log("[검색] 검색 버튼 클릭 완료.");
     await new Promise(r => setTimeout(r, 3000)); // wait for search results to load
 
     // 4. Click student card
