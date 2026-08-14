@@ -2037,11 +2037,36 @@ class CRMManager {
       const studentDailyLogs = (this.app.state.dailyLogs || []).filter(log => log && log.name && log.name.replace(/\s+/g, '') === name.replace(/\s+/g, '') && log.status !== '대기' && log.status !== '보강대기' && log.status !== '수업중');
       const allLogs = [...studentAccumLogs, ...studentDailyLogs];
       
+      // 날짜 유틸 함수 (시작일 ~ 종료일 기간 필터용)
+      const parseDate = (dStr) => {
+        if (!dStr) return null;
+        return dStr.replace(/\./g, '-').trim(); // YYYY.MM.DD -> YYYY-MM-DD
+      };
+      
+      const cleanStart = parseDate(start);
+      const cleanEnd = parseDate(end);
+      
+      // 기간 내의 기록만 필터링
+      const filteredLogs = allLogs.filter(log => {
+        const logDate = parseDate(log.date);
+        if (!logDate) return false;
+        if (cleanStart && logDate < cleanStart) return false;
+        if (cleanEnd && logDate > cleanEnd) return false;
+        return true;
+      });
+      
+      // 시간순(오름차순)으로 정렬하여 AI가 시간 흐름에 따라 분석할 수 있게 함
+      filteredLogs.sort((a, b) => {
+        const da = parseDate(a.date) || "";
+        const db = parseDate(b.date) || "";
+        return da.localeCompare(db);
+      });
+      
       let logsSummary = "";
-      if (allLogs.length > 0) {
-        logsSummary = allLogs.slice(0, 15).map(l => `- 날짜: ${l.date}, 수업내용/특이사항: ${l.contents || l.reason || '없음'}, 상태: ${l.status}`).join("\n");
+      if (filteredLogs.length > 0) {
+        logsSummary = filteredLogs.slice(0, 15).map(l => `- 날짜: ${l.date}, 수업내용/특이사항: ${l.contents || l.reason || '없음'}, 상태: ${l.status}`).join("\n");
       } else {
-        logsSummary = "최근 출결 수업 일지 기록 없음";
+        logsSummary = "해당 기간 출결 수업 일지 기록 없음";
       }
       
       // [추가] 과거 리드인 상담/리포트 발송 기록 조회 (띄어쓰기 없이 키워드 매칭)
@@ -2082,7 +2107,34 @@ class CRMManager {
       const textbookRec = this.app.state.textbooks.find(t => t && t.name && t.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
       let textbookSummary = "등록된 교재 진도 없음";
       if (textbookRec) {
-        textbookSummary = `비문학: ${textbookRec.nonfictionTitle || '없음'} (정답률 ${textbookRec.nonfictionAccuracy || '없음'}), 문학: ${textbookRec.literatureTitle || '없음'} (정답률 ${textbookRec.literatureAccuracy || '없음'}), 어휘: ${textbookRec.vocabTitle || '없음'} (정답률 ${textbookRec.vocabAccuracy || '없음'})`;
+        const getBookStatus = (title, startD, endD, accuracy) => {
+          if (!title) return "없음";
+          
+          const bookStart = parseDate(startD);
+          const bookEnd = parseDate(endD);
+          
+          // 교재 학습이 보고서의 시작일~종료일 기간 내에 활성화되었었는지 검증
+          const isStartedBeforeEnd = !bookStart || !cleanEnd || bookStart <= cleanEnd;
+          const isNotFinishedBeforeStart = !bookEnd || !cleanStart || bookEnd >= cleanStart;
+          
+          if (!isStartedBeforeEnd || !isNotFinishedBeforeStart) {
+            if (bookEnd && cleanStart && bookEnd < cleanStart) {
+              return `이전 완료 교재: ${title} (완료일: ${endD})`;
+            }
+            return `해당 기간 외 교재: ${title}`;
+          }
+          
+          // 정답률이 있으면 완료 교재, 없으면 현재 진행 중인 교재
+          if (accuracy && String(accuracy).trim() !== "") {
+            return `완료 교재: ${title} (정답률: ${accuracy}, 완료일: ${endD || '기록 없음'})`;
+          } else {
+            return `현재 진행 중인 교재: ${title} (정답률 아직 기록 안 됨 - 진행 중, 시작일: ${startD || '기록 없음'})`;
+          }
+        };
+        
+        textbookSummary = `비문학: ${getBookStatus(textbookRec.nonfictionTitle, textbookRec.nonfictionStart, textbookRec.nonfictionEnd, textbookRec.nonfictionAccuracy)}, ` +
+                          `문학: ${getBookStatus(textbookRec.literatureTitle, textbookRec.literatureStart, textbookRec.literatureEnd, textbookRec.literatureAccuracy)}, ` +
+                          `어휘: ${getBookStatus(textbookRec.vocabTitle, textbookRec.vocabStart, textbookRec.vocabEnd, textbookRec.vocabAccuracy)}`;
       }
       
       // [인사말 순차 로테이션] 학부모 안내문 마지막 문구 다양화 및 개발자 추천 문구 탑재

@@ -30,7 +30,7 @@ class SheetAPI {
     const widget = document.getElementById("diagnosticWidget");
     if (!widget) return;
 
-    const APP_VERSION = "v2.1.7";
+    const APP_VERSION = "v2.1.8";
 
     widget.onclick = () => {
       alert(`📊 [구글 시트 연동 실시간 진단]\n\n` +
