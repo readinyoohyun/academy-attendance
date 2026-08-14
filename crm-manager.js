@@ -1049,57 +1049,68 @@ class CRMManager {
     
     // Timeline render
     this.renderTimeline(name);
+    
+    // [추가] 학생의 이전 분석 기간(날짜) 복원
+    this.restoreCrmAiReportDatesForStudent(name);
   }
 
-  updateLidinCarousel() {
-    if (!this.lidinSlides || this.lidinSlides.length === 0) return;
-    const slide = this.lidinSlides[this.lidinActiveSlideIndex];
-    
-    const imgEl = document.getElementById("crmLidinSlideImg");
-    const titleEl = document.getElementById("crmLidinSlideTitle");
-    const indexEl = document.getElementById("crmLidinSlideIndex");
-    
-    if (imgEl && titleEl && indexEl) {
-      imgEl.src = slide.url;
-      titleEl.innerText = slide.title;
-      indexEl.innerText = `${this.lidinActiveSlideIndex + 1} / ${this.lidinSlides.length}`;
-      
-      // 이미지 클릭 시 확대 기능
-      imgEl.onclick = () => {
-        const modal = document.getElementById("modalLargeView");
-        const title = `📖 ${this.currentCrmStudentName} - ${slide.title}`;
-        const contentHtml = `
-          <div style="text-align: center; background: #fff; padding: 1rem; border-radius: 8px; overflow-y: auto; max-height: 75vh;">
-            <img src="${slide.url}" style="max-width: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.15);" />
-            <div style="margin-top: 1rem;">
-              <a href="${slide.url}" target="_blank" class="btn-primary" style="display: inline-block; padding: 0.5rem 1rem; text-decoration: none;">📥 이미지 원본 보기/다운로드</a>
-            </div>
-          </div>
-        `;
-        this.showLargeView(title, contentHtml);
-      };
-    }
-  }
+  // [추가] 학생의 이전 분석 리포트 기간(시작일/종료일) 자동 복원 및 복구
+  restoreCrmAiReportDatesForStudent(name) {
+    const startInput = document.getElementById("crmAiReportPeriodStart");
+    const endInput = document.getElementById("crmAiReportPeriodEnd");
+    if (!startInput || !endInput) return;
 
-  setupLidinCarouselActions() {
-    const btnPrev = document.getElementById("btnCrmLidinPrev");
-    const btnNext = document.getElementById("btnCrmLidinNext");
-    
-    if (btnPrev && btnNext) {
-      btnPrev.onclick = (e) => {
-        e.preventDefault();
-        if (this.lidinSlides.length === 0) return;
-        this.lidinActiveSlideIndex = (this.lidinActiveSlideIndex - 1 + this.lidinSlides.length) % this.lidinSlides.length;
-        this.updateLidinCarousel();
-      };
-      
-      btnNext.onclick = (e) => {
-        e.preventDefault();
-        if (this.lidinSlides.length === 0) return;
-        this.lidinActiveSlideIndex = (this.lidinActiveSlideIndex + 1) % this.lidinSlides.length;
-        this.updateLidinCarousel();
-      };
+    // 1. 임시 드래프트에서 분석 기간 추출 시도
+    const draftStr = localStorage.getItem(`ai_report_draft_${name}`);
+    let periodVal = "";
+    if (draftStr) {
+      try {
+        const draft = JSON.parse(draftStr);
+        periodVal = draft.period;
+      } catch (e) {}
     }
+
+    // 2. 임시 드래프트가 없으면 최종 저장된 이전 리포트 이력에서 추출 시도
+    if (!periodVal) {
+      const savedStr = localStorage.getItem(`saved_ai_reports_${name}`);
+      if (savedStr) {
+        try {
+          const savedList = JSON.parse(savedStr);
+          if (savedList.length > 0) {
+            const latest = savedList[savedList.length - 1];
+            periodVal = latest.period;
+          }
+        } catch (e) {}
+      }
+    }
+
+    // 날짜 문자열 변환 및 주입 (형식: YYYY-MM-DD ~ YYYY-MM-DD 또는 YYYY.MM.DD ~ YYYY.MM.DD)
+    if (periodVal) {
+      const dates = periodVal.split("~");
+      if (dates.length === 2) {
+        const toYmd = (dateStr) => {
+          let cleaned = dateStr.trim().replace(/\./g, "-");
+          const parts = cleaned.split("-");
+          if (parts.length === 3) {
+            const y = parts[0].trim();
+            const m = parts[1].trim().padStart(2, "0");
+            const d = parts[2].trim().padStart(2, "0");
+            return `${y}-${m}-${d}`;
+          }
+          return cleaned;
+        };
+        startInput.value = toYmd(dates[0]);
+        endInput.value = toYmd(dates[1]);
+        return; // 복원 성공 시 함수 종료
+      }
+    }
+
+    // 3. 기록이 아예 없는 학생의 경우 기본값으로 최근 30일 설정
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const pad = (n) => String(n).padStart(2, '0');
+    endInput.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+    startInput.value = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
   }
 
   // CRM Monthly Attendance Calendar renderer
