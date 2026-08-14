@@ -2462,6 +2462,15 @@ ${textbookSummary}
     
     // Show Modal
     document.getElementById("modalAiReportPreview").classList.add("active");
+
+    // [자동 저장 연동] 생성 즉시 드래프트로 임시 저장하여 새로고침 시 유실 방지
+    this.saveAiReportDraft();
+    
+    // 메인 CRM 화면의 임시 저장 리포트 배너 표시
+    const draftBanner = document.getElementById("crmAiReportDraftBanner");
+    if (draftBanner) {
+      draftBanner.style.display = "flex";
+    }
   }
 
   saveAiReportDraft() {
