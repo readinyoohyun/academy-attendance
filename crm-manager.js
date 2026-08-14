@@ -617,162 +617,6 @@ class CRMManager {
       };
     }
 
-    // ----------------------------------------------------
-    // 리드인 분석표 자동 수집 모달 및 버튼 바인딩
-    // ----------------------------------------------------
-    const btnCrmFetchLidin = document.getElementById("btnCrmFetchLidin");
-    if (btnCrmFetchLidin) {
-      btnCrmFetchLidin.onclick = () => {
-        const name = this.currentCrmStudentName;
-        if (!name) return;
-        
-        // 1. 임시 수집 데이터가 있고, 동일한 학생인지 체크하여 이어서 하기 지원
-        if (this.tempScrapedData && this.tempScrapedData.studentName === name) {
-          const resume = confirm("이전에 수집되었거나 오류로 인해 저장하지 못한 분석 데이터가 존재합니다.\n이 데이터를 이어서 편집하고 저장하시겠습니까?\n\n(취소를 누르시면 새로 리드인 수집을 시작합니다.)");
-          if (resume) {
-            // 프리뷰 모달값 채우고 바로 열기
-            document.getElementById("inputLidinScrapedSpeed").value = this.tempScrapedData.textData.readingSpeed || 0;
-            document.getElementById("inputLidinScrapedComprehension").value = this.tempScrapedData.textData.comprehensionScore || 0;
-            
-            document.getElementById("previewMarathonImg").src = this.tempScrapedData.images.marathon ? `data:image/png;base64,${this.tempScrapedData.images.marathon}` : '';
-            document.getElementById("previewActivityImg").src = this.tempScrapedData.images.activity ? `data:image/png;base64,${this.tempScrapedData.images.activity}` : '';
-            document.getElementById("previewPostReadingImg").src = this.tempScrapedData.images.postReading ? `data:image/png;base64,${this.tempScrapedData.images.postReading}` : '';
-            
-            document.getElementById("modalLidinPreview").classList.add("active");
-            return;
-          }
-        }
-        
-        const today = new Date();
-        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-        
-        const toStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        document.getElementById("inputLidinStartDate").value = toStr(lastMonth);
-        document.getElementById("inputLidinEndDate").value = toStr(today);
-        
-        document.getElementById("modalLidinDateRange").classList.add("active");
-      };
-    }
-
-    const closeLidinDateModal = () => document.getElementById("modalLidinDateRange").classList.remove("active");
-    const elCloseDate = document.getElementById("btnCloseLidinDateModal");
-    if (elCloseDate) elCloseDate.onclick = closeLidinDateModal;
-    const elCancelDate = document.getElementById("btnCancelLidinDateModal");
-    if (elCancelDate) elCancelDate.onclick = closeLidinDateModal;
-
-    const closeLidinPreviewModal = () => document.getElementById("modalLidinPreview").classList.remove("active");
-    const elClosePreview = document.getElementById("btnCloseLidinPreviewModal");
-    if (elClosePreview) elClosePreview.onclick = closeLidinPreviewModal;
-    const elCancelPreview = document.getElementById("btnCancelLidinPreviewModal");
-    if (elCancelPreview) elCancelPreview.onclick = closeLidinPreviewModal;
-
-    const formLidinDateRange = document.getElementById("formLidinDateRange");
-    if (formLidinDateRange) {
-      formLidinDateRange.onsubmit = async (e) => {
-        e.preventDefault();
-        const name = this.currentCrmStudentName;
-        const startDate = document.getElementById("inputLidinStartDate").value;
-        const endDate = document.getElementById("inputLidinEndDate").value;
-        
-        closeLidinDateModal();
-        
-        // 로딩 상태 표시
-        const originalText = btnCrmFetchLidin.innerText;
-        btnCrmFetchLidin.innerText = "⏳ 수집 중...";
-        btnCrmFetchLidin.disabled = true;
-        
-        try {
-          const res = await fetch(`http://localhost:3010/fetch-analysis?name=${encodeURIComponent(name)}&startDate=${startDate}&endDate=${endDate}`);
-          const json = await res.json();
-          
-            this.tempScrapedData = json.data;
-            this.tempScrapedData.studentName = name;
-            
-            // 프리뷰 모달 채우기
-            document.getElementById("inputLidinScrapedSpeed").value = json.data.textData.readingSpeed || 0;
-            document.getElementById("inputLidinScrapedComprehension").value = json.data.textData.comprehensionScore || 0;
-            
-            // 이미지 미리보기 세팅
-            document.getElementById("previewMarathonImg").src = json.data.images.marathon ? `data:image/png;base64,${json.data.images.marathon}` : '';
-            document.getElementById("previewActivityImg").src = json.data.images.activity ? `data:image/png;base64,${json.data.images.activity}` : '';
-            document.getElementById("previewPostReadingImg").src = json.data.images.postReading ? `data:image/png;base64,${json.data.images.postReading}` : '';
-            
-            // 프리뷰 모달 활성화
-            document.getElementById("modalLidinPreview").classList.add("active");
-          } else {
-            alert(`리드인 분석표 수집 실패:\n\n${json.error || '알 수 없는 오류'}`);
-          }
-        } catch (err) {
-          console.error(err);
-          alert(`리드인 분석표 수집 서버와 연동할 수 없습니다.\n\n로컬 크롤러 에이전트(readin-agent/start.bat)가 실행 중인지 확인해 주세요.`);
-        } finally {
-          btnCrmFetchLidin.innerText = originalText;
-          btnCrmFetchLidin.disabled = false;
-        }
-      };
-    }
-
-    const formLidinPreview = document.getElementById("formLidinPreview");
-    if (formLidinPreview) {
-      formLidinPreview.onsubmit = async (e) => {
-        e.preventDefault();
-        const student = this.app.state.students.find(s => s.name === this.currentCrmStudentName);
-        if (!student) return;
-        
-        const speed = parseInt(document.getElementById("inputLidinScrapedSpeed").value, 10);
-        const comp = parseInt(document.getElementById("inputLidinScrapedComprehension").value, 10);
-        
-        // 사용자가 최종 수정폼에서 가공한 값 반영
-        this.tempScrapedData.textData.readingSpeed = speed;
-        this.tempScrapedData.textData.comprehensionScore = comp;
-        
-        closeLidinPreviewModal();
-        
-        const originalText = btnCrmFetchLidin.innerText;
-        btnCrmFetchLidin.innerText = "⏳ 드라이브 전송 중...";
-        btnCrmFetchLidin.disabled = true;
-        
-        try {
-          const webhookUrl = this.app.gasWebhookUrl;
-          if (!webhookUrl) throw new Error("구글 웹훅 주소가 설정되어 있지 않습니다.");
-          
-          const payload = {
-            action: "uploadLidinAnalysis",
-            row: student.row,
-            name: student.name,
-            images: this.tempScrapedData.images,
-            textData: this.tempScrapedData.textData
-          };
-          
-          // 구글 시트 웹훅 호출 (Base64 이미지 드라이브 저장 및 컬럼 기입)
-          const proxyUrl = window.location.protocol !== 'file:' 
-            ? `/api/sync?url=${encodeURIComponent(webhookUrl)}`
-            : webhookUrl;
-            
-          const response = await fetch(proxyUrl, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-          });
-          const result = await response.json();
-          
-          if (result.status === "success") {
-            alert("리드인 분석표 저장 및 구글 드라이브 연동이 최종 완료되었습니다!");
-            this.tempScrapedData = null; // Clear cached data on successful save
-            // 구글 시트로부터 최신 정보 강제 동기화 (화면 자동 갱신 트리거)
-            this.app.api.fetchFromGoogleSheets(true);
-          } else {
-            alert(`구글 드라이브 업로드 실패: ${result.message || '알 수 없는 서버 에러'}`);
-          }
-        } catch (err) {
-          console.error(err);
-          alert(`구글 시트 연동 중 에러가 발생했습니다: ${err.message}`);
-        } finally {
-          btnCrmFetchLidin.innerText = originalText;
-          btnCrmFetchLidin.disabled = false;
-        }
-      };
-    }
-
     this.initCrmAccordions();
   }
 
@@ -1151,81 +995,6 @@ class CRMManager {
       });
       this.attachCrmEvaluationActions();
     }
-    
-    // ----------------------------------------------------
-    // 리드인 분석표 및 수집 기록 렌더링
-    // ----------------------------------------------------
-    const scrapedDateEl = document.getElementById("crmLidinScrapedDate");
-    const speedEl = document.getElementById("crmLidinSpeed");
-    const compEl = document.getElementById("crmLidinComprehension");
-    const carouselEl = document.getElementById("crmLidinCarousel");
-    
-    if (scrapedDateEl) {
-      if (student.lidinScrapedDate) {
-        scrapedDateEl.innerText = `수집일: ${student.lidinScrapedDate}`;
-        scrapedDateEl.style.background = "rgba(99, 102, 241, 0.15)";
-        scrapedDateEl.style.color = "#4f46e5";
-        
-        if (student.lidinReadingSpeed) {
-          speedEl.innerText = `독서속도: ${student.lidinReadingSpeed} 자/분`;
-          speedEl.style.display = "inline-block";
-        } else {
-          speedEl.style.display = "none";
-        }
-        
-        if (student.lidinComprehension) {
-          compEl.innerText = `이해도: ${student.lidinComprehension}%`;
-          compEl.style.display = "inline-block";
-        } else {
-          compEl.style.display = "none";
-        }
-        
-        // 캐러셀 슬라이드 구성 (마라톤, 독서활동, 독후활동)
-        this.lidinSlides = [
-          { title: "마라톤 분석표", url: student.lidinMarathonUrl },
-          { title: "독서활동 리포트", url: student.lidinActivityUrl },
-          { title: "독후활동 리포트", url: student.lidinPostReadingUrl }
-        ].filter(slide => slide.url && slide.url.trim() !== "");
-        
-        if (this.lidinSlides.length > 0) {
-          carouselEl.style.display = "block";
-          this.lidinActiveSlideIndex = 0;
-          this.updateLidinCarousel();
-          this.setupLidinCarouselActions();
-        } else {
-          carouselEl.style.display = "none";
-        }
-      } else {
-        scrapedDateEl.innerText = "수집 기록 없음";
-        scrapedDateEl.style.background = "rgba(0, 0, 0, 0.05)";
-        scrapedDateEl.style.color = "var(--text-muted)";
-        speedEl.style.display = "none";
-        compEl.style.display = "none";
-        carouselEl.style.display = "none";
-        this.lidinSlides = [];
-      }
-    }
-
-    // 전역 이미지 확대 헬퍼 바인딩
-    window.zoomLidinImage = (type) => {
-      const imgEl = document.getElementById(`preview${type.charAt(0).toUpperCase() + type.slice(1)}Img`);
-      if (imgEl && imgEl.src) {
-        const modal = document.getElementById("modalLargeView");
-        const title = `🔍 이미지 크게 보기`;
-        const contentHtml = `
-          <div style="text-align: center; background: #fff; padding: 1rem; border-radius: 8px;">
-            <img src="${imgEl.src}" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 4px;" />
-          </div>
-        `;
-        const titleEl = document.getElementById("largeViewTitle");
-        const contentEl = document.getElementById("largeViewContentArea");
-        if (modal && titleEl && contentEl) {
-          titleEl.innerText = title;
-          contentEl.innerHTML = contentHtml;
-          modal.classList.add("active");
-        }
-      }
-    };
     
     // Timeline render
     this.renderTimeline(name);
@@ -2797,6 +2566,34 @@ ${textbookSummary}
     
     // Send to Google Sheets
     this.app.api.addConsultationToGoogleSheets(newConsult);
+
+    // 구글 시트 연동 후 추가 기록 (회원분석 M열 및 신규 브리핑 관리 연동)
+    (async () => {
+      try {
+        const webhookUrl = this.app.gasWebhookUrl;
+        if (webhookUrl) {
+          const payload = {
+            action: "uploadLidinAnalysis",
+            row: student.row,
+            name: student.name,
+            images: {},
+            textData: {
+              readingSpeed: parseInt(stats.readSpeed, 10) || 0,
+              comprehensionScore: parseInt(stats.comprehension, 10) || 0
+            }
+          };
+          const proxyUrl = window.location.protocol !== 'file:' 
+            ? `/api/sync?url=${encodeURIComponent(webhookUrl)}`
+            : webhookUrl;
+          await fetch(proxyUrl, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+        }
+      } catch (e) {
+        console.error("Auto log analysis sent status failed:", e);
+      }
+    })();
 
     alert("리포트가 성공적으로 저장되었습니다! 구글 시트 상담/리포트 발송 이력과 웹앱 보관함에 동시에 등록되었습니다.");
     
