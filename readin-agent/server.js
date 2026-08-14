@@ -74,7 +74,27 @@ app.get('/fetch-analysis', async (req, res) => {
     }
 
     // 4. 학생 찾기 및 상세 데이터 수집 시작
-    // 페이지 내에 검색된 학생 목록에서 입력된 이름과 매칭되는 열을 찾습니다.
+    console.log(`[검색] 검색창에 학생 이름 '${name}' 입력 및 조회 시도...`);
+    try {
+      await page.evaluate((targetName) => {
+        const input = document.querySelector('input[placeholder*="이름"], input[placeholder*="검색"], input[type="text"]');
+        if (input) {
+          input.value = targetName;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }, name);
+      
+      await page.evaluate(() => {
+        const btns = Array.from(document.querySelectorAll('button, a, input[type="submit"]'));
+        const searchBtn = btns.find(btn => btn.innerText.includes('검색') || btn.innerText.includes('조회'));
+        if (searchBtn) searchBtn.click();
+      });
+      await new Promise(r => setTimeout(r, 1500)); // 검색 결과 렌더링 대기
+    } catch (searchErr) {
+      console.log('[정보] 수동 검색 작업 실패:', searchErr.message);
+    }
+
     console.log('[탐색] 학생 목록에서 대상 학생 행 분석 중...');
     // AJAX 등으로 카드 목록이 뒤늦게 렌더링될 수 있으므로, 페이지 본문 텍스트에 학생명이 나타날 때까지 대기 (최대 6초)
     await page.waitForFunction(
