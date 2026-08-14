@@ -2084,6 +2084,26 @@ class CRMManager {
         textbookSummary = `비문학: ${textbookRec.nonfictionTitle || '없음'} (정답률 ${textbookRec.nonfictionAccuracy || '없음'}), 문학: ${textbookRec.literatureTitle || '없음'} (정답률 ${textbookRec.literatureAccuracy || '없음'}), 어휘: ${textbookRec.vocabTitle || '없음'} (정답률 ${textbookRec.vocabAccuracy || '없음'})`;
       }
       
+      // [인사말 무작위 로테이션] 학부모 안내문 마지막 문구 다양화 및 개발자 추천 문구 탑재
+      const endingPhrases = [
+        "가정에서도 함께 응원해 주시면 감사하겠습니다.",
+        "가정에서도 관심 있게 지켜봐 주시면 감사하겠습니다.",
+        "가정에서도 아이의 성장을 함께 응원해 주시기 바랍니다.",
+        "가정에서도 따뜻한 관심과 응원 부탁드립니다.",
+        "가정에서도 격려와 지지를 보내주시면 큰 힘이 되겠습니다.",
+        "가정에서도 함께 살펴봐 주시고 응원해 주시면 감사하겠습니다.",
+        "가정에서도 아이가 힘을 낼 수 있도록 함께해 주시면 감사하겠습니다.",
+        "가정에서도 배우는 과정을 함께 응원해 주시면 좋겠습니다.",
+        "가정에서도 지속적인 관심과 성원을 부탁드립니다.",
+        "가정에서도 학생의 성장을 함께 지켜봐 주시기 바랍니다.",
+        "가정에서도 따뜻한 관심과 성원을 보내주시면 감사하겠습니다.",
+        "가정에서도 꾸준한 관심으로 함께해 주시기 바랍니다.",
+        "가정에서도 학생의 배움과 성장을 지속적으로 응원해 주시기 바랍니다.",
+        "가정에서도 책 속에서 무럭무럭 자라나는 아이의 소중한 발걸음을 함께 지켜봐 주시고 응원해 주세요.",
+        "가정에서도 아이가 지치지 않고 즐거운 독서 습관을 이어갈 수 있도록 따뜻한 사랑과 칭찬을 부탁드립니다."
+      ];
+      const randomEnding = endingPhrases[Math.floor(Math.random() * endingPhrases.length)];
+
       // Gemini API Multimodal request payload
       const contents = [];
       const userParts = [];
@@ -2143,7 +2163,7 @@ ${textbookSummary}
 응답 포맷: 반드시 아래 구조의 JSON 데이터만 출력해 주세요. 다른 설명 텍스트는 절대 붙이지 말고 순수 JSON 문자열만 응답하세요.
 {
   "title": "리드인 독서 활동 리포트",
-  "introMessage": "안녕하세요, ${this.app.academyName || '학원'}입니다. ${name} 학생의 리드인 활동 리포트입니다. 지난 기간 동안 정성스럽게 공부한 결과와 성취도를 보내드리오니 가정에서도 많은 격려를 부탁드립니다.",
+  "introMessage": "안녕하세요, ${this.app.academyName || '학원'}입니다. ${name} 학생의 리드인 활동 리포트입니다. 지난 기간 동안 정성스럽게 공부한 결과와 성취도를 보내드리오니 ${randomEnding}",
   "sections": [
     {
       "title": "1. 독서 이해도",
@@ -2224,7 +2244,7 @@ ${textbookSummary}
    
    - 그 외 형식(주간, 격주, 월간 레벨조정)인 경우:
      * title: "학업 성취 종합 분석 리포트" (또는 "레벨 조정 종합 리포트")
-      * introMessage: "안녕하세요, [학원명]입니다. 우리 [학생이름] 학생의 리드인 활동 리포트입니다. 지난 기간 동안 정성스럽게 공부한 결과와 성취도를 보내드리오니 가정에서도 많은 격려를 부탁드립니다." 형태의 정중하고 따뜻한 원장 인사말 작성 (3줄 내외).
+      * introMessage: "안녕하세요, [학원명]입니다. 우리 [학생이름] 학생의 리드인 활동 리포트입니다. 지난 기간 동안 정성스럽게 공부한 결과와 성취도를 보내드리오니 ${randomEnding}" 형태의 정중하고 따뜻한 원장 인사말 작성 (3줄 내외).
 
      * sections 배열:
        1. title: "1. 학습 레벨 및 학습 코스" -> 현재 레벨/코스 분석 및 레벨 조정/확정 결과.
@@ -2356,14 +2376,20 @@ ${textbookSummary}
     if (!titleText) titleText = "학업 분석 리포트";
     titleEl.innerText = titleText;
     
-    if (cycle === 'weekly') {
-      subtitleEl.innerText = "학생이 책을 읽고 독서노트 작성 및 독서 진단 활동을 수행한 주간 내역입니다.";
-    } else if (cycle === 'biweekly') {
-      subtitleEl.innerText = "학생의 격주간 독서 학습 태도와 영역별 진단 추이 분석표입니다.";
-    } else if (cycle === 'reading_training') {
-      subtitleEl.innerText = "읽기 트레이닝 완료에 따른 독해 속도 및 행동 유형 세부 분석 결과지입니다.";
+    if (cycle === 'lidin_report') {
+      subtitleEl.innerText = "";
+      subtitleEl.style.display = "none";
     } else {
-      subtitleEl.innerText = `${startDot} ~ ${endDot} 에 학생의 독서 능력을 분석하여 확정 레벨을 설정하는 기간 리포트입니다.`;
+      subtitleEl.style.display = "block";
+      if (cycle === 'weekly') {
+        subtitleEl.innerText = "학생이 책을 읽고 독서노트 작성 및 독서 진단 활동을 수행한 주간 내역입니다.";
+      } else if (cycle === 'biweekly') {
+        subtitleEl.innerText = "학생의 격주간 독서 학습 태도와 영역별 진단 추이 분석표입니다.";
+      } else if (cycle === 'reading_training') {
+        subtitleEl.innerText = "읽기 트레이닝 완료에 따른 독해 속도 및 행동 유형 세부 분석 결과지입니다.";
+      } else {
+        subtitleEl.innerText = `${startDot} ~ ${endDot} 에 학생의 독서 능력을 분석하여 확정 레벨을 설정하는 기간 리포트입니다.`;
+      }
     }
     
     // Render Stats if present
