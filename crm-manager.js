@@ -1054,71 +1054,98 @@ class CRMManager {
     this.restoreCrmAiReportDatesForStudent(name);
   }
 
-  // [추가] 학생의 이전 분석 리포트 기간(시작일/종료일) 자동 복원 및 복구
+  // [추가] 학생의 이전 분석 리포트 기간(시작일/종료일) 및 인풋 상태 자동 복원 및 복구
   restoreCrmAiReportDatesForStudent(name) {
     const startInput = document.getElementById("crmAiReportPeriodStart");
     const endInput = document.getElementById("crmAiReportPeriodEnd");
-    if (!startInput || !endInput) return;
+    const cycleSelect = document.getElementById("crmAiReportCycle");
+    const extraInput = document.getElementById("crmAiReportExtraInput");
 
-    // 1. 임시 드래프트에서 분석 기간 추출 시도
-    const draftStr = localStorage.getItem(`ai_report_draft_${name}`);
-    let periodVal = "";
-    if (draftStr) {
-      try {
-        const draft = JSON.parse(draftStr);
-        periodVal = draft.period;
-      } catch (e) {}
+    // 1. 로컬 스토리지에 직접 수동 입력된 보존 데이터 로드
+    const savedStart = localStorage.getItem(`crm_ai_report_start_${name}`);
+    const savedEnd = localStorage.getItem(`crm_ai_report_end_${name}`);
+    const savedCycle = localStorage.getItem(`crm_ai_report_cycle_${name}`);
+    const savedExtra = localStorage.getItem(`crm_ai_report_extra_${name}`);
+
+    if (cycleSelect && savedCycle) {
+      cycleSelect.value = savedCycle;
+      cycleSelect.dispatchEvent(new Event('change'));
+    } else if (cycleSelect) {
+      cycleSelect.value = "lidin_report"; // Default
+      cycleSelect.dispatchEvent(new Event('change'));
     }
 
-    // 2. 임시 드래프트가 없으면 최종 저장된 이전 리포트 이력에서 추출 시도
-    if (!periodVal) {
-      const savedStr = localStorage.getItem(`saved_ai_reports_${name}`);
-      if (savedStr) {
+    if (extraInput) {
+      extraInput.value = savedExtra || "";
+    }
+
+    if (startInput && endInput && savedStart && savedEnd) {
+      startInput.value = savedStart;
+      endInput.value = savedEnd;
+      return; // 복원 성공 시 종료
+    }
+
+    if (startInput && endInput) {
+      // 2. 임시 드래프트에서 분석 기간 추출 시도
+      const draftStr = localStorage.getItem(`ai_report_draft_${name}`);
+      let periodVal = "";
+      if (draftStr) {
         try {
-          const savedList = JSON.parse(savedStr);
-          if (savedList.length > 0) {
-            const latest = savedList[savedList.length - 1];
-            periodVal = latest.period;
-          }
+          const draft = JSON.parse(draftStr);
+          periodVal = draft.period;
         } catch (e) {}
       }
-    }
 
-    // 날짜 문자열 변환 및 주입 (형식: YYYY-MM-DD ~ YYYY-MM-DD 또는 YYYY.MM.DD ~ YYYY.MM.DD)
-    if (periodVal) {
-      const dates = periodVal.split("~");
-      if (dates.length === 2) {
-        const toYmd = (dateStr) => {
-          if (!dateStr) return "";
-          let cleaned = dateStr.trim().replace(/\./g, "-");
-          const parts = cleaned.split("-");
-          if (parts.length === 3) {
-            const y = parts[0].trim();
-            const m = parts[1].trim().padStart(2, "0");
-            const d = parts[2].trim().padStart(2, "0");
-            return `${y}-${m}-${d}`;
-          }
-          return cleaned;
-        };
-        const startYmd = toYmd(dates[0]);
-        const endYmd = toYmd(dates[1]);
-        
-        // 정밀 유효성 검증 (YYYY-MM-DD 형태가 아니면 early return 하지 않음)
-        const isYmd = (str) => /^\d{4}-\d{2}-\d{2}$/.test(str);
-        if (isYmd(startYmd) && isYmd(endYmd)) {
-          startInput.value = startYmd;
-          endInput.value = endYmd;
-          return; // 복원 성공 시 함수 종료
+      // 3. 임시 드래프트가 없으면 최종 저장된 이전 리포트 이력에서 추출 시도
+      if (!periodVal) {
+        const savedStr = localStorage.getItem(`saved_ai_reports_${name}`);
+        if (savedStr) {
+          try {
+            const savedList = JSON.parse(savedStr);
+            if (savedList.length > 0) {
+              const latest = savedList[savedList.length - 1];
+              periodVal = latest.period;
+            }
+          } catch (e) {}
         }
       }
-    }
 
-    // 3. 기록이 아예 없는 학생의 경우 기본값으로 최근 30일 설정
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const pad = (n) => String(n).padStart(2, '0');
-    endInput.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
-    startInput.value = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
+      // 날짜 문자열 변환 및 주입 (형식: YYYY-MM-DD ~ YYYY-MM-DD 또는 YYYY.MM.DD ~ YYYY.MM.DD)
+      if (periodVal) {
+        const dates = periodVal.split("~");
+        if (dates.length === 2) {
+          const toYmd = (dateStr) => {
+            if (!dateStr) return "";
+            let cleaned = dateStr.trim().replace(/\./g, "-");
+            const parts = cleaned.split("-");
+            if (parts.length === 3) {
+              const y = parts[0].trim();
+              const m = parts[1].trim().padStart(2, "0");
+              const d = parts[2].trim().padStart(2, "0");
+              return `${y}-${m}-${d}`;
+            }
+            return cleaned;
+          };
+          const startYmd = toYmd(dates[0]);
+          const endYmd = toYmd(dates[1]);
+          
+          // 정밀 유효성 검증
+          const isYmd = (str) => /^\d{4}-\d{2}-\d{2}$/.test(str);
+          if (isYmd(startYmd) && isYmd(endYmd)) {
+            startInput.value = startYmd;
+            endInput.value = endYmd;
+            return; // 복원 성공 시 함수 종료
+          }
+        }
+      }
+
+      // 4. 기록이 아예 없는 학생의 경우 기본값으로 최근 30일 설정
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const pad = (n) => String(n).padStart(2, '0');
+      endInput.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+      startInput.value = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
+    }
   }
 
   // CRM Monthly Attendance Calendar renderer
@@ -1774,16 +1801,53 @@ class CRMManager {
   setupAiReportEvents() {
     this.crmAiReportImages = [];
     
-    // 기본 조회 기간 설정 (최근 30일)
     const periodStart = document.getElementById("crmAiReportPeriodStart");
     const periodEnd = document.getElementById("crmAiReportPeriodEnd");
+    const cycleSelect = document.getElementById("crmAiReportCycle");
+    const extraInput = document.getElementById("crmAiReportExtraInput");
+
+    // 원장님 입력 보존용 이벤트 리스너 등록 (학생별로 저장)
+    if (periodStart) {
+      periodStart.addEventListener("change", () => {
+        if (this.currentCrmStudentName) {
+          localStorage.setItem(`crm_ai_report_start_${this.currentCrmStudentName}`, periodStart.value);
+        }
+      });
+    }
+    if (periodEnd) {
+      periodEnd.addEventListener("change", () => {
+        if (this.currentCrmStudentName) {
+          localStorage.setItem(`crm_ai_report_end_${this.currentCrmStudentName}`, periodEnd.value);
+        }
+      });
+    }
+    if (cycleSelect) {
+      cycleSelect.addEventListener("change", () => {
+        if (this.currentCrmStudentName) {
+          localStorage.setItem(`crm_ai_report_cycle_${this.currentCrmStudentName}`, cycleSelect.value);
+        }
+      });
+    }
+    if (extraInput) {
+      extraInput.addEventListener("input", () => {
+        if (this.currentCrmStudentName) {
+          localStorage.setItem(`crm_ai_report_extra_${this.currentCrmStudentName}`, extraInput.value);
+        }
+      });
+    }
+
     if (periodStart && periodEnd) {
       const today = new Date();
       const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
       
       const pad = (n) => String(n).padStart(2, '0');
-      periodEnd.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
-      periodStart.value = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
+      // 기본값은 restoreCrmAiReportDatesForStudent에서 복원하므로, 없을 때를 대비한 초깃값만 설정
+      if (!periodEnd.value) {
+        periodEnd.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+      }
+      if (!periodStart.value) {
+        periodStart.value = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
+      }
     }
     
     // AI 리포트 생성 버튼 바인딩

@@ -37,6 +37,7 @@ app.get('/fetch-analysis', async (req, res) => {
       headless: false,
       defaultViewport: null,
       userDataDir: userDataPath,
+      ignoreDefaultArgs: ['--enable-automation'],
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -48,6 +49,13 @@ app.get('/fetch-analysis', async (req, res) => {
     const pages = await browser.pages();
     const page = pages.length > 0 ? pages[0] : await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
+
+    // Webdriver 자동화 속성을 숨겨서 로그인 보안 우회
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => undefined,
+      });
+    });
 
     // 1. Navigate to student search list URL (it will redirect to login if not authenticated)
     const searchUrl = `https://www.readin.co.kr/admin/dashboard/readTherapy/list?text=&keyword=-1&bookLevel=-1&status=1&classRoomId=-1&count=100&page=1`;
