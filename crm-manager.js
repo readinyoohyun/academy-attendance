@@ -1960,6 +1960,9 @@ class CRMManager {
       return;
     }
     const cycle = document.getElementById("crmAiReportCycle").value;
+    const start = document.getElementById("crmAiReportPeriodStart").value;
+    const end = document.getElementById("crmAiReportPeriodEnd").value;
+
     if (this.crmAiReportImages.length === 0 && cycle !== 'lidin_report') {
       alert("❌ 리포트 작성을 위해 최소 1개 이상의 LMS 보고서 캡처 이미지를 드롭존에 업로드해 주세요!");
       return;
@@ -1988,9 +1991,6 @@ class CRMManager {
       const student = this.app.state.students.find(s => s.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
       const grade = student ? student.grade : "초등학생";
       
-      const start = document.getElementById("crmAiReportPeriodStart").value;
-      const end = document.getElementById("crmAiReportPeriodEnd").value;
-
       const extra = document.getElementById("crmAiReportExtraInput").value.trim();
       
       // 구글 시트 학생 정보 및 수업 일지 데이터 취득
