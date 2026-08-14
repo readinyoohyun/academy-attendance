@@ -30,8 +30,11 @@ class SheetAPI {
     const widget = document.getElementById("diagnosticWidget");
     if (!widget) return;
 
+    const APP_VERSION = "v2.1.1";
+
     widget.onclick = () => {
       alert(`📊 [구글 시트 연동 실시간 진단]\n\n` +
+            `• 프로그램 버전: ${APP_VERSION}\n` +
             `• 상태: ${status === 'success' ? '정상 연결됨 🟢' : status === 'timeout' ? '연결 시간 초과 🟡' : '연동 실패/설정 오류 🔴'}\n` +
             `• 웹앱 URL: ${this.gasWebhookUrl || '미설정됨'}\n` +
             `• 상세 정보: ${detail}\n` +
@@ -41,13 +44,13 @@ class SheetAPI {
 
     if (status === 'success') {
       if (dot) { dot.style.background = "#10b981"; }
-      if (txt) { txt.innerText = "정상 연결됨"; txt.style.color = "#cbd5e1"; }
+      if (txt) { txt.innerText = `정상 연결됨 (${APP_VERSION})`; txt.style.color = "#cbd5e1"; }
     } else if (status === 'timeout') {
       if (dot) { dot.style.background = "#eab308"; }
-      if (txt) { txt.innerText = "연동 시간 초과 (15초)"; txt.style.color = "#fef08a"; }
+      if (txt) { txt.innerText = `연동 시간 초과 (15초) (${APP_VERSION})`; txt.style.color = "#fef08a"; }
     } else {
       if (dot) { dot.style.background = "#ef4444"; }
-      if (txt) { txt.innerText = "연동 실패 / 오류"; txt.style.color = "#fecaca"; }
+      if (txt) { txt.innerText = `연동 실패 / 오류 (${APP_VERSION})`; txt.style.color = "#fecaca"; }
     }
   }
   
