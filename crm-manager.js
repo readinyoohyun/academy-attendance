@@ -2376,7 +2376,6 @@ ${textbookSummary}
     
     document.getElementById("aiReportFooterPhone").innerText = "";
     
-    const cycle = document.getElementById("crmAiReportCycle").value;
     const titleEl = document.getElementById("aiReportTitle");
     const subtitleEl = document.getElementById("aiReportSubtitle");
     
