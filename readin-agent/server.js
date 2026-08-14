@@ -86,11 +86,14 @@ app.get('/fetch-analysis', async (req, res) => {
       }, name);
       
       await page.evaluate(() => {
-        const btns = Array.from(document.querySelectorAll('button, a, input[type="submit"]'));
-        const searchBtn = btns.find(btn => btn.innerText.includes('검색') || btn.innerText.includes('조회'));
+        const elements = Array.from(document.querySelectorAll('*'));
+        const searchBtn = elements.find(el => {
+          const txt = (el.innerText || '').trim();
+          return (txt === '검색' || txt.includes('검색')) && txt.length < 15 && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA';
+        });
         if (searchBtn) searchBtn.click();
       });
-      await new Promise(r => setTimeout(r, 1500)); // 검색 결과 렌더링 대기
+      await new Promise(r => setTimeout(r, 2500)); // 검색 결과 렌더링 대기
     } catch (searchErr) {
       console.log('[정보] 수동 검색 작업 실패:', searchErr.message);
     }
@@ -105,11 +108,12 @@ app.get('/fetch-analysis', async (req, res) => {
 
     // 학생 정보 매칭 및 클릭 검출
     const matchedStudentInfo = await page.evaluate((targetName) => {
-      const elements = Array.from(document.querySelectorAll('*')).filter(el => {
+      const containers = Array.from(document.querySelectorAll('.student-card, .card, table tr, .list-table tr, tbody tr, li'));
+      const matches = containers.filter(el => {
         const text = el.innerText || '';
-        return text.includes(targetName) && text.length < 150;
+        return text.includes(targetName);
       });
-      return { found: elements.length > 0 };
+      return { found: matches.length > 0 };
     }, name);
 
     console.log(`[탐색 결과] 학생 매칭 상태:`, matchedStudentInfo);
@@ -146,20 +150,22 @@ app.get('/fetch-analysis', async (req, res) => {
     if (matchedStudentInfo.found) {
       console.log(`[클릭] 학생상세로 이동하기 위해 링크 클릭 시도...`);
       await page.evaluate((targetName) => {
-        const elements = Array.from(document.querySelectorAll('*')).filter(el => {
+        const containers = Array.from(document.querySelectorAll('.student-card, .card, table tr, .list-table tr, tbody tr, li'));
+        const matches = containers.filter(el => {
           const text = el.innerText || '';
-          return text.includes(targetName) && text.length < 150;
+          return text.includes(targetName);
         });
 
-        for (const el of elements) {
-          // 1. 만약 요소 자체가 링크/버튼이면 직접 클릭
-          if (el.tagName === 'A' || el.tagName === 'BUTTON' || el.getAttribute('role') === 'button') {
-            el.click();
+        if (matches.length > 0) {
+          const target = matches[0];
+          // 1. 만약 컨테이너 자체가 링크/버튼이면 직접 클릭
+          if (target.tagName === 'A' || target.tagName === 'BUTTON' || target.getAttribute('role') === 'button') {
+            target.click();
             return;
           }
           
           // 2. 내부의 링크/버튼 검색 후 우선순위 클릭
-          const childLinks = Array.from(el.querySelectorAll('a, button, [role="button"]'));
+          const childLinks = Array.from(target.querySelectorAll('a, button, [role="button"]'));
           if (childLinks.length > 0) {
             const bestLink = childLinks.find(link => {
               const txt = link.innerText || '';
@@ -170,16 +176,14 @@ app.get('/fetch-analysis', async (req, res) => {
           }
 
           // 3. 가장 가까운 클릭 가능 부모 요소 클릭 (카드형태 대응)
-          const clickableAncestor = el.closest('a, button, [role="button"], tr, td, li, .card, .student-card');
+          const clickableAncestor = target.closest('a, button, [role="button"]');
           if (clickableAncestor) {
             clickableAncestor.click();
             return;
           }
-        }
 
-        // 최후 수단: 매칭된 첫 요소 직접 클릭
-        if (elements.length > 0) {
-          elements[0].click();
+          // 최후 수단: 컨테이너 자체 클릭
+          target.click();
         }
       }, name);
 
@@ -234,7 +238,7 @@ app.get('/fetch-analysis', async (req, res) => {
         
         // 2. 독서속도/분당글자수 파싱
         let speed = null;
-        const speedMatch = bodyText.match(/(?:독서\s*속도|읽기\s*속도|분당\s*글자\s*수|평균\s*독서\s*속도)[^\d]*(\d{2,4})(?:\s*자|\s*WPM)?/i);
+        const speedMatch = bodyText.match(/(?:독서\s*속도|읽기\s*속도|분당\s*글자\s*수|분당\s*글자수|평균\s*독서\s*속도|분당|글자수|WPM)[^\d]*(\d{2,4})(?:\s*자|\s*WPM)?/i);
         if (speedMatch) speed = parseInt(speedMatch[1], 10);
 
         // 3. 어휘 이해도 파싱
@@ -262,7 +266,12 @@ app.get('/fetch-analysis', async (req, res) => {
         const critiqueMatch = bodyText.match(/(?:비판적\s*이해|비판\s*이해|비판)[^\d]*(\d{2,3})(?:\s*%|\s*점)?/i);
         if (critiqueMatch) critique = parseInt(critiqueMatch[1], 10);
 
-        return { comp, speed, vocab, count, fact, infer, critique };
+        // 8. 레벨 파싱 (1~10레벨 혹은 LV 추출)
+        let level = null;
+        const levelMatch = bodyText.match(/(\d{1,2})\s*(?:레벨|LV)/i) || bodyText.match(/(?:레벨|LV)[^\d]*(\d{1,2})/i);
+        if (levelMatch) level = parseInt(levelMatch[1] || levelMatch[2], 10);
+
+        return { comp, speed, vocab, count, fact, infer, critique, level };
       });
 
       console.log('[파싱 완료] 추출된 데이터:', parsedStats);
@@ -273,6 +282,7 @@ app.get('/fetch-analysis', async (req, res) => {
       if (parsedStats.fact !== null) resultData.textData.factScore = parsedStats.fact;
       if (parsedStats.infer !== null) resultData.textData.inferScore = parsedStats.infer;
       if (parsedStats.critique !== null) resultData.textData.critiqueScore = parsedStats.critique;
+      if (parsedStats.level !== null) resultData.textData.level = parsedStats.level;
     }
 
     console.log('[완료] 리드인 데이터 수집 완료. 원장앱으로 전송합니다.');

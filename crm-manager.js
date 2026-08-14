@@ -2077,6 +2077,7 @@ class CRMManager {
       const inferVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.inferScore !== undefined) ? this.tempLidinScrapedData.textData.inferScore : 85;
       const critiqueVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.critiqueScore !== undefined) ? this.tempLidinScrapedData.textData.critiqueScore : 80;
       const booksCount = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.postReadingCount : 12;
+      const levelVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.level !== undefined) ? this.tempLidinScrapedData.textData.level : 3;
 
       const textbookRec = this.app.state.textbooks.find(t => t && t.name && t.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
       let textbookSummary = "등록된 교재 진도 없음";
@@ -2124,6 +2125,7 @@ class CRMManager {
 리포트 형식: 리드인 독서활동/독후활동 분석 리포트
 
 [이번 기간 실제 수집된 리드인 지표 (반드시 아래 수치들을 분석글 내에 그대로 사용하세요)]:
+- 현재 학습 레벨: ${levelVal}레벨
 - 평균 지문 이해도: ${compVal}%
 - 평균 독서 속도: ${speedVal}자/분
 - 어휘 이해도: ${vocabVal}%
@@ -2357,7 +2359,12 @@ ${textbookSummary}
   // AI 리포트 결과 미리보기 렌더링
   renderAiReportPreview(report, start, end, name, grade) {
     document.getElementById("aiReportStudentName").innerText = name;
-    document.getElementById("aiReportStudentGrade").innerText = grade;
+    const cycle = document.getElementById("crmAiReportCycle").value;
+    if (cycle === 'lidin_report' && report.stats && report.stats.level) {
+      document.getElementById("aiReportStudentGrade").innerText = `${grade} (${report.stats.level}레벨)`;
+    } else {
+      document.getElementById("aiReportStudentGrade").innerText = grade;
+    }
     
     // Format dates to dot format (e.g. 2026.03.03)
     const startDot = start.replace(/-/g, '.');
