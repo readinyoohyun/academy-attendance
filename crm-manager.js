@@ -1786,7 +1786,27 @@ class CRMManager {
       periodStart.value = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
     }
     
-
+    // AI 리포트 생성 버튼 바인딩
+    const btnGen = document.getElementById("btnCrmGenerateAiReport");
+    if (btnGen) {
+      btnGen.onclick = () => this.generateAiReport();
+    }
+    
+    // 모달 닫기 버튼 바인딩
+    const btnClose = document.getElementById("btnCrmCloseAiReport");
+    if (btnClose) {
+      btnClose.onclick = () => {
+        document.getElementById("modalAiReportPreview").classList.remove("active");
+      };
+    }
+    
+    // 인쇄 버튼 바인딩
+    const btnPrint = document.getElementById("btnCrmPrintAiReport");
+    if (btnPrint) {
+      btnPrint.onclick = () => {
+        window.print();
+      };
+    }
 
     const btnSaveReport = document.getElementById("btnCrmSaveAiReport");
     if (btnSaveReport) {
