@@ -2401,7 +2401,7 @@ body.fixed-layout .view-content.active {
   border: 1px solid transparent;
   background: transparent;
   color: #334155;
-  font-size: 0.9rem;
+  font-size: 11pt;
   resize: none;
   font-family: inherit;
   line-height: 1.6;
@@ -2575,8 +2575,8 @@ body.fixed-layout .view-content.active {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     margin-bottom: 0px !important;
-    font-size: 0.76rem !important;
-    line-height: 1.32 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
   }
 
   .ai-report-buttons-panel {

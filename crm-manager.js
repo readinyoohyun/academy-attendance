@@ -2136,7 +2136,7 @@ ${textbookSummary}
 
 응답 포맷: 반드시 아래 구조의 JSON 데이터만 출력해 주세요. 다른 설명 텍스트는 절대 붙이지 말고 순수 JSON 문자열만 응답하세요.
 {
-  "title": "${name}이의 리드인 독서 활동 리포트",
+  "title": "리드인 독서 활동 리포트",
   "introMessage": "안녕하세요, ${this.app.academyName || '학원'}입니다. ${name} 학생의 리드인 활동 리포트입니다. 지난 기간 동안 정성스럽게 공부한 결과와 성취도를 보내드리오니 가정에서도 많은 격려를 부탁드립니다.",
   "sections": [
     {
@@ -2344,7 +2344,11 @@ ${textbookSummary}
     const titleEl = document.getElementById("aiReportTitle");
     const subtitleEl = document.getElementById("aiReportSubtitle");
     
-    titleEl.innerText = report.title || `${name} 학생의 학업 분석 리포트`;
+    let titleText = report.title || "학업 분석 리포트";
+    // [이름 제거] 리포트 제목에서 학생 이름 및 주어(학생의, 이의 등) 제거
+    titleText = titleText.replace(new RegExp(name + "\\s*(학생의|이의|의|이|)?", "g"), "").trim();
+    if (!titleText) titleText = "학업 분석 리포트";
+    titleEl.innerText = titleText;
     
     if (cycle === 'weekly') {
       subtitleEl.innerText = "학생이 책을 읽고 독서노트 작성 및 독서 진단 활동을 수행한 주간 내역입니다.";
