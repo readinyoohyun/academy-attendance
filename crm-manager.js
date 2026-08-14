@@ -2116,7 +2116,9 @@ class CRMManager {
       const inferVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.inferScore !== undefined) ? this.tempLidinScrapedData.textData.inferScore : 85;
       const critiqueVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.critiqueScore !== undefined) ? this.tempLidinScrapedData.textData.critiqueScore : 80;
       const booksCount = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.postReadingCount : 12;
-      const levelVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.level !== undefined) ? this.tempLidinScrapedData.textData.level : 3;
+      const rawLevel = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.level !== undefined) ? this.tempLidinScrapedData.textData.level : "3레벨";
+      const levelVal = String(rawLevel).includes("레벨") ? rawLevel : `${rawLevel}레벨`;
+      const speedAlertVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? (this.tempLidinScrapedData.textData.speedAlert || "") : "";
 
       const textbookRec = this.app.state.textbooks.find(t => t && t.name && t.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
       let textbookSummary = "등록된 교재 진도 없음";
@@ -2191,7 +2193,7 @@ class CRMManager {
 리포트 형식: 리드인 독서활동/독후활동 분석 리포트
 
 [이번 기간 실제 수집된 리드인 지표 (반드시 아래 수치들을 분석글 내에 그대로 사용하세요)]:
-- 현재 학습 레벨: ${levelVal}레벨
+- 현재 학습 레벨: ${levelVal}
 - 평균 지문 이해도: ${compVal}%
 - 평균 독서 속도: ${speedVal}자/분
 - 어휘 이해도: ${vocabVal}%
@@ -2199,6 +2201,7 @@ class CRMManager {
 - 추론적 이해도: ${inferVal}%
 - 비판적 이해도: ${critiqueVal}%
 - 기간 내 완독 도서 수: ${booksCount}권
+- 독서 속도 특이사항: ${speedAlertVal || "정상 범위 내 독서 속도 유지 중"}
 
 [원장님의 기존 리드인 리포트 작성 스타일 참고 (중요! 원장님의 어조와 글쓰기 톤앤매너를 학습하여 유사한 양식과 따뜻한 문체로 글을 작성하세요)]:
 ${pastReportsReference}
@@ -2214,14 +2217,15 @@ ${textbookSummary}
 
 [수행 지시 사항 (중요! 정밀 분석 및 구체적 집필 지침)]:
 1. 분석글 작성 시 "열심히 학습했습니다"와 같은 두루뭉술하고 상투적인 표현은 배제하고, 구체적인 수치(예: 평균 독서이해도 96%, 독서속도 540자, 어휘 90% 등)를 문장 내에 직접 명시하여 정밀 분석을 제공해야 합니다.
-2. 각 section의 text는 핵심 데이터 분석과 전문적인 독서 교정 처방을 결합하여 4~5줄 내외(200자~280자 내외)로 내실 있게 집필해 주세요. (1페이지 인쇄 범위를 벗어나지 않도록 정보의 밀도를 극대화해 주세요.)
+2. 각 section of text는 핵심 데이터 분석과 전문적인 독서 교정 처방을 결합하여 4~5줄 내외(200자~280자 내외)로 내실 있게 집필해 주세요. (1페이지 인쇄 범위를 벗어나지 않도록 정보의 밀도를 극대화해 주세요.)
 3. 문체는 "~하였습니다.", "~이 필요합니다.", "~을 권장합니다." 와 같이 학부모에게 신뢰감과 권위를 주는 정중하고 전문적인 어조(존댓말)여야 합니다.
+4. 만약 독서 속도 특이사항(속도 느림/빠름)이 지표에 명시되어 있다면, '2. 레벨 및 코스 성취도' 또는 '6. 교사 총평 및 학습 지원 방향'에서 아이의 독서 페이스(예: 대충 훑어 읽는 버릇, 지나치게 한 글자씩 짚으며 느리게 읽는 태도 등)를 날카롭게 짚어주고 적합한 독서 정독/지속 훈련 지침을 구체적으로 서술해야 합니다.
 
-4. sections 배열 (반드시 다음 6대 영역 제목과 지침에 맞춰서 집필해 주세요):
+5. sections 배열 (반드시 다음 6대 영역 제목과 지침에 맞춰서 집필해 주세요):
   - title: "1. 독서 이해도"
     * 지침: 평균 독서 이해도 점수(comprehension) 및 각 인지 영역(어휘, 사실, 추론, 비판)의 강약점을 분석하여 도서 퀴즈를 성실히 읽고 푸는지 평가해 주세요.
   - title: "2. 레벨 및 코스 성취도"
-    * 지침: 현재 진행 중인 레벨/코스에서 자발적으로 도서를 선택해 읽는 흥미도, 몰입도 및 집중독서(스태미나)에 대해 작성해 주세요.
+    * 지침: 현재 진행 중인 레벨/코스에서 자발적으로 도서를 선택해 읽는 흥미도, 몰입도 및 집중독서(스태미나)에 대해 작성해 주세요. (독서 속도 특이사항이 있다면 그 문제점과 원인을 여기에 연계해 서술하세요.)
   - title: "3. 어휘 학습 분석"
     * 지침: 어휘 지문 이해 및 독서 전 어휘 학습, 단어 뜻을 문장 속에서 파악해 보는 훈련 상태를 분석해 주세요.
   - title: "4. 글쓰기 및 문장 구성력"
@@ -2229,7 +2233,7 @@ ${textbookSummary}
   - title: "5. 맞춤법, 띄어쓰기 및 특화 훈련"
     * 지침: 맞춤법 및 띄어쓰기 교정 훈련(예: 소리내어 듣고 쓰기, 받침 생각해보기), 또는 4문장 구조 미니 논술(주장-이유-근거-강조)이나 한국사 연계 문해력 PT 수업 진행상태를 분석해 주세요.
   - title: "6. 교사 총평 및 학습 지원 방향"
-    * 지침: 학생의 수업 태도(성실성, 시간관리 등)를 칭찬하고 격려하며, 다음 레벨 도서 추천 및 향후 균형 잡힌 문해력 확장을 위한 1:1 집중 지도 계획을 포함하세요.
+    * 지침: 학생의 수업 태도(성실성, 시간관리 등)를 칭찬하고 격려하며, 다음 레벨 도서 추천 및 향후 균형 잡힌 문해력 확장을 위한 1:1 집중 지도 계획을 포함하세요. (독서 속도 피드백을 여기에 포함해도 좋습니다.)
 
 응답 포맷: 반드시 아래 구조의 JSON 데이터만 출력해 주세요. 다른 설명 텍스트는 절대 붙이지 말고 순수 JSON 문자열만 응답하세요.
 {
