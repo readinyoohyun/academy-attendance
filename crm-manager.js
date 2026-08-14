@@ -2942,10 +2942,14 @@ ${textbookSummary}
           const proxyUrl = window.location.protocol !== 'file:' 
             ? `/api/sync?url=${encodeURIComponent(webhookUrl)}`
             : webhookUrl;
-          await fetch(proxyUrl, {
+          const fetchOptions = {
             method: 'POST',
             body: JSON.stringify(payload)
-          });
+          };
+          if (window.location.protocol === 'file:' || proxyUrl === webhookUrl) {
+            fetchOptions.mode = 'no-cors';
+          }
+          await fetch(proxyUrl, fetchOptions);
         }
       } catch (e) {
         console.error("Auto log analysis sent status failed:", e);

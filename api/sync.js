@@ -57,8 +57,7 @@ function fetchWithRedirect(url, method = 'GET', body = null) {
         const req = https.request(options, (res) => {
           if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
             const redirectUrl = new URL(res.headers.location, targetUrl).toString();
-            method = 'GET';
-            body = null;
+            // Apps Script redirects require forwarding the POST method and payload
             performRequest(redirectUrl);
             return;
           }
