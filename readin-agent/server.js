@@ -251,7 +251,7 @@ app.get('/fetch-analysis', async (req, res) => {
 
         // Parse quiz score (usually 0-100)
         let scoreVal = null;
-        let lvlVal = null;
+        let lvlStr = null;
 
         cells.forEach(cell => {
           const scoreMatch = cell.match(/^(\d{2,3})\s*(?:%|점)?$/);
@@ -260,38 +260,45 @@ app.get('/fetch-analysis', async (req, res) => {
             if (val <= 100) scoreVal = val;
           }
 
-          const lvlMatch = cell.match(/(\d{1,2})\s*(?:레벨|LV)/i);
+          // Parse Level and Course
+          const lvlMatch = cell.match(/(\d{1,2})\s*레벨\s*\(?(\d{1,2})\s*코스\)?/i) || 
+                           cell.match(/(\d{1,2})\s*-\s*(\d{1,2})\s*(?:레벨|LV)/i) ||
+                           cell.match(/(\d{1,2})\s*(?:레벨|LV)/i);
           if (lvlMatch) {
-            lvlVal = parseInt(lvlMatch[1], 10);
+            if (lvlMatch[2]) {
+              lvlStr = `${lvlMatch[1]}레벨 (${lvlMatch[2]}코스)`;
+            } else {
+              lvlStr = `${lvlMatch[1]}레벨`;
+            }
           }
         });
 
         if (scoreVal !== null) scores.push(scoreVal);
-        if (lvlVal !== null) {
-          levelInfo.push({ date: rowDate.getTime(), level: lvlVal });
+        if (lvlStr !== null) {
+          levelInfo.push({ date: rowDate.getTime(), levelStr });
         }
       });
 
       // Find the level at the expiration date (latest date in range)
-      let latestLevel = null;
+      let latestLevelStr = null;
       if (levelInfo.length > 0) {
         levelInfo.sort((a, b) => b.date - a.date);
-        latestLevel = levelInfo[0].level;
+        latestLevelStr = levelInfo[0].levelStr;
       }
 
-      return { scores, latestLevel, count: scores.length };
+      return { scores, latestLevelStr, count: scores.length };
     }, startDate, endDate);
 
     // 7. Calculate averages and metrics
     const speeds = scrapedActivityData.speeds;
     const scores = scrapedPostReadingData.scores;
-    const levelVal = scrapedPostReadingData.latestLevel || 3;
+    const levelVal = scrapedPostReadingData.latestLevelStr || "3레벨";
     const booksCount = scrapedPostReadingData.count || 0;
 
     const avgSpeed = speeds.length > 0 ? Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length) : 485;
     const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 92;
 
-    // Detect if reading speed is extremely slow or fast (e.g. speed < 250 or speed > 700)
+    // Detect if reading speed is extremely slow or fast (e.g. speed < 250 or speed > 750)
     let speedAlertText = "";
     if (speeds.length > 0) {
       const slowSpeeds = speeds.filter(s => s < 250);
@@ -311,13 +318,14 @@ app.get('/fetch-analysis', async (req, res) => {
       textData: {
         readingSpeed: avgSpeed,
         comprehensionScore: avgScore,
-        vocabScore: 88, // Defaults or from database
+        vocabScore: 88, // Defaults
         factScore: 90,
         inferScore: 85,
         critiqueScore: 80,
         postReadingCount: booksCount,
         level: levelVal,
-        recentBook: speedAlertText || '정상 범위 내 독서 속도 유지 중'
+        recentBook: '정상 범위 내 독서 속도 유지 중',
+        speedAlert: speedAlertText
       },
       images: {
         marathon: null,
