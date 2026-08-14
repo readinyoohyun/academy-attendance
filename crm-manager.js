@@ -2109,14 +2109,14 @@ class CRMManager {
   
       
       // [리드인 성적 주입] 크롤링된 실 성적 변수 정의
-      const speedVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.readingSpeed : 485;
-      const compVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.comprehensionScore : 92;
-      const vocabVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.vocabScore : 88;
-      const factVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.factScore !== undefined) ? this.tempLidinScrapedData.textData.factScore : 90;
-      const inferVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.inferScore !== undefined) ? this.tempLidinScrapedData.textData.inferScore : 85;
-      const critiqueVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.critiqueScore !== undefined) ? this.tempLidinScrapedData.textData.critiqueScore : 80;
-      const booksCount = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.postReadingCount : 12;
-      const rawLevel = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.level !== undefined) ? this.tempLidinScrapedData.textData.level : "3레벨";
+      const speedVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.readingSpeed : 0;
+      const compVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.comprehensionScore : 0;
+      const vocabVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.vocabScore : 0;
+      const factVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.factScore !== undefined) ? this.tempLidinScrapedData.textData.factScore : 0;
+      const inferVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.inferScore !== undefined) ? this.tempLidinScrapedData.textData.inferScore : 0;
+      const critiqueVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.critiqueScore !== undefined) ? this.tempLidinScrapedData.textData.critiqueScore : 0;
+      const booksCount = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.postReadingCount : 0;
+      const rawLevel = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.level !== undefined) ? this.tempLidinScrapedData.textData.level : "기록 없음";
       const levelVal = String(rawLevel).includes("레벨") ? rawLevel : `${rawLevel}레벨`;
       const speedAlertVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? (this.tempLidinScrapedData.textData.speedAlert || "") : "";
 

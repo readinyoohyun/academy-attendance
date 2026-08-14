@@ -286,11 +286,11 @@ app.get('/fetch-analysis', async (req, res) => {
     // 7. Calculate averages and metrics
     const speeds = scrapedActivityData.speeds;
     const scores = scrapedPostReadingData.scores;
-    const levelVal = scrapedPostReadingData.latestLevelStr || "3레벨";
+    const levelVal = scrapedPostReadingData.latestLevelStr || "기록 없음";
     const booksCount = scrapedPostReadingData.count || 0;
 
-    const avgSpeed = speeds.length > 0 ? Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length) : 485;
-    const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 92;
+    const avgSpeed = speeds.length > 0 ? Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length) : 0;
+    const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
 
     // Detect if reading speed is extremely slow or fast (e.g. speed < 250 or speed > 750)
     let speedAlertText = "";
