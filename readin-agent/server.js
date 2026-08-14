@@ -180,6 +180,15 @@ app.get('/fetch-analysis', async (req, res) => {
         console.log('[정보] 날짜 필터 적용 스킵:', dateErr.message);
       }
 
+      // [디버그] 상세 화면 스크린샷 및 텍스트 덤프
+      const detailPath = path.join(__dirname, 'debug_detail.png');
+      await page.screenshot({ path: detailPath });
+      console.log(`[디버그] 상세 화면 저장됨: ${detailPath}`);
+      
+      const bodyTextDump = await page.evaluate(() => document.body.innerText);
+      console.log(`[디버그] 상세페이지 본문 길이: ${bodyTextDump.length}글자`);
+      console.log(`[디버그] 상세페이지 본문 일부:\n${bodyTextDump.substring(0, 1000)}`);
+
       // 페이지 전체의 텍스트 패턴을 유연하게 분석하여 점수 및 속도 추출 (CSS 레이아웃 변경에 극도로 유연함)
       const parsedStats = await page.evaluate(() => {
         const bodyText = document.body.innerText;
