@@ -55,46 +55,21 @@ app.get('/fetch-analysis', async (req, res) => {
     await page.goto(searchUrl, { waitUntil: 'networkidle2' });
     await new Promise(r => setTimeout(r, 2000));
 
-    // 2. Auto-login handler if redirected to login page
+    // 2. Login check (Wait for manual login if redirected to login page)
     if (page.url().includes('/login') || await page.$('input[type="password"]')) {
-      console.log('[경고] 로그인이 필요합니다. 자동 로그인을 시도합니다...');
-      await page.waitForSelector('input[type="password"]', { timeout: 10000 });
+      console.log('[경고] 리드인 로그인이 되어 있지 않습니다. 원장님의 수동 로그인을 대기합니다 (최대 60초)...');
       
-      const idSelector = 'input[placeholder*="아이디"], input[type="text"]';
-      const pwSelector = 'input[placeholder*="비밀번호"], input[type="password"]';
+      try {
+        await page.waitForFunction(
+          () => !window.location.href.includes('/login') && window.location.href.includes('/admin/'),
+          { timeout: 60000 }
+        );
+        console.log('[성공] 원장님 로그인 완료 감지! 수집 프로세스를 계속합니다.');
+      } catch (err) {
+        throw new Error('60초 동안 로그인이 완료되지 않았습니다. 열린 크롬 창에서 로그인을 마친 뒤 다시 시도해 주세요.');
+      }
       
-      await page.focus(idSelector);
-      await page.click(idSelector, { clickCount: 3 });
-      await page.keyboard.press('Backspace');
-      await page.type(idSelector, "chaegbingsu");
-      
-      await page.focus(pwSelector);
-      await page.click(pwSelector, { clickCount: 3 });
-      await page.keyboard.press('Backspace');
-      await page.type(pwSelector, "kmh86226886");
-      await new Promise(r => setTimeout(r, 500));
-      
-      console.log("Clicking login button...");
-      await page.click('.login-btn');
-      await new Promise(r => setTimeout(r, 1500));
-      
-      // Close password storage warning popup if it appears
-      await page.evaluate(() => {
-        const buttons = Array.from(document.querySelectorAll('button, a'));
-        const confirmBtn = buttons.find(b => b.innerText && (b.innerText.includes('확인') || b.innerText.includes('닫기')));
-        if (confirmBtn) {
-          confirmBtn.click();
-          console.log("Closed password warning popup.");
-        }
-      });
-      
-      console.log("Waiting for dashboard redirect...");
-      await page.waitForFunction(
-        () => !window.location.href.includes('/login') && window.location.href.includes('/admin/'),
-        { timeout: 15000 }
-      ).catch(() => console.log("Login warning: redirected took longer. Continuing..."));
-      
-      // Navigate back to the search page
+      // Navigate back to the search page after login
       await page.goto(searchUrl, { waitUntil: 'networkidle2' });
       await new Promise(r => setTimeout(r, 2000));
     }
