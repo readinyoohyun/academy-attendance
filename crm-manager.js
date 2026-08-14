@@ -2933,6 +2933,7 @@ ${textbookSummary}
             row: student.row,
             name: student.name,
             images: {},
+            status: "발송완료", // 수집완료와 발송완료 구분
             textData: {
               readingSpeed: parseInt(stats.readSpeed, 10) || 0,
               comprehensionScore: parseInt(stats.comprehension, 10) || 0

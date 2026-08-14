@@ -1323,10 +1323,11 @@ function doPost(e) {
           if (memberRowIdx !== -1) {
             var cellMember = sheetMember.getRange(memberRowIdx, 13); // Col M
             var oldValMember = cellMember.getValue();
+            var statusLabel = postData.status || "수집완료";
             var dateStr = (new Date().getMonth() + 1) + "/" + new Date().getDate();
             var speedVal = postData.textData.readingSpeed || "-";
             var compVal = postData.textData.comprehensionScore || "-";
-            var newValMember = dateStr + " 분석표 수집완료 (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
+            var newValMember = dateStr + " 분석표 " + statusLabel + " (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
             if (oldValMember && String(oldValMember).trim() !== "") {
               newValMember = newValMember + "\n" + oldValMember;
             }
@@ -1370,7 +1371,7 @@ function doPost(e) {
                   var dateStr = (new Date().getMonth() + 1) + "/" + new Date().getDate();
                   var speedVal = postData.textData.readingSpeed || "-";
                   var compVal = postData.textData.comprehensionScore || "-";
-                  var newValBriefing = dateStr + " 분석표 수집완료 (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
+                  var newValBriefing = dateStr + " 분석표 " + statusLabel + " (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
                   if (oldValBriefing && String(oldValBriefing).trim() !== "") {
                     newValBriefing = newValBriefing + "\n" + oldValBriefing;
                   }
