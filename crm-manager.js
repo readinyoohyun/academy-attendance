@@ -2084,7 +2084,8 @@ class CRMManager {
         textbookSummary = `비문학: ${textbookRec.nonfictionTitle || '없음'} (정답률 ${textbookRec.nonfictionAccuracy || '없음'}), 문학: ${textbookRec.literatureTitle || '없음'} (정답률 ${textbookRec.literatureAccuracy || '없음'}), 어휘: ${textbookRec.vocabTitle || '없음'} (정답률 ${textbookRec.vocabAccuracy || '없음'})`;
       }
       
-      // [인사말 무작위 로테이션] 학부모 안내문 마지막 문구 다양화 및 개발자 추천 문구 탑재
+      // [인사말 순차 로테이션] 학부모 안내문 마지막 문구 다양화 및 개발자 추천 문구 탑재
+      // 학생의 과거 리포트 작성 횟수를 기준으로 순서대로 하나씩 15개 문구를 돌아가며 선택하여 중복을 절대 방지합니다.
       const endingPhrases = [
         "가정에서도 함께 응원해 주시면 감사하겠습니다.",
         "가정에서도 관심 있게 지켜봐 주시면 감사하겠습니다.",
@@ -2102,7 +2103,9 @@ class CRMManager {
         "가정에서도 책 속에서 무럭무럭 자라나는 아이의 소중한 발걸음을 함께 지켜봐 주시고 응원해 주세요.",
         "가정에서도 아이가 지치지 않고 즐거운 독서 습관을 이어갈 수 있도록 따뜻한 사랑과 칭찬을 부탁드립니다."
       ];
-      const randomEnding = endingPhrases[Math.floor(Math.random() * endingPhrases.length)];
+      const pastReportCount = (pastLidinReports || []).length;
+      const selectedIndex = pastReportCount % endingPhrases.length;
+      const randomEnding = endingPhrases[selectedIndex];
 
       // Gemini API Multimodal request payload
       const contents = [];
