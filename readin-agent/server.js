@@ -76,7 +76,12 @@ app.get('/fetch-analysis', async (req, res) => {
     // 4. 학생 찾기 및 상세 데이터 수집 시작
     // 페이지 내에 검색된 학생 목록에서 입력된 이름과 매칭되는 열을 찾습니다.
     console.log('[탐색] 학생 목록에서 대상 학생 행 분석 중...');
-    await page.waitForSelector('body', { timeout: 10000 });
+    // AJAX 등으로 카드 목록이 뒤늦게 렌더링될 수 있으므로, 페이지 본문 텍스트에 학생명이 나타날 때까지 대기 (최대 6초)
+    await page.waitForFunction(
+      (targetName) => document.body.innerText.includes(targetName),
+      { timeout: 6000 },
+      name
+    ).catch(err => console.log(`[정보] 학생명 '${name}' 대기 타임아웃 (이미 로드되었거나 없는 경우):`, err.message));
 
     // 학생 정보 매칭 및 클릭 검출
     const matchedStudentInfo = await page.evaluate((targetName) => {
@@ -158,6 +163,12 @@ app.get('/fetch-analysis', async (req, res) => {
       // 상세 페이지 이동 대기
       await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 5000 }).catch(() => {});
       await new Promise(r => setTimeout(r, 2000)); // 동적 리로드 대기
+
+      // 상세 페이지 내 텍스트(이해도, 정답률, 독서 등) 로딩 대기
+      await page.waitForFunction(
+        () => document.body.innerText.includes('이해도') || document.body.innerText.includes('정답률') || document.body.innerText.includes('독서') || document.body.innerText.includes('속도') || document.body.innerText.includes('점수') || document.body.innerText.includes('학습'),
+        { timeout: 5000 }
+      ).catch(err => console.log('[정보] 상세페이지 데이터 라벨 대기 타임아웃:', err.message));
 
       // 상세 페이지 날짜 필터링 시도
       try {
