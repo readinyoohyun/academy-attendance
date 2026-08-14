@@ -2073,6 +2073,9 @@ class CRMManager {
       const speedVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.readingSpeed : 485;
       const compVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.comprehensionScore : 92;
       const vocabVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.vocabScore : 88;
+      const factVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.factScore !== undefined) ? this.tempLidinScrapedData.textData.factScore : 90;
+      const inferVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.inferScore !== undefined) ? this.tempLidinScrapedData.textData.inferScore : 85;
+      const critiqueVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.critiqueScore !== undefined) ? this.tempLidinScrapedData.textData.critiqueScore : 80;
       const booksCount = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.postReadingCount : 12;
 
       const textbookRec = this.app.state.textbooks.find(t => t && t.name && t.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
@@ -2101,6 +2104,9 @@ class CRMManager {
 - 평균 지문 이해도: ${compVal}%
 - 평균 독서 속도: ${speedVal}자/분
 - 어휘 이해도: ${vocabVal}%
+- 사실적 이해도: ${factVal}%
+- 추론적 이해도: ${inferVal}%
+- 비판적 이해도: ${critiqueVal}%
 - 기간 내 완독 도서 수: ${booksCount}권
 
 [원장님의 기존 리드인 리포트 작성 스타일 참고 (중요! 원장님의 어조와 글쓰기 톤앤매너를 학습하여 유사한 양식과 따뜻한 문체로 글을 작성하세요)]:
@@ -2164,13 +2170,13 @@ ${textbookSummary}
       "text": "..."
     }
   ],
-  "stats": {
+   "stats": {
     "comprehension": ${compVal},
     "readSpeed": ${speedVal},
     "vocab": ${vocabVal},
-    "fact": 85,
-    "infer": 80,
-    "critique": 75
+    "fact": ${factVal},
+    "infer": ${inferVal},
+    "critique": ${critiqueVal}
   }
 }`;
           }

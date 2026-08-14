@@ -129,6 +129,9 @@ app.get('/fetch-analysis', async (req, res) => {
         readingSpeed: 485,     // 기본 독서 속도
         comprehensionScore: 92, // 기본 이해도 평균 점수
         vocabScore: 88,         // 기본 어휘력 점수
+        factScore: 90,          // 기본 사실 이해도
+        inferScore: 85,         // 기본 추론 이해도
+        critiqueScore: 80,      // 기본 비판 이해도
         postReadingCount: 12,   // 기본 독후활동 권수
         recentBook: '지정 도서'
       },
@@ -244,7 +247,22 @@ app.get('/fetch-analysis', async (req, res) => {
         const countMatch = bodyText.match(/(?:독후활동|완독|읽은\s*책)[^\d]*(\d{1,3})\s*권/i);
         if (countMatch) count = parseInt(countMatch[1], 10);
 
-        return { comp, speed, vocab, count };
+        // 5. 사실 이해도 파싱
+        let fact = null;
+        const factMatch = bodyText.match(/(?:사실적\s*이해|사실\s*이해|사실)[^\d]*(\d{2,3})(?:\s*%|\s*점)?/i);
+        if (factMatch) fact = parseInt(factMatch[1], 10);
+
+        // 6. 추론 이해도 파싱
+        let infer = null;
+        const inferMatch = bodyText.match(/(?:추론적\s*이해|추론\s*이해|추론)[^\d]*(\d{2,3})(?:\s*%|\s*점)?/i);
+        if (inferMatch) infer = parseInt(inferMatch[1], 10);
+
+        // 7. 비판 이해도 파싱
+        let critique = null;
+        const critiqueMatch = bodyText.match(/(?:비판적\s*이해|비판\s*이해|비판)[^\d]*(\d{2,3})(?:\s*%|\s*점)?/i);
+        if (critiqueMatch) critique = parseInt(critiqueMatch[1], 10);
+
+        return { comp, speed, vocab, count, fact, infer, critique };
       });
 
       console.log('[파싱 완료] 추출된 데이터:', parsedStats);
@@ -252,6 +270,9 @@ app.get('/fetch-analysis', async (req, res) => {
       if (parsedStats.speed !== null) resultData.textData.readingSpeed = parsedStats.speed;
       if (parsedStats.vocab !== null) resultData.textData.vocabScore = parsedStats.vocab;
       if (parsedStats.count !== null) resultData.textData.postReadingCount = parsedStats.count;
+      if (parsedStats.fact !== null) resultData.textData.factScore = parsedStats.fact;
+      if (parsedStats.infer !== null) resultData.textData.inferScore = parsedStats.infer;
+      if (parsedStats.critique !== null) resultData.textData.critiqueScore = parsedStats.critique;
     }
 
     console.log('[완료] 리드인 데이터 수집 완료. 원장앱으로 전송합니다.');
