@@ -1089,6 +1089,7 @@ class CRMManager {
       const dates = periodVal.split("~");
       if (dates.length === 2) {
         const toYmd = (dateStr) => {
+          if (!dateStr) return "";
           let cleaned = dateStr.trim().replace(/\./g, "-");
           const parts = cleaned.split("-");
           if (parts.length === 3) {
@@ -1099,9 +1100,16 @@ class CRMManager {
           }
           return cleaned;
         };
-        startInput.value = toYmd(dates[0]);
-        endInput.value = toYmd(dates[1]);
-        return; // 복원 성공 시 함수 종료
+        const startYmd = toYmd(dates[0]);
+        const endYmd = toYmd(dates[1]);
+        
+        // 정밀 유효성 검증 (YYYY-MM-DD 형태가 아니면 early return 하지 않음)
+        const isYmd = (str) => /^\d{4}-\d{2}-\d{2}$/.test(str);
+        if (isYmd(startYmd) && isYmd(endYmd)) {
+          startInput.value = startYmd;
+          endInput.value = endYmd;
+          return; // 복원 성공 시 함수 종료
+        }
       }
     }
 
@@ -2270,7 +2278,20 @@ ${textbookSummary}
       
       const resultData = await response.json();
       const responseText = resultData.candidates[0].content.parts[0].text;
-      const report = JSON.parse(responseText.trim());
+      
+      // [방어 코드] 마크다운 코드 블록 (```json) 정밀 트리밍 제거
+      let cleanText = responseText.trim();
+      if (cleanText.startsWith("```json")) {
+        cleanText = cleanText.substring(7);
+      } else if (cleanText.startsWith("```")) {
+        cleanText = cleanText.substring(3);
+      }
+      if (cleanText.endsWith("```")) {
+        cleanText = cleanText.substring(0, cleanText.length - 3);
+      }
+      cleanText = cleanText.trim();
+      
+      const report = JSON.parse(cleanText);
       
       // Render to UI Modal
       this.renderAiReportPreview(report, start, end, name, grade);
@@ -2428,7 +2449,7 @@ ${textbookSummary}
       const secDiv = document.createElement("div");
       secDiv.className = "ai-report-section";
       
-      if (sec.title.includes("해석 기준")) {
+      if (sec.title && sec.title.includes("해석 기준")) {
         secDiv.innerHTML = `
           <div class="ai-report-section-title">${sec.title}</div>
           <div style="font-size: 0.82rem; color: #475569; margin-bottom: 0.4rem; line-height: 1.45;" contenteditable="true">
@@ -2465,9 +2486,12 @@ ${textbookSummary}
         `;
         sectionsContainer.appendChild(secDiv);
       } else {
+        // [방어 코드] text, content 키 모두 대응하며 누락 시 빈 텍스트로 폴백
+        const rawText = sec.text || sec.content || "";
+        const cleanVal = String(rawText).trim();
         secDiv.innerHTML = `
-          <div class="ai-report-section-title">${sec.title}</div>
-          <div class="ai-report-textarea" contenteditable="true" style="outline: none; white-space: pre-wrap; padding: 0.2rem; min-height: auto;">${sec.text.trim()}</div>
+          <div class="ai-report-section-title">${sec.title || '리포트 영역'}</div>
+          <div class="ai-report-textarea" contenteditable="true" style="outline: none; white-space: pre-wrap; padding: 0.2rem; min-height: auto;">${cleanVal}</div>
         `;
         sectionsContainer.appendChild(secDiv);
       }
