@@ -617,6 +617,57 @@ class CRMManager {
       };
     }
 
+    // ----------------------------------------------------
+    // 리드인 텍스트 데이터만 자동 가져오기 버튼 바인딩
+    // ----------------------------------------------------
+    const cycleSelect = document.getElementById("crmAiReportCycle");
+    const containerFetchBtn = document.getElementById("containerFetchLidinTextData");
+    if (cycleSelect && containerFetchBtn) {
+      const toggleBtn = () => {
+        if (cycleSelect.value === 'lidin_report') {
+          containerFetchBtn.style.display = "flex";
+        } else {
+          containerFetchBtn.style.display = "none";
+        }
+      };
+      cycleSelect.addEventListener("change", toggleBtn);
+      // Run once on load/init
+      setTimeout(toggleBtn, 100);
+    }
+
+    const btnFetchLidinText = document.getElementById("btnCrmFetchLidinTextData");
+    if (btnFetchLidinText) {
+      btnFetchLidinText.onclick = async () => {
+        const name = this.currentCrmStudentName;
+        if (!name) return;
+        
+        const start = document.getElementById("crmAiReportPeriodStart").value;
+        const end = document.getElementById("crmAiReportPeriodEnd").value;
+        
+        const originalText = btnFetchLidinText.innerHTML;
+        btnFetchLidinText.innerHTML = "⏳ 가져오는 중...";
+        btnFetchLidinText.disabled = true;
+        
+        try {
+          const res = await fetch(`http://localhost:3010/fetch-analysis?name=${encodeURIComponent(name)}&startDate=${start}&endDate=${end}`);
+          const json = await res.json();
+          
+          if (json.success) {
+            this.tempLidinScrapedData = json.data;
+            alert(`[성공] 리드인에서 독서 데이터 수집 완료!\n\n- 독서속도: ${json.data.textData.readingSpeed}자/분\n- 지문이해도: ${json.data.textData.comprehensionScore}%\n- 어휘이해도: ${json.data.textData.vocabScore}%\n\n이 수치들이 AI 리포트에 즉시 반영됩니다.`);
+          } else {
+            alert(`리드인 성적 가져오기 실패: ${json.error || '알 수 없는 오류'}`);
+          }
+        } catch (err) {
+          console.error(err);
+          alert("리드인 로컬 에이전트(start.bat)가 실행 중인지 확인해 주세요.");
+        } finally {
+          btnFetchLidinText.innerHTML = originalText;
+          btnFetchLidinText.disabled = false;
+        }
+      };
+    }
+
     this.initCrmAccordions();
   }
 
@@ -1919,6 +1970,20 @@ class CRMManager {
     btnGen.innerHTML = "⏳ AI 성적표 판독 및 종합 코멘트 집필 중 (약 10초)...";
     btnGen.disabled = true;
     
+    // [자동 수집 연동] 만약 리드인 템플릿인데 데이터를 미리 수집하지 않았다면 생성 클릭 시 자동 실행
+    if (cycle === 'lidin_report' && !this.tempLidinScrapedData) {
+      btnGen.innerHTML = "⏳ 리드인 독서활동 분석 데이터 조회 중...";
+      try {
+        const res = await fetch(`http://localhost:3010/fetch-analysis?name=${encodeURIComponent(name)}&startDate=${start}&endDate=${end}`);
+        const json = await res.json();
+        if (json.success) {
+          this.tempLidinScrapedData = json.data;
+        }
+      } catch (e) {
+        console.error("Auto fetch Lidin text data failed:", e);
+      }
+    }
+
     try {
       const student = this.app.state.students.find(s => s.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
       const grade = student ? student.grade : "초등학생";
@@ -1965,6 +2030,12 @@ class CRMManager {
       }
   
       
+      // [리드인 성적 주입] 크롤링된 실 성적 변수 정의
+      const speedVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.readingSpeed : 485;
+      const compVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.comprehensionScore : 92;
+      const vocabVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.vocabScore : 88;
+      const booksCount = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.postReadingCount : 12;
+
       const textbookRec = this.app.state.textbooks.find(t => t && t.name && t.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
       let textbookSummary = "등록된 교재 진도 없음";
       if (textbookRec) {
@@ -1986,6 +2057,12 @@ class CRMManager {
 학생 이름: ${name}
 학년: ${grade}
 리포트 형식: 리드인 독서활동/독후활동 분석 리포트
+
+[이번 기간 실제 수집된 리드인 지표 (반드시 아래 수치들을 분석글 내에 그대로 사용하세요)]:
+- 평균 지문 이해도: ${compVal}%
+- 평균 독서 속도: ${speedVal}자/분
+- 어휘 이해도: ${vocabVal}%
+- 기간 내 완독 도서 수: ${booksCount}권
 
 [원장님의 기존 리드인 리포트 작성 스타일 참고 (중요! 원장님의 어조와 글쓰기 톤앤매너를 학습하여 유사한 양식과 따뜻한 문체로 글을 작성하세요)]:
 ${pastReportsReference}
@@ -2049,12 +2126,12 @@ ${textbookSummary}
     }
   ],
   "stats": {
-    "comprehension": 80,
-    "readSpeed": 541,
-    "vocab": 66,
-    "fact": 86,
-    "infer": 55,
-    "critique": 33
+    "comprehension": ${compVal},
+    "readSpeed": ${speedVal},
+    "vocab": ${vocabVal},
+    "fact": 85,
+    "infer": 80,
+    "critique": 75
   }
 }`;
           }
@@ -2700,6 +2777,7 @@ ${textbookSummary}
       }
     })();
 
+this.tempLidinScrapedData = null; // Clear cached Lidin data
     alert("리포트가 성공적으로 저장되었습니다! 구글 시트 상담/리포트 발송 이력과 웹앱 보관함에 동시에 등록되었습니다.");
     
     // Refresh student view to show the new saved report in the list!

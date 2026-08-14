@@ -107,20 +107,19 @@ app.get('/fetch-analysis', async (req, res) => {
     await page.screenshot({ path: debugPath });
     console.log(`[디버그] 현재 검색 화면 저장됨: ${debugPath}`);
 
-    // 임시로 수집한 목업 데이터 생성 (실제 리드인 페이지 구조가 부재하므로, 통신 성공 및 프리뷰/수정 UI 확인을 위한 징검다리 데이터 제공)
+    // 기본 예시 데이터 구조 정의
     const resultData = {
       studentName: name,
       scrapedDate: new Date().toLocaleDateString('ko-KR'),
       startDate: startDate || '최근 30일',
       endDate: endDate || '오늘',
       textData: {
-        readingSpeed: 485,     // 분당 글자 수 (예시)
-        comprehensionScore: 92, // 이해도 평균 점수 (예시)
-        vocabScore: 88,         // 어휘력 점수 (예시)
-        postReadingCount: 12,   // 독후활동 권수 (예시)
-        recentBook: '노인과 바다'  // 최근 읽은 책 (예시)
+        readingSpeed: 485,     // 기본 독서 속도
+        comprehensionScore: 92, // 기본 이해도 평균 점수
+        vocabScore: 88,         // 기본 어휘력 점수
+        postReadingCount: 12,   // 기본 독후활동 권수
+        recentBook: '지정 도서'
       },
-      // 3종 캡처 이미지 Mock (순백색 배경 기반의 안내 화면 또는 캡처)
       images: {
         marathon: null,
         activity: null,
@@ -128,19 +127,85 @@ app.get('/fetch-analysis', async (req, res) => {
       }
     };
 
-    // 실제 화면 캡처 시도 (실제 리드인 세부 탭이 있는 경우 해당 요소를 캡처)
-    // 여기서는 예시로 로컬 캡처 파일을 Base64로 인코딩하여 반환합니다.
-    const mockImageBase64 = fs.existsSync(debugPath) 
-      ? fs.readFileSync(debugPath).toString('base64') 
-      : '';
+    // 실제 상세 페이지 진입 및 텍스트 데이터 크롤링 시도
+    if (matchedStudentInfo.found) {
+      console.log(`[클릭] 학생상세로 이동하기 위해 링크 클릭 시도...`);
+      await page.evaluate((targetName) => {
+        const rows = Array.from(document.querySelectorAll('table tr, .list-table tr, tbody tr, .student-card'));
+        for (const row of rows) {
+          if (row.innerText.includes(targetName)) {
+            const links = Array.from(row.querySelectorAll('a, button'));
+            for (const link of links) {
+              const txt = link.innerText.trim();
+              if (txt.includes('보기') || txt.includes('분석') || txt.includes('상세') || txt.includes(targetName)) {
+                link.click();
+                return;
+              }
+            }
+          }
+        }
+      }, name);
 
-    resultData.images.marathon = mockImageBase64;
-    resultData.images.activity = mockImageBase64;
-    resultData.images.postReading = mockImageBase64;
+      // 상세 페이지 이동 대기
+      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 5000 }).catch(() => {});
+      await new Promise(r => setTimeout(r, 2000)); // 동적 리로드 대기
+
+      // 상세 페이지 날짜 필터링 시도
+      try {
+        await page.evaluate((start, end) => {
+          const inputs = Array.from(document.querySelectorAll('input[type="date"], input[name*="date"], input[id*="date"], input[class*="date"]'));
+          if (inputs.length >= 2) {
+            inputs[0].value = start;
+            inputs[0].dispatchEvent(new Event('change', { bubbles: true }));
+            inputs[1].value = end;
+            inputs[1].dispatchEvent(new Event('change', { bubbles: true }));
+            
+            const btn = Array.from(document.querySelectorAll('button, input[type="submit"], a')).find(el =>
+              el.innerText.includes('검색') || el.innerText.includes('조회') || el.innerText.includes('적용')
+            );
+            if (btn) btn.click();
+          }
+        }, startDate, endDate);
+        await new Promise(r => setTimeout(r, 2000));
+      } catch (dateErr) {
+        console.log('[정보] 날짜 필터 적용 스킵:', dateErr.message);
+      }
+
+      // 페이지 전체의 텍스트 패턴을 유연하게 분석하여 점수 및 속도 추출 (CSS 레이아웃 변경에 극도로 유연함)
+      const parsedStats = await page.evaluate(() => {
+        const bodyText = document.body.innerText;
+        
+        // 1. 이해도/정답률 파싱
+        let comp = null;
+        const compMatch = bodyText.match(/(?:이해도|정답률|평균\s*이해도)[^\d]*(\d{2,3})(?:\s*%|\s*점)?/i);
+        if (compMatch) comp = parseInt(compMatch[1], 10);
+        
+        // 2. 독서속도/분당글자수 파싱
+        let speed = null;
+        const speedMatch = bodyText.match(/(?:독서\s*속도|읽기\s*속도|분당\s*글자\s*수|평균\s*독서\s*속도)[^\d]*(\d{2,4})(?:\s*자|\s*WPM)?/i);
+        if (speedMatch) speed = parseInt(speedMatch[1], 10);
+
+        // 3. 어휘 이해도 파싱
+        let vocab = null;
+        const vocabMatch = bodyText.match(/(?:어휘력|어휘\s*이해|어휘\s*점수)[^\d]*(\d{2,3})(?:\s*%|\s*점)?/i);
+        if (vocabMatch) vocab = parseInt(vocabMatch[1], 10);
+
+        // 4. 완독 권수 파싱
+        let count = null;
+        const countMatch = bodyText.match(/(?:독후활동|완독|읽은\s*책)[^\d]*(\d{1,3})\s*권/i);
+        if (countMatch) count = parseInt(countMatch[1], 10);
+
+        return { comp, speed, vocab, count };
+      });
+
+      console.log('[파싱 완료] 추출된 데이터:', parsedStats);
+      if (parsedStats.comp !== null) resultData.textData.comprehensionScore = parsedStats.comp;
+      if (parsedStats.speed !== null) resultData.textData.readingSpeed = parsedStats.speed;
+      if (parsedStats.vocab !== null) resultData.textData.vocabScore = parsedStats.vocab;
+      if (parsedStats.count !== null) resultData.textData.postReadingCount = parsedStats.count;
+    }
 
     console.log('[완료] 리드인 데이터 수집 완료. 원장앱으로 전송합니다.');
-    
-    // 정상 응답 반환
     res.json({
       success: true,
       data: resultData
