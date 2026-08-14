@@ -78,26 +78,13 @@ app.get('/fetch-analysis', async (req, res) => {
     console.log('[탐색] 학생 목록에서 대상 학생 행 분석 중...');
     await page.waitForSelector('body', { timeout: 10000 });
 
-    // 학생 정보 매칭 및 클릭
+    // 학생 정보 매칭 및 클릭 검출
     const matchedStudentInfo = await page.evaluate((targetName) => {
-      const rows = Array.from(document.querySelectorAll('table tr, .list-table tr, tbody tr'));
-      for (const row of rows) {
-        const text = row.innerText || '';
-        if (text.includes(targetName)) {
-          // 상세 보기 버튼이나 링크 탐색
-          const links = Array.from(row.querySelectorAll('a, button'));
-          const clickTargetIndex = links.findIndex(el => 
-            el.innerText.includes('보기') || 
-            el.innerText.includes('분석') || 
-            el.innerText.includes(targetName) ||
-            el.classList.contains('btn')
-          );
-          if (clickTargetIndex !== -1) {
-            return { found: true, clickText: links[clickTargetIndex].innerText, index: clickTargetIndex, rowText: text };
-          }
-        }
-      }
-      return { found: false };
+      const elements = Array.from(document.querySelectorAll('*')).filter(el => {
+        const text = el.innerText || '';
+        return text.includes(targetName) && text.length < 150;
+      });
+      return { found: elements.length > 0 };
     }, name);
 
     console.log(`[탐색 결과] 학생 매칭 상태:`, matchedStudentInfo);
@@ -131,18 +118,40 @@ app.get('/fetch-analysis', async (req, res) => {
     if (matchedStudentInfo.found) {
       console.log(`[클릭] 학생상세로 이동하기 위해 링크 클릭 시도...`);
       await page.evaluate((targetName) => {
-        const rows = Array.from(document.querySelectorAll('table tr, .list-table tr, tbody tr, .student-card'));
-        for (const row of rows) {
-          if (row.innerText.includes(targetName)) {
-            const links = Array.from(row.querySelectorAll('a, button'));
-            for (const link of links) {
-              const txt = link.innerText.trim();
-              if (txt.includes('보기') || txt.includes('분석') || txt.includes('상세') || txt.includes(targetName)) {
-                link.click();
-                return;
-              }
-            }
+        const elements = Array.from(document.querySelectorAll('*')).filter(el => {
+          const text = el.innerText || '';
+          return text.includes(targetName) && text.length < 150;
+        });
+
+        for (const el of elements) {
+          // 1. 만약 요소 자체가 링크/버튼이면 직접 클릭
+          if (el.tagName === 'A' || el.tagName === 'BUTTON' || el.getAttribute('role') === 'button') {
+            el.click();
+            return;
           }
+          
+          // 2. 내부의 링크/버튼 검색 후 우선순위 클릭
+          const childLinks = Array.from(el.querySelectorAll('a, button, [role="button"]'));
+          if (childLinks.length > 0) {
+            const bestLink = childLinks.find(link => {
+              const txt = link.innerText || '';
+              return txt.includes('보기') || txt.includes('분석') || txt.includes('상세') || txt.includes(targetName);
+            }) || childLinks[0];
+            bestLink.click();
+            return;
+          }
+
+          // 3. 가장 가까운 클릭 가능 부모 요소 클릭 (카드형태 대응)
+          const clickableAncestor = el.closest('a, button, [role="button"], tr, td, li, .card, .student-card');
+          if (clickableAncestor) {
+            clickableAncestor.click();
+            return;
+          }
+        }
+
+        // 최후 수단: 매칭된 첫 요소 직접 클릭
+        if (elements.length > 0) {
+          elements[0].click();
         }
       }, name);
 
