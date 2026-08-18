@@ -420,6 +420,7 @@ class DashboardManager {
                     ${student.makeupMinsRemaining > 0 ? `<span style="background:rgba(16, 185, 129, 0.08); color:#047857; border:1px solid rgba(16, 185, 129, 0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">⏳ 잔여: ${student.makeupMinsRemaining}분</span>` : ''}
                     ${displayExtensionMins > 0 ? `<span style="background:rgba(13, 148, 136, 0.08); color:#0f766e; border:1px solid rgba(13, 148, 136, 0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${displayExtensionMins}분</span>` : ''}
                   </div>
+                  ${typeClass === "in-class" ? `<button class="btn-complete-quick" style="background:#10b981; border:1px solid #059669; color:#ffffff; padding:0.2rem 0.4rem; border-radius:4px; font-size:0.75rem; font-weight:700; cursor:pointer; flex-shrink:0; z-index:10; transition:background 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">수업 완료</button>` : ''}
                 </div>
                 ${timerHtml}
               </div>
@@ -434,6 +435,11 @@ class DashboardManager {
             `;
           }
           card.addEventListener("click", (e) => {
+            if (e.target.classList.contains("btn-complete-quick")) {
+              e.stopPropagation();
+              this.handleCompleteQuickClick(student.id, isMakeup, targetDates.slashFormat, timeStr);
+              return;
+            }
             if (e.target.classList.contains("btn-extend-cycle")) {
               e.stopPropagation();
               const current = displayExtensionMins;
@@ -845,6 +851,164 @@ class DashboardManager {
     }
     student.absentDates = updatedDates.join(', ');
     student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
+  }
+
+  handleCompleteQuickClick(studentId, isMakeup, dateStr, activeTime) {
+    const student = this.app.state.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    const targetDates = getFormattedDateOfWeekday(this.selectedDay);
+    const shortDay = this.selectedDay.substring(0, 1);
+    const dailyLogDateStr = `${targetDates.slashFormat}${shortDay}`;
+
+    let dailyLog = [...this.app.state.dailyLogs].reverse().find(log => 
+      log.name.trim() === student.name.trim() && 
+      log.time.trim() === activeTime.trim() && 
+      (log.date || '').trim() === dailyLogDateStr.trim()
+    );
+
+    const isMakeupClass = isMakeup || (dailyLog && dailyLog.reason === "보강 수업");
+    
+    // Calculate elapsed time from dailyLog.inTime (defaulting to planned duration if unavailable)
+    let elapsedMins = getClassDuration(student); 
+    if (dailyLog && dailyLog.inTime) {
+      const inTimeParts = dailyLog.inTime.split(":");
+      if (inTimeParts.length === 2) {
+        const inHrs = parseInt(inTimeParts[0], 10);
+        const inMins = parseInt(inTimeParts[1], 10);
+        const now = new Date();
+        const inDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), inHrs, inMins, 0);
+        elapsedMins = Math.max(1, Math.floor((now.getTime() - inDate.getTime()) / 60000));
+      }
+    }
+
+    const plannedDuration = getClassDuration(student);
+    const remainingMins = plannedDuration - elapsedMins;
+
+    let confirmMsg = `${student.name} 학생의 수업을 완료하시겠습니까?`;
+    if (remainingMins > 0) {
+      if (isMakeupClass) {
+        confirmMsg = `${student.name} 학생의 수업을 조기 완료하시겠습니까?\n\n- 보강 참여 시간: ${elapsedMins}분\n- 남은 보강 시간: ${remainingMins}분 (보강은행에 보존됩니다.)`;
+      } else {
+        confirmMsg = `${student.name} 학생의 수업을 조기 완료하시겠습니까?\n\n- 수업 참여 시간: ${elapsedMins}분\n- 조퇴 시간: ${remainingMins}분 (보강은행에 적립됩니다.)`;
+      }
+    }
+
+    if (!confirm(confirmMsg)) return;
+
+    let finalStatus = "수업완료";
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    if (remainingMins > 0) {
+      // Early checkout / 조기 하원
+      if (isMakeupClass) {
+        student.makeupCompleted = '완료';
+        student.makeupMinsDone = (student.makeupMinsDone || 0) + elapsedMins;
+        this.syncMakeupStrikethroughs(student);
+
+        const batchUpdates = [
+          { tab: "students", row: student.row, field: "makeupCompleted", value: "완료" },
+          { tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone },
+          { tab: "students", row: student.row, field: "absentDates", value: student.absentDates }
+        ];
+        if (dailyLog) {
+          dailyLog.status = "보강완료";
+          dailyLog.reason = `보강 조퇴 (${remainingMins}분 남음)`;
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "보강완료" });
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+        }
+        this.app.api.updateBatchInGoogleSheets(batchUpdates);
+        finalStatus = "보강완료";
+      } else {
+        student.attendanceStatus = '수업완료';
+        student.absentMinsAcc = (student.absentMinsAcc || 0) + remainingMins;
+        student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
+
+        let datesList = student.absentDates ? student.absentDates.split(',').map(d => d.trim()).filter(Boolean) : [];
+        datesList.push(`조퇴:${dateStr}(${remainingMins}분)`);
+        student.absentDates = datesList.join(', ');
+
+        const batchUpdates = [
+          { tab: "students", row: student.row, field: "absentMinsAcc", value: student.absentMinsAcc },
+          { tab: "students", row: student.row, field: "absentDates", value: student.absentDates }
+        ];
+        if (dailyLog) {
+          dailyLog.status = "수업완료";
+          dailyLog.reason = `조퇴 (${remainingMins}분)`;
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업완료" });
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+        }
+        this.app.api.updateBatchInGoogleSheets(batchUpdates);
+        finalStatus = "수업완료";
+      }
+    } else {
+      // Normal checkout / 정상 하원
+      if (isMakeupClass) {
+        student.makeupCompleted = '완료';
+        student.makeupMinsDone = (student.makeupMinsDone || 0) + plannedDuration;
+        this.syncMakeupStrikethroughs(student);
+
+        const batchUpdates = [
+          { tab: "students", row: student.row, field: "makeupCompleted", value: "완료" },
+          { tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone },
+          { tab: "students", row: student.row, field: "absentDates", value: student.absentDates }
+        ];
+        if (dailyLog) {
+          dailyLog.status = "보강완료";
+          dailyLog.reason = "보강 수업";
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "보강완료" });
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+        }
+        this.app.api.updateBatchInGoogleSheets(batchUpdates);
+        finalStatus = "보강완료";
+      } else {
+        student.attendanceStatus = '수업완료';
+        let logExtensionMins = 0;
+        if (dailyLog && dailyLog.reason && dailyLog.reason.startsWith("연장 (")) {
+          const match = dailyLog.reason.match(/\d+/);
+          if (match) logExtensionMins = parseInt(match[0], 10);
+        }
+        const isExtendedClass = (student.todayExtensionMins > 0) || (logExtensionMins > 0);
+        if (isExtendedClass) {
+          const extMins = Math.max(parseInt(student.todayExtensionMins, 10) || 0, logExtensionMins);
+          student.makeupMinsDone = (student.makeupMinsDone || 0) + extMins;
+          this.syncMakeupStrikethroughs(student);
+          
+          const batchUpdates = [
+            { tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone },
+            { tab: "students", row: student.row, field: "absentDates", value: student.absentDates },
+            { tab: "students", row: student.row, field: "todayExtensionMins", value: 0 }
+          ];
+          if (dailyLog) {
+            dailyLog.status = "수업완료";
+            dailyLog.reason = `연장 (${extMins}분)`;
+            batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업완료" });
+            batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+          }
+          this.app.api.updateBatchInGoogleSheets(batchUpdates);
+          student.todayExtensionMins = 0;
+        } else {
+          const batchUpdates = [];
+          if (dailyLog) {
+            dailyLog.status = "수업완료";
+            batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업완료" });
+          }
+          this.app.api.updateBatchInGoogleSheets(batchUpdates);
+        }
+        finalStatus = "수업완료";
+      }
+    }
+
+    // Trigger SMS Notification for leaving (하원 문자)
+    this.app.smsManager.sendSmsNotification(student, "out", currentTime);
+
+    // Log the attendance event
+    this.logAttendanceEvent(student.name, finalStatus, activeTime);
+
+    this.app.saveState();
+    this.app.sheetSim.setData(this.app.state);
+    this.updateDashboard();
   }
 
   handleExtendQuickClick(studentId, extensionMins) {
