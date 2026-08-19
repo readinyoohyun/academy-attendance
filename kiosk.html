@@ -1697,6 +1697,7 @@
                 student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
                 
                 updates.push({ tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone });
+                updates.push({ tab: "students", row: student.row, field: "makeupMinsRemaining", value: student.makeupMinsRemaining });
                 updates.push({ tab: "students", row: student.row, field: "absentDates", value: student.absentDates });
                 if (isExtendedClass) {
                   updates.push({ tab: "students", row: student.row, field: "todayExtensionMins", value: 0 });

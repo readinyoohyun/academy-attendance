@@ -1122,6 +1122,8 @@ function processSingleUpdate(ss, tab, row, field, value) {
         sheet.getRange(row, 33).setValue(value);
       } else if (field === "makeupMinsDone") {
         sheet.getRange(row, 34).setValue(value);
+      } else if (field === "makeupMinsRemaining") {
+        sheet.getRange(row, 35).setValue(value);
       } else if (field === "todayExtensionMins") {
         sheet.getRange(row, 36).setValue(value);
       } else if (field === "lidinMarathonUrl") {

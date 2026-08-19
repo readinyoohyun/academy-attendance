@@ -698,6 +698,7 @@ class DashboardManager {
 
             this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "완료", "students");
             this.app.api.updateFieldInGoogleSheets(student.row, "makeupMinsDone", student.makeupMinsDone, "students");
+            this.app.api.updateFieldInGoogleSheets(student.row, "makeupMinsRemaining", student.makeupMinsRemaining, "students");
             this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
 
             finalStatus = "보강완료";
@@ -718,6 +719,7 @@ class DashboardManager {
               
               const batchUpdates = [
                 { tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone },
+                { tab: "students", row: student.row, field: "makeupMinsRemaining", value: student.makeupMinsRemaining },
                 { tab: "students", row: student.row, field: "absentDates", value: student.absentDates },
                 { tab: "students", row: student.row, field: "todayExtensionMins", value: 0 }
               ];
@@ -910,6 +912,7 @@ class DashboardManager {
         const batchUpdates = [
           { tab: "students", row: student.row, field: "makeupCompleted", value: "완료" },
           { tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone },
+          { tab: "students", row: student.row, field: "makeupMinsRemaining", value: student.makeupMinsRemaining },
           { tab: "students", row: student.row, field: "absentDates", value: student.absentDates }
         ];
         if (dailyLog) {
@@ -931,6 +934,7 @@ class DashboardManager {
 
         const batchUpdates = [
           { tab: "students", row: student.row, field: "absentMinsAcc", value: student.absentMinsAcc },
+          { tab: "students", row: student.row, field: "makeupMinsRemaining", value: student.makeupMinsRemaining },
           { tab: "students", row: student.row, field: "absentDates", value: student.absentDates }
         ];
         if (dailyLog) {
@@ -952,6 +956,7 @@ class DashboardManager {
         const batchUpdates = [
           { tab: "students", row: student.row, field: "makeupCompleted", value: "완료" },
           { tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone },
+          { tab: "students", row: student.row, field: "makeupMinsRemaining", value: student.makeupMinsRemaining },
           { tab: "students", row: student.row, field: "absentDates", value: student.absentDates }
         ];
         if (dailyLog) {
@@ -977,6 +982,7 @@ class DashboardManager {
           
           const batchUpdates = [
             { tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone },
+            { tab: "students", row: student.row, field: "makeupMinsRemaining", value: student.makeupMinsRemaining },
             { tab: "students", row: student.row, field: "absentDates", value: student.absentDates },
             { tab: "students", row: student.row, field: "todayExtensionMins", value: 0 }
           ];
@@ -1060,6 +1066,7 @@ class DashboardManager {
 
     this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
     this.app.api.updateFieldInGoogleSheets(student.row, "absentMinsAcc", student.absentMinsAcc, "students");
+    this.app.api.updateFieldInGoogleSheets(student.row, "makeupMinsRemaining", student.makeupMinsRemaining, "students");
 
     const targetDates = getFormattedDateOfWeekday(this.selectedDay);
     const shortDay = this.selectedDay.substring(0, 1);
