@@ -53,50 +53,13 @@ class DashboardManager {
     const shortDay = this.selectedDay.substring(0, 1);
     const dailyLogDateStr = `${dates.slashFormat}${shortDay}`;
     
-    // Check if daily logs are already generated for today
     const todayLogs = this.app.state.dailyLogs.filter(l => 
       (l.date || '').trim() === dailyLogDateStr.trim()
     );
 
-    if (todayLogs.length > 0) {
-      // 1:1 Map with daily logs for this time slot today
-      const logsForSlot = todayLogs.filter(l => (l.time || '').trim() === timeStr.trim());
-      
-      return logsForSlot.map(l => {
-        let studentMatch = this.app.state.students.find(s => {
-          if ((s.name || '').replace(/\s+/g, '') !== (l.name || '').replace(/\s+/g, '')) return false;
-          const regTime = s.times && (s.times[this.selectedDay] || s.times[this.selectedDay.substring(0, 1)]);
-          if (regTime) {
-            const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
-            if (parts.includes(timeStr.trim())) return true;
-          }
-          return false;
-        });
-        if (!studentMatch) {
-          studentMatch = this.app.state.students.find(s => 
-            (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, '')
-          );
-        }
-        
-        // Clone the student metadata or use a placeholder if not registered
-        const student = studentMatch ? { ...studentMatch } : {
-          id: 'temp_' + l.row,
-          row: -1,
-          name: l.name,
-          grade: '미등록',
-          classes: '임시 추가',
-          times: {},
-          notes: l.notes,
-          absentDates: '',
-          makeupDate: ''
-        };
-        student.dailyLog = l;
-        return student;
-      });
-    }
-
-    // Fallback if today's daily logs are not set up yet
-    const fallbackStudents = this.app.state.students.filter(student => {
+    // 1. Gather all scheduled students for this time slot
+    const uniqueStudentsMap = new Map();
+    const scheduledStudents = this.app.state.students.filter(student => {
       let isAbsent = false;
       if (student.absentDates) {
         const parts = String(student.absentDates).split(',').map(x => x.trim()).filter(Boolean);
@@ -134,11 +97,40 @@ class DashboardManager {
       return (isRegularActive && !hasMakeupToday) || isMakeupTodayAndTime;
     });
 
-    return fallbackStudents.map(student => {
-      const s = { ...student };
-      s.dailyLog = null;
-      return s;
+    scheduledStudents.forEach(st => {
+      uniqueStudentsMap.set(st.id, { ...st, dailyLog: null });
     });
+
+    // 2. Process logs for this slot
+    const logsForSlot = todayLogs.filter(l => (l.time || '').trim() === timeStr.trim());
+    logsForSlot.forEach(l => {
+      let studentMatch = Array.from(uniqueStudentsMap.values()).find(s => {
+        if ((s.name || '').replace(/\s+/g, '') !== (l.name || '').replace(/\s+/g, '')) return false;
+        return true;
+      });
+
+      if (studentMatch) {
+        studentMatch.dailyLog = l;
+      } else {
+        const rosterStudent = this.app.state.students.find(s => (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, ''));
+        const tempId = rosterStudent ? rosterStudent.id : 'temp_' + l.row;
+        const studentObj = rosterStudent ? { ...rosterStudent, dailyLog: l } : {
+          id: tempId,
+          row: -1,
+          name: l.name,
+          grade: '미등록',
+          classes: '임시 추가',
+          times: {},
+          notes: l.notes,
+          absentDates: '',
+          makeupDate: '',
+          dailyLog: l
+        };
+        uniqueStudentsMap.set(tempId, studentObj);
+      }
+    });
+
+    return Array.from(uniqueStudentsMap.values());
   }
 
   updateDashboard() {
@@ -576,8 +568,12 @@ class DashboardManager {
         student.absentMinsAcc = Math.max(0, (student.absentMinsAcc || 0) - durationMins);
         student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
 
-        this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
-        this.app.api.updateFieldInGoogleSheets(student.row, "absentMinsAcc", student.absentMinsAcc, "students");
+        const batchUpdates = [
+          { tab: "students", row: student.row, field: "absentDates", value: student.absentDates },
+          { tab: "students", row: student.row, field: "absentMinsAcc", value: student.absentMinsAcc },
+          { tab: "students", row: student.row, field: "makeupMinsRemaining", value: student.makeupMinsRemaining }
+        ];
+        this.app.api.updateBatchInGoogleSheets(batchUpdates);
       }
       finalStatus = "대기";
     } else if (currentStatus === "휴강") {
@@ -625,8 +621,12 @@ class DashboardManager {
           student.absentMinsAcc = (student.absentMinsAcc || 0) + durationMins;
           student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
 
-          this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
-          this.app.api.updateFieldInGoogleSheets(student.row, "absentMinsAcc", student.absentMinsAcc, "students");
+          const batchUpdates = [
+            { tab: "students", row: student.row, field: "absentDates", value: student.absentDates },
+            { tab: "students", row: student.row, field: "absentMinsAcc", value: student.absentMinsAcc },
+            { tab: "students", row: student.row, field: "makeupMinsRemaining", value: student.makeupMinsRemaining }
+          ];
+          this.app.api.updateBatchInGoogleSheets(batchUpdates);
         }
         finalStatus = "결석";
       }
@@ -696,10 +696,17 @@ class DashboardManager {
             student.makeupMinsDone = (student.makeupMinsDone || 0) + durationMins;
             this.syncMakeupStrikethroughs(student);
 
-            this.app.api.updateFieldInGoogleSheets(student.row, "makeupCompleted", "완료", "students");
-            this.app.api.updateFieldInGoogleSheets(student.row, "makeupMinsDone", student.makeupMinsDone, "students");
-            this.app.api.updateFieldInGoogleSheets(student.row, "makeupMinsRemaining", student.makeupMinsRemaining, "students");
-            this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
+            const batchUpdates = [
+              { tab: "students", row: student.row, field: "makeupCompleted", value: "완료" },
+              { tab: "students", row: student.row, field: "makeupMinsDone", value: student.makeupMinsDone },
+              { tab: "students", row: student.row, field: "makeupMinsRemaining", value: student.makeupMinsRemaining },
+              { tab: "students", row: student.row, field: "absentDates", value: student.absentDates }
+            ];
+            if (dailyLog) {
+              dailyLog.reason = "보강 수업";
+              batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: "보강 수업", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
+            }
+            this.app.api.updateBatchInGoogleSheets(batchUpdates);
 
             finalStatus = "보강완료";
             
@@ -725,7 +732,7 @@ class DashboardManager {
               ];
               if (dailyLog) {
                 dailyLog.reason = `연장 (${extMins}분)`;
-                batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+                batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
               }
               this.app.api.updateBatchInGoogleSheets(batchUpdates);
               student.todayExtensionMins = 0;
@@ -783,11 +790,11 @@ class DashboardManager {
       dailyLog.status = dailyStatus;
       dailyLog.inTime = dailyInTime;
       const attendanceUpdates = [
-        { tab: "dailyLogs", row: dailyLog.row, field: "status", value: dailyStatus },
-        { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: dailyInTime }
+        { tab: "dailyLogs", row: dailyLog.row, field: "status", value: dailyStatus, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time },
+        { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: dailyInTime, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time }
       ];
       if (dailyLog.reason) {
-        attendanceUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+        attendanceUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
       }
       this.app.api.updateBatchInGoogleSheets(attendanceUpdates);
     } else {
@@ -918,8 +925,8 @@ class DashboardManager {
         if (dailyLog) {
           dailyLog.status = "보강완료";
           dailyLog.reason = `보강 조퇴 (${remainingMins}분 남음)`;
-          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "보강완료" });
-          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "보강완료", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
         }
         this.app.api.updateBatchInGoogleSheets(batchUpdates);
         finalStatus = "보강완료";
@@ -940,8 +947,8 @@ class DashboardManager {
         if (dailyLog) {
           dailyLog.status = "수업완료";
           dailyLog.reason = `조퇴 (${remainingMins}분)`;
-          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업완료" });
-          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업완료", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
         }
         this.app.api.updateBatchInGoogleSheets(batchUpdates);
         finalStatus = "수업완료";
@@ -962,8 +969,8 @@ class DashboardManager {
         if (dailyLog) {
           dailyLog.status = "보강완료";
           dailyLog.reason = "보강 수업";
-          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "보강완료" });
-          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "보강완료", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
+          batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
         }
         this.app.api.updateBatchInGoogleSheets(batchUpdates);
         finalStatus = "보강완료";
@@ -989,8 +996,8 @@ class DashboardManager {
           if (dailyLog) {
             dailyLog.status = "수업완료";
             dailyLog.reason = `연장 (${extMins}분)`;
-            batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업완료" });
-            batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason });
+            batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업완료", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
+            batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: dailyLog.reason, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
           }
           this.app.api.updateBatchInGoogleSheets(batchUpdates);
           student.todayExtensionMins = 0;
@@ -998,7 +1005,7 @@ class DashboardManager {
           const batchUpdates = [];
           if (dailyLog) {
             dailyLog.status = "수업완료";
-            batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업완료" });
+            batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업완료", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
           }
           this.app.api.updateBatchInGoogleSheets(batchUpdates);
         }
@@ -1059,14 +1066,11 @@ class DashboardManager {
     student.absentDates = datesList.join(', ');
     student.attendanceStatus = '대기';
     
-    // Add absent minutes to Makeup Bank
-    const durationMins = getClassDuration(student);
-    student.absentMinsAcc = (student.absentMinsAcc || 0) + durationMins;
-    student.makeupMinsRemaining = (student.absentMinsAcc || 0) - (student.makeupMinsDone || 0);
-
-    this.app.api.updateFieldInGoogleSheets(student.row, "absentDates", student.absentDates, "students");
-    this.app.api.updateFieldInGoogleSheets(student.row, "absentMinsAcc", student.absentMinsAcc, "students");
-    this.app.api.updateFieldInGoogleSheets(student.row, "makeupMinsRemaining", student.makeupMinsRemaining, "students");
+    const batchUpdates = [
+      { tab: "students", row: student.row, field: "absentDates", value: student.absentDates },
+      { tab: "students", row: student.row, field: "absentMinsAcc", value: student.absentMinsAcc },
+      { tab: "students", row: student.row, field: "makeupMinsRemaining", value: student.makeupMinsRemaining }
+    ];
 
     const targetDates = getFormattedDateOfWeekday(this.selectedDay);
     const shortDay = this.selectedDay.substring(0, 1);
@@ -1084,11 +1088,9 @@ class DashboardManager {
     if (dailyLog) {
       dailyLog.status = "결석";
       dailyLog.inTime = "";
-      const absentUpdates = [
-        { tab: "dailyLogs", row: dailyLog.row, field: "status", value: "결석" },
-        { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: "" }
-      ];
-      this.app.api.updateBatchInGoogleSheets(absentUpdates);
+      batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "결석", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
+      batchUpdates.push({ tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: "", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
+      this.app.api.updateBatchInGoogleSheets(batchUpdates);
     } else {
       const nextRow = this.app.state.dailyLogs.length > 0 ? Math.max(...this.app.state.dailyLogs.map(l => l.row)) + 1 : 2;
       dailyLog = {
@@ -1108,6 +1110,8 @@ class DashboardManager {
         contents: ""
       };
       this.app.state.dailyLogs.push(dailyLog);
+      
+      this.app.api.updateBatchInGoogleSheets(batchUpdates);
       this.app.api.addDailyLogToGoogleSheets(dailyLog);
     }
 
@@ -1145,9 +1149,9 @@ class DashboardManager {
       dailyLog.inTime = "";
       dailyLog.reason = "휴강";
       const cancelUpdates = [
-        { tab: "dailyLogs", row: dailyLog.row, field: "status", value: "휴강" },
-        { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: "" },
-        { tab: "dailyLogs", row: dailyLog.row, field: "reason", value: "휴강" }
+        { tab: "dailyLogs", row: dailyLog.row, field: "status", value: "휴강", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time },
+        { tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: "", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time },
+        { tab: "dailyLogs", row: dailyLog.row, field: "reason", value: "휴강", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time }
       ];
       this.app.api.updateBatchInGoogleSheets(cancelUpdates);
     } else {

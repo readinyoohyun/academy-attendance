@@ -2367,7 +2367,11 @@ ${textbookSummary}
 
    ※ 읽기 트레이닝 행동 진단 (메타인지 분석법):
    - '처음읽기' 속도 대비 '다시읽기' 속도가 안정적으로 상승했는지 분석해 주세요.
-   - '문제 확인' 단계는 아는 것과 모르는 것을 구분하는 메타인지 구간입니다. 만약 이 단계의 시간(초)이 지나치게 짧거나 빨간불(느림)이 켜져 있다면, 문제를 대충 읽고 보기에서 정답을 유추하는 성급한 풀이 습관이 있음을 날카롭게 지적하고, 이를 해결하기 위한 '1:1 자기 점검 및 끊어읽기(집중독서 3:3) 지도 계획'을 처방에 포함해 주세요.
+   - 처음 읽기 속도가 학년 평균 대비 다소 느린 경우, 단순 지연이 아닌 '글의 흐름을 꼼꼼하게 파악하며 정독하려는 긍정적인 습관 형성 과정'으로 유연하게 해석해 서술해 주세요.
+   - 회차가 진행되면서 발생하는 일시적인 처음읽기 지연(예: 3분 초과 등)은 지문 글자 수 증가에 따른 자연스러운 적응 현상임을 설명에 포함해 주세요.
+   - '문제 확인' 단계는 아는 것과 모르는 것을 구분하는 메타인지 구간입니다. 만약 이 단계의 시간(초)이 지나치게 짧거나 성급하게 넘어간다면, 문제를 대충 읽고 보기에서 정답을 유추하는 풀이 습관이 있음을 날카롭게 지적하고 '1:1 자기 점검 지도'를 처방하세요. 반대로 이 단계에서 느림(빨간색) 표시가 보이는 것은 '스스로의 내용 이해도를 신중하게 점검하고 부족한 부분을 보완하려는 긍정적인 메타인지 작동 흔적'으로 해석하여 적극 격려해 주세요.
+   - 만약 2차시 완료가 자주 보이거나 느림 표시가 과도하게 많다면, 해당 교재의 지문 및 어휘 수준이 학생에게 다소 버겁다는 뜻이므로 무리하게 다음 권으로 승급하기보다 '동일 권수 재독(Repeat)'을 통해 이해력을 단단히 다지는 처방을 내리세요.
+   - **[승급 관련 특화 규칙]**: 읽기 트레이닝 8권을 완료한 경우에는 다음 단계로 일반 읽트 9권이 아니라, 문학과 비문학 지문이 혼합된 **'독해 트레이닝(독트) 1권'**으로 승급할 것을 반드시 처방(학습 계획)에 반영하세요.
 
    - 만약 리포트 형식이 '읽기 트레이닝 단독 분석 리포트' 인 경우:
      * title: "읽기트레이닝 [N]권 분석리포트" (예: 읽기트레이닝 6권 분석리포트) 형태로 작성하세요. [N] 부분은 판독된 교재 권수로 채우세요.
@@ -3005,10 +3009,18 @@ ${textbookSummary}
     if (banner) banner.style.display = "none";
 
     // Auto-save to Google Sheets consultations for synchronization
-    const author = "AI 분석기";
     const student = this.app.state.students.find(s => s.name === name);
     const grade = student ? student.grade : gradeVal;
     
+    // Construct full comprehensive report text for Column E (상담내용/리포트발송/채널발송)
+    let fullReportText = "";
+    if (titleVal) fullReportText += `[${titleVal}]\n`;
+    if (subtitleVal) fullReportText += `${subtitleVal}\n\n`;
+
+    // Add stats summary indicator into Column E
+    const statsSummary = `■ 분석 지표: 지문이해도 ${stats.comprehension || 0}%, 평소읽기 ${stats.readSpeed || 0}자, 어휘 ${stats.vocab || 0}점, 사실 ${stats.fact || 0}점, 추론 ${stats.infer || 0}점, 비판 ${stats.critique || 0}점\n`;
+    fullReportText += statsSummary + textSummary;
+
     const nextRow = this.app.state.consultations.length > 0 ? Math.max(...this.app.state.consultations.map(c => c.row)) + 1 : 2;
     const cleanPeriod = periodVal.replace(/\s+/g, "");
 
@@ -3017,51 +3029,21 @@ ${textbookSummary}
       row: nextRow,
       grade: grade,
       name: name,
+      date: `${dateObj.getFullYear()}.${pad(dateObj.getMonth() + 1)}.${dd}`,
       period: cleanPeriod,
-      author: author,
-      content: `[AI 리포트 저장본: ${titleVal}]\n${subtitleVal}${textSummary}`,
-      needs: `지문이해: ${stats.comprehension}, 속도: ${stats.readSpeed}, 어휘: ${stats.vocab}, 사실: ${stats.fact}, 추론: ${stats.infer}, 비판: ${stats.critique}`
+      author: titleVal || "AI 리포트",
+      content: fullReportText,
+      needs: "", // Column F remains completely empty as requested
+      year: String(dateObj.getFullYear()),
+      month: String(dateObj.getMonth() + 1)
     };
 
-    this.app.state.consultations.push(newConsult);
+    this.app.state.consultations.unshift(newConsult); // Place newest consultation at the top
     this.app.saveState();
     if (this.app.sheetSim) this.app.sheetSim.setData(this.app.state);
     
-    // Send to Google Sheets
+    // Send to Google Sheets (inserts into row 2 of [상담내용/리포트발송/채널발송])
     this.app.api.addConsultationToGoogleSheets(newConsult);
-
-    // 구글 시트 연동 후 추가 기록 (회원분석 M열 및 신규 브리핑 관리 연동)
-    (async () => {
-      try {
-        const webhookUrl = this.app.gasWebhookUrl;
-        if (webhookUrl) {
-          const payload = {
-            action: "uploadLidinAnalysis",
-            row: student.row,
-            name: student.name,
-            images: {},
-            status: "발송완료", // 수집완료와 발송완료 구분
-            textData: {
-              readingSpeed: parseInt(stats.readSpeed, 10) || 0,
-              comprehensionScore: parseInt(stats.comprehension, 10) || 0
-            }
-          };
-          const proxyUrl = window.location.protocol !== 'file:' 
-            ? `/api/sync?url=${encodeURIComponent(webhookUrl)}`
-            : webhookUrl;
-          const fetchOptions = {
-            method: 'POST',
-            body: JSON.stringify(payload)
-          };
-          if (window.location.protocol === 'file:' || proxyUrl === webhookUrl) {
-            fetchOptions.mode = 'no-cors';
-          }
-          await fetch(proxyUrl, fetchOptions);
-        }
-      } catch (e) {
-        console.error("Auto log analysis sent status failed:", e);
-      }
-    })();
 
 this.tempLidinScrapedData = null; // Clear cached Lidin data
     alert("리포트가 성공적으로 저장되었습니다! 구글 시트 상담/리포트 발송 이력과 웹앱 보관함에 동시에 등록되었습니다.");

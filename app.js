@@ -315,7 +315,7 @@ function getClassDuration(student) {
   if (!student) return 60;
   let duration = 60;
   const classesStr = student.classes || "";
-  const match = classesStr.match(/(60|70|90|100|120|180)\s*분/);
+  const match = classesStr.match(/(\d+)\s*분/);
   if (match) {
     duration = parseInt(match[1], 10);
   } else {
@@ -1319,8 +1319,8 @@ class AttendanceApp {
     }
   }
 
-  updateFieldInGoogleSheets(row, field, value, datasetKey = "students") {
-    this.api.updateFieldInGoogleSheets(row, field, value, datasetKey);
+  updateFieldInGoogleSheets(row, field, value, datasetKey = "students", name = "", date = "", time = "") {
+    this.api.updateFieldInGoogleSheets(row, field, value, datasetKey, name, date, time);
   }
 
   updateBatchInGoogleSheets(updates) {

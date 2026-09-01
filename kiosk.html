@@ -670,7 +670,7 @@
       if (!student) return 60;
       let duration = 60;
       const classesStr = student.classes || "";
-      const match = classesStr.match(/(60|70|90|100|120|180)\s*분/);
+      const match = classesStr.match(/(\d+)\s*분/);
       if (match) {
         duration = parseInt(match[1], 10);
       } else {
@@ -1081,25 +1081,80 @@
 
       let filtered = [];
 
-      if (todayLogs.length > 0) {
-        // 1:1 Map with today's daily log rows
-        filtered = todayLogs.map(l => {
-          let studentMatch = state.students.find(s => {
-            if ((s.name || '').replace(/\s+/g, '') !== (l.name || '').replace(/\s+/g, '')) return false;
-            const regTime = s.times && (s.times[todayDay] || s.times[todayDay.substring(0, 1)]);
-            if (regTime) {
-              const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
-              if (parts.includes((l.time || "").trim())) return true;
+      // 1. Gather all unique scheduled students
+      const uniqueNameMap = new Map();
+      state.students.forEach(student => {
+        const name = (student.name || "").trim();
+        if (!name) return;
+        
+        const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
+        const isScheduledToday = regTime && regTime.trim() !== "";
+        
+        let isMakeupToday = false;
+        if (student.makeupDate) {
+          const makeups = student.makeupDate.split(/[\n,\r]+/).map(m => m.trim()).filter(Boolean);
+          const parts = todayDateSlash.split("/");
+          const tM = parseInt(parts[0], 10);
+          const tD = parseInt(parts[1], 10);
+          isMakeupToday = makeups.some(m => {
+            if (m.includes(todayDateSlash) || m.includes(todayDay)) return true;
+            
+            const koMatch = m.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+            if (koMatch) {
+              return parseInt(koMatch[1], 10) === tM && parseInt(koMatch[2], 10) === tD;
             }
+            
+            const numMatch = m.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?/);
+            if (numMatch) {
+              let matchM = parseInt(numMatch[1], 10);
+              let matchD = parseInt(numMatch[2], 10);
+              if (numMatch[4]) {
+                matchM = parseInt(numMatch[2], 10);
+                matchD = parseInt(numMatch[4], 10);
+              }
+              return matchM === tM && matchD === tD;
+            }
+            
             return false;
           });
-          if (!studentMatch) {
-            studentMatch = state.students.find(s => 
-              (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, '')
-            );
+        }
+        
+        const hasDailyLog = state.dailyLogs.some(log => 
+          (log.name || "").trim() === name && 
+          isSameDate(log.date, dailyLogDateStr)
+        );
+        
+        const isActiveToday = isScheduledToday || isMakeupToday || hasDailyLog;
+        if (isActiveToday) {
+          uniqueNameMap.set(student.id, { ...student, dailyLog: null });
+        }
+      });
+
+      // 2. Overlay today's daily log entries
+      todayLogs.forEach(l => {
+        let studentMatch = Array.from(uniqueNameMap.values()).find(s => {
+          if ((s.name || '').replace(/\s+/g, '') !== (l.name || '').replace(/\s+/g, '')) return false;
+          const regTime = s.times && (s.times[todayDay] || s.times[todayDay.substring(0, 1)]);
+          if (regTime) {
+            const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
+            if (parts.includes((l.time || "").trim())) return true;
           }
-          const student = studentMatch ? { ...studentMatch } : {
-            id: 'temp_' + l.row,
+          return false;
+        });
+
+        if (!studentMatch) {
+          studentMatch = Array.from(uniqueNameMap.values()).find(s => 
+            (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, '')
+          );
+        }
+
+        if (studentMatch) {
+          studentMatch.dailyLog = l;
+        } else {
+          const rosterStudent = state.students.find(s => (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, ''));
+          const tempId = rosterStudent ? rosterStudent.id : 'temp_' + l.row;
+          const studentObj = rosterStudent ? { ...rosterStudent, dailyLog: l } : {
+            id: tempId,
             row: -1,
             name: l.name,
             grade: '미등록',
@@ -1107,66 +1162,14 @@
             times: {},
             notes: l.notes,
             absentDates: '',
-            makeupDate: ''
+            makeupDate: '',
+            dailyLog: l
           };
-          student.dailyLog = l;
-          return student;
-        });
-      } else {
-        // Fallback to regular schedule
-        const uniqueNameMap = new Map();
-        state.students.forEach(student => {
-          const name = (student.name || "").trim();
-          if (!name) return;
-          
-          const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
-          const isScheduledToday = regTime && regTime.trim() !== "";
-          
-          let isMakeupToday = false;
-          if (student.makeupDate) {
-            const makeups = student.makeupDate.split(/[\n,\r]+/).map(m => m.trim()).filter(Boolean);
-            const parts = todayDateSlash.split("/");
-            const tM = parseInt(parts[0], 10);
-            const tD = parseInt(parts[1], 10);
-            isMakeupToday = makeups.some(m => {
-              if (m.includes(todayDateSlash) || m.includes(todayDay)) return true;
-              
-              const koMatch = m.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
-              if (koMatch) {
-                return parseInt(koMatch[1], 10) === tM && parseInt(koMatch[2], 10) === tD;
-              }
-              
-              const numMatch = m.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?/);
-              if (numMatch) {
-                let matchM = parseInt(numMatch[1], 10);
-                let matchD = parseInt(numMatch[2], 10);
-                if (numMatch[4]) {
-                  matchM = parseInt(numMatch[2], 10);
-                  matchD = parseInt(numMatch[4], 10);
-                }
-                return matchM === tM && matchD === tD;
-              }
-              
-              return false;
-            });
-          }
-          
-          const hasDailyLog = state.dailyLogs.some(log => 
-            (log.name || "").trim() === name && 
-            isSameDate(log.date, dailyLogDateStr)
-          );
-          
-          const isActiveToday = isScheduledToday || isMakeupToday || hasDailyLog;
-          if (isActiveToday) {
-            uniqueNameMap.set(student.id, student);
-          }
-        });
-        filtered = Array.from(uniqueNameMap.values()).map(student => {
-          const s = { ...student };
-          s.dailyLog = null;
-          return s;
-        });
-      }
+          uniqueNameMap.set(tempId, studentObj);
+        }
+      });
+
+      filtered = Array.from(uniqueNameMap.values());
       // Calculate state counts (대기, 수업중, 수업완료, 결석, 보강, 휴강)
       const countedWait = new Set();
       const countedIn = new Set();
@@ -1640,15 +1643,15 @@
         
         if (config.gasWebhookUrl) {
           const updates = [
-            { tab: "dailyLogs", row: dailyLog.row, field: "status", value: dailyStatus }
+            { tab: "dailyLogs", row: dailyLog.row, field: "status", value: dailyStatus, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time }
           ];
           if (type === 'in') {
-            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: currentTime });
+            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: currentTime, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
             if (targetSlotTime && dailyLog.time !== targetSlotTime) {
-              updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "time", value: targetSlotTime });
+              updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "time", value: targetSlotTime, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
             }
           } else {
-            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "outTime", value: currentTime });
+            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "outTime", value: currentTime, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
             
             // Makeup Bank integration on Kiosk checkout
             const parsedMakeupsForOut = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
@@ -1701,13 +1704,13 @@
                 updates.push({ tab: "students", row: student.row, field: "absentDates", value: student.absentDates });
                 if (isExtendedClass) {
                   updates.push({ tab: "students", row: student.row, field: "todayExtensionMins", value: 0 });
-                  updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: `연장 (${extMins}분)` });
+                  updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: `연장 (${extMins}분)`, name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
                   dailyLog.reason = `연장 (${extMins}분)`;
                   student.todayExtensionMins = 0;
                 }
                 if (isMakeupClass) {
                   updates.push({ tab: "students", row: student.row, field: "makeupCompleted", value: "완료" });
-                  updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: "보강 수업" });
+                  updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "reason", value: "보강 수업", name: dailyLog.name, date: dailyLog.date, time: dailyLog.time });
                   dailyLog.reason = "보강 수업";
                   student.makeupCompleted = '완료';
                 }

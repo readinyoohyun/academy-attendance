@@ -203,7 +203,7 @@ class SheetAPI {
       });
   }
 
-  updateFieldInGoogleSheets(row, field, value, datasetKey = "students") {
+  updateFieldInGoogleSheets(row, field, value, datasetKey = "students", name = "", date = "", time = "") {
     if (!this.gasWebhookUrl) return;
 
     fetch(this.gasWebhookUrl, {
@@ -217,7 +217,10 @@ class SheetAPI {
         tab: datasetKey,
         row: row,
         field: field,
-        value: value
+        value: value,
+        name: name,
+        date: date,
+        time: time
       })
     })
     .then(() => {
@@ -355,6 +358,13 @@ class SheetAPI {
 
   addConsultationToGoogleSheets(evalObj) {
     if (!this.gasWebhookUrl) return;
+    const dateObj = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = String(dateObj.getFullYear());
+    const mm = String(dateObj.getMonth() + 1);
+    const dd = pad(dateObj.getDate());
+    const dateStr = evalObj.date || `${yyyy}.${pad(mm)}.${dd}`;
+
     fetch(this.gasWebhookUrl, {
       method: "POST",
       mode: "no-cors",
@@ -363,10 +373,13 @@ class SheetAPI {
         action: "addConsultation",
         grade: evalObj.grade || "",
         name: evalObj.name,
-        period: evalObj.period,
-        author: evalObj.author,
+        date: dateStr,
+        period: evalObj.period || dateStr,
+        author: evalObj.author || "",
         content: evalObj.content,
-        needs: evalObj.needs
+        needs: evalObj.needs || "",
+        year: evalObj.year || yyyy,
+        month: evalObj.month || mm
       })
     })
     .then(() => {
