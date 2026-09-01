@@ -3254,29 +3254,29 @@ function onEdit(e) {
                     var newAbsencesVal = datesList.join(", ");
                     absentCell.setValue(newAbsencesVal);
                     formatAbsentCell(absentCell, newAbsencesVal);
-                    
-                    // Recalculate absentMinsAcc and makeupMinsRemaining in 전체시간표
-                    var classesStr = String(sheetStudents.getRange(studentRowIndex, 4).getValue() || "");
-                    var grade = String(sheetStudents.getRange(studentRowIndex, 2).getValue() || "");
-                    var baseDuration = 60;
-                    var match = classesStr.match(/(\d+)\s*분/);
-                    if (match) {
-                      baseDuration = parseInt(match[1], 10);
-                    } else {
-                      if (grade.indexOf("중") !== -1 || grade.indexOf("고") !== -1 || grade.indexOf("예비중") !== -1) {
-                        baseDuration = 90;
-                      } else {
-                        baseDuration = 60;
-                      }
-                    }
-                    
-                    var newAbsentMinsAcc = datesList.length * baseDuration;
-                    var currentMakeupMinsDone = parseInt(sheetStudents.getRange(studentRowIndex, 34).getValue() || "0", 10) || 0; // Col AH (34)
-                    var newMakeupMinsRemaining = Math.max(0, newAbsentMinsAcc - currentMakeupMinsDone);
-                    
-                    sheetStudents.getRange(studentRowIndex, 33).setValue(newAbsentMinsAcc); // Col AG (33)
-                    sheetStudents.getRange(studentRowIndex, 35).setValue(newMakeupMinsRemaining); // Col AI (35)
                   }
+                  
+                  // ALWAYS recalculate absentMinsAcc and makeupMinsRemaining in 전체시간표 unconditionally!
+                  var classesStr = String(sheetStudents.getRange(studentRowIndex, 4).getValue() || "");
+                  var grade = String(sheetStudents.getRange(studentRowIndex, 2).getValue() || "");
+                  var baseDuration = 60;
+                  var match = classesStr.match(/(\d+)\s*분/);
+                  if (match) {
+                    baseDuration = parseInt(match[1], 10);
+                  } else {
+                    if (grade.indexOf("중") !== -1 || grade.indexOf("고") !== -1 || grade.indexOf("예비중") !== -1) {
+                      baseDuration = 90;
+                    } else {
+                      baseDuration = 60;
+                    }
+                  }
+                  
+                  var newAbsentMinsAcc = datesList.length * baseDuration;
+                  var currentMakeupMinsDone = parseInt(sheetStudents.getRange(studentRowIndex, 34).getValue() || "0", 10) || 0; // Col AH (34)
+                  var newMakeupMinsRemaining = Math.max(0, newAbsentMinsAcc - currentMakeupMinsDone);
+                  
+                  sheetStudents.getRange(studentRowIndex, 33).setValue(newAbsentMinsAcc); // Col AG (33)
+                  sheetStudents.getRange(studentRowIndex, 35).setValue(newMakeupMinsRemaining); // Col AI (35)
                 } else {
                   var cleanAbsence = formattedAbsence.replace(/~/g, "").replace(/\s+/g, "");
                   var filteredList = [];
@@ -3493,39 +3493,71 @@ function processMakeupBankOnSheetEdit(sheet, r) {
   reasonCell.setValue(reasonVal + " [차감완료]");
 }
 
-// 오늘 출석부를 전부 돌며 수업완료/보강완료 되었으나 보강 은행 차감이 누락된 건을 일괄 정산하는 수동 메뉴 함수
+// 전체시간표의 결석 누적분(AG열) 전수 계산 및 오늘 출석부 보강 은행 차감 일괄 정산 함수
 function runMakeupBankRecovery() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetStudents = ss.getSheetByName("전체시간표") || ss.getSheetByName("전체 시간표");
+  var updatedStudentsCount = 0;
+  
+  // 1. 전체시간표의 결석일자(L열)가 적혀있는 모든 학생의 AG열(결석누적) 및 AI열(보강잔여) 전수 자동 계산
+  if (sheetStudents) {
+    var lastRowSt = sheetStudents.getLastRow();
+    for (var s = 2; s <= lastRowSt; s++) {
+      var absentDatesStr = String(sheetStudents.getRange(s, 12).getValue() || "").trim(); // Col L (결석일자)
+      if (absentDatesStr) {
+        var datesList = absentDatesStr.split(",").map(function(d) { return d.trim(); }).filter(Boolean);
+        if (datesList.length > 0) {
+          var classesStr = String(sheetStudents.getRange(s, 4).getValue() || "");
+          var grade = String(sheetStudents.getRange(s, 2).getValue() || "");
+          var baseDuration = 60;
+          var match = classesStr.match(/(\d+)\s*분/);
+          if (match) {
+            baseDuration = parseInt(match[1], 10);
+          } else {
+            if (grade.indexOf("중") !== -1 || grade.indexOf("고") !== -1 || grade.indexOf("예비중") !== -1) {
+              baseDuration = 90;
+            } else {
+              baseDuration = 60;
+            }
+          }
+          
+          var newAbsentMinsAcc = datesList.length * baseDuration;
+          var currentMakeupMinsDone = parseInt(sheetStudents.getRange(s, 34).getValue() || "0", 10) || 0; // Col AH (34)
+          var newMakeupMinsRemaining = Math.max(0, newAbsentMinsAcc - currentMakeupMinsDone);
+          
+          sheetStudents.getRange(s, 33).setValue(newAbsentMinsAcc); // Col AG (33)
+          sheetStudents.getRange(s, 35).setValue(newMakeupMinsRemaining); // Col AI (35)
+          updatedStudentsCount++;
+        }
+      }
+    }
+  }
+
+  // 2. 오늘 출석부의 보강 수업/연장 차감 일괄 정산
   var sheet = ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘 출석부");
-  if (!sheet) {
-    SpreadsheetApp.getUi().alert("오늘 출석부 시트를 찾을 수 없습니다.");
-    return;
-  }
-  
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) {
-    SpreadsheetApp.getUi().alert("정산할 출결 내역이 없습니다.");
-    return;
-  }
-  
   var count = 0;
-  for (var r = 2; r <= lastRow; r++) {
-    var statusVal = String(sheet.getRange(r, 5).getValue()).trim();
-    var reasonVal = String(sheet.getRange(r, 7).getValue()).trim();
-    
-    if ((statusVal === "수업완료" || statusVal === "보강완료") && reasonVal && reasonVal.indexOf("[차감완료]") === -1) {
-      if (reasonVal === "보강 수업" || reasonVal.indexOf("연장 (") === 0) {
-        try {
-          processMakeupBankOnSheetEdit(sheet, r);
-          count++;
-        } catch (e) {
-          console.error("Row " + r + " recovery error: " + e);
+  if (sheet) {
+    var lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      for (var r = 2; r <= lastRow; r++) {
+        var statusVal = String(sheet.getRange(r, 5).getValue()).trim();
+        var reasonVal = String(sheet.getRange(r, 7).getValue()).trim();
+        
+        if ((statusVal === "수업완료" || statusVal === "보강완료") && reasonVal && reasonVal.indexOf("[차감완료]") === -1) {
+          if (reasonVal === "보강 수업" || reasonVal.indexOf("연장 (") === 0) {
+            try {
+              processMakeupBankOnSheetEdit(sheet, r);
+              count++;
+            } catch (e) {
+              console.error("Row " + r + " recovery error: " + e);
+            }
+          }
         }
       }
     }
   }
   
-  SpreadsheetApp.getUi().alert("오늘 출석부 보강 은행 미차감 정산이 완료되었습니다! (총 " + count + "건 정산 완료) 🍀");
+  SpreadsheetApp.getUi().alert("보강 은행 일괄 정산 완료!\n- 전체시간표 결석 누적분(AG열) 갱신: " + updatedStudentsCount + "명\n- 오늘 출석부 보강 차감 완료: " + count + "건 🍀");
 }
             </pre>
           </div>
