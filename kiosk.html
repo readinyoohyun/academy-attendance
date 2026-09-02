@@ -1081,11 +1081,12 @@
 
       let filtered = [];
 
-      // 1. Gather all unique scheduled students
+      // 1. Gather all unique scheduled students keyed by student name
       const uniqueNameMap = new Map();
       state.students.forEach(student => {
         const name = (student.name || "").trim();
         if (!name) return;
+        const nameKey = name.replace(/\s+/g, '');
         
         const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
         const isScheduledToday = regTime && regTime.trim() !== "";
@@ -1120,41 +1121,29 @@
         }
         
         const hasDailyLog = state.dailyLogs.some(log => 
-          (log.name || "").trim() === name && 
+          (log.name || "").trim().replace(/\s+/g, '') === nameKey && 
           isSameDate(log.date, dailyLogDateStr)
         );
         
         const isActiveToday = isScheduledToday || isMakeupToday || hasDailyLog;
-        if (isActiveToday) {
-          uniqueNameMap.set(student.id, { ...student, dailyLog: null });
+        if (isActiveToday && !uniqueNameMap.has(nameKey)) {
+          uniqueNameMap.set(nameKey, { ...student, dailyLog: null });
         }
       });
 
       // 2. Overlay today's daily log entries
       todayLogs.forEach(l => {
-        let studentMatch = Array.from(uniqueNameMap.values()).find(s => {
-          if ((s.name || '').replace(/\s+/g, '') !== (l.name || '').replace(/\s+/g, '')) return false;
-          const regTime = s.times && (s.times[todayDay] || s.times[todayDay.substring(0, 1)]);
-          if (regTime) {
-            const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
-            if (parts.includes((l.time || "").trim())) return true;
-          }
-          return false;
-        });
+        const logName = (l.name || "").trim();
+        if (!logName) return;
+        const nameKey = logName.replace(/\s+/g, '');
 
-        if (!studentMatch) {
-          studentMatch = Array.from(uniqueNameMap.values()).find(s => 
-            (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, '')
-          );
-        }
-
-        if (studentMatch) {
-          studentMatch.dailyLog = l;
+        if (uniqueNameMap.has(nameKey)) {
+          const existing = uniqueNameMap.get(nameKey);
+          existing.dailyLog = l;
         } else {
-          const rosterStudent = state.students.find(s => (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, ''));
-          const tempId = rosterStudent ? rosterStudent.id : 'temp_' + l.row;
+          const rosterStudent = state.students.find(s => (s.name || '').replace(/\s+/g, '') === nameKey);
           const studentObj = rosterStudent ? { ...rosterStudent, dailyLog: l } : {
-            id: tempId,
+            id: 'temp_' + l.row,
             row: -1,
             name: l.name,
             grade: '미등록',
@@ -1165,7 +1154,7 @@
             makeupDate: '',
             dailyLog: l
           };
-          uniqueNameMap.set(tempId, studentObj);
+          uniqueNameMap.set(nameKey, studentObj);
         }
       });
 
@@ -1290,9 +1279,11 @@
             groups[hourSlot] = [];
           }
           
-          // Allow duplicates with different exactTime (multiple slots)
+          // Ensure no duplicate student cards within the same hour slot
+          const cleanStudentName = (student.name || '').replace(/\s+/g, '');
           const alreadyAdded = groups[hourSlot].some(item => 
-            item.student.id === student.id && item.exactTime === rawSlot
+            ((item.student.name || '').replace(/\s+/g, '') === cleanStudentName) || 
+            (item.student.id === student.id && item.exactTime === rawSlot)
           );
           if (!alreadyAdded) {
             groups[hourSlot].push({ student, log, exactTime: rawSlot });
