@@ -627,10 +627,64 @@
       return 999;
     }
 
+    // 시간 데이터 포맷 표준 정규화 함수 (14:00:00, 2:00, 2시, 수 2시 -> 14:00 통일)
+    function normalizeTimeString(rawTime) {
+      if (!rawTime) return "";
+      let str = String(rawTime).trim();
+      
+      // 1. 초 단위 포함 포맷 정규화 (예: 14:00:00 -> 14:00, 02:00:00 -> 14:00)
+      const secMatch = str.match(/^(\d{1,2}):(\d{2}):\d{2}/);
+      if (secMatch) {
+        let h = parseInt(secMatch[1], 10);
+        if (h >= 1 && h <= 8) h += 12;
+        return `${String(h).padStart(2, '0')}:${secMatch[2]}`;
+      }
+      
+      // 2. 표준 HH:mm 포맷 정규화 (예: 14:00, 02:00, 2:00 -> 14:00)
+      const standardMatch = str.match(/^(\d{1,2}):(\d{2})$/);
+      if (standardMatch) {
+        let h = parseInt(standardMatch[1], 10);
+        if (h >= 1 && h <= 8) h += 12;
+        return `${String(h).padStart(2, '0')}:${standardMatch[2]}`;
+      }
+
+      // 3. 한글 포함 포맷 정규화 (예: "수 2시", "오후 2시", "14시", "2시 30분")
+      const isPM = str.includes("오후") || str.includes("저녁");
+      const isAM = str.includes("오전");
+      const koMatch = str.match(/(\d{1,2})\s*시(?:\s*(\d{1,2})분?)?/);
+      if (koMatch) {
+        let h = parseInt(koMatch[1], 10);
+        let m = koMatch[2] ? parseInt(koMatch[2], 10) : 0;
+        if (isPM && h < 12) h += 12;
+        else if (!isAM && h >= 1 && h <= 8) h += 12;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      }
+
+      // 4. 기타 구분자 포맷 정규화 (예: "2.40", "14.40")
+      const genericMatch = str.match(/(\d{1,2})[:시\.](\d{2})/);
+      if (genericMatch) {
+        let h = parseInt(genericMatch[1], 10);
+        if (isPM && h < 12) h += 12;
+        else if (!isAM && h >= 1 && h <= 8) h += 12;
+        return `${String(h).padStart(2, '0')}:${genericMatch[2]}`;
+      }
+
+      const singleHourMatch = str.match(/(\d{1,2})/);
+      if (singleHourMatch) {
+        let h = parseInt(singleHourMatch[1], 10);
+        if (isPM && h < 12) h += 12;
+        else if (!isAM && h >= 1 && h <= 8) h += 12;
+        return `${String(h).padStart(2, '0')}:00`;
+      }
+
+      return str;
+    }
+
     // Convert time string like "14:30" to total minutes from midnight for sorting
     function timeStringToMinutes(timeStr) {
       if (!timeStr || timeStr === "시간 외") return 9999;
-      const parts = timeStr.trim().split(":");
+      const normalized = normalizeTimeString(timeStr);
+      const parts = normalized.split(":");
       if (parts.length === 2) {
         const hrs = parseInt(parts[0], 10);
         const mins = parseInt(parts[1], 10);
@@ -690,10 +744,12 @@
         const todayDateSlash = getTodayDateStr();
         const shortDay = todayDay.substring(0, 1);
         const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
+        const studentScheduledTime = student.scheduledTime ? normalizeTimeString(student.scheduledTime) : "";
         
-        const dailyLog = state.dailyLogs.find(log => 
+        const dailyLog = student.dailyLog || state.dailyLogs.find(log => 
           (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
-          isSameDate(log.date, dailyLogDateStr)
+          isSameDate(log.date, dailyLogDateStr) &&
+          (!studentScheduledTime || normalizeTimeString(log.time) === studentScheduledTime)
         );
         if (dailyLog && dailyLog.reason && dailyLog.reason.startsWith("연장 (")) {
           const rMatch = dailyLog.reason.match(/\d+/);
@@ -1081,53 +1137,49 @@
 
       let filtered = [];
 
-      // 1. Gather all unique scheduled students keyed by student name
-      const uniqueNameMap = new Map();
+      // 1. Gather all unique scheduled student slots keyed by `${cleanName}_${normTime}`
+      const uniqueStudentTimeMap = new Map();
+
       state.students.forEach(student => {
         const name = (student.name || "").trim();
         if (!name) return;
-        const nameKey = name.replace(/\s+/g, '');
+        const cleanName = name.replace(/\s+/g, '');
         
-        const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
-        const isScheduledToday = regTime && regTime.trim() !== "";
-        
-        let isMakeupToday = false;
-        if (student.makeupDate) {
-          const makeups = student.makeupDate.split(/[\n,\r]+/).map(m => m.trim()).filter(Boolean);
-          const parts = todayDateSlash.split("/");
-          const tM = parseInt(parts[0], 10);
-          const tD = parseInt(parts[1], 10);
-          isMakeupToday = makeups.some(m => {
-            if (m.includes(todayDateSlash) || m.includes(todayDay)) return true;
-            
-            const koMatch = m.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
-            if (koMatch) {
-              return parseInt(koMatch[1], 10) === tM && parseInt(koMatch[2], 10) === tD;
+        // 1-1. Check regular scheduled times for today
+        const regTimeRaw = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
+        if (regTimeRaw && regTimeRaw.trim() !== "") {
+          const parts = regTimeRaw.split(/[,/; ]+/).map(t => normalizeTimeString(t)).filter(Boolean);
+          parts.forEach(normTime => {
+            const uniqueKey = `${cleanName}_${normTime}`;
+            if (!uniqueStudentTimeMap.has(uniqueKey)) {
+              uniqueStudentTimeMap.set(uniqueKey, {
+                ...student,
+                scheduledTime: normTime,
+                uniqueKey: uniqueKey,
+                dailyLog: null
+              });
             }
-            
-            const numMatch = m.match(/(\d{1,4})[\/\.-](\d{1,2})([\/\.-](\d{1,2}))?/);
-            if (numMatch) {
-              let matchM = parseInt(numMatch[1], 10);
-              let matchD = parseInt(numMatch[2], 10);
-              if (numMatch[4]) {
-                matchM = parseInt(numMatch[2], 10);
-                matchD = parseInt(numMatch[4], 10);
-              }
-              return matchM === tM && matchD === tD;
-            }
-            
-            return false;
           });
         }
-        
-        const hasDailyLog = state.dailyLogs.some(log => 
-          (log.name || "").trim().replace(/\s+/g, '') === nameKey && 
-          isSameDate(log.date, dailyLogDateStr)
-        );
-        
-        const isActiveToday = isScheduledToday || isMakeupToday || hasDailyLog;
-        if (isActiveToday && !uniqueNameMap.has(nameKey)) {
-          uniqueNameMap.set(nameKey, { ...student, dailyLog: null });
+
+        // 1-2. Check makeup classes for today
+        if (student.makeupDate) {
+          const makeups = parseMultipleMakeups(student.makeupDate);
+          makeups.forEach(m => {
+            if (m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)) {
+              const normTime = normalizeTimeString(m.time) || "14:00";
+              const uniqueKey = `${cleanName}_${normTime}`;
+              if (!uniqueStudentTimeMap.has(uniqueKey)) {
+                uniqueStudentTimeMap.set(uniqueKey, {
+                  ...student,
+                  scheduledTime: normTime,
+                  uniqueKey: uniqueKey,
+                  isMakeupSlot: true,
+                  dailyLog: null
+                });
+              }
+            }
+          });
         }
       });
 
@@ -1135,14 +1187,30 @@
       todayLogs.forEach(l => {
         const logName = (l.name || "").trim();
         if (!logName) return;
-        const nameKey = logName.replace(/\s+/g, '');
+        const cleanName = logName.replace(/\s+/g, '');
+        const normLogTime = normalizeTimeString(l.time);
+        const uniqueKey = `${cleanName}_${normLogTime}`;
 
-        if (uniqueNameMap.has(nameKey)) {
-          const existing = uniqueNameMap.get(nameKey);
-          existing.dailyLog = l;
+        if (uniqueStudentTimeMap.has(uniqueKey)) {
+          uniqueStudentTimeMap.get(uniqueKey).dailyLog = l;
         } else {
-          const rosterStudent = state.students.find(s => (s.name || '').replace(/\s+/g, '') === nameKey);
-          const studentObj = rosterStudent ? { ...rosterStudent, dailyLog: l } : {
+          // If student has a roster record matching name and this time, prioritize that row!
+          const matchingRoster = state.students.find(s => {
+            if ((s.name || '').replace(/\s+/g, '') !== cleanName) return false;
+            const regTimeRaw = s.times && (s.times[todayDay] || s.times[todayDay.substring(0, 1)]);
+            if (regTimeRaw) {
+              const parts = regTimeRaw.split(/[,/; ]+/).map(t => normalizeTimeString(t)).filter(Boolean);
+              if (parts.includes(normLogTime)) return true;
+            }
+            return false;
+          }) || state.students.find(s => (s.name || '').replace(/\s+/g, '') === cleanName);
+
+          const studentObj = matchingRoster ? {
+            ...matchingRoster,
+            scheduledTime: normLogTime,
+            uniqueKey: uniqueKey,
+            dailyLog: l
+          } : {
             id: 'temp_' + l.row,
             row: -1,
             name: l.name,
@@ -1152,13 +1220,15 @@
             notes: l.notes,
             absentDates: '',
             makeupDate: '',
+            scheduledTime: normLogTime,
+            uniqueKey: uniqueKey,
             dailyLog: l
           };
-          uniqueNameMap.set(nameKey, studentObj);
+          uniqueStudentTimeMap.set(uniqueKey, studentObj);
         }
       });
 
-      filtered = Array.from(uniqueNameMap.values());
+      filtered = Array.from(uniqueStudentTimeMap.values());
       // Calculate state counts (대기, 수업중, 수업완료, 결석, 보강, 휴강)
       const countedWait = new Set();
       const countedIn = new Set();
@@ -1178,7 +1248,7 @@
         }
         
         const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
-        const isMakeup = parsedMakeups.some(m => 
+        const isMakeup = student.isMakeupSlot || parsedMakeups.some(m => 
           m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
         );
         
@@ -1202,12 +1272,12 @@
           }
         }
 
-        if (status === "대기") countedWait.add(student.id);
-        else if (status === "보강") countedMakeup.add(student.id);
-        else if (status === "수업중") countedIn.add(student.id);
-        else if (status === "수업완료") countedOut.add(student.id);
-        else if (status === "결석") countedAbsent.add(student.id);
-        else if (status === "휴강") countedCancelled.add(student.id);
+        if (status === "대기") countedWait.add(student.uniqueKey || student.id);
+        else if (status === "보강") countedMakeup.add(student.uniqueKey || student.id);
+        else if (status === "수업중") countedIn.add(student.uniqueKey || student.id);
+        else if (status === "수업완료") countedOut.add(student.uniqueKey || student.id);
+        else if (status === "결석") countedAbsent.add(student.uniqueKey || student.id);
+        else if (status === "휴강") countedCancelled.add(student.uniqueKey || student.id);
       });
 
       // Display counts in Kiosk Summary Bar
@@ -1222,73 +1292,27 @@
       const groups = {};
       
       filtered.forEach(student => {
-        let rawSlots = [];
+        const log = student.dailyLog;
+        const exactTime = student.scheduledTime || (log ? normalizeTimeString(log.time) : "시간 외");
         
-        if (student.dailyLog) {
-          rawSlots.push(student.dailyLog.time.trim());
-        } else {
-          // 1. Collect scheduled times
-          const parsedMakeups = student.makeupDate ? parseMultipleMakeups(student.makeupDate) : [];
-          const activeMakeup = parsedMakeups.find(m => 
-            m && m.day === todayDay && (m.isWeekly || m.formattedSlash === todayDateSlash)
-          );
-          if (activeMakeup && activeMakeup.time) {
-            rawSlots.push(activeMakeup.time.trim());
-          } else {
-            const regTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]);
-            if (regTime && regTime.trim() !== "") {
-              const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
-              parts.forEach(p => rawSlots.push(p));
-            }
+        let hourSlot = "시간 외";
+        if (exactTime !== "시간 외") {
+          const match = exactTime.match(/^(\d{1,2})/);
+          if (match) {
+            const hour = parseInt(match[1], 10);
+            hourSlot = `${String(hour).padStart(2, '0')}:00`;
           }
-          
-          // 2. Collect actual daily log times for today
-          const studentLogsForToday = state.dailyLogs.filter(l => 
-            (l.name || "").trim() === (student.name || "").trim() && 
-            isSameDate(l.date, dailyLogDateStr)
-          );
-          studentLogsForToday.forEach(l => {
-            if (l.time) rawSlots.push(l.time.trim());
-          });
-        }
-
-        if (rawSlots.length === 0) {
-          rawSlots.push("시간 외");
         }
         
-        rawSlots = Array.from(new Set(rawSlots));
+        if (!groups[hourSlot]) {
+          groups[hourSlot] = [];
+        }
         
-        rawSlots.forEach(rawSlot => {
-          // Find log matching name, date, and specific time slot
-          const log = student.dailyLog || [...state.dailyLogs].reverse().find(l => 
-            (l.name || "").trim() === (student.name || "").trim() && 
-            isSameDate(l.date, dailyLogDateStr) &&
-            (rawSlot === "시간 외" || (l.time || "").trim() === rawSlot.trim())
-          );
-          
-          let hourSlot = "시간 외";
-          if (rawSlot !== "시간 외") {
-            const match = rawSlot.match(/^(\d{1,2})/);
-            if (match) {
-              const hour = parseInt(match[1], 10);
-              hourSlot = `${String(hour).padStart(2, '0')}:00`;
-            }
-          }
-          
-          if (!groups[hourSlot]) {
-            groups[hourSlot] = [];
-          }
-          
-          // Ensure no duplicate student cards within the same hour slot
-          const cleanStudentName = (student.name || '').replace(/\s+/g, '');
-          const alreadyAdded = groups[hourSlot].some(item => 
-            ((item.student.name || '').replace(/\s+/g, '') === cleanStudentName) || 
-            (item.student.id === student.id && item.exactTime === rawSlot)
-          );
-          if (!alreadyAdded) {
-            groups[hourSlot].push({ student, log, exactTime: rawSlot });
-          }
-        });
+        // Prevent duplicate cards of same uniqueKey in the same hour slot
+        const alreadyAdded = groups[hourSlot].some(item => item.uniqueKey === student.uniqueKey);
+        if (!alreadyAdded) {
+          groups[hourSlot].push({ student, log, exactTime, uniqueKey: student.uniqueKey });
+        }
       });
       // Sort hourly slots chronologically
       const sortedSlots = Object.keys(groups).sort((a, b) => {
@@ -1432,15 +1456,16 @@
       const shortDay = todayDay.substring(0, 1);
       const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
 
+      const normScheduledTime = normalizeTimeString(scheduledTime);
       if (currentStatus === "대기" || currentStatus === "보강") {
         selectedStudent = student;
-        processKioskAttendance("in", scheduledTime);
+        processKioskAttendance("in", normScheduledTime);
       } 
       else if (currentStatus === "수업중") {
-        const log = [...state.dailyLogs].reverse().find(l => 
+        const log = student.dailyLog || [...state.dailyLogs].reverse().find(l => 
           (l.name || "").trim() === (student.name || "").trim() && 
           isSameDate(l.date, dailyLogDateStr) &&
-          (!scheduledTime || scheduledTime === "시간 외" || (l.time || "").trim() === scheduledTime.trim())
+          (!normScheduledTime || normScheduledTime === "시간 외" || normalizeTimeString(l.time) === normScheduledTime)
         );
 
         if (log && log.inTime) {
@@ -1554,23 +1579,24 @@
       const currentTime = `${s.hour}:${s.minute}`;
       
       // Determine the target time slot (prioritize scheduledTime over registered student time)
-      let targetSlotTime = scheduledTime && scheduledTime !== "시간 외" ? scheduledTime.trim() : "";
+      let targetSlotTime = scheduledTime && scheduledTime !== "시간 외" ? normalizeTimeString(scheduledTime) : "";
       if (!targetSlotTime) {
-        targetSlotTime = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]) ? (student.times[todayDay] || student.times[todayDay.substring(0, 1)]).trim() : currentTime;
+        const regRaw = student.times && (student.times[todayDay] || student.times[todayDay.substring(0, 1)]) ? (student.times[todayDay] || student.times[todayDay.substring(0, 1)]) : "";
+        targetSlotTime = regRaw ? normalizeTimeString(regRaw.split(/[,/; ]+/)[0]) : currentTime;
       }
       
       let dailyStatus = type === 'in' ? '수업중' : '수업완료';
 
       // Find if daily log exists.
       // For check-out ('out'), search for any log for today that is currently '수업중' first.
-      let dailyLog = null;
-      if (type === 'out') {
+      let dailyLog = selectedStudent.dailyLog || null;
+      if (type === 'out' && !dailyLog) {
         // Prioritize matching by student name, date, status, AND scheduledTime (if provided)
-        if (scheduledTime && scheduledTime !== "시간 외") {
+        if (targetSlotTime && targetSlotTime !== "시간 외") {
           dailyLog = [...state.dailyLogs].reverse().find(log => 
             (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
             isSameDate(log.date, dailyLogDateStr) &&
-            (log.time || '').trim() === scheduledTime.trim() &&
+            normalizeTimeString(log.time) === targetSlotTime &&
             (log.status === "수업중" || log.status === "수업 중" || log.status === "보강 수업중")
           );
         }
@@ -1588,7 +1614,7 @@
       if (!dailyLog) {
         dailyLog = [...state.dailyLogs].reverse().find(log => 
           (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
-          log.time.trim() === targetSlotTime.trim() && 
+          normalizeTimeString(log.time) === targetSlotTime && 
           isSameDate(log.date, dailyLogDateStr)
         );
       }

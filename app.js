@@ -310,6 +310,59 @@ function parseAbsentDatePure(absentStr) {
   return null;
 }
 
+// 시간 데이터 포맷 표준 정규화 함수 (14:00:00, 2:00, 2시, 수 2시 -> 14:00 통일)
+function normalizeTimeString(rawTime) {
+  if (!rawTime) return "";
+  let str = String(rawTime).trim();
+  
+  // 1. 초 단위 포함 포맷 정규화 (예: 14:00:00 -> 14:00, 02:00:00 -> 14:00)
+  const secMatch = str.match(/^(\d{1,2}):(\d{2}):\d{2}/);
+  if (secMatch) {
+    let h = parseInt(secMatch[1], 10);
+    if (h >= 1 && h <= 8) h += 12;
+    return `${String(h).padStart(2, '0')}:${secMatch[2]}`;
+  }
+  
+  // 2. 표준 HH:mm 포맷 정규화 (예: 14:00, 02:00, 2:00 -> 14:00)
+  const standardMatch = str.match(/^(\d{1,2}):(\d{2})$/);
+  if (standardMatch) {
+    let h = parseInt(standardMatch[1], 10);
+    if (h >= 1 && h <= 8) h += 12;
+    return `${String(h).padStart(2, '0')}:${standardMatch[2]}`;
+  }
+
+  // 3. 한글 포함 포맷 정규화 (예: "수 2시", "오후 2시", "14시", "2시 30분")
+  const isPM = str.includes("오후") || str.includes("저녁");
+  const isAM = str.includes("오전");
+  const koMatch = str.match(/(\d{1,2})\s*시(?:\s*(\d{1,2})분?)?/);
+  if (koMatch) {
+    let h = parseInt(koMatch[1], 10);
+    let m = koMatch[2] ? parseInt(koMatch[2], 10) : 0;
+    if (isPM && h < 12) h += 12;
+    else if (!isAM && h >= 1 && h <= 8) h += 12;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  // 4. 기타 구분자 포맷 정규화 (예: "2.40", "14.40")
+  const genericMatch = str.match(/(\d{1,2})[:시\.](\d{2})/);
+  if (genericMatch) {
+    let h = parseInt(genericMatch[1], 10);
+    if (isPM && h < 12) h += 12;
+    else if (!isAM && h >= 1 && h <= 8) h += 12;
+    return `${String(h).padStart(2, '0')}:${genericMatch[2]}`;
+  }
+
+  const singleHourMatch = str.match(/(\d{1,2})/);
+  if (singleHourMatch) {
+    let h = parseInt(singleHourMatch[1], 10);
+    if (isPM && h < 12) h += 12;
+    else if (!isAM && h >= 1 && h <= 8) h += 12;
+    return `${String(h).padStart(2, '0')}:00`;
+  }
+
+  return str;
+}
+
 // Helper: Get student class duration in minutes based on classes string or grade
 function getClassDuration(student) {
   if (!student) return 60;
@@ -337,10 +390,12 @@ function getClassDuration(student) {
     const todayDay = dayNames[today.getDay()];
     const shortDay = todayDay.substring(0, 1);
     const dailyLogDateStr = `${todayDateSlash}${shortDay}`;
+    const studentScheduledTime = student.scheduledTime ? normalizeTimeString(student.scheduledTime) : "";
     
-    const dailyLog = app.state.dailyLogs.find(log => 
+    const dailyLog = student.dailyLog || app.state.dailyLogs.find(log => 
       (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
-      (log.date || '').trim() === dailyLogDateStr.trim()
+      (log.date || '').trim() === dailyLogDateStr.trim() &&
+      (!studentScheduledTime || normalizeTimeString(log.time) === studentScheduledTime)
     );
     if (dailyLog && dailyLog.reason && dailyLog.reason.startsWith("연장 (")) {
       const rMatch = dailyLog.reason.match(/\d+/);
@@ -812,10 +867,11 @@ class AttendanceApp {
         }
       }
 
+      const normActiveTime = normalizeTimeString(activeTimeOfRow);
       const dailyLog = [...this.state.dailyLogs].reverse().find(l => 
         ((l && l.name) || '').replace(/\s+/g, '') === ((student && student.name) || '').replace(/\s+/g, '') && 
         ((l && l.date) || '').trim() === dailyLogDateStr.trim() &&
-        (!activeTimeOfRow || !l.time || l.time.trim() === activeTimeOfRow.trim())
+        (!normActiveTime || !l.time || normalizeTimeString(l.time) === normActiveTime)
       );
       if (dailyLog) {
         const norm = getNormalizedStatus(dailyLog.status);

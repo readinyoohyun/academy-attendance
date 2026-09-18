@@ -49,6 +49,7 @@ class DashboardManager {
   }
 
   getActiveStudentsForTime(timeStr) {
+    const normTimeStr = typeof normalizeTimeString === 'function' ? normalizeTimeString(timeStr) : String(timeStr).trim();
     const dates = getFormattedDateOfWeekday(this.selectedDay);
     const shortDay = this.selectedDay.substring(0, 1);
     const dailyLogDateStr = `${dates.slashFormat}${shortDay}`;
@@ -74,15 +75,16 @@ class DashboardManager {
         const parsedMakeups = parseMultipleMakeups(student.makeupDate);
         isMakeupTodayAndTime = parsedMakeups.some(parsed => {
           const isDateMatch = parsed && (parsed.isWeekly || parsed.formattedSlash === dates.slashFormat || parsed.formattedDot === dates.dotFormat);
-          return parsed && parsed.day === this.selectedDay && parsed.time === timeStr && isDateMatch;
+          const parsedTime = typeof normalizeTimeString === 'function' ? normalizeTimeString(parsed.time) : parsed.time;
+          return parsed && parsed.day === this.selectedDay && parsedTime === normTimeStr && isDateMatch;
         });
       }
       
       const regularTimeStr = student.times && (student.times[this.selectedDay] || student.times[this.selectedDay.substring(0, 1)]);
       let isRegularActive = false;
       if (regularTimeStr) {
-        const parts = regularTimeStr.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
-        isRegularActive = parts.includes(timeStr);
+        const parts = regularTimeStr.split(/[,/; ]+/).map(t => typeof normalizeTimeString === 'function' ? normalizeTimeString(t) : t.trim()).filter(Boolean);
+        isRegularActive = parts.includes(normTimeStr);
       }
       
       let hasMakeupToday = false;
@@ -98,23 +100,32 @@ class DashboardManager {
     });
 
     scheduledStudents.forEach(st => {
-      uniqueStudentsMap.set(st.id, { ...st, dailyLog: null });
+      const cleanName = (st.name || '').replace(/\s+/g, '');
+      const uniqueKey = `${cleanName}_${normTimeStr}`;
+      uniqueStudentsMap.set(uniqueKey, { ...st, scheduledTime: normTimeStr, uniqueKey, dailyLog: null });
     });
 
     // 2. Process logs for this slot
-    const logsForSlot = todayLogs.filter(l => (l.time || '').trim() === timeStr.trim());
+    const logsForSlot = todayLogs.filter(l => (typeof normalizeTimeString === 'function' ? normalizeTimeString(l.time) : (l.time || '').trim()) === normTimeStr);
     logsForSlot.forEach(l => {
-      let studentMatch = Array.from(uniqueStudentsMap.values()).find(s => {
-        if ((s.name || '').replace(/\s+/g, '') !== (l.name || '').replace(/\s+/g, '')) return false;
-        return true;
-      });
+      const cleanName = (l.name || '').replace(/\s+/g, '');
+      const uniqueKey = `${cleanName}_${normTimeStr}`;
 
-      if (studentMatch) {
-        studentMatch.dailyLog = l;
+      if (uniqueStudentsMap.has(uniqueKey)) {
+        uniqueStudentsMap.get(uniqueKey).dailyLog = l;
       } else {
-        const rosterStudent = this.app.state.students.find(s => (s.name || '').replace(/\s+/g, '') === (l.name || '').replace(/\s+/g, ''));
+        const rosterStudent = this.app.state.students.find(s => {
+          if ((s.name || '').replace(/\s+/g, '') !== cleanName) return false;
+          const regTime = s.times && (s.times[this.selectedDay] || s.times[this.selectedDay.substring(0, 1)]);
+          if (regTime) {
+            const parts = regTime.split(/[,/; ]+/).map(t => typeof normalizeTimeString === 'function' ? normalizeTimeString(t) : t.trim()).filter(Boolean);
+            if (parts.includes(normTimeStr)) return true;
+          }
+          return false;
+        }) || this.app.state.students.find(s => (s.name || '').replace(/\s+/g, '') === cleanName);
+
         const tempId = rosterStudent ? rosterStudent.id : 'temp_' + l.row;
-        const studentObj = rosterStudent ? { ...rosterStudent, dailyLog: l } : {
+        const studentObj = rosterStudent ? { ...rosterStudent, scheduledTime: normTimeStr, uniqueKey, dailyLog: l } : {
           id: tempId,
           row: -1,
           name: l.name,
@@ -124,9 +135,11 @@ class DashboardManager {
           notes: l.notes,
           absentDates: '',
           makeupDate: '',
+          scheduledTime: normTimeStr,
+          uniqueKey,
           dailyLog: l
         };
-        uniqueStudentsMap.set(tempId, studentObj);
+        uniqueStudentsMap.set(uniqueKey, studentObj);
       }
     });
 
@@ -150,14 +163,15 @@ class DashboardManager {
     this.app.state.students.forEach(st => {
       const regTime = st.times && (st.times[this.selectedDay] || st.times[this.selectedDay.substring(0, 1)]);
       if (regTime && regTime.trim() !== "") {
-        const parts = regTime.split(/[,/; ]+/).map(t => t.trim()).filter(Boolean);
+        const parts = regTime.split(/[,/; ]+/).map(t => typeof normalizeTimeString === 'function' ? normalizeTimeString(t) : t.trim()).filter(Boolean);
         parts.forEach(p => activeTimesSet.add(p));
       }
       if (st.makeupDate) {
         const parsedMakeups = parseMultipleMakeups(st.makeupDate);
         parsedMakeups.forEach(parsed => {
           if (parsed && parsed.day === this.selectedDay && (parsed.isWeekly || parsed.formattedSlash === targetDates.slashFormat || parsed.formattedDot === targetDates.dotFormat)) {
-            activeTimesSet.add(parsed.time.trim());
+            const normM = typeof normalizeTimeString === 'function' ? normalizeTimeString(parsed.time) : parsed.time.trim();
+            if (normM) activeTimesSet.add(normM);
           }
         });
       }
@@ -165,7 +179,8 @@ class DashboardManager {
 
     this.app.state.dailyLogs.forEach(l => {
       if ((l.date || '').trim() === dailyLogDateStr.trim() && l.time && l.status && l.status !== '대기') {
-        activeTimesSet.add(l.time.trim());
+        const normL = typeof normalizeTimeString === 'function' ? normalizeTimeString(l.time) : l.time.trim();
+        if (normL) activeTimesSet.add(normL);
       }
     });
 
