@@ -694,9 +694,11 @@
     const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 
     // App State
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec";
+
     const state = {
       config: {
-        gasWebhookUrl: localStorage.getItem("gas_webhook_url") || "",
+        gasWebhookUrl: localStorage.getItem("gas_webhook_url") || DEFAULT_GAS_URL,
         academyName: localStorage.getItem("academy_name") || "리드인",
         logoUrl: localStorage.getItem("logo_url") || ""
       },
@@ -731,6 +733,12 @@
 
     // 1. App Initialization
     window.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramGas = urlParams.get("gas_url");
+      if (paramGas) {
+        state.config.gasWebhookUrl = decodeURIComponent(paramGas);
+        localStorage.setItem("gas_webhook_url", state.config.gasWebhookUrl);
+      }
       initClock();
       loadCachedData();
       fetchFreshData();
