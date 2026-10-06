@@ -126,70 +126,79 @@
   </header>
 
 
-  <!-- ================= VIEW 1: STUDENT LOGIN / SELECTION ================= -->
-  <section id="viewLogin" class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+  <!-- ================= VIEW 1: SINGLE DIRECT LOGIN SCREEN ================= -->
+  <section id="viewLogin" class="flex-1 max-w-xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
     
-    <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-xl shadow-slate-200/50 border border-slate-100">
+    <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-2xl shadow-indigo-100/50 border border-slate-200">
       
       <!-- Greeting Banner -->
       <div class="text-center mb-8">
-        <span class="inline-block p-3 rounded-2xl bg-indigo-50 text-indigo-600 text-3xl mb-3 shadow-inner">
-          👋
+        <span class="inline-block p-4 rounded-3xl bg-indigo-50 text-indigo-600 text-4xl mb-3 shadow-inner">
+          📖
         </span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">환영합니다! 오늘 공부할 학생을 선택해 주세요</h2>
-        <p class="text-sm sm:text-base text-slate-500 mt-2">
-          전체 시간표 기준으로 <span id="todayDayBadge" class="font-bold text-indigo-600 underline">오늘</span> 등원 예정인 학생 명단입니다.
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">학생 학습 라운지 로그인</h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-2">
+          이름과 학년을 입력하고 오늘의 독서 미션을 시작하세요!
         </p>
       </div>
 
-      <!-- Grade Filter Tabs -->
-      <div class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-6 no-scrollbar text-sm font-semibold">
-        <button class="grade-tab px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-sm transition" data-grade="ALL">전체</button>
-        <button class="grade-tab px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초등">초등 전체</button>
-        <button class="grade-tab px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="중등">중등 전체</button>
-        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초1">초1</button>
-        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초2">초2</button>
-        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초3">초3</button>
-        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초4">초4</button>
-        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초5">초5</button>
-        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초6">초6</button>
-        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="중1">중1</button>
-        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="중2">중2</button>
-        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="중3">중3</button>
-      </div>
-
-      <!-- Quick Search Bar & Manual Login Toggle -->
-      <div class="flex flex-col sm:flex-row items-center gap-3 mb-6">
-        <div class="relative flex-1 w-full">
-          <input type="text" id="studentSearchInput" placeholder="이름 또는 초성을 검색하세요 (예: 홍길동, ㅎㄱㄷ)"
-                 class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" />
-          <svg class="w-5 h-5 text-slate-400 absolute left-4 top-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+      <!-- Single Direct Login Form -->
+      <form onsubmit="handleDirectLogin(event)" class="space-y-5">
+        
+        <!-- Student Name Input with Datalist Autocomplete -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">학생 이름 *</label>
+          <div class="relative">
+            <input type="text" id="loginNameInput" list="studentsDatalist" placeholder="이름을 입력하세요 (예: 홍길동)" required
+                   oninput="handleNameInputAutoMatch()"
+                   class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" />
+            <svg class="w-5 h-5 text-slate-400 absolute left-4 top-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <!-- Datalist for existing student auto-matching -->
+          <datalist id="studentsDatalist"></datalist>
+          <p id="studentMatchedBadge" class="hidden text-xs text-emerald-600 font-bold mt-1.5 flex items-center gap-1">
+            <span>✓ 기존 등록 학생 확인됨</span>
+            <span id="studentMatchedInfo" class="text-slate-500 font-normal"></span>
+          </p>
         </div>
 
-        <button onclick="openManualLoginModal()" 
-                class="w-full sm:w-auto px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-2xl transition whitespace-nowrap flex items-center justify-center gap-2">
-          <span>명단에 없나요? 직접 로그인</span>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
+        <!-- Grade Selection -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">학년 선택 *</label>
+          <select id="loginGradeSelect" required
+                  class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+            <option value="초1">초등학교 1학년 (초1)</option>
+            <option value="초2">초등학교 2학년 (초2)</option>
+            <option value="초3">초등학교 3학년 (초3)</option>
+            <option value="초4">초등학교 4학년 (초4)</option>
+            <option value="초5">초등학교 5학년 (초5)</option>
+            <option value="초6">초등학교 6학년 (초6)</option>
+            <option value="중1" selected>중학교 1학년 (중1)</option>
+            <option value="중2">중학교 2학년 (중2)</option>
+            <option value="중3">중학교 3학년 (중3)</option>
+            <option value="고등">고등학교 (고등)</option>
+          </select>
+        </div>
 
-      <!-- Student Card Grid -->
-      <div id="studentGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 min-h-[220px]">
-        <!-- Rendered via JS -->
-      </div>
+        <!-- Duration Selection -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">수업 시간 배정</label>
+          <select id="loginDurationSelect"
+                  class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+            <option value="90분" selected>90분 수업 (표준)</option>
+            <option value="60분">60분 수업 (초등1 등)</option>
+          </select>
+        </div>
 
-      <!-- Loading / Empty Notice -->
-      <div id="loginEmptyState" class="hidden text-center py-12">
-        <p class="text-4xl mb-2">🔍</p>
-        <p class="text-slate-500 font-medium">검색 조건에 맞는 학생이 없습니다.</p>
-        <button onclick="openManualLoginModal()" class="mt-3 text-indigo-600 font-bold text-sm underline hover:text-indigo-800">
-          이름과 학년을 직접 입력하여 시작하기
+        <!-- Submit Button -->
+        <button type="submit" 
+                class="w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
+          <span>🚀 독서 학습 시작하기</span>
         </button>
-      </div>
+
+      </form>
 
     </div>
 
@@ -452,14 +461,15 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         
-        <!-- Dropdown 1: Set Record (Col 8 Number + Col 9 Event) - Multi-selectable -->
+        <!-- Dropdown 1: Set Record (Col 8 Number Dropdown + Col 9 Event Dropdown) -->
         <div class="bg-white/5 border border-white/10 rounded-2xl p-4.5">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-amber-300">1. 세트 기록 (숫자 + 이벤트 세트)</span>
+            <span class="text-xs font-bold text-amber-300">1. 세트 기록 (이벤트 + 숫자 드롭다운)</span>
             <span class="text-[10px] text-slate-400">8열(숫자) & 9열(이벤트) 짝 매칭</span>
           </div>
 
           <div class="flex items-center gap-2 mb-3">
+            <!-- Event Dropdown -->
             <select id="eventSetSelect"
                     class="flex-1 p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
               <option value="">이벤트 선택...</option>
@@ -471,17 +481,70 @@
               <option value="한자교재완료">한자교재완료</option>
               <option value="정독완">정독완</option>
             </select>
-            <input type="text" id="eventNumberInput" placeholder="숫자 (예: 3단계, 5권)"
-                   class="w-32 p-2.5 bg-slate-900 border border-amber-400/50 rounded-xl text-xs text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold" />
+
+            <!-- Number Dropdown (신설/복원!) -->
+            <select id="eventNumberSelect"
+                    class="w-36 p-2.5 bg-slate-800 border border-amber-400/50 rounded-xl text-xs font-bold text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400">
+              <option value="">숫자 선택...</option>
+              <optgroup label="숫자 (단일)">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+              </optgroup>
+              <optgroup label="레벨/코스 세분화">
+                <option value="1-1">1-1</option>
+                <option value="1-2">1-2</option>
+                <option value="2-1">2-1</option>
+                <option value="2-2">2-2</option>
+                <option value="3-1">3-1</option>
+                <option value="3-2">3-2</option>
+                <option value="4-1">4-1</option>
+                <option value="4-2">4-2</option>
+                <option value="5-1">5-1</option>
+                <option value="5-2">5-2</option>
+                <option value="6-1">6-1</option>
+                <option value="6-2">6-2</option>
+                <option value="7-1">7-1</option>
+                <option value="7-2">7-2</option>
+                <option value="8-1">8-1</option>
+                <option value="8-2">8-2</option>
+                <option value="9-1">9-1</option>
+                <option value="9-2">9-2</option>
+                <option value="10-1">10-1</option>
+                <option value="10-2">10-2</option>
+                <option value="10-3">10-3</option>
+                <option value="10-4">10-4</option>
+              </optgroup>
+              <optgroup label="단계 / 권수">
+                <option value="1단계">1단계</option>
+                <option value="2단계">2단계</option>
+                <option value="3단계">3단계</option>
+                <option value="4단계">4단계</option>
+                <option value="5단계">5단계</option>
+                <option value="1권">1권</option>
+                <option value="2권">2권</option>
+                <option value="3권">3권</option>
+                <option value="4권">4권</option>
+                <option value="5권">5권</option>
+              </optgroup>
+            </select>
+
             <button type="button" onclick="addSetEventItem()" 
-                    class="px-3 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-extrabold rounded-xl transition whitespace-nowrap">
+                    class="px-3 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-extrabold rounded-xl transition whitespace-nowrap shadow-sm">
               ➕ 추가
             </button>
           </div>
 
           <!-- Selected Set Events Tag List -->
           <div id="setEventListContainer" class="space-y-1.5 min-h-[40px]">
-            <p id="emptySetEventText" class="text-xs text-slate-500 italic py-1">선택된 세트 이벤트가 없습니다.</p>
+            <p class="text-xs text-slate-500 italic py-1">선택된 세트 이벤트가 없습니다.</p>
           </div>
         </div>
 
@@ -504,14 +567,14 @@
               <option value="그랜드마스터완성">그랜드마스터완성</option>
             </select>
             <button type="button" onclick="addSoloEventItem()" 
-                    class="px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition whitespace-nowrap">
+                    class="px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition whitespace-nowrap shadow-sm">
               ➕ 추가
             </button>
           </div>
 
           <!-- Selected Solo Events Tag List -->
           <div id="soloEventListContainer" class="space-y-1.5 min-h-[40px]">
-            <p id="emptySoloEventText" class="text-xs text-slate-500 italic py-1">선택된 단독 타이틀이 없습니다.</p>
+            <p class="text-xs text-slate-500 italic py-1">선택된 단독 타이틀이 없습니다.</p>
           </div>
         </div>
 
@@ -598,7 +661,7 @@
           </div>
         </div>
 
-        <!-- Row 1.5: 레벨(12개) & 코스(5개) 드롭다운 (신설!) -->
+        <!-- Row 1.5: 레벨(12개) & 코스(5개) 드롭다운 -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold text-emerald-800 mb-1.5">레벨 (12개)</label>
@@ -680,50 +743,6 @@
         </div>
       </div>
 
-    </div>
-  </div>
-
-
-  <!-- ================= MANUAL LOGIN MODAL ================= -->
-  <div id="manualLoginModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100">
-      <h3 class="text-xl font-black text-slate-900 mb-1">직접 입력하여 로그인</h3>
-      <p class="text-xs text-slate-500 mb-5">명단에 이름이 없거나 보강/체험 학생인 경우 직접 입력하세요.</p>
-
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">학생 이름 *</label>
-          <input type="text" id="manualNameInput" placeholder="이름 입력 (예: 홍길동)"
-                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" />
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">학년 *</label>
-          <select id="manualGradeInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold">
-            <option value="초1">초등학교 1학년</option>
-            <option value="초2">초등학교 2학년</option>
-            <option value="초3">초등학교 3학년</option>
-            <option value="초4">초등학교 4학년</option>
-            <option value="초5">초등학교 5학년</option>
-            <option value="초6">초등학교 6학년</option>
-            <option value="중1" selected>중학교 1학년</option>
-            <option value="중2">중학교 2학년</option>
-            <option value="중3">중학교 3학년</option>
-            <option value="고등">고등학생</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">수업 시간</label>
-          <select id="manualDurationInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold">
-            <option value="60분">60분 수업</option>
-            <option value="90분" selected>90분 수업</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="mt-6 flex items-center justify-end gap-2">
-        <button onclick="closeManualLoginModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">취소</button>
-        <button onclick="submitManualLogin()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition">로그인 시작</button>
-      </div>
     </div>
   </div>
 
@@ -810,8 +829,7 @@
         soloEvents: [], // array of title strings
         grammarDone: false,
         studentReflection: ""
-      },
-      activeGradeFilter: "ALL"
+      }
     };
 
     // 1. App Initialization
@@ -825,8 +843,6 @@
       initClock();
       loadCachedData();
       fetchFreshData();
-      setupGradeTabs();
-      setupSearchInput();
     });
 
     // 2. Realtime Clock & Date
@@ -843,10 +859,6 @@
       if (dateTextEl) {
         dateTextEl.innerText = `${year}. ${month}. ${date}. (${state.todayDay.slice(0, 1)})`;
       }
-      const dayBadgeEl = document.getElementById("todayDayBadge");
-      if (dayBadgeEl) {
-        dayBadgeEl.innerText = state.todayDay;
-      }
     }
 
     // 3. Load Cached State from localStorage
@@ -857,7 +869,7 @@
           const parsed = JSON.parse(cached);
           state.students = parsed.students || [];
           state.dailyLogs = parsed.dailyLogs || [];
-          renderStudentGrid();
+          populateStudentsDatalist();
         } catch(e) {
           console.error("Cache read error:", e);
         }
@@ -891,7 +903,7 @@
               dailyLogs: state.dailyLogs
             }));
 
-            renderStudentGrid();
+            populateStudentsDatalist();
           }
         })
         .catch(err => {
@@ -899,103 +911,88 @@
         });
     }
 
-    // 5. Render Student Cards Filtered by TODAY'S Weekday
-    function renderStudentGrid() {
-      const grid = document.getElementById("studentGrid");
-      const emptyState = document.getElementById("loginEmptyState");
-      if (!grid) return;
-
-      grid.innerHTML = "";
-      const query = (document.getElementById("studentSearchInput").value || "").trim().toLowerCase();
-
-      const todayStudents = state.students.filter(s => {
-        if (!s || !s.name) return false;
-        
-        const scheduledTime = s.times ? (s.times[state.todayDay] || "") : "";
-        const hasTimeToday = scheduledTime && scheduledTime !== "-" && scheduledTime.trim() !== "";
-        
-        const hasLogToday = state.dailyLogs.some(l => 
-          (l.name || "").replace(/\s+/g, '') === (s.name || "").replace(/\s+/g, '') &&
-          isSameDate(l.date, state.todayDateStr)
-        );
-
-        return hasTimeToday || hasLogToday;
-      });
-
-      const filtered = todayStudents.filter(s => {
-        if (state.activeGradeFilter !== "ALL") {
-          const g = (s.grade || "").trim();
-          if (state.activeGradeFilter === "초등" && !g.startsWith("초")) return false;
-          if (state.activeGradeFilter === "중등" && !g.startsWith("중")) return false;
-          if (state.activeGradeFilter !== "초등" && state.activeGradeFilter !== "중등" && g !== state.activeGradeFilter) return false;
+    // Populate Datalist for Autocomplete
+    function populateStudentsDatalist() {
+      const dl = document.getElementById("studentsDatalist");
+      if (!dl) return;
+      dl.innerHTML = "";
+      const addedNames = new Set();
+      state.students.forEach(s => {
+        if (s && s.name && !addedNames.has(s.name.trim())) {
+          addedNames.add(s.name.trim());
+          const opt = document.createElement("option");
+          opt.value = s.name.trim();
+          dl.appendChild(opt);
         }
-
-        if (query) {
-          const cleanName = (s.name || "").toLowerCase();
-          if (!cleanName.includes(query) && !matchInitialSearch(cleanName, query)) {
-            return false;
-          }
-        }
-
-        return true;
-      });
-
-      if (filtered.length === 0) {
-        emptyState.classList.remove("hidden");
-        return;
-      } else {
-        emptyState.classList.add("hidden");
-      }
-
-      filtered.sort((a, b) => {
-        const timeA = (a.times && a.times[state.todayDay]) || "99:99";
-        const timeB = (b.times && b.times[state.todayDay]) || "99:99";
-        if (timeA === timeB) return (a.name || "").localeCompare(b.name || "", "ko");
-        return timeA.localeCompare(timeB);
-      });
-
-      filtered.forEach(student => {
-        const card = createStudentCard(student);
-        grid.appendChild(card);
       });
     }
 
-    function createStudentCard(student) {
-      const scheduledTime = (student.times && student.times[state.todayDay]) || "시간 외";
-      const duration = getClassDuration(student);
-
-      const log = state.dailyLogs.find(l => 
-        (l.name || "").replace(/\s+/g, '') === (student.name || "").replace(/\s+/g, '') &&
-        isSameDate(l.date, state.todayDateStr)
-      );
-
-      const status = log ? (log.status || "대기") : "대기";
-      let statusBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">대기</span>`;
-      if (status === "수업중") {
-        statusBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold animate-pulse">수업중 🟢</span>`;
-      } else if (status === "수업완료") {
-        statusBadge = `<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">수업완료 🎉</span>`;
+    // Direct Login Input Matching
+    function handleNameInputAutoMatch() {
+      const name = (document.getElementById("loginNameInput").value || "").trim();
+      const badge = document.getElementById("studentMatchedBadge");
+      const info = document.getElementById("studentMatchedInfo");
+      if (!name) {
+        badge.classList.add("hidden");
+        return;
       }
 
-      const card = document.createElement("div");
-      card.className = "bg-white p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-400 hover:shadow-lg transition cursor-pointer flex flex-col justify-between group active:scale-[0.98]";
-      card.onclick = () => loginStudent(student, log);
+      const matched = state.students.find(s => (s.name || '').replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+      if (matched) {
+        badge.classList.remove("hidden");
+        const dur = getClassDuration(matched);
+        info.innerText = `(${matched.grade || ''} | ${dur}분 수업)`;
+        if (matched.grade) {
+          document.getElementById("loginGradeSelect").value = matched.grade;
+        }
+        document.getElementById("loginDurationSelect").value = `${dur}분`;
+      } else {
+        badge.classList.add("hidden");
+      }
+    }
 
-      card.innerHTML = `
-        <div>
-          <div class="flex items-center justify-between gap-1 mb-2">
-            <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-xs font-bold">${student.grade || '학생'}</span>
-            ${statusBadge}
-          </div>
-          <h4 class="text-base sm:text-lg font-black text-slate-900 group-hover:text-indigo-600 transition leading-snug">${student.name}</h4>
-        </div>
-        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
-          <span>⏰ ${scheduledTime}</span>
-          <span class="text-slate-400 font-normal">${duration}분</span>
-        </div>
-      `;
+    // 5. Handle Single Direct Login Submit
+    function handleDirectLogin(e) {
+      if (e) e.preventDefault();
 
-      return card;
+      const name = (document.getElementById("loginNameInput").value || "").trim();
+      const grade = document.getElementById("loginGradeSelect").value;
+      const duration = document.getElementById("loginDurationSelect").value;
+
+      if (!name) {
+        alert("학생 이름을 입력해 주세요.");
+        return;
+      }
+
+      // 1. Look for student in state.students
+      let student = state.students.find(s => (s.name || '').replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+
+      if (!student) {
+        // Create synthetic student record
+        student = {
+          id: "manual_" + Date.now(),
+          name: name,
+          grade: grade,
+          classes: duration,
+          times: { [state.todayDay]: "시간 외" },
+          notes: "직접 로그인 학생"
+        };
+      } else {
+        // Sync any manual override
+        if (!student.grade) student.grade = grade;
+      }
+
+      // 2. Look for today's existing log
+      let todayLog = null;
+      if (Array.isArray(state.dailyLogs)) {
+        todayLog = state.dailyLogs.find(l => 
+          l && (l.name || '').replace(/\s+/g, '') === name.replace(/\s+/g, '') &&
+          isSameDate(l.date, state.todayDateStr)
+        ) || null;
+      }
+
+      // 3. Login student
+      loginStudent(student, todayLog);
     }
 
     function getClassDuration(student) {
@@ -1009,74 +1006,93 @@
 
     // 6. Student Login Trigger & Persistent Next Book Memory Check
     function loginStudent(student, existingLog) {
-      state.currentStudent = student;
-      state.currentDailyLog = existingLog || null;
+      try {
+        state.currentStudent = student;
+        state.currentDailyLog = existingLog || null;
 
-      document.getElementById("userHeaderPill").classList.remove("hidden");
-      document.getElementById("userHeaderPill").classList.add("flex");
-      document.getElementById("btnLogout").classList.remove("hidden");
+        const pill = document.getElementById("userHeaderPill");
+        if (pill) { pill.classList.remove("hidden"); pill.classList.add("flex"); }
+        const btnLogout = document.getElementById("btnLogout");
+        if (btnLogout) btnLogout.classList.remove("hidden");
 
-      document.getElementById("headerStudentName").innerText = student.name;
-      document.getElementById("headerStudentGrade").innerText = student.grade || "학생";
-      const duration = getClassDuration(student);
-      document.getElementById("headerStudentDuration").innerText = `${duration}분`;
+        const headerName = document.getElementById("headerStudentName");
+        if (headerName) headerName.innerText = student.name;
+        const headerGrade = document.getElementById("headerStudentGrade");
+        if (headerGrade) headerGrade.innerText = student.grade || "학생";
 
-      document.getElementById("dashStudentName").innerText = student.name;
-      document.getElementById("dashDuration").innerText = `${duration}분 수업`;
+        const duration = getClassDuration(student);
+        const headerDur = document.getElementById("headerStudentDuration");
+        if (headerDur) headerDur.innerText = `${duration}분`;
 
-      const nowTimeStr = new Date().toTimeString().slice(0, 5);
-      const inTime = (existingLog && existingLog.inTime) ? existingLog.inTime : nowTimeStr;
-      document.getElementById("dashInTimeBadge").innerText = `등원: ${inTime}`;
+        const dashName = document.getElementById("dashStudentName");
+        if (dashName) dashName.innerText = student.name;
+        const dashDur = document.getElementById("dashDuration");
+        if (dashDur) dashDur.innerText = `${duration}분 수업`;
 
-      resetMissions();
+        const nowTimeStr = new Date().toTimeString().slice(0, 5);
+        const inTime = (existingLog && existingLog.inTime) ? existingLog.inTime : nowTimeStr;
+        const inTimeBadge = document.getElementById("dashInTimeBadge");
+        if (inTimeBadge) inTimeBadge.innerText = `등원: ${inTime}`;
 
-      // Check persistent next book memory from previous class records or localStorage
-      checkPersistentNextBook(student);
+        resetMissions();
+        checkPersistentNextBook(student);
 
-      if (existingLog) {
-        populateExistingMissions(existingLog);
+        if (existingLog) {
+          populateExistingMissions(existingLog);
+        }
+
+        const viewLogin = document.getElementById("viewLogin");
+        const viewDash = document.getElementById("viewDashboard");
+        if (viewLogin) viewLogin.classList.add("hidden");
+        if (viewDash) viewDash.classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        updateProgress();
+      } catch (err) {
+        console.error("loginStudent error:", err);
+        // Force view switch even if something threw an exception
+        document.getElementById("viewLogin").classList.add("hidden");
+        document.getElementById("viewDashboard").classList.remove("hidden");
       }
-
-      document.getElementById("viewLogin").classList.add("hidden");
-      document.getElementById("viewDashboard").classList.remove("hidden");
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-      updateProgress();
     }
 
     // Persistent Memory: Find next book from student's past logs in Google Sheet
     function checkPersistentNextBook(student) {
-      let savedNextBook = localStorage.getItem("next_book_" + student.name) || "";
+      try {
+        let savedNextBook = localStorage.getItem("next_book_" + student.name) || "";
 
-      // If not in local storage, search past dailyLogs in sheet
-      if (!savedNextBook) {
-        const studentPastLogs = state.dailyLogs.filter(l => 
-          (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') &&
-          !isSameDate(l.date, state.todayDateStr)
-        );
-        if (studentPastLogs.length > 0) {
-          // Sort reverse chronologically
-          const sorted = [...studentPastLogs].reverse();
-          for (let log of sorted) {
-            const contents = log.contents || "";
-            const match = contents.match(/\[다음책\]\s*([^|;]+)/);
-            if (match && match[1]) {
-              savedNextBook = match[1].trim();
-              break;
+        if (!savedNextBook && Array.isArray(state.dailyLogs)) {
+          const studentPastLogs = state.dailyLogs.filter(l => 
+            l && (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') &&
+            !isSameDate(l.date, state.todayDateStr)
+          );
+          if (studentPastLogs.length > 0) {
+            const sorted = [...studentPastLogs].reverse();
+            for (let log of sorted) {
+              const contents = log.contents || "";
+              const match = contents.match(/\[다음책\]\s*([^|;]+)/);
+              if (match && match[1]) {
+                savedNextBook = match[1].trim();
+                break;
+              }
             }
           }
         }
-      }
 
-      const alertBox = document.getElementById("persistentNextBookAlert");
-      const titleSpan = document.getElementById("persistentNextBookTitle");
-      if (savedNextBook) {
-        titleSpan.innerText = savedNextBook;
-        alertBox.classList.remove("hidden");
-        // Pre-fill modal
-        document.getElementById("modalBookTitle").value = savedNextBook.replace(/\(재독예약\)/g, '').trim();
-      } else {
-        alertBox.classList.add("hidden");
+        const alertBox = document.getElementById("persistentNextBookAlert");
+        const titleSpan = document.getElementById("persistentNextBookTitle");
+        if (savedNextBook && alertBox && titleSpan) {
+          titleSpan.innerText = savedNextBook;
+          alertBox.classList.remove("hidden");
+          const modalTitle = document.getElementById("modalBookTitle");
+          if (modalTitle && !modalTitle.value) {
+            modalTitle.value = savedNextBook.replace(/\(재독예약\)/g, '').trim();
+          }
+        } else if (alertBox) {
+          alertBox.classList.add("hidden");
+        }
+      } catch (e) {
+        console.warn("checkPersistentNextBook error:", e);
       }
     }
 
@@ -1119,7 +1135,7 @@
       document.getElementById("nextBookRereadCheck").checked = false;
       document.getElementById("nextBookMemoInput").value = "";
       document.getElementById("eventSetSelect").value = "";
-      document.getElementById("eventNumberInput").value = "";
+      document.getElementById("eventNumberSelect").value = "";
       document.getElementById("eventSoloSelect").value = "";
       document.getElementById("grammarDoneCheck").checked = false;
       document.getElementById("studentReflectionInput").value = "";
@@ -1155,7 +1171,6 @@
       document.getElementById("modalBookStatus").value = "진단완료";
       document.getElementById("modalBookMemo").value = "";
 
-      // If next book was typed in Step 5, auto-fill it
       const nextBookTyped = document.getElementById("nextBookTitleInput").value.trim();
       if (nextBookTyped && !document.getElementById("modalBookTitle").value) {
         document.getElementById("modalBookTitle").value = nextBookTyped;
@@ -1169,7 +1184,6 @@
       document.getElementById("bookModal").classList.add("hidden");
     }
 
-    // Formatter: converts Level (e.g. 3레벨) & Course (1코스) into J-Col format: e.g. "3-1 도서명 90"
     function formatJColBookRecord(level, course, title, score, isNoteDone = false) {
       let lvl = String(level || '1').replace("레벨", "").trim();
       let crs = String(course || '1').replace("코스", "").trim();
@@ -1295,7 +1309,7 @@
           btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
         }
       });
-      renderBookList(); // updates J-col preview tag
+      renderBookList();
       updateProgress();
     }
 
@@ -1320,7 +1334,6 @@
 
       if (val && state.currentStudent) {
         localStorage.setItem("next_book_" + state.currentStudent.name, val + (isReread ? "(재독예약)" : ""));
-        // Update Step 1 modal input
         document.getElementById("modalBookTitle").value = val;
         if (isReread) {
           document.getElementById("modalBookCourse").value = "재독";
@@ -1332,14 +1345,14 @@
     // 10. Step 6 Multiple Set Events & Solo Events Handlers
     function addSetEventItem() {
       const ev = document.getElementById("eventSetSelect").value;
-      const num = document.getElementById("eventNumberInput").value.trim();
+      const num = document.getElementById("eventNumberSelect").value;
       if (!ev) {
         alert("이벤트를 선택해 주세요.");
         return;
       }
       state.missions.setEvents.push({ event: ev, number: num });
       document.getElementById("eventSetSelect").value = "";
-      document.getElementById("eventNumberInput").value = "";
+      document.getElementById("eventNumberSelect").value = "";
       renderSetEventItems();
       updateProgress();
     }
@@ -1352,15 +1365,12 @@
 
     function renderSetEventItems() {
       const container = document.getElementById("setEventListContainer");
-      const emptyText = document.getElementById("emptySetEventText");
       if (!container) return;
 
       if (state.missions.setEvents.length === 0) {
-        container.innerHTML = "";
-        emptyText.classList.remove("hidden");
+        container.innerHTML = `<p class="text-xs text-slate-500 italic py-1">선택된 세트 이벤트가 없습니다.</p>`;
         return;
       }
-      emptyText.classList.add("hidden");
       container.innerHTML = "";
 
       state.missions.setEvents.forEach((item, idx) => {
@@ -1368,7 +1378,7 @@
         tag.className = "flex items-center justify-between p-2 bg-amber-400/10 border border-amber-400/30 rounded-xl text-xs text-amber-200";
         tag.innerHTML = `
           <span><strong>${idx + 1}. ${item.event}</strong> ${item.number ? `(${item.number})` : ''}</span>
-          <button type="button" onclick="removeSetEventItem(${idx})" class="text-amber-400 hover:text-white font-bold ml-2">✕</button>
+          <button type="button" onclick="removeSetEventItem(${idx})" class="text-amber-400 hover:text-white font-bold ml-2 p-0.5">✕</button>
         `;
         container.appendChild(tag);
       });
@@ -1396,15 +1406,12 @@
 
     function renderSoloEventItems() {
       const container = document.getElementById("soloEventListContainer");
-      const emptyText = document.getElementById("emptySoloEventText");
       if (!container) return;
 
       if (state.missions.soloEvents.length === 0) {
-        container.innerHTML = "";
-        emptyText.classList.remove("hidden");
+        container.innerHTML = `<p class="text-xs text-slate-500 italic py-1">선택된 단독 타이틀이 없습니다.</p>`;
         return;
       }
-      emptyText.classList.add("hidden");
       container.innerHTML = "";
 
       state.missions.soloEvents.forEach((item, idx) => {
@@ -1412,7 +1419,7 @@
         tag.className = "flex items-center justify-between p-2 bg-indigo-500/15 border border-indigo-400/30 rounded-xl text-xs text-indigo-200";
         tag.innerHTML = `
           <span><strong>${idx + 1}. ${item}</strong></span>
-          <button type="button" onclick="removeSoloEventItem(${idx})" class="text-indigo-300 hover:text-white font-bold ml-2">✕</button>
+          <button type="button" onclick="removeSoloEventItem(${idx})" class="text-indigo-300 hover:text-white font-bold ml-2 p-0.5">✕</button>
         `;
         container.appendChild(tag);
       });
@@ -1523,10 +1530,13 @@
       const nowTimeStr = new Date().toTimeString().slice(0, 5);
       const scheduledTime = (student.times && student.times[state.todayDay]) || "시간 외";
 
-      let targetLog = state.dailyLogs.find(l => 
-        (l.name || "").replace(/\s+/g, '') === (student.name || "").replace(/\s+/g, '') &&
-        isSameDate(l.date, state.todayDateStr)
-      );
+      let targetLog = null;
+      if (Array.isArray(state.dailyLogs)) {
+        targetLog = state.dailyLogs.find(l => 
+          l && (l.name || "").replace(/\s+/g, '') === (student.name || "").replace(/\s+/g, '') &&
+          isSameDate(l.date, state.todayDateStr)
+        );
+      }
 
       const updates = [];
 
@@ -1614,48 +1624,15 @@
 
       document.getElementById("viewDashboard").classList.add("hidden");
       document.getElementById("viewLogin").classList.remove("hidden");
-      renderStudentGrid();
+      
+      // Clear input fields
+      document.getElementById("loginNameInput").value = "";
+      document.getElementById("studentMatchedBadge").classList.add("hidden");
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // 13. Manual Login Modal Handlers
-    function openManualLoginModal() {
-      document.getElementById("manualNameInput").value = "";
-      document.getElementById("manualLoginModal").classList.remove("hidden");
-      document.getElementById("manualNameInput").focus();
-    }
-
-    function closeManualLoginModal() {
-      document.getElementById("manualLoginModal").classList.add("hidden");
-    }
-
-    function submitManualLogin() {
-      const name = document.getElementById("manualNameInput").value.trim();
-      const grade = document.getElementById("manualGradeInput").value;
-      const duration = document.getElementById("manualDurationInput").value;
-
-      if (!name) {
-        alert("학생 이름을 입력해 주세요.");
-        return;
-      }
-
-      let student = state.students.find(s => (s.name || '').replace(/\s+/g, '') === name.replace(/\s+/g, ''));
-      if (!student) {
-        student = {
-          id: "manual_" + Date.now(),
-          name: name,
-          grade: grade,
-          classes: duration,
-          times: { [state.todayDay]: "시간 외" },
-          notes: "직접 로그인 학생"
-        };
-      }
-
-      closeManualLoginModal();
-      loginStudent(student, null);
-    }
-
-    // 14. Config Modal Handlers
+    // 13. Config Modal Handlers
     function openConfigModal() {
       document.getElementById("configAcademyName").value = state.config.academyName;
       document.getElementById("configGasUrl").value = state.config.gasWebhookUrl;
@@ -1682,7 +1659,7 @@
       alert("연동 설정이 저장되었습니다.");
     }
 
-    // 15. Network Communication Helpers
+    // 14. Network Communication Helpers
     function sendBatchUpdates(updates) {
       if (!state.config.gasWebhookUrl || !updates || updates.length === 0) return;
 
@@ -1721,48 +1698,11 @@
       }).catch(err => console.error("GAS addDailyLog error:", err));
     }
 
-    // 16. UI Interaction & Search Helpers
-    function setupGradeTabs() {
-      document.querySelectorAll(".grade-tab").forEach(tab => {
-        tab.addEventListener("click", () => {
-          document.querySelectorAll(".grade-tab").forEach(t => {
-            t.className = "grade-tab px-3 sm:px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition font-semibold";
-          });
-          tab.className = "grade-tab px-3 sm:px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-sm transition font-semibold";
-          state.activeGradeFilter = tab.dataset.grade;
-          renderStudentGrid();
-        });
-      });
-    }
-
-    function setupSearchInput() {
-      const input = document.getElementById("studentSearchInput");
-      if (input) {
-        input.addEventListener("input", () => {
-          renderStudentGrid();
-        });
-      }
-    }
-
     function isSameDate(d1, d2) {
       if (!d1 || !d2) return false;
       const clean1 = String(d1).replace(/[^0-9]/g, '');
       const clean2 = String(d2).replace(/[^0-9]/g, '');
       return clean1 === clean2;
-    }
-
-    function matchInitialSearch(target, query) {
-      const CHO_SUNG = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
-      let initials = "";
-      for (let i = 0; i < target.length; i++) {
-        const code = target.charCodeAt(i) - 44032;
-        if (code >= 0 && code <= 11171) {
-          initials += CHO_SUNG[Math.floor(code / 588)];
-        } else {
-          initials += target[i];
-        }
-      }
-      return initials.includes(query);
     }
   </script>
 
