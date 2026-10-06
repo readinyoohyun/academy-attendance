@@ -661,11 +661,11 @@
           </div>
         </div>
 
-        <!-- Row 1.5: 레벨(12개) & 코스(5개) 드롭다운 -->
+        <!-- Row 1.5: 레벨(12개) & 코스 드롭다운 -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold text-emerald-800 mb-1.5">레벨 (12개)</label>
-            <select id="modalBookLevel" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <select id="modalBookLevel" onchange="handleModalLevelChange()" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
               <option value="기초">기초</option>
               <option value="1레벨">1레벨</option>
               <option value="2레벨">2레벨</option>
@@ -677,17 +677,18 @@
               <option value="8레벨">8레벨</option>
               <option value="9레벨">9레벨</option>
               <option value="10레벨">10레벨</option>
-              <option value="그외 도서">그외 도서</option>
+              <option value="자율 독서">자율 독서</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-emerald-800 mb-1.5">코스 (5개)</label>
+            <label class="block text-xs font-bold text-emerald-800 mb-1.5">코스</label>
             <select id="modalBookCourse" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
               <option value="1코스" selected>1코스</option>
               <option value="2코스">2코스</option>
               <option value="3코스">3코스</option>
               <option value="4코스">4코스</option>
               <option value="재독">재독</option>
+              <option value="선택 안 함">선택 안 함</option>
             </select>
           </div>
         </div>
@@ -985,7 +986,7 @@
       // 2. Look for today's existing log
       let todayLog = null;
       if (Array.isArray(state.dailyLogs)) {
-        todayLog = state.dailyLogs.find(l => 
+        todayLog = [...state.dailyLogs].reverse().find(l => 
           l && (l.name || '').replace(/\s+/g, '') === name.replace(/\s+/g, '') &&
           isSameDate(l.date, state.todayDateStr)
         ) || null;
@@ -1167,6 +1168,8 @@
     function openBookModal() {
       const nextOrder = (state.missions.books.length + 1) + "권째";
       document.getElementById("modalBookOrder").value = nextOrder;
+      document.getElementById("modalBookLevel").value = "3레벨";
+      document.getElementById("modalBookCourse").value = "1코스";
       document.getElementById("modalBookScore").value = "";
       document.getElementById("modalBookStatus").value = "진단완료";
       document.getElementById("modalBookMemo").value = "";
@@ -1180,15 +1183,30 @@
       document.getElementById("modalBookTitle").focus();
     }
 
+    function handleModalLevelChange() {
+      const lvl = document.getElementById("modalBookLevel").value;
+      const crsSelect = document.getElementById("modalBookCourse");
+      if (lvl === "자율 독서" || lvl === "자율") {
+        crsSelect.value = "선택 안 함";
+      } else if (crsSelect.value === "선택 안 함" || crsSelect.value === "선택 안함") {
+        crsSelect.value = "1코스";
+      }
+    }
+
     function closeBookModal() {
       document.getElementById("bookModal").classList.add("hidden");
     }
 
     function formatJColBookRecord(level, course, title, score, isNoteDone = false) {
-      let lvl = String(level || '1').replace("레벨", "").trim();
-      let crs = String(course || '1').replace("코스", "").trim();
       let sc = score ? ` ${score}` : '';
       let noteTag = isNoteDone ? " 글완" : "";
+
+      if (level === "자율 독서" || level === "자율" || course === "선택 안 함" || course === "선택 안함") {
+        return `자율 ${title}${sc}${noteTag}`.trim();
+      }
+
+      let lvl = String(level || '1').replace("레벨", "").trim();
+      let crs = String(course || '1').replace("코스", "").trim();
 
       return `${lvl}-${crs} ${title}${sc}${noteTag}`.trim();
     }
@@ -1234,6 +1252,8 @@
       if (saveCurrentBookFromModal()) {
         const nextOrder = (state.missions.books.length + 1) + "권째";
         document.getElementById("modalBookOrder").value = nextOrder;
+        document.getElementById("modalBookLevel").value = "3레벨";
+        document.getElementById("modalBookCourse").value = "1코스";
         document.getElementById("modalBookTitle").value = "";
         document.getElementById("modalBookScore").value = "";
         document.getElementById("modalBookStatus").value = "진단완료";
@@ -1272,6 +1292,9 @@
 
         let scoreBadge = b.score ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-xs">${b.score}점</span>` : '';
         let jBadge = `<span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold text-[11px]">J열: ${formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus === "완료")}</span>`;
+        const lvlCrsBadge = (b.level === "자율 독서" || b.level === "자율" || b.course === "선택 안 함" || b.course === "선택 안함") 
+          ? "자율 독서" 
+          : `${b.level} · ${b.course}`;
 
         item.innerHTML = `
           <div class="flex items-center gap-3">
@@ -1281,7 +1304,7 @@
             <div>
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-[10px] font-bold">${b.genre}</span>
-                <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">${b.level} · ${b.course}</span>
+                <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">${lvlCrsBadge}</span>
                 <span class="font-extrabold text-slate-900 text-sm">${b.title}</span>
                 ${scoreBadge}
                 ${jBadge}
@@ -1530,9 +1553,9 @@
       const nowTimeStr = new Date().toTimeString().slice(0, 5);
       const scheduledTime = (student.times && student.times[state.todayDay]) || "시간 외";
 
-      let targetLog = null;
-      if (Array.isArray(state.dailyLogs)) {
-        targetLog = state.dailyLogs.find(l => 
+      let targetLog = state.currentDailyLog;
+      if (!targetLog && Array.isArray(state.dailyLogs)) {
+        targetLog = [...state.dailyLogs].reverse().find(l => 
           l && (l.name || "").replace(/\s+/g, '') === (student.name || "").replace(/\s+/g, '') &&
           isSameDate(l.date, state.todayDateStr)
         );
@@ -1698,11 +1721,32 @@
       }).catch(err => console.error("GAS addDailyLog error:", err));
     }
 
-    function isSameDate(d1, d2) {
-      if (!d1 || !d2) return false;
-      const clean1 = String(d1).replace(/[^0-9]/g, '');
-      const clean2 = String(d2).replace(/[^0-9]/g, '');
-      return clean1 === clean2;
+    function isSameDate(dateStr1, dateStr2) {
+      if (!dateStr1 || !dateStr2) return false;
+      if (dateStr1 instanceof Date) {
+        dateStr1 = `${dateStr1.getMonth() + 1}/${dateStr1.getDate()}`;
+      }
+      if (dateStr2 instanceof Date) {
+        dateStr2 = `${dateStr2.getMonth() + 1}/${dateStr2.getDate()}`;
+      }
+      const clean1 = String(dateStr1).trim().replace(/\s+/g, "");
+      const clean2 = String(dateStr2).trim().replace(/\s+/g, "");
+      if (clean1 === clean2) return true;
+      
+      const full1 = clean1.match(/(?:\d{4}[-\.\/])?(\d{1,2})[-\.\/](\d{1,2})/);
+      const full2 = clean2.match(/(?:\d{4}[-\.\/])?(\d{1,2})[-\.\/](\d{1,2})/);
+      if (full1 && full2) {
+        return parseInt(full1[1], 10) === parseInt(full2[1], 10) && 
+               parseInt(full1[2], 10) === parseInt(full2[2], 10);
+      }
+
+      const m1 = clean1.match(/(\d+)[\/\.](\d+)/);
+      const m2 = clean2.match(/(\d+)[\/\.](\d+)/);
+      if (m1 && m2) {
+        return parseInt(m1[1], 10) === parseInt(m2[1], 10) && 
+               parseInt(m1[2], 10) === parseInt(m2[2], 10);
+      }
+      return false;
     }
   </script>
 
