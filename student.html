@@ -43,7 +43,6 @@
     input, textarea, select {
       user-select: text;
     }
-    /* Custom Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -232,16 +231,28 @@
 
     <!-- ================= 1단계: 오늘 독서 & 진단 기록 (Core) ================= -->
     <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 mb-5">
         <div class="flex items-center gap-3">
           <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm">1</span>
           <div>
             <h3 class="text-lg font-bold text-slate-900">오늘 독서 & 진단 기록</h3>
-            <p class="text-xs text-slate-500">오늘 읽은 책의 권수, 분야, 진행 상태 및 진단 점수를 등록하세요.</p>
+            <p class="text-xs text-slate-500">순번, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요. (시트 J열 자동 연동)</p>
           </div>
         </div>
-        <button onclick="openBookModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+
+        <button onclick="openBookModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 self-end sm:self-auto">
           <span>📖 도서 정보 등록</span>
+        </button>
+      </div>
+
+      <!-- Persistent Next Book Memory Notice -->
+      <div id="persistentNextBookAlert" class="hidden mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center justify-between text-xs text-indigo-800">
+        <div class="flex items-center gap-2">
+          <span>💡</span>
+          <span><strong>지난 시간 예약 도서:</strong> <span id="persistentNextBookTitle" class="font-bold underline text-indigo-900"></span></span>
+        </div>
+        <button type="button" onclick="applyPersistentNextBook()" class="px-2.5 py-1 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition">
+          도서 등록에 바로 입력
         </button>
       </div>
 
@@ -252,27 +263,24 @@
     </div>
 
 
-    <!-- ================= 2단계: 독서노트 & 요약 ================= -->
+    <!-- ================= 2단계: 독서노트 & 글쓰기 점검 ================= -->
     <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+      <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black text-sm">2</span>
           <div>
             <h3 class="text-lg font-bold text-slate-900">독서노트 & 글쓰기 점검</h3>
-            <p class="text-xs text-slate-500">독서노트 작성 상태와 인상 깊었던 문장 또는 줄거리를 정리해 보세요.</p>
+            <p class="text-xs text-slate-500">독서노트 작성 완료 시 구글 시트 J열에 [글완]이 자동 기록됩니다.</p>
           </div>
         </div>
 
         <!-- Note Status Radio Buttons -->
         <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
-          <button type="button" onclick="setNoteStatus('시작')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="시작">시작</button>
+          <button type="button" onclick="setNoteStatus('작성안함')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="작성안함">작성 안 함</button>
           <button type="button" onclick="setNoteStatus('작성중')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="작성중">작성중</button>
-          <button type="button" onclick="setNoteStatus('완료')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-sm" data-val="완료">완료 ✍️</button>
+          <button type="button" onclick="setNoteStatus('완료')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-sm" data-val="완료">완료 ✍️ (글완)</button>
         </div>
       </div>
-
-      <textarea id="noteSummaryInput" rows="2" placeholder="오늘 읽은 책의 핵심 줄거리나 인상 깊은 문장, 느낀 점을 자유롭게 적어보세요 (선택)"
-                class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"></textarea>
     </div>
 
 
@@ -283,63 +291,108 @@
           <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm">3</span>
           <div>
             <h3 class="text-lg font-bold text-slate-900">집중 트레이닝</h3>
-            <p class="text-xs text-slate-500">읽기/독해/듣기/문해력 트레이닝 진행 내역을 기록합니다.</p>
+            <p class="text-xs text-slate-500">읽기, 독해, 듣기, 문해력 트레이닝 진행 내역과 권 수, 오답 개수를 기록합니다.</p>
           </div>
         </div>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="trainingDoneCheck" onchange="updateProgress()" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" />
-          <span class="text-xs font-bold text-slate-700">트레이닝 완료</span>
-        </label>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- 1. 종목 정식 명칭 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">트레이닝 종목 선택</label>
-          <select id="trainingTypeSelect" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <select id="trainingTypeSelect" onchange="updateProgress()"
+                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option value="">(선택 안 함)</option>
-            <option value="읽트">읽트 (읽기 트레이닝)</option>
-            <option value="독트">독트 (독해 트레이닝)</option>
-            <option value="듣트">듣트 (듣기 트레이닝)</option>
-            <option value="문해력">문해력 트레이닝</option>
+            <option value="읽기트레이닝">읽기트레이닝</option>
+            <option value="독해트레이닝">독해트레이닝</option>
+            <option value="듣기트레이닝">듣기트레이닝</option>
+            <option value="문해력트레이닝">문해력트레이닝</option>
           </select>
         </div>
+
+        <!-- 2. 교재 권 수 (1~10) -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">단계 및 점수 / 세부 결과</label>
-          <input type="text" id="trainingDetailInput" placeholder="예: 4단계 100점 / 완료" 
-                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">교재 권 수</label>
+          <select id="trainingVolumeSelect" onchange="updateProgress()"
+                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">(선택 안 함)</option>
+            <option value="1권">1권</option>
+            <option value="2권">2권</option>
+            <option value="3권">3권</option>
+            <option value="4권">4권</option>
+            <option value="5권">5권</option>
+            <option value="6권">6권</option>
+            <option value="7권">7권</option>
+            <option value="8권">8권</option>
+            <option value="9권">9권</option>
+            <option value="10권">10권</option>
+          </select>
+        </div>
+
+        <!-- 3. 오답 개수 (0~7) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 개수</label>
+          <select id="trainingErrorsSelect" onchange="updateProgress()"
+                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">(선택 안 함)</option>
+            <option value="0개">0개 (완벽! 💯)</option>
+            <option value="1개">1개</option>
+            <option value="2개">2개</option>
+            <option value="3개">3개</option>
+            <option value="4개">4개</option>
+            <option value="5개">5개</option>
+            <option value="6개">6개</option>
+            <option value="7개">7개</option>
+          </select>
         </div>
       </div>
     </div>
 
 
-    <!-- ================= 4단계: 숙제 및 교재 점검 ================= -->
+    <!-- ================= 4단계: 숙제 점검 ================= -->
     <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 mb-5">
         <div class="flex items-center gap-3">
           <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black text-sm">4</span>
           <div>
-            <h3 class="text-lg font-bold text-slate-900">숙제 및 교재 점검</h3>
-            <p class="text-xs text-slate-500">숙제 지참 상태와 오답 풀이 내역을 확인합니다.</p>
+            <h3 class="text-lg font-bold text-slate-900">숙제 점검</h3>
+            <p class="text-xs text-slate-500">과제 지참 상태와 교재 풀이 내역을 확인합니다.</p>
           </div>
         </div>
 
-        <!-- Homework Status Badges -->
-        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+        <!-- Homework Status Badges (숙제완료, 미지참, 학원에서 풀기) -->
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-end sm:self-auto">
           <button type="button" onclick="setHwStatus('숙제완료')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500 text-white shadow-sm" data-val="숙제완료">숙제완료 👍</button>
-          <button type="button" onclick="setHwStatus('숙제미지참')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="숙제미지참">미지참 ⚠️</button>
-          <button type="button" onclick="setHwStatus('원에서풀이(PT)')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="원에서풀이(PT)">원에서 풀이(PT) 🏫</button>
+          <button type="button" onclick="setHwStatus('미지참')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="미지참">미지참 ⚠️</button>
+          <button type="button" onclick="setHwStatus('학원에서 풀기')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="학원에서 풀기">학원에서 풀기 🏫</button>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- 교재명 드롭다운 -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">교재명 및 풀이 단원</label>
-          <input type="text" id="hwBookTitleInput" placeholder="예: 훈민정음 5권 / 어휘 3권" 
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">교재명 선택</label>
+          <select id="hwBookSelect" onchange="updateProgress()"
+                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <option value="">(선택 안 함)</option>
+            <option value="훈민정음">훈민정음</option>
+            <option value="빠작 어휘">빠작 어휘</option>
+            <option value="똑똑한 하루 어휘">똑똑한 하루 어휘</option>
+            <option value="메가 어휘력">메가 어휘력</option>
+          </select>
+        </div>
+
+        <!-- 풀이 단원 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">풀이 단원 (쪽수)</label>
+          <input type="text" id="hwChapterInput" placeholder="예: 3단원, p.12~15" oninput="updateProgress()"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
         </div>
+
+        <!-- 오답 개수 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 및 고친 개수</label>
-          <input type="text" id="hwErrorsInput" placeholder="예: 틀린 2개 / 고친 2개" 
+          <input type="text" id="hwErrorsInput" placeholder="예: 틀린 2개 / 고친 2개" oninput="updateProgress()"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
         </div>
       </div>
@@ -353,20 +406,21 @@
           <span class="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-sm">5</span>
           <div>
             <h3 class="text-lg font-bold text-slate-900">다음 책 선정 및 재독 예약</h3>
-            <p class="text-xs text-slate-500">다음 시간에 읽을 도서를 미리 정하고 재독(다시 읽기)을 예약할 수 있습니다.</p>
+            <p class="text-xs text-slate-500">다음에 읽을 책을 입력하면 1단계 도서 등록 창에 자동으로 연동됩니다.</p>
           </div>
         </div>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="nextBookRereadCheck" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500" />
-          <span class="text-xs font-bold text-slate-700">재독(다시 읽기) 예약</span>
+        <label class="flex items-center gap-2 cursor-pointer bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200">
+          <input type="checkbox" id="nextBookRereadCheck" onchange="syncNextBookToStep1()" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500" />
+          <span class="text-xs font-bold text-purple-800">재독(다시 읽기) 예약</span>
         </label>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">다음에 읽을 도서명</label>
-          <input type="text" id="nextBookTitleInput" placeholder="다음 시간에 읽고 싶은 책 제목 입력" 
-                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">다음에 읽을 도서명 *</label>
+          <input type="text" id="nextBookTitleInput" placeholder="다음 시간에 읽고 싶은 책 제목 입력" oninput="syncNextBookToStep1()"
+                 class="w-full p-3 bg-slate-50 border border-purple-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+          <p class="text-[11px] text-purple-600 mt-1">* 입력 시 1단계 도서 등록 화면에 바로 자동 반영됩니다.</p>
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고</label>
@@ -377,72 +431,88 @@
     </div>
 
 
-    <!-- ================= 6단계: 성장 기록 & 이벤트 (원장님 필수 요청) ================= -->
+    <!-- ================= 6단계: 성장 기록 & 목표 달성 (원장님 필수 요청) ================= -->
     <div class="bg-gradient-to-tr from-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-lg border border-indigo-900/50">
       <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
         <div class="flex items-center gap-3">
           <span class="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm">6</span>
           <div>
             <h3 class="text-lg font-bold text-white flex items-center gap-2">
-              <span>성장 기록 & 이벤트 달성</span>
-              <span class="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-bold">원장님 출석부 자동 연동</span>
+              <span>성장 기록 & 목표 달성</span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-bold">출석부 8·9열 자동 연동</span>
             </h3>
-            <p class="text-xs text-slate-300">오늘 달성한 코스업, 레벨업, 교재완료 및 특별 타이틀을 선택하세요.</p>
+            <p class="text-xs text-slate-300">오늘 달성한 코스업, 레벨업, 교재완료 및 특별 타이틀을 복수 선택할 수 있습니다.</p>
           </div>
         </div>
         <label class="flex items-center gap-2 cursor-pointer bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
-          <input type="checkbox" id="grammarDoneCheck" class="w-4 h-4 text-emerald-500 rounded border-slate-400 focus:ring-emerald-400" />
-          <span class="text-xs font-bold text-emerald-300">진단글쓰기 / 특별수업 완료</span>
+          <input type="checkbox" id="grammarDoneCheck" onchange="updateProgress()" class="w-4 h-4 text-emerald-500 rounded border-slate-400 focus:ring-emerald-400" />
+          <span class="text-xs font-bold text-emerald-300">특별수업 완료</span>
         </label>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         
-        <!-- Dropdown 1: Set Record (Col 8 Number + Col 9 Event) -->
+        <!-- Dropdown 1: Set Record (Col 8 Number + Col 9 Event) - Multi-selectable -->
         <div class="bg-white/5 border border-white/10 rounded-2xl p-4.5">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-amber-300">1. 세트 기록 (숫자 + 이벤트)</span>
-            <span class="text-[10px] text-slate-400">8열(숫자) & 9열(이벤트) 동시 저장</span>
+            <span class="text-xs font-bold text-amber-300">1. 세트 기록 (숫자 + 이벤트 세트)</span>
+            <span class="text-[10px] text-slate-400">8열(숫자) & 9열(이벤트) 짝 매칭</span>
           </div>
-          <select id="eventSetSelect" onchange="toggleNumberInput()"
-                  class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
-            <option value="">(선택 안 함)</option>
-            <option value="코스업">코스업</option>
-            <option value="레벨업">레벨업</option>
-            <option value="훈민정음/숙제교재완료">훈민정음/숙제교재완료</option>
-            <option value="읽트완료">읽트완료</option>
-            <option value="듣트완료">듣트완료</option>
-            <option value="한자교재완료">한자교재완료</option>
-            <option value="정독완">정독완</option>
-          </select>
 
-          <!-- Number input box reveals when an option is selected -->
-          <div id="eventNumberContainer" class="hidden mt-3">
-            <label class="block text-[11px] font-bold text-slate-300 mb-1">숫자 입력 (8열)</label>
-            <input type="text" id="eventNumberInput" placeholder="예: 3단계, 5권, 12차시 등"
-                   class="w-full p-2.5 bg-slate-900 border border-amber-400/40 rounded-xl text-xs text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold" />
+          <div class="flex items-center gap-2 mb-3">
+            <select id="eventSetSelect"
+                    class="flex-1 p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+              <option value="">이벤트 선택...</option>
+              <option value="코스업">코스업</option>
+              <option value="레벨업">레벨업</option>
+              <option value="훈민정음/숙제교재완료">훈민정음/숙제교재완료</option>
+              <option value="읽트완료">읽트완료</option>
+              <option value="듣트완료">듣트완료</option>
+              <option value="한자교재완료">한자교재완료</option>
+              <option value="정독완">정독완</option>
+            </select>
+            <input type="text" id="eventNumberInput" placeholder="숫자 (예: 3단계, 5권)"
+                   class="w-32 p-2.5 bg-slate-900 border border-amber-400/50 rounded-xl text-xs text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold" />
+            <button type="button" onclick="addSetEventItem()" 
+                    class="px-3 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-extrabold rounded-xl transition whitespace-nowrap">
+              ➕ 추가
+            </button>
+          </div>
+
+          <!-- Selected Set Events Tag List -->
+          <div id="setEventListContainer" class="space-y-1.5 min-h-[40px]">
+            <p id="emptySetEventText" class="text-xs text-slate-500 italic py-1">선택된 세트 이벤트가 없습니다.</p>
           </div>
         </div>
 
-        <!-- Dropdown 2: Solo Title (Col 9 Event Solo) -->
+        <!-- Dropdown 2: Solo Title (Col 9 Event Solo) - Multi-selectable -->
         <div class="bg-white/5 border border-white/10 rounded-2xl p-4.5">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-bold text-indigo-300">2. 단독 타이틀 (이벤트 단독)</span>
             <span class="text-[10px] text-slate-400">9열(이벤트) 단독 저장</span>
           </div>
-          <select id="eventSoloSelect"
-                  class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
-            <option value="">(선택 안 함)</option>
-            <option value="친구완성">친구완성</option>
-            <option value="탐험가완성">탐험가완성</option>
-            <option value="고수완성">고수완성</option>
-            <option value="챔피언완성">챔피언완성</option>
-            <option value="마스터완성">마스터완성</option>
-            <option value="그랜드마스터완성">그랜드마스터완성</option>
-          </select>
-          <p class="text-[11px] text-slate-400 mt-2">
-            * 1번 세트 이벤트와 2번 단독 타이틀은 상황에 맞게 각각 또는 단독으로 선택할 수 있습니다.
-          </p>
+
+          <div class="flex items-center gap-2 mb-3">
+            <select id="eventSoloSelect"
+                    class="flex-1 p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="">타이틀 선택...</option>
+              <option value="친구완성">친구완성</option>
+              <option value="탐험가완성">탐험가완성</option>
+              <option value="고수완성">고수완성</option>
+              <option value="챔피언완성">챔피언완성</option>
+              <option value="마스터완성">마스터완성</option>
+              <option value="그랜드마스터완성">그랜드마스터완성</option>
+            </select>
+            <button type="button" onclick="addSoloEventItem()" 
+                    class="px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition whitespace-nowrap">
+              ➕ 추가
+            </button>
+          </div>
+
+          <!-- Selected Solo Events Tag List -->
+          <div id="soloEventListContainer" class="space-y-1.5 min-h-[40px]">
+            <p id="emptySoloEventText" class="text-xs text-slate-500 italic py-1">선택된 단독 타이틀이 없습니다.</p>
+          </div>
         </div>
 
       </div>
@@ -450,7 +520,7 @@
       <!-- Student Memo / Reflection -->
       <div class="mt-4 pt-4 border-t border-white/10">
         <label class="block text-xs font-bold text-slate-300 mb-1.5">오늘의 소감 및 선생님께 한마디 😊</label>
-        <input type="text" id="studentReflectionInput" placeholder="오늘 공부하며 뿌듯했던 점이나 선생님께 전하고 싶은 말씀" 
+        <input type="text" id="studentReflectionInput" placeholder="오늘 공부하며 뿌듯했던 점이나 선생님께 전하고 싶은 말씀" oninput="updateProgress()"
                class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
       </div>
     </div>
@@ -470,11 +540,11 @@
 
       <!-- Live Summary Box -->
       <div id="missionSummaryBox" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs sm:text-sm space-y-1.5 mb-5 text-slate-700">
-        <p><strong>📖 독서:</strong> <span id="sumBooks">등록된 도서 없음</span></p>
-        <p><strong>✍️ 독서노트:</strong> <span id="sumNotes">완료</span></p>
-        <p><strong>🎯 트레이닝:</strong> <span id="sumTraining">선택 안 함</span></p>
+        <p><strong>📖 독서 (J열):</strong> <span id="sumBooks" class="font-bold text-indigo-700">등록된 도서 없음</span></p>
+        <p><strong>✍️ 독서노트:</strong> <span id="sumNotes">작성 안 함</span></p>
+        <p><strong>🎯 집중 트레이닝:</strong> <span id="sumTraining">선택 안 함</span></p>
         <p><strong>📚 숙제 점검:</strong> <span id="sumHomework">숙제완료</span></p>
-        <p><strong>🏆 이벤트:</strong> <span id="sumEvent">선택 안 함</span></p>
+        <p><strong>🏆 목표 달성 (8·9열):</strong> <span id="sumEvent">선택 안 함</span></p>
       </div>
 
       <!-- Submit Button -->
@@ -487,7 +557,7 @@
   </main>
 
 
-  <!-- ================= BOOK MODAL (MATCHING SCREENSHOT) ================= -->
+  <!-- ================= BOOK MODAL (REVISED EXACT LAYOUT) ================= -->
   <div id="bookModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in fade-in duration-200">
       
@@ -497,7 +567,7 @@
           📖
         </span>
         <h3 class="text-xl sm:text-2xl font-black text-slate-900">오늘 독서 도서 등록</h3>
-        <p class="text-xs sm:text-sm text-slate-500 mt-1">순번, 분야, 도서명 및 진행 상태를 입력해 주세요.</p>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">순번, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요.</p>
       </div>
 
       <!-- Form Inputs -->
@@ -528,7 +598,38 @@
           </div>
         </div>
 
-        <!-- Row 2: 도서 정보 및 상태 체크 -->
+        <!-- Row 1.5: 레벨(12개) & 코스(5개) 드롭다운 (신설!) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-emerald-800 mb-1.5">레벨 (12개)</label>
+            <select id="modalBookLevel" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="기초">기초</option>
+              <option value="1레벨">1레벨</option>
+              <option value="2레벨">2레벨</option>
+              <option value="3레벨" selected>3레벨</option>
+              <option value="4레벨">4레벨</option>
+              <option value="5레벨">5레벨</option>
+              <option value="6레벨">6레벨</option>
+              <option value="7레벨">7레벨</option>
+              <option value="8레벨">8레벨</option>
+              <option value="9레벨">9레벨</option>
+              <option value="10레벨">10레벨</option>
+              <option value="그외 도서">그외 도서</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-emerald-800 mb-1.5">코스 (5개)</label>
+            <select id="modalBookCourse" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="1코스" selected>1코스</option>
+              <option value="2코스">2코스</option>
+              <option value="3코스">3코스</option>
+              <option value="4코스">4코스</option>
+              <option value="재독">재독</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 2: 도서명, 점수(선택), 상태체크 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">도서 정보 및 상태 체크</label>
           <div class="grid grid-cols-12 gap-2">
@@ -542,28 +643,12 @@
             </div>
             <div class="col-span-3">
               <select id="modalBookStatus" class="w-full p-3 bg-white border-2 border-emerald-500 text-emerald-700 rounded-2xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value="독서시작">독서시작</option>
-                <option value="독서중">독서중</option>
-                <option value="완독">완독</option>
                 <option value="진단완료">진단완료</option>
+                <option value="완독">완독</option>
+                <option value="독서중">독서중</option>
+                <option value="독서시작">독서시작</option>
               </select>
             </div>
-          </div>
-        </div>
-
-        <!-- Row 2.5: Optional Detailed Reading Stats -->
-        <div class="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">시작 쪽</label>
-            <input type="number" id="modalBookPageStart" placeholder="1" class="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs text-center" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">끝 쪽</label>
-            <input type="number" id="modalBookPageEnd" placeholder="50" class="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs text-center" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">독서 시간(분)</label>
-            <input type="number" id="modalBookDuration" placeholder="40" class="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs text-center" />
           </div>
         </div>
 
@@ -692,10 +777,9 @@
   <script>
     // Global Constants
     const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-
-    // App State
     const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec";
 
+    // App State
     const state = {
       config: {
         gasWebhookUrl: localStorage.getItem("gas_webhook_url") || DEFAULT_GAS_URL,
@@ -710,21 +794,20 @@
       currentDailyLog: null,
       // Active Student Missions
       missions: {
-        books: [], // { order, genre, title, score, status, pageStart, pageEnd, duration, memo }
-        noteStatus: "시작",
-        noteSummary: "",
+        books: [], // { order, genre, level, course, title, score, status, memo }
+        noteStatus: "작성안함",
         trainingType: "",
-        trainingDetail: "",
-        trainingDone: false,
+        trainingVolume: "",
+        trainingErrors: "",
         hwStatus: "숙제완료",
-        hwBookTitle: "",
+        hwBook: "",
+        hwChapter: "",
         hwErrors: "",
         nextBookTitle: "",
         nextBookReread: false,
         nextBookMemo: "",
-        eventSet: "",
-        eventNumber: "",
-        eventSolo: "",
+        setEvents: [], // array of { event, number }
+        soloEvents: [], // array of title strings
         grammarDone: false,
         studentReflection: ""
       },
@@ -766,7 +849,7 @@
       }
     }
 
-    // 3. Load Cached State from localStorage (0.1s instant render)
+    // 3. Load Cached State from localStorage
     function loadCachedData() {
       const cached = localStorage.getItem("academy_attendance_state");
       if (cached) {
@@ -803,7 +886,6 @@
             state.students = data.students || [];
             state.dailyLogs = data.dailyLogs || [];
             
-            // Cache locally
             localStorage.setItem("academy_attendance_state", JSON.stringify({
               students: state.students,
               dailyLogs: state.dailyLogs
@@ -826,15 +908,12 @@
       grid.innerHTML = "";
       const query = (document.getElementById("studentSearchInput").value || "").trim().toLowerCase();
 
-      // Filter: students that have scheduled time for TODAY
       const todayStudents = state.students.filter(s => {
         if (!s || !s.name) return false;
         
-        // Match day in times
         const scheduledTime = s.times ? (s.times[state.todayDay] || "") : "";
         const hasTimeToday = scheduledTime && scheduledTime !== "-" && scheduledTime.trim() !== "";
         
-        // Also check if student has a dailyLog for today
         const hasLogToday = state.dailyLogs.some(l => 
           (l.name || "").replace(/\s+/g, '') === (s.name || "").replace(/\s+/g, '') &&
           isSameDate(l.date, state.todayDateStr)
@@ -843,9 +922,7 @@
         return hasTimeToday || hasLogToday;
       });
 
-      // Apply Grade and Query Filter
       const filtered = todayStudents.filter(s => {
-        // Grade filter
         if (state.activeGradeFilter !== "ALL") {
           const g = (s.grade || "").trim();
           if (state.activeGradeFilter === "초등" && !g.startsWith("초")) return false;
@@ -853,7 +930,6 @@
           if (state.activeGradeFilter !== "초등" && state.activeGradeFilter !== "중등" && g !== state.activeGradeFilter) return false;
         }
 
-        // Search query filter (matches name or initials)
         if (query) {
           const cleanName = (s.name || "").toLowerCase();
           if (!cleanName.includes(query) && !matchInitialSearch(cleanName, query)) {
@@ -871,7 +947,6 @@
         emptyState.classList.add("hidden");
       }
 
-      // Sort by scheduled time, then name
       filtered.sort((a, b) => {
         const timeA = (a.times && a.times[state.todayDay]) || "99:99";
         const timeB = (b.times && b.times[state.todayDay]) || "99:99";
@@ -885,12 +960,10 @@
       });
     }
 
-    // Helper: Create Student Card Element
     function createStudentCard(student) {
       const scheduledTime = (student.times && student.times[state.todayDay]) || "시간 외";
       const duration = getClassDuration(student);
 
-      // Check current log status
       const log = state.dailyLogs.find(l => 
         (l.name || "").replace(/\s+/g, '') === (student.name || "").replace(/\s+/g, '') &&
         isSameDate(l.date, state.todayDateStr)
@@ -925,22 +998,20 @@
       return card;
     }
 
-    // Helper: Determine 60분 vs 90분
     function getClassDuration(student) {
       if (!student) return 90;
       const str = ((student.classes || '') + ' ' + (student.notes || '')).toLowerCase();
       if (str.includes("60분") || str.includes("60m") || str.includes("초등1") || student.grade === "초1") {
         return 60;
       }
-      return 90; // Default
+      return 90;
     }
 
-    // 6. Student Login Trigger
+    // 6. Student Login Trigger & Persistent Next Book Memory Check
     function loginStudent(student, existingLog) {
       state.currentStudent = student;
       state.currentDailyLog = existingLog || null;
 
-      // Update Header Pill
       document.getElementById("userHeaderPill").classList.remove("hidden");
       document.getElementById("userHeaderPill").classList.add("flex");
       document.getElementById("btnLogout").classList.remove("hidden");
@@ -950,7 +1021,6 @@
       const duration = getClassDuration(student);
       document.getElementById("headerStudentDuration").innerText = `${duration}분`;
 
-      // Update Dashboard Hero
       document.getElementById("dashStudentName").innerText = student.name;
       document.getElementById("dashDuration").innerText = `${duration}분 수업`;
 
@@ -958,13 +1028,15 @@
       const inTime = (existingLog && existingLog.inTime) ? existingLog.inTime : nowTimeStr;
       document.getElementById("dashInTimeBadge").innerText = `등원: ${inTime}`;
 
-      // Reset / Load mission state
       resetMissions();
+
+      // Check persistent next book memory from previous class records or localStorage
+      checkPersistentNextBook(student);
+
       if (existingLog) {
         populateExistingMissions(existingLog);
       }
 
-      // Switch View
       document.getElementById("viewLogin").classList.add("hidden");
       document.getElementById("viewDashboard").classList.remove("hidden");
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -972,41 +1044,82 @@
       updateProgress();
     }
 
+    // Persistent Memory: Find next book from student's past logs in Google Sheet
+    function checkPersistentNextBook(student) {
+      let savedNextBook = localStorage.getItem("next_book_" + student.name) || "";
+
+      // If not in local storage, search past dailyLogs in sheet
+      if (!savedNextBook) {
+        const studentPastLogs = state.dailyLogs.filter(l => 
+          (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') &&
+          !isSameDate(l.date, state.todayDateStr)
+        );
+        if (studentPastLogs.length > 0) {
+          // Sort reverse chronologically
+          const sorted = [...studentPastLogs].reverse();
+          for (let log of sorted) {
+            const contents = log.contents || "";
+            const match = contents.match(/\[다음책\]\s*([^|;]+)/);
+            if (match && match[1]) {
+              savedNextBook = match[1].trim();
+              break;
+            }
+          }
+        }
+      }
+
+      const alertBox = document.getElementById("persistentNextBookAlert");
+      const titleSpan = document.getElementById("persistentNextBookTitle");
+      if (savedNextBook) {
+        titleSpan.innerText = savedNextBook;
+        alertBox.classList.remove("hidden");
+        // Pre-fill modal
+        document.getElementById("modalBookTitle").value = savedNextBook.replace(/\(재독예약\)/g, '').trim();
+      } else {
+        alertBox.classList.add("hidden");
+      }
+    }
+
+    function applyPersistentNextBook() {
+      openBookModal();
+    }
+
     function resetMissions() {
       state.missions = {
         books: [],
-        noteStatus: "시작",
-        noteSummary: "",
+        noteStatus: "작성안함",
         trainingType: "",
-        trainingDetail: "",
-        trainingDone: false,
+        trainingVolume: "",
+        trainingErrors: "",
         hwStatus: "숙제완료",
-        hwBookTitle: "",
+        hwBook: "",
+        hwChapter: "",
         hwErrors: "",
         nextBookTitle: "",
         nextBookReread: false,
         nextBookMemo: "",
-        eventSet: "",
-        eventNumber: "",
-        eventSolo: "",
+        setEvents: [],
+        soloEvents: [],
         grammarDone: false,
         studentReflection: ""
       };
       renderBookList();
-      setNoteStatus("시작");
+      renderSetEventItems();
+      renderSoloEventItems();
+      setNoteStatus("작성안함");
       setHwStatus("숙제완료");
-      document.getElementById("noteSummaryInput").value = "";
+
       document.getElementById("trainingTypeSelect").value = "";
-      document.getElementById("trainingDetailInput").value = "";
-      document.getElementById("trainingDoneCheck").checked = false;
-      document.getElementById("hwBookTitleInput").value = "";
+      document.getElementById("trainingVolumeSelect").value = "";
+      document.getElementById("trainingErrorsSelect").value = "";
+      document.getElementById("hwBookSelect").value = "";
+      document.getElementById("hwChapterInput").value = "";
       document.getElementById("hwErrorsInput").value = "";
       document.getElementById("nextBookTitleInput").value = "";
       document.getElementById("nextBookRereadCheck").checked = false;
       document.getElementById("nextBookMemoInput").value = "";
       document.getElementById("eventSetSelect").value = "";
       document.getElementById("eventNumberInput").value = "";
-      document.getElementById("eventNumberContainer").classList.add("hidden");
       document.getElementById("eventSoloSelect").value = "";
       document.getElementById("grammarDoneCheck").checked = false;
       document.getElementById("studentReflectionInput").value = "";
@@ -1017,35 +1130,36 @@
         document.getElementById("grammarDoneCheck").checked = true;
         state.missions.grammarDone = true;
       }
-      if (log.number) {
-        document.getElementById("eventNumberInput").value = log.number;
-        state.missions.eventNumber = log.number;
-      }
-      if (log.event) {
-        const isSet = ["코스업", "레벨업", "훈민정음/숙제교재완료", "읽트완료", "듣트완료", "한자교재완료", "정독완"].includes(log.event);
-        if (isSet) {
-          document.getElementById("eventSetSelect").value = log.event;
-          document.getElementById("eventNumberContainer").classList.remove("hidden");
-          state.missions.eventSet = log.event;
-        } else {
-          document.getElementById("eventSoloSelect").value = log.event;
-          state.missions.eventSolo = log.event;
-        }
+      if (log.number || log.event) {
+        const events = (log.event || "").split(",").map(e => e.trim()).filter(Boolean);
+        const numbers = (log.number || "").split(",").map(n => n.trim()).filter(Boolean);
+
+        const setOptions = ["코스업", "레벨업", "훈민정음/숙제교재완료", "읽트완료", "듣트완료", "한자교재완료", "정독완"];
+        events.forEach((ev, idx) => {
+          if (setOptions.includes(ev)) {
+            state.missions.setEvents.push({ event: ev, number: numbers[idx] || "" });
+          } else {
+            state.missions.soloEvents.push(ev);
+          }
+        });
+        renderSetEventItems();
+        renderSoloEventItems();
       }
     }
 
-    // 7. Book Modal Logic (Screenshot Replica)
+    // 7. Book Modal Logic (with Level, Course, and J-Col Code Formatter)
     function openBookModal() {
-      // Set default order based on current count
       const nextOrder = (state.missions.books.length + 1) + "권째";
       document.getElementById("modalBookOrder").value = nextOrder;
-      document.getElementById("modalBookTitle").value = "";
       document.getElementById("modalBookScore").value = "";
-      document.getElementById("modalBookStatus").value = "독서시작";
-      document.getElementById("modalBookPageStart").value = "";
-      document.getElementById("modalBookPageEnd").value = "";
-      document.getElementById("modalBookDuration").value = "";
+      document.getElementById("modalBookStatus").value = "진단완료";
       document.getElementById("modalBookMemo").value = "";
+
+      // If next book was typed in Step 5, auto-fill it
+      const nextBookTyped = document.getElementById("nextBookTitleInput").value.trim();
+      if (nextBookTyped && !document.getElementById("modalBookTitle").value) {
+        document.getElementById("modalBookTitle").value = nextBookTyped;
+      }
 
       document.getElementById("bookModal").classList.remove("hidden");
       document.getElementById("modalBookTitle").focus();
@@ -1055,6 +1169,16 @@
       document.getElementById("bookModal").classList.add("hidden");
     }
 
+    // Formatter: converts Level (e.g. 3레벨) & Course (1코스) into J-Col format: e.g. "3-1 도서명 90"
+    function formatJColBookRecord(level, course, title, score, isNoteDone = false) {
+      let lvl = String(level || '1').replace("레벨", "").trim();
+      let crs = String(course || '1').replace("코스", "").trim();
+      let sc = score ? ` ${score}` : '';
+      let noteTag = isNoteDone ? " 글완" : "";
+
+      return `${lvl}-${crs} ${title}${sc}${noteTag}`.trim();
+    }
+
     function saveCurrentBookFromModal() {
       const title = document.getElementById("modalBookTitle").value.trim();
       if (!title) {
@@ -1062,17 +1186,22 @@
         return false;
       }
 
+      const level = document.getElementById("modalBookLevel").value;
+      const course = document.getElementById("modalBookCourse").value;
+      const score = document.getElementById("modalBookScore").value.trim();
+      const status = document.getElementById("modalBookStatus").value;
+
       const book = {
         id: "book_" + Date.now(),
         order: document.getElementById("modalBookOrder").value,
         genre: document.getElementById("modalBookGenre").value,
+        level: level,
+        course: course,
         title: title,
-        score: document.getElementById("modalBookScore").value.trim(),
-        status: document.getElementById("modalBookStatus").value,
-        pageStart: document.getElementById("modalBookPageStart").value.trim(),
-        pageEnd: document.getElementById("modalBookPageEnd").value.trim(),
-        duration: document.getElementById("modalBookDuration").value.trim(),
-        memo: document.getElementById("modalBookMemo").value.trim()
+        score: score,
+        status: status,
+        memo: document.getElementById("modalBookMemo").value.trim(),
+        jFormatted: formatJColBookRecord(level, course, title, score, state.missions.noteStatus === "완료")
       };
 
       state.missions.books.push(book);
@@ -1093,10 +1222,7 @@
         document.getElementById("modalBookOrder").value = nextOrder;
         document.getElementById("modalBookTitle").value = "";
         document.getElementById("modalBookScore").value = "";
-        document.getElementById("modalBookStatus").value = "독서시작";
-        document.getElementById("modalBookPageStart").value = "";
-        document.getElementById("modalBookPageEnd").value = "";
-        document.getElementById("modalBookDuration").value = "";
+        document.getElementById("modalBookStatus").value = "진단완료";
         document.getElementById("modalBookMemo").value = "";
         document.getElementById("modalBookTitle").focus();
       }
@@ -1114,7 +1240,7 @@
 
       if (state.missions.books.length === 0) {
         container.innerHTML = `
-          <div class="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          <div class="text-center py-7 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
             <p class="text-3xl mb-1">📖</p>
             <p class="text-xs sm:text-sm font-semibold text-slate-500">아직 오늘 등록된 도서가 없습니다.</p>
             <button onclick="openBookModal()" class="mt-2 text-emerald-600 font-bold text-xs underline">
@@ -1131,8 +1257,7 @@
         item.className = "flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200 gap-3";
 
         let scoreBadge = b.score ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-xs">${b.score}점</span>` : '';
-        let pageInfo = (b.pageStart || b.pageEnd) ? `(${b.pageStart || 1}~${b.pageEnd || ''}쪽)` : '';
-        let durationInfo = b.duration ? `• ${b.duration}분` : '';
+        let jBadge = `<span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold text-[11px]">J열: ${formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus === "완료")}</span>`;
 
         item.innerHTML = `
           <div class="flex items-center gap-3">
@@ -1140,14 +1265,15 @@
               ${idx + 1}
             </span>
             <div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
                 <span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-[10px] font-bold">${b.genre}</span>
+                <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">${b.level} · ${b.course}</span>
                 <span class="font-extrabold text-slate-900 text-sm">${b.title}</span>
-                <span class="text-xs text-slate-500 font-medium">${pageInfo}</span>
                 ${scoreBadge}
+                ${jBadge}
               </div>
-              <p class="text-[11px] text-slate-500 mt-0.5 font-medium">
-                <span class="text-emerald-700 font-bold">${b.status}</span> ${durationInfo} ${b.memo ? `• 메모: ${b.memo}` : ''}
+              <p class="text-[11px] text-slate-500 mt-1 font-medium">
+                상태: <span class="text-emerald-700 font-bold">${b.status}</span> ${b.memo ? `• 메모: ${b.memo}` : ''}
               </p>
             </div>
           </div>
@@ -1169,6 +1295,7 @@
           btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
         }
       });
+      renderBookList(); // updates J-col preview tag
       updateProgress();
     }
 
@@ -1184,40 +1311,136 @@
       updateProgress();
     }
 
-    // 9. Step 6 Event Dropdown Toggle
-    function toggleNumberInput() {
-      const sel = document.getElementById("eventSetSelect").value;
-      const box = document.getElementById("eventNumberContainer");
-      if (sel) {
-        box.classList.remove("hidden");
-      } else {
-        box.classList.add("hidden");
+    // 9. Step 5 Next Book -> Step 1 Auto Sync
+    function syncNextBookToStep1() {
+      const val = document.getElementById("nextBookTitleInput").value.trim();
+      const isReread = document.getElementById("nextBookRereadCheck").checked;
+      state.missions.nextBookTitle = val;
+      state.missions.nextBookReread = isReread;
+
+      if (val && state.currentStudent) {
+        localStorage.setItem("next_book_" + state.currentStudent.name, val + (isReread ? "(재독예약)" : ""));
+        // Update Step 1 modal input
+        document.getElementById("modalBookTitle").value = val;
+        if (isReread) {
+          document.getElementById("modalBookCourse").value = "재독";
+        }
       }
       updateProgress();
     }
 
-    // 10. Realtime Progress Calculation
+    // 10. Step 6 Multiple Set Events & Solo Events Handlers
+    function addSetEventItem() {
+      const ev = document.getElementById("eventSetSelect").value;
+      const num = document.getElementById("eventNumberInput").value.trim();
+      if (!ev) {
+        alert("이벤트를 선택해 주세요.");
+        return;
+      }
+      state.missions.setEvents.push({ event: ev, number: num });
+      document.getElementById("eventSetSelect").value = "";
+      document.getElementById("eventNumberInput").value = "";
+      renderSetEventItems();
+      updateProgress();
+    }
+
+    function removeSetEventItem(index) {
+      state.missions.setEvents.splice(index, 1);
+      renderSetEventItems();
+      updateProgress();
+    }
+
+    function renderSetEventItems() {
+      const container = document.getElementById("setEventListContainer");
+      const emptyText = document.getElementById("emptySetEventText");
+      if (!container) return;
+
+      if (state.missions.setEvents.length === 0) {
+        container.innerHTML = "";
+        emptyText.classList.remove("hidden");
+        return;
+      }
+      emptyText.classList.add("hidden");
+      container.innerHTML = "";
+
+      state.missions.setEvents.forEach((item, idx) => {
+        const tag = document.createElement("div");
+        tag.className = "flex items-center justify-between p-2 bg-amber-400/10 border border-amber-400/30 rounded-xl text-xs text-amber-200";
+        tag.innerHTML = `
+          <span><strong>${idx + 1}. ${item.event}</strong> ${item.number ? `(${item.number})` : ''}</span>
+          <button type="button" onclick="removeSetEventItem(${idx})" class="text-amber-400 hover:text-white font-bold ml-2">✕</button>
+        `;
+        container.appendChild(tag);
+      });
+    }
+
+    function addSoloEventItem() {
+      const title = document.getElementById("eventSoloSelect").value;
+      if (!title) {
+        alert("타이틀을 선택해 주세요.");
+        return;
+      }
+      if (!state.missions.soloEvents.includes(title)) {
+        state.missions.soloEvents.push(title);
+      }
+      document.getElementById("eventSoloSelect").value = "";
+      renderSoloEventItems();
+      updateProgress();
+    }
+
+    function removeSoloEventItem(index) {
+      state.missions.soloEvents.splice(index, 1);
+      renderSoloEventItems();
+      updateProgress();
+    }
+
+    function renderSoloEventItems() {
+      const container = document.getElementById("soloEventListContainer");
+      const emptyText = document.getElementById("emptySoloEventText");
+      if (!container) return;
+
+      if (state.missions.soloEvents.length === 0) {
+        container.innerHTML = "";
+        emptyText.classList.remove("hidden");
+        return;
+      }
+      emptyText.classList.add("hidden");
+      container.innerHTML = "";
+
+      state.missions.soloEvents.forEach((item, idx) => {
+        const tag = document.createElement("div");
+        tag.className = "flex items-center justify-between p-2 bg-indigo-500/15 border border-indigo-400/30 rounded-xl text-xs text-indigo-200";
+        tag.innerHTML = `
+          <span><strong>${idx + 1}. ${item}</strong></span>
+          <button type="button" onclick="removeSoloEventItem(${idx})" class="text-indigo-300 hover:text-white font-bold ml-2">✕</button>
+        `;
+        container.appendChild(tag);
+      });
+    }
+
+    // 11. Realtime Progress & Summary Box Calculation
     function updateProgress() {
       let score = 0;
 
-      // 1. Book registered (30%)
+      // 1. Books registered (30%)
       if (state.missions.books.length > 0) score += 30;
 
       // 2. Note status (15%)
       if (state.missions.noteStatus === "완료") score += 15;
       else if (state.missions.noteStatus === "작성중") score += 8;
 
-      // 3. Training (15%)
-      if (document.getElementById("trainingDoneCheck").checked || document.getElementById("trainingTypeSelect").value) score += 15;
+      // 3. Focused Training (15%)
+      const trType = document.getElementById("trainingTypeSelect").value;
+      if (trType) score += 15;
 
-      // 4. Homework (15%)
+      // 4. Homework check (15%)
       if (state.missions.hwStatus) score += 15;
 
       // 5. Next Book (10%)
       if (document.getElementById("nextBookTitleInput").value.trim()) score += 10;
 
       // 6. Growth Event / Reflection (15%)
-      if (document.getElementById("eventSetSelect").value || document.getElementById("eventSoloSelect").value || document.getElementById("grammarDoneCheck").checked) score += 15;
+      if (state.missions.setEvents.length > 0 || state.missions.soloEvents.length > 0 || document.getElementById("grammarDoneCheck").checked) score += 15;
 
       score = Math.min(100, Math.max(0, score));
 
@@ -1225,69 +1448,72 @@
       document.getElementById("dashPercentText").innerText = `${score}%`;
 
       // Update Summary Box
-      const booksSummary = state.missions.books.length > 0 
-        ? state.missions.books.map(b => `${b.title}(${b.status}${b.score ? `/${b.score}점` : ''})`).join(", ")
-        : "등록된 도서 없음";
-      document.getElementById("sumBooks").innerText = booksSummary;
-      document.getElementById("sumNotes").innerText = state.missions.noteStatus;
-      
-      const training = document.getElementById("trainingTypeSelect").value;
-      const trainingDetail = document.getElementById("trainingDetailInput").value;
-      document.getElementById("sumTraining").innerText = training ? `${training} (${trainingDetail || '완료'})` : "선택 안 함";
-      document.getElementById("sumHomework").innerText = state.missions.hwStatus;
+      const jColSummary = state.missions.books.map(b => 
+        formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus === "완료")
+      ).join(", ") || (state.missions.noteStatus === "완료" ? "글완" : "등록된 도서 없음");
+      document.getElementById("sumBooks").innerText = jColSummary;
 
-      const eventSet = document.getElementById("eventSetSelect").value;
-      const eventSolo = document.getElementById("eventSoloSelect").value;
-      const num = document.getElementById("eventNumberInput").value;
-      document.getElementById("sumEvent").innerText = [
-        eventSet ? `${eventSet}${num ? ` ${num}` : ''}` : '',
-        eventSolo ? `${eventSolo}` : ''
-      ].filter(Boolean).join(" / ") || "선택 안 함";
+      document.getElementById("sumNotes").innerText = state.missions.noteStatus;
+
+      const trVol = document.getElementById("trainingVolumeSelect").value;
+      const trErr = document.getElementById("trainingErrorsSelect").value;
+      document.getElementById("sumTraining").innerText = trType 
+        ? `${trType} ${trVol ? `(${trVol})` : ''} ${trErr ? `[오답: ${trErr}]` : ''}` 
+        : "선택 안 함";
+
+      const hwBook = document.getElementById("hwBookSelect").value;
+      const hwChapter = document.getElementById("hwChapterInput").value.trim();
+      document.getElementById("sumHomework").innerText = `${state.missions.hwStatus}${hwBook ? ` - ${hwBook}` : ''}${hwChapter ? ` (${hwChapter})` : ''}`;
+
+      const allSetSummary = state.missions.setEvents.map(s => `${s.event}${s.number ? `(${s.number})` : ''}`);
+      const allEvents = [...allSetSummary, ...state.missions.soloEvents];
+      document.getElementById("sumEvent").innerText = allEvents.join(" / ") || "선택 안 함";
     }
 
-    // 11. Final Mission Submit & Logout
+    // 12. Final Mission Submit & Google Sheets Batch Update
     function submitAllMissions() {
       if (!state.currentStudent) return;
 
       const student = state.currentStudent;
       const btn = document.getElementById("btnSubmitMissions");
       btn.disabled = true;
-      btn.innerHTML = `<span>⏳ 저장 및 하원 처리 중...</span>`;
+      btn.innerHTML = `<span>⏳ 구글 시트에 저장 및 하원 처리 중...</span>`;
 
-      // 1. Gather all inputs
-      const eventSet = document.getElementById("eventSetSelect").value;
-      const eventNum = document.getElementById("eventNumberInput").value.trim();
-      const eventSolo = document.getElementById("eventSoloSelect").value;
-      const grammarDone = document.getElementById("grammarDoneCheck").checked ? "완료" : "";
-
-      // Determine Event string (Col 9) and Number string (Col 8)
-      let finalEvent = eventSet || eventSolo || "";
-      if (eventSet && eventSolo) {
-        finalEvent = `${eventSet}, ${eventSolo}`;
+      // 1. Build Col J (진단글쓰기 / 특별수업)
+      const jEntries = state.missions.books.map(b => 
+        formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus === "완료")
+      );
+      if (jEntries.length === 0 && state.missions.noteStatus === "완료") {
+        jEntries.push("글완");
       }
-      let finalNumber = eventNum;
+      if (document.getElementById("grammarDoneCheck").checked) {
+        jEntries.push("특별수업완료");
+      }
+      const finalColJ = jEntries.join(", ");
 
-      // Compile Col 11 (contents)
-      const bookSummaries = state.missions.books.map(b => {
-        let p = (b.pageStart || b.pageEnd) ? `(${b.pageStart || 1}~${b.pageEnd}p)` : '';
-        let s = b.score ? `${b.score}점` : '';
-        return `${b.title}${p} [${b.status}${s ? `/${s}` : ''}]`;
-      }).join("; ");
+      // 2. Build Col H (numbers) & Col I (events) sequential matching
+      const setNumbers = state.missions.setEvents.map(s => s.number || "");
+      const setEvents = state.missions.setEvents.map(s => s.event);
+      const allEvents = [...setEvents, ...state.missions.soloEvents];
 
-      const noteText = document.getElementById("noteSummaryInput").value.trim();
+      const finalColH = setNumbers.filter(Boolean).join(", ");
+      const finalColI = allEvents.join(", ");
+
+      // 3. Build Col K (수업내용 및 특이사항)
       const trType = document.getElementById("trainingTypeSelect").value;
-      const trDetail = document.getElementById("trainingDetailInput").value.trim();
-      const hwTitle = document.getElementById("hwBookTitleInput").value.trim();
-      const hwErr = document.getElementById("hwErrorsInput").value.trim();
+      const trVol = document.getElementById("trainingVolumeSelect").value;
+      const trErr = document.getElementById("trainingErrorsSelect").value;
+      const hwBook = document.getElementById("hwBookSelect").value;
+      const hwChapter = document.getElementById("hwChapterInput").value.trim();
+      const hwErrors = document.getElementById("hwErrorsInput").value.trim();
       const nextBook = document.getElementById("nextBookTitleInput").value.trim();
       const isReread = document.getElementById("nextBookRereadCheck").checked ? "(재독예약)" : "";
       const reflection = document.getElementById("studentReflectionInput").value.trim();
 
       const contentParts = [];
-      if (bookSummaries) contentParts.push(`[독서] ${bookSummaries}`);
-      if (state.missions.noteStatus) contentParts.push(`[노트] ${state.missions.noteStatus}${noteText ? `(${noteText})` : ''}`);
-      if (trType) contentParts.push(`[트레이닝] ${trType}${trDetail ? `(${trDetail})` : ''}`);
-      if (state.missions.hwStatus) contentParts.push(`[숙제] ${state.missions.hwStatus}${hwTitle ? ` ${hwTitle}` : ''}${hwErr ? `(${hwErr})` : ''}`);
+      if (finalColJ) contentParts.push(`[진단/독서] ${finalColJ}`);
+      if (trType) contentParts.push(`[트레이닝] ${trType} ${trVol ? trVol : ''} ${trErr ? `오답:${trErr}` : ''}`.trim());
+      if (state.missions.hwStatus) contentParts.push(`[숙제] ${state.missions.hwStatus}${hwBook ? ` ${hwBook}` : ''}${hwChapter ? `(${hwChapter})` : ''}${hwErrors ? ` [오답:${hwErrors}]` : ''}`);
       if (nextBook) contentParts.push(`[다음책] ${nextBook}${isReread}`);
       if (reflection) contentParts.push(`[소감] ${reflection}`);
 
@@ -1305,22 +1531,20 @@
       const updates = [];
 
       if (targetLog) {
-        // Update existing row
         targetLog.status = "수업완료";
-        targetLog.number = finalNumber;
-        targetLog.event = finalEvent;
-        targetLog.grammarDone = grammarDone;
+        targetLog.number = finalColH;
+        targetLog.event = finalColI;
+        targetLog.grammarDone = finalColJ;
         targetLog.contents = finalContents;
 
         updates.push({ tab: "dailyLogs", row: targetLog.row, field: "status", value: "수업완료", name: student.name, date: targetLog.date, time: targetLog.time });
-        if (finalNumber) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "number", value: finalNumber, name: student.name, date: targetLog.date, time: targetLog.time });
-        if (finalEvent) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "event", value: finalEvent, name: student.name, date: targetLog.date, time: targetLog.time });
-        if (grammarDone) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: grammarDone, name: student.name, date: targetLog.date, time: targetLog.time });
+        if (finalColH) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "number", value: finalColH, name: student.name, date: targetLog.date, time: targetLog.time });
+        if (finalColI) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "event", value: finalColI, name: student.name, date: targetLog.date, time: targetLog.time });
+        if (finalColJ) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ, name: student.name, date: targetLog.date, time: targetLog.time });
         if (finalContents) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents, name: student.name, date: targetLog.date, time: targetLog.time });
 
         sendBatchUpdates(updates);
       } else {
-        // Create new dailyLog row via GAS addDailyLog
         const newRow = state.dailyLogs.length > 0 ? Math.max(...state.dailyLogs.map(l => l.row)) + 1 : 3;
         targetLog = {
           id: "daily_" + newRow,
@@ -1332,9 +1556,9 @@
           status: "수업완료",
           inTime: nowTimeStr,
           reason: "",
-          number: finalNumber,
-          event: finalEvent,
-          grammarDone: grammarDone,
+          number: finalColH,
+          event: finalColI,
+          grammarDone: finalColJ,
           contents: finalContents
         };
         state.dailyLogs.push(targetLog);
@@ -1342,13 +1566,16 @@
         sendNewLog(targetLog);
       }
 
-      // Update local storage
+      // Persist next book for next session
+      if (nextBook) {
+        localStorage.setItem("next_book_" + student.name, nextBook + isReread);
+      }
+
       localStorage.setItem("academy_attendance_state", JSON.stringify({
         students: state.students,
         dailyLogs: state.dailyLogs
       }));
 
-      // Trigger Celebration Animation & Modal
       btn.innerHTML = `<span>🚀 오늘의 학습 완료 및 하원 / 로그아웃</span>`;
       btn.disabled = false;
       showCelebration(student.name);
@@ -1358,7 +1585,6 @@
       document.getElementById("celebrateStudentName").innerText = `${name} 학생`;
       document.getElementById("celebrateModal").classList.remove("hidden");
 
-      // Confetti effect
       if (typeof confetti === "function") {
         confetti({
           particleCount: 120,
@@ -1367,7 +1593,6 @@
         });
       }
 
-      // Auto logout and return to student selection screen after 3.5s
       setTimeout(() => {
         document.getElementById("celebrateModal").classList.add("hidden");
         logoutStudent();
@@ -1393,7 +1618,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // 12. Manual Login Modal Handlers
+    // 13. Manual Login Modal Handlers
     function openManualLoginModal() {
       document.getElementById("manualNameInput").value = "";
       document.getElementById("manualLoginModal").classList.remove("hidden");
@@ -1414,7 +1639,6 @@
         return;
       }
 
-      // Find in state or create synthetic student
       let student = state.students.find(s => (s.name || '').replace(/\s+/g, '') === name.replace(/\s+/g, ''));
       if (!student) {
         student = {
@@ -1431,7 +1655,7 @@
       loginStudent(student, null);
     }
 
-    // 13. Config Modal Handlers
+    // 14. Config Modal Handlers
     function openConfigModal() {
       document.getElementById("configAcademyName").value = state.config.academyName;
       document.getElementById("configGasUrl").value = state.config.gasWebhookUrl;
@@ -1458,7 +1682,7 @@
       alert("연동 설정이 저장되었습니다.");
     }
 
-    // 14. Network Communication Helpers
+    // 15. Network Communication Helpers
     function sendBatchUpdates(updates) {
       if (!state.config.gasWebhookUrl || !updates || updates.length === 0) return;
 
@@ -1497,7 +1721,7 @@
       }).catch(err => console.error("GAS addDailyLog error:", err));
     }
 
-    // 15. UI Interaction & Search Helpers
+    // 16. UI Interaction & Search Helpers
     function setupGradeTabs() {
       document.querySelectorAll(".grade-tab").forEach(tab => {
         tab.addEventListener("click", () => {
