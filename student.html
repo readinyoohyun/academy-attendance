@@ -912,19 +912,55 @@
         });
     }
 
-    // Populate Datalist for Autocomplete
+    // Populate Datalist for Autocomplete (Option 2: Filtered to Today's Expected Students)
     function populateStudentsDatalist() {
       const dl = document.getElementById("studentsDatalist");
       if (!dl) return;
       dl.innerHTML = "";
       const addedNames = new Set();
-      state.students.forEach(s => {
-        if (s && s.name && !addedNames.has(s.name.trim())) {
-          addedNames.add(s.name.trim());
-          const opt = document.createElement("option");
-          opt.value = s.name.trim();
-          dl.appendChild(opt);
-        }
+      const todayShort = state.todayDay ? state.todayDay.slice(0, 1) : "";
+
+      // 1. Students in today's daily log (오늘 출석부 등록 학생)
+      if (Array.isArray(state.dailyLogs)) {
+        state.dailyLogs.forEach(l => {
+          if (l && l.name && isSameDate(l.date, state.todayDateStr)) {
+            const clean = String(l.name).trim();
+            if (clean) addedNames.add(clean);
+          }
+        });
+      }
+
+      // 2. Students scheduled for today in timetable (전체시간표 오늘 요일 배정 학생)
+      if (Array.isArray(state.students)) {
+        state.students.forEach(s => {
+          if (!s || !s.name) return;
+          const clean = String(s.name).trim();
+          const t = s.times ? (s.times[state.todayDay] || s.times[todayShort]) : "";
+          if (t && String(t).trim() !== "" && String(t).trim() !== "-") {
+            addedNames.add(clean);
+          }
+        });
+      }
+
+      // 3. Fallback: If no students matched today (e.g. holiday or off-day), include all students
+      let namesList = Array.from(addedNames);
+      if (namesList.length === 0 && Array.isArray(state.students)) {
+        state.students.forEach(s => {
+          if (s && s.name) {
+            const clean = String(s.name).trim();
+            if (clean) addedNames.add(clean);
+          }
+        });
+        namesList = Array.from(addedNames);
+      }
+
+      // Sort alphabetically (가나다순)
+      namesList.sort((a, b) => a.localeCompare(b, 'ko'));
+
+      namesList.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        dl.appendChild(opt);
       });
     }
 
