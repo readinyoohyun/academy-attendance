@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>학생 학습 라운지 | 리드인</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti for Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Pretendard Web Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            point: {
+              green: '#10b981',
+              emerald: '#059669',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Pretendard', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea, select {
+      user-select: text;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- ================= TOP HEADER ================= -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      
+      <!-- Brand & Date -->
+      <div class="flex items-center gap-3">
+        <div id="headerLogoArea" class="flex items-center gap-2 cursor-pointer" onclick="openConfigModal()">
+          <span class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white text-xl shadow-md shadow-indigo-100">
+            📖
+          </span>
+          <div>
+            <h1 id="academyTitle" class="text-lg font-bold text-slate-900 leading-tight">학생 학습 라운지</h1>
+            <p id="liveDateText" class="text-xs text-slate-500 font-medium tracking-tight">2026. 10. 06. (화)</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: 리드인 바로가기 ↗ Button -->
+      <div class="hidden sm:flex items-center">
+        <a href="https://www.readin.co.kr" target="_blank" rel="noopener noreferrer" 
+           class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition transform hover:-translate-y-0.5 active:translate-y-0">
+          <span>리드인 바로가기</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+      </div>
+
+      <!-- Right: User Status & Logout -->
+      <div class="flex items-center gap-3">
+        <div id="userHeaderPill" class="hidden items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-full text-xs font-semibold text-indigo-700">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="headerStudentName">홍길동</span>
+          <span class="text-indigo-300">|</span>
+          <span id="headerStudentGrade">중1</span>
+          <span class="text-indigo-300">|</span>
+          <span id="headerStudentDuration">90분</span>
+        </div>
+
+        <button id="btnLogout" onclick="confirmLogout()" class="hidden px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">
+          로그아웃
+        </button>
+
+        <!-- Kiosk / Settings Cog -->
+        <button onclick="openConfigModal()" title="연동 설정" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Mobile 리드인 바로가기 Bar -->
+    <div class="sm:hidden px-4 py-2 bg-indigo-50 border-t border-indigo-100 flex items-center justify-between">
+      <span class="text-xs text-indigo-700 font-semibold">리드인 독서 프로그램</span>
+      <a href="https://www.readin.co.kr" target="_blank" rel="noopener noreferrer" 
+         class="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm">
+        <span>리드인 바로가기 ↗</span>
+      </a>
+    </div>
+  </header>
+
+
+  <!-- ================= VIEW 1: STUDENT LOGIN / SELECTION ================= -->
+  <section id="viewLogin" class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+    
+    <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-xl shadow-slate-200/50 border border-slate-100">
+      
+      <!-- Greeting Banner -->
+      <div class="text-center mb-8">
+        <span class="inline-block p-3 rounded-2xl bg-indigo-50 text-indigo-600 text-3xl mb-3 shadow-inner">
+          👋
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">환영합니다! 오늘 공부할 학생을 선택해 주세요</h2>
+        <p class="text-sm sm:text-base text-slate-500 mt-2">
+          전체 시간표 기준으로 <span id="todayDayBadge" class="font-bold text-indigo-600 underline">오늘</span> 등원 예정인 학생 명단입니다.
+        </p>
+      </div>
+
+      <!-- Grade Filter Tabs -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-6 no-scrollbar text-sm font-semibold">
+        <button class="grade-tab px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-sm transition" data-grade="ALL">전체</button>
+        <button class="grade-tab px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초등">초등 전체</button>
+        <button class="grade-tab px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="중등">중등 전체</button>
+        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초1">초1</button>
+        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초2">초2</button>
+        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초3">초3</button>
+        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초4">초4</button>
+        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초5">초5</button>
+        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="초6">초6</button>
+        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="중1">중1</button>
+        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="중2">중2</button>
+        <button class="grade-tab px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-grade="중3">중3</button>
+      </div>
+
+      <!-- Quick Search Bar & Manual Login Toggle -->
+      <div class="flex flex-col sm:flex-row items-center gap-3 mb-6">
+        <div class="relative flex-1 w-full">
+          <input type="text" id="studentSearchInput" placeholder="이름 또는 초성을 검색하세요 (예: 홍길동, ㅎㄱㄷ)"
+                 class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" />
+          <svg class="w-5 h-5 text-slate-400 absolute left-4 top-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
+        <button onclick="openManualLoginModal()" 
+                class="w-full sm:w-auto px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-2xl transition whitespace-nowrap flex items-center justify-center gap-2">
+          <span>명단에 없나요? 직접 로그인</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Student Card Grid -->
+      <div id="studentGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 min-h-[220px]">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Loading / Empty Notice -->
+      <div id="loginEmptyState" class="hidden text-center py-12">
+        <p class="text-4xl mb-2">🔍</p>
+        <p class="text-slate-500 font-medium">검색 조건에 맞는 학생이 없습니다.</p>
+        <button onclick="openManualLoginModal()" class="mt-3 text-indigo-600 font-bold text-sm underline hover:text-indigo-800">
+          이름과 학년을 직접 입력하여 시작하기
+        </button>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ================= VIEW 2: 7-STEP MISSION DASHBOARD ================= -->
+  <main id="viewDashboard" class="hidden flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- Progress Card -->
+    <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-950 rounded-3xl p-6 text-white shadow-xl shadow-indigo-950/20">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-lg bg-indigo-700/60 text-indigo-200 text-xs font-bold uppercase tracking-wider">오늘의 미션 라운지</span>
+            <span id="dashInTimeBadge" class="text-xs text-indigo-300">등원: 15:30</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold mt-1 tracking-tight">
+            <span id="dashStudentName">홍길동</span> 학생, 오늘의 학습을 시작해요! ✨
+          </h2>
+          <p class="text-xs sm:text-sm text-indigo-200 mt-1">
+            배정 시간: <span id="dashDuration" class="font-bold text-white">90분 수업</span> | 성실하게 미션을 완수하면 실력이 쑥쑥 자라납니다.
+          </p>
+        </div>
+
+        <!-- Radial / Percentage Progress -->
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 w-full md:w-auto justify-between md:justify-start border border-white/10">
+          <div>
+            <p class="text-xs text-indigo-200 font-medium">전체 미션 완료율</p>
+            <p id="dashPercentText" class="text-2xl sm:text-3xl font-black text-white">0%</p>
+          </div>
+          <div class="w-32 bg-white/20 rounded-full h-3.5 overflow-hidden">
+            <div id="dashProgressBar" class="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= 1단계: 오늘 독서 & 진단 기록 (Core) ================= -->
+    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm">1</span>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">오늘 독서 & 진단 기록</h3>
+            <p class="text-xs text-slate-500">오늘 읽은 책의 권수, 분야, 진행 상태 및 진단 점수를 등록하세요.</p>
+          </div>
+        </div>
+        <button onclick="openBookModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+          <span>📖 도서 정보 등록</span>
+        </button>
+      </div>
+
+      <!-- Book List Table / Empty State -->
+      <div id="bookListContainer" class="space-y-3">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+
+    <!-- ================= 2단계: 독서노트 & 요약 ================= -->
+    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black text-sm">2</span>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">독서노트 & 글쓰기 점검</h3>
+            <p class="text-xs text-slate-500">독서노트 작성 상태와 인상 깊었던 문장 또는 줄거리를 정리해 보세요.</p>
+          </div>
+        </div>
+
+        <!-- Note Status Radio Buttons -->
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+          <button type="button" onclick="setNoteStatus('시작')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="시작">시작</button>
+          <button type="button" onclick="setNoteStatus('작성중')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="작성중">작성중</button>
+          <button type="button" onclick="setNoteStatus('완료')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-sm" data-val="완료">완료 ✍️</button>
+        </div>
+      </div>
+
+      <textarea id="noteSummaryInput" rows="2" placeholder="오늘 읽은 책의 핵심 줄거리나 인상 깊은 문장, 느낀 점을 자유롭게 적어보세요 (선택)"
+                class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"></textarea>
+    </div>
+
+
+    <!-- ================= 3단계: 집중 트레이닝 ================= -->
+    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm">3</span>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">집중 트레이닝</h3>
+            <p class="text-xs text-slate-500">읽기/독해/듣기/문해력 트레이닝 진행 내역을 기록합니다.</p>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="trainingDoneCheck" onchange="updateProgress()" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" />
+          <span class="text-xs font-bold text-slate-700">트레이닝 완료</span>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">트레이닝 종목 선택</label>
+          <select id="trainingTypeSelect" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">(선택 안 함)</option>
+            <option value="읽트">읽트 (읽기 트레이닝)</option>
+            <option value="독트">독트 (독해 트레이닝)</option>
+            <option value="듣트">듣트 (듣기 트레이닝)</option>
+            <option value="문해력">문해력 트레이닝</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">단계 및 점수 / 세부 결과</label>
+          <input type="text" id="trainingDetailInput" placeholder="예: 4단계 100점 / 완료" 
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= 4단계: 숙제 및 교재 점검 ================= -->
+    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black text-sm">4</span>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">숙제 및 교재 점검</h3>
+            <p class="text-xs text-slate-500">숙제 지참 상태와 오답 풀이 내역을 확인합니다.</p>
+          </div>
+        </div>
+
+        <!-- Homework Status Badges -->
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+          <button type="button" onclick="setHwStatus('숙제완료')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500 text-white shadow-sm" data-val="숙제완료">숙제완료 👍</button>
+          <button type="button" onclick="setHwStatus('숙제미지참')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="숙제미지참">미지참 ⚠️</button>
+          <button type="button" onclick="setHwStatus('원에서풀이(PT)')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="원에서풀이(PT)">원에서 풀이(PT) 🏫</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">교재명 및 풀이 단원</label>
+          <input type="text" id="hwBookTitleInput" placeholder="예: 훈민정음 5권 / 어휘 3권" 
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 및 고친 개수</label>
+          <input type="text" id="hwErrorsInput" placeholder="예: 틀린 2개 / 고친 2개" 
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= 5단계: 다음 책 선정 및 재독 예약 ================= -->
+    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-sm">5</span>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">다음 책 선정 및 재독 예약</h3>
+            <p class="text-xs text-slate-500">다음 시간에 읽을 도서를 미리 정하고 재독(다시 읽기)을 예약할 수 있습니다.</p>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="nextBookRereadCheck" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500" />
+          <span class="text-xs font-bold text-slate-700">재독(다시 읽기) 예약</span>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">다음에 읽을 도서명</label>
+          <input type="text" id="nextBookTitleInput" placeholder="다음 시간에 읽고 싶은 책 제목 입력" 
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고</label>
+          <input type="text" id="nextBookMemoInput" placeholder="예: 2권부터 읽을 예정입니다" 
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= 6단계: 성장 기록 & 이벤트 (원장님 필수 요청) ================= -->
+    <div class="bg-gradient-to-tr from-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-lg border border-indigo-900/50">
+      <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm">6</span>
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>성장 기록 & 이벤트 달성</span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-bold">원장님 출석부 자동 연동</span>
+            </h3>
+            <p class="text-xs text-slate-300">오늘 달성한 코스업, 레벨업, 교재완료 및 특별 타이틀을 선택하세요.</p>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
+          <input type="checkbox" id="grammarDoneCheck" class="w-4 h-4 text-emerald-500 rounded border-slate-400 focus:ring-emerald-400" />
+          <span class="text-xs font-bold text-emerald-300">진단글쓰기 / 특별수업 완료</span>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        
+        <!-- Dropdown 1: Set Record (Col 8 Number + Col 9 Event) -->
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-4.5">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-amber-300">1. 세트 기록 (숫자 + 이벤트)</span>
+            <span class="text-[10px] text-slate-400">8열(숫자) & 9열(이벤트) 동시 저장</span>
+          </div>
+          <select id="eventSetSelect" onchange="toggleNumberInput()"
+                  class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <option value="">(선택 안 함)</option>
+            <option value="코스업">코스업</option>
+            <option value="레벨업">레벨업</option>
+            <option value="훈민정음/숙제교재완료">훈민정음/숙제교재완료</option>
+            <option value="읽트완료">읽트완료</option>
+            <option value="듣트완료">듣트완료</option>
+            <option value="한자교재완료">한자교재완료</option>
+            <option value="정독완">정독완</option>
+          </select>
+
+          <!-- Number input box reveals when an option is selected -->
+          <div id="eventNumberContainer" class="hidden mt-3">
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">숫자 입력 (8열)</label>
+            <input type="text" id="eventNumberInput" placeholder="예: 3단계, 5권, 12차시 등"
+                   class="w-full p-2.5 bg-slate-900 border border-amber-400/40 rounded-xl text-xs text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold" />
+          </div>
+        </div>
+
+        <!-- Dropdown 2: Solo Title (Col 9 Event Solo) -->
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-4.5">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-indigo-300">2. 단독 타이틀 (이벤트 단독)</span>
+            <span class="text-[10px] text-slate-400">9열(이벤트) 단독 저장</span>
+          </div>
+          <select id="eventSoloSelect"
+                  class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="">(선택 안 함)</option>
+            <option value="친구완성">친구완성</option>
+            <option value="탐험가완성">탐험가완성</option>
+            <option value="고수완성">고수완성</option>
+            <option value="챔피언완성">챔피언완성</option>
+            <option value="마스터완성">마스터완성</option>
+            <option value="그랜드마스터완성">그랜드마스터완성</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-2">
+            * 1번 세트 이벤트와 2번 단독 타이틀은 상황에 맞게 각각 또는 단독으로 선택할 수 있습니다.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Student Memo / Reflection -->
+      <div class="mt-4 pt-4 border-t border-white/10">
+        <label class="block text-xs font-bold text-slate-300 mb-1.5">오늘의 소감 및 선생님께 한마디 😊</label>
+        <input type="text" id="studentReflectionInput" placeholder="오늘 공부하며 뿌듯했던 점이나 선생님께 전하고 싶은 말씀" 
+               class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      </div>
+    </div>
+
+
+    <!-- ================= 7단계: 미션 최종 제출 & 하원 ================= -->
+    <div class="bg-white rounded-3xl p-6 shadow-md border-2 border-indigo-200">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm">7</span>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">오늘의 학습 완료 및 하원</h3>
+            <p class="text-xs text-slate-500">모든 학습 기록을 구글 출석부에 안전하게 저장하고 하원합니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Summary Box -->
+      <div id="missionSummaryBox" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs sm:text-sm space-y-1.5 mb-5 text-slate-700">
+        <p><strong>📖 독서:</strong> <span id="sumBooks">등록된 도서 없음</span></p>
+        <p><strong>✍️ 독서노트:</strong> <span id="sumNotes">완료</span></p>
+        <p><strong>🎯 트레이닝:</strong> <span id="sumTraining">선택 안 함</span></p>
+        <p><strong>📚 숙제 점검:</strong> <span id="sumHomework">숙제완료</span></p>
+        <p><strong>🏆 이벤트:</strong> <span id="sumEvent">선택 안 함</span></p>
+      </div>
+
+      <!-- Submit Button -->
+      <button id="btnSubmitMissions" onclick="submitAllMissions()" 
+              class="w-full py-4 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 hover:from-indigo-700 hover:to-indigo-900 text-white font-extrabold text-base sm:text-lg rounded-2xl shadow-lg shadow-indigo-500/25 transition transform active:scale-[0.99] flex items-center justify-center gap-3">
+        <span>🚀 오늘의 학습 완료 및 하원 / 로그아웃</span>
+      </button>
+    </div>
+
+  </main>
+
+
+  <!-- ================= BOOK MODAL (MATCHING SCREENSHOT) ================= -->
+  <div id="bookModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in fade-in duration-200">
+      
+      <!-- Top Icon & Header -->
+      <div class="text-center mb-6">
+        <span class="inline-block p-3 rounded-2xl bg-blue-50 text-blue-600 text-3xl mb-2 shadow-inner">
+          📖
+        </span>
+        <h3 class="text-xl sm:text-2xl font-black text-slate-900">오늘 독서 도서 등록</h3>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">순번, 분야, 도서명 및 진행 상태를 입력해 주세요.</p>
+      </div>
+
+      <!-- Form Inputs -->
+      <div class="space-y-4">
+        
+        <!-- Row 1: 순번 & 독서 분야 -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">순번</label>
+            <select id="modalBookOrder" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="1권째">1권째</option>
+              <option value="2권째">2권째</option>
+              <option value="3권째">3권째</option>
+              <option value="4권째">4권째</option>
+              <option value="5권째">5권째</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">독서 분야</label>
+            <select id="modalBookGenre" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="문학">문학</option>
+              <option value="인문">인문</option>
+              <option value="사회">사회</option>
+              <option value="과학">과학</option>
+              <option value="예술">예술</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 2: 도서 정보 및 상태 체크 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">도서 정보 및 상태 체크</label>
+          <div class="grid grid-cols-12 gap-2">
+            <div class="col-span-6">
+              <input type="text" id="modalBookTitle" placeholder="도서명 입력"
+                     class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <div class="col-span-3">
+              <input type="number" id="modalBookScore" placeholder="점수(선택)" min="0" max="100"
+                     class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <div class="col-span-3">
+              <select id="modalBookStatus" class="w-full p-3 bg-white border-2 border-emerald-500 text-emerald-700 rounded-2xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="독서시작">독서시작</option>
+                <option value="독서중">독서중</option>
+                <option value="완독">완독</option>
+                <option value="진단완료">진단완료</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2.5: Optional Detailed Reading Stats -->
+        <div class="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">시작 쪽</label>
+            <input type="number" id="modalBookPageStart" placeholder="1" class="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs text-center" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">끝 쪽</label>
+            <input type="number" id="modalBookPageEnd" placeholder="50" class="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs text-center" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">독서 시간(분)</label>
+            <input type="number" id="modalBookDuration" placeholder="40" class="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs text-center" />
+          </div>
+        </div>
+
+        <!-- Row 3: 비고 (메모) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">비고 (메모)</label>
+          <input type="text" id="modalBookMemo" placeholder="특이사항이나 선생님 전달 메모 (선택)"
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+
+      </div>
+
+      <!-- Modal Footer Buttons (Replica of Screenshot) -->
+      <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+        <button type="button" onclick="closeBookModal()" 
+                class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-2xl transition">
+          취소 / 닫기
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="saveBookAndAddNext()" 
+                  class="px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-bold rounded-2xl transition flex items-center gap-1">
+            <span>➕ 등록 후 다음 책 추가</span>
+          </button>
+          <button type="button" onclick="saveBookAndClose()" 
+                  class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md shadow-emerald-600/20 transition">
+            완료 (등록 후 닫기)
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ================= MANUAL LOGIN MODAL ================= -->
+  <div id="manualLoginModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100">
+      <h3 class="text-xl font-black text-slate-900 mb-1">직접 입력하여 로그인</h3>
+      <p class="text-xs text-slate-500 mb-5">명단에 이름이 없거나 보강/체험 학생인 경우 직접 입력하세요.</p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">학생 이름 *</label>
+          <input type="text" id="manualNameInput" placeholder="이름 입력 (예: 홍길동)"
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">학년 *</label>
+          <select id="manualGradeInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold">
+            <option value="초1">초등학교 1학년</option>
+            <option value="초2">초등학교 2학년</option>
+            <option value="초3">초등학교 3학년</option>
+            <option value="초4">초등학교 4학년</option>
+            <option value="초5">초등학교 5학년</option>
+            <option value="초6">초등학교 6학년</option>
+            <option value="중1" selected>중학교 1학년</option>
+            <option value="중2">중학교 2학년</option>
+            <option value="중3">중학교 3학년</option>
+            <option value="고등">고등학생</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">수업 시간</label>
+          <select id="manualDurationInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold">
+            <option value="60분">60분 수업</option>
+            <option value="90분" selected>90분 수업</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-end gap-2">
+        <button onclick="closeManualLoginModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">취소</button>
+        <button onclick="submitManualLogin()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition">로그인 시작</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================= CELEBRATION MODAL ================= -->
+  <div id="celebrateModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-md rounded-3xl p-8 text-center shadow-2xl border border-slate-100 transform transition-all scale-100">
+      <div class="w-20 h-20 mx-auto rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-4xl mb-4 shadow-inner">
+        🎉
+      </div>
+      <h3 class="text-2xl font-black text-slate-900 tracking-tight">수고 많았습니다!</h3>
+      <p id="celebrateStudentName" class="text-base font-bold text-indigo-600 mt-1">홍길동 학생</p>
+      <p class="text-sm text-slate-600 mt-2">오늘의 독서와 학습 미션을 훌륭하게 완수했습니다.<br>구글 출석부에 안전하게 저장되었습니다.</p>
+      
+      <div class="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-xs text-slate-500">
+        <p>3초 후 로그인 화면으로 자동 이동합니다...</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================= CONFIG MODAL (FOR WEBHOOK) ================= -->
+  <div id="configModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100">
+      <h3 class="text-xl font-black text-slate-900 mb-1">⚙️ 학원 및 시트 연동 설정</h3>
+      <p class="text-xs text-slate-500 mb-5">원장앱 설정과 동일한 구글 Apps Script Webhook URL을 설정합니다.</p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">학원명</label>
+          <input type="text" id="configAcademyName" placeholder="리드인 국어학원"
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">구글 Apps Script Webhook URL</label>
+          <input type="text" id="configGasUrl" placeholder="https://script.google.com/macros/s/.../exec"
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono" />
+          <p class="text-[11px] text-slate-400 mt-1">* 원장앱 또는 키오스크와 같은 도메인일 경우 자동으로 동기화됩니다.</p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-end gap-2">
+        <button onclick="closeConfigModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">닫기</button>
+        <button onclick="saveConfigModal()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================= JAVASCRIPT APP LOGIC ================= -->
+  <script>
+    // Global Constants
+    const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+
+    // App State
+    const state = {
+      config: {
+        gasWebhookUrl: localStorage.getItem("gas_webhook_url") || "",
+        academyName: localStorage.getItem("academy_name") || "리드인",
+        logoUrl: localStorage.getItem("logo_url") || ""
+      },
+      students: [],
+      dailyLogs: [],
+      todayDay: "",
+      todayDateStr: "",
+      currentStudent: null,
+      currentDailyLog: null,
+      // Active Student Missions
+      missions: {
+        books: [], // { order, genre, title, score, status, pageStart, pageEnd, duration, memo }
+        noteStatus: "시작",
+        noteSummary: "",
+        trainingType: "",
+        trainingDetail: "",
+        trainingDone: false,
+        hwStatus: "숙제완료",
+        hwBookTitle: "",
+        hwErrors: "",
+        nextBookTitle: "",
+        nextBookReread: false,
+        nextBookMemo: "",
+        eventSet: "",
+        eventNumber: "",
+        eventSolo: "",
+        grammarDone: false,
+        studentReflection: ""
+      },
+      activeGradeFilter: "ALL"
+    };
+
+    // 1. App Initialization
+    window.addEventListener("DOMContentLoaded", () => {
+      initClock();
+      loadCachedData();
+      fetchFreshData();
+      setupGradeTabs();
+      setupSearchInput();
+    });
+
+    // 2. Realtime Clock & Date
+    function initClock() {
+      const now = new Date();
+      state.todayDay = WEEKDAYS[now.getDay()];
+      
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const date = String(now.getDate()).padStart(2, '0');
+      state.todayDateStr = `${month}/${date}`;
+
+      const dateTextEl = document.getElementById("liveDateText");
+      if (dateTextEl) {
+        dateTextEl.innerText = `${year}. ${month}. ${date}. (${state.todayDay.slice(0, 1)})`;
+      }
+      const dayBadgeEl = document.getElementById("todayDayBadge");
+      if (dayBadgeEl) {
+        dayBadgeEl.innerText = state.todayDay;
+      }
+    }
+
+    // 3. Load Cached State from localStorage (0.1s instant render)
+    function loadCachedData() {
+      const cached = localStorage.getItem("academy_attendance_state");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          state.students = parsed.students || [];
+          state.dailyLogs = parsed.dailyLogs || [];
+          renderStudentGrid();
+        } catch(e) {
+          console.error("Cache read error:", e);
+        }
+      }
+      applyBranding();
+    }
+
+    function applyBranding() {
+      const titleEl = document.getElementById("academyTitle");
+      if (titleEl && state.config.academyName) {
+        titleEl.innerText = `${state.config.academyName} 학생 학습 라운지`;
+      }
+    }
+
+    // 4. Fetch Live Data from Google Sheets API
+    function fetchFreshData() {
+      if (!state.config.gasWebhookUrl) return;
+
+      const sep = state.config.gasWebhookUrl.includes("?") ? "&" : "?";
+      const url = `${state.config.gasWebhookUrl}${sep}_t=${Date.now()}`;
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data && typeof data === 'object') {
+            state.students = data.students || [];
+            state.dailyLogs = data.dailyLogs || [];
+            
+            // Cache locally
+            localStorage.setItem("academy_attendance_state", JSON.stringify({
+              students: state.students,
+              dailyLogs: state.dailyLogs
+            }));
+
+            renderStudentGrid();
+          }
+        })
+        .catch(err => {
+          console.warn("Background fetch failed, relying on cache:", err);
+        });
+    }
+
+    // 5. Render Student Cards Filtered by TODAY'S Weekday
+    function renderStudentGrid() {
+      const grid = document.getElementById("studentGrid");
+      const emptyState = document.getElementById("loginEmptyState");
+      if (!grid) return;
+
+      grid.innerHTML = "";
+      const query = (document.getElementById("studentSearchInput").value || "").trim().toLowerCase();
+
+      // Filter: students that have scheduled time for TODAY
+      const todayStudents = state.students.filter(s => {
+        if (!s || !s.name) return false;
+        
+        // Match day in times
+        const scheduledTime = s.times ? (s.times[state.todayDay] || "") : "";
+        const hasTimeToday = scheduledTime && scheduledTime !== "-" && scheduledTime.trim() !== "";
+        
+        // Also check if student has a dailyLog for today
+        const hasLogToday = state.dailyLogs.some(l => 
+          (l.name || "").replace(/\s+/g, '') === (s.name || "").replace(/\s+/g, '') &&
+          isSameDate(l.date, state.todayDateStr)
+        );
+
+        return hasTimeToday || hasLogToday;
+      });
+
+      // Apply Grade and Query Filter
+      const filtered = todayStudents.filter(s => {
+        // Grade filter
+        if (state.activeGradeFilter !== "ALL") {
+          const g = (s.grade || "").trim();
+          if (state.activeGradeFilter === "초등" && !g.startsWith("초")) return false;
+          if (state.activeGradeFilter === "중등" && !g.startsWith("중")) return false;
+          if (state.activeGradeFilter !== "초등" && state.activeGradeFilter !== "중등" && g !== state.activeGradeFilter) return false;
+        }
+
+        // Search query filter (matches name or initials)
+        if (query) {
+          const cleanName = (s.name || "").toLowerCase();
+          if (!cleanName.includes(query) && !matchInitialSearch(cleanName, query)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove("hidden");
+        return;
+      } else {
+        emptyState.classList.add("hidden");
+      }
+
+      // Sort by scheduled time, then name
+      filtered.sort((a, b) => {
+        const timeA = (a.times && a.times[state.todayDay]) || "99:99";
+        const timeB = (b.times && b.times[state.todayDay]) || "99:99";
+        if (timeA === timeB) return (a.name || "").localeCompare(b.name || "", "ko");
+        return timeA.localeCompare(timeB);
+      });
+
+      filtered.forEach(student => {
+        const card = createStudentCard(student);
+        grid.appendChild(card);
+      });
+    }
+
+    // Helper: Create Student Card Element
+    function createStudentCard(student) {
+      const scheduledTime = (student.times && student.times[state.todayDay]) || "시간 외";
+      const duration = getClassDuration(student);
+
+      // Check current log status
+      const log = state.dailyLogs.find(l => 
+        (l.name || "").replace(/\s+/g, '') === (student.name || "").replace(/\s+/g, '') &&
+        isSameDate(l.date, state.todayDateStr)
+      );
+
+      const status = log ? (log.status || "대기") : "대기";
+      let statusBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">대기</span>`;
+      if (status === "수업중") {
+        statusBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold animate-pulse">수업중 🟢</span>`;
+      } else if (status === "수업완료") {
+        statusBadge = `<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">수업완료 🎉</span>`;
+      }
+
+      const card = document.createElement("div");
+      card.className = "bg-white p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-400 hover:shadow-lg transition cursor-pointer flex flex-col justify-between group active:scale-[0.98]";
+      card.onclick = () => loginStudent(student, log);
+
+      card.innerHTML = `
+        <div>
+          <div class="flex items-center justify-between gap-1 mb-2">
+            <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-xs font-bold">${student.grade || '학생'}</span>
+            ${statusBadge}
+          </div>
+          <h4 class="text-base sm:text-lg font-black text-slate-900 group-hover:text-indigo-600 transition leading-snug">${student.name}</h4>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+          <span>⏰ ${scheduledTime}</span>
+          <span class="text-slate-400 font-normal">${duration}분</span>
+        </div>
+      `;
+
+      return card;
+    }
+
+    // Helper: Determine 60분 vs 90분
+    function getClassDuration(student) {
+      if (!student) return 90;
+      const str = ((student.classes || '') + ' ' + (student.notes || '')).toLowerCase();
+      if (str.includes("60분") || str.includes("60m") || str.includes("초등1") || student.grade === "초1") {
+        return 60;
+      }
+      return 90; // Default
+    }
+
+    // 6. Student Login Trigger
+    function loginStudent(student, existingLog) {
+      state.currentStudent = student;
+      state.currentDailyLog = existingLog || null;
+
+      // Update Header Pill
+      document.getElementById("userHeaderPill").classList.remove("hidden");
+      document.getElementById("userHeaderPill").classList.add("flex");
+      document.getElementById("btnLogout").classList.remove("hidden");
+
+      document.getElementById("headerStudentName").innerText = student.name;
+      document.getElementById("headerStudentGrade").innerText = student.grade || "학생";
+      const duration = getClassDuration(student);
+      document.getElementById("headerStudentDuration").innerText = `${duration}분`;
+
+      // Update Dashboard Hero
+      document.getElementById("dashStudentName").innerText = student.name;
+      document.getElementById("dashDuration").innerText = `${duration}분 수업`;
+
+      const nowTimeStr = new Date().toTimeString().slice(0, 5);
+      const inTime = (existingLog && existingLog.inTime) ? existingLog.inTime : nowTimeStr;
+      document.getElementById("dashInTimeBadge").innerText = `등원: ${inTime}`;
+
+      // Reset / Load mission state
+      resetMissions();
+      if (existingLog) {
+        populateExistingMissions(existingLog);
+      }
+
+      // Switch View
+      document.getElementById("viewLogin").classList.add("hidden");
+      document.getElementById("viewDashboard").classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      updateProgress();
+    }
+
+    function resetMissions() {
+      state.missions = {
+        books: [],
+        noteStatus: "시작",
+        noteSummary: "",
+        trainingType: "",
+        trainingDetail: "",
+        trainingDone: false,
+        hwStatus: "숙제완료",
+        hwBookTitle: "",
+        hwErrors: "",
+        nextBookTitle: "",
+        nextBookReread: false,
+        nextBookMemo: "",
+        eventSet: "",
+        eventNumber: "",
+        eventSolo: "",
+        grammarDone: false,
+        studentReflection: ""
+      };
+      renderBookList();
+      setNoteStatus("시작");
+      setHwStatus("숙제완료");
+      document.getElementById("noteSummaryInput").value = "";
+      document.getElementById("trainingTypeSelect").value = "";
+      document.getElementById("trainingDetailInput").value = "";
+      document.getElementById("trainingDoneCheck").checked = false;
+      document.getElementById("hwBookTitleInput").value = "";
+      document.getElementById("hwErrorsInput").value = "";
+      document.getElementById("nextBookTitleInput").value = "";
+      document.getElementById("nextBookRereadCheck").checked = false;
+      document.getElementById("nextBookMemoInput").value = "";
+      document.getElementById("eventSetSelect").value = "";
+      document.getElementById("eventNumberInput").value = "";
+      document.getElementById("eventNumberContainer").classList.add("hidden");
+      document.getElementById("eventSoloSelect").value = "";
+      document.getElementById("grammarDoneCheck").checked = false;
+      document.getElementById("studentReflectionInput").value = "";
+    }
+
+    function populateExistingMissions(log) {
+      if (log.grammarDone) {
+        document.getElementById("grammarDoneCheck").checked = true;
+        state.missions.grammarDone = true;
+      }
+      if (log.number) {
+        document.getElementById("eventNumberInput").value = log.number;
+        state.missions.eventNumber = log.number;
+      }
+      if (log.event) {
+        const isSet = ["코스업", "레벨업", "훈민정음/숙제교재완료", "읽트완료", "듣트완료", "한자교재완료", "정독완"].includes(log.event);
+        if (isSet) {
+          document.getElementById("eventSetSelect").value = log.event;
+          document.getElementById("eventNumberContainer").classList.remove("hidden");
+          state.missions.eventSet = log.event;
+        } else {
+          document.getElementById("eventSoloSelect").value = log.event;
+          state.missions.eventSolo = log.event;
+        }
+      }
+    }
+
+    // 7. Book Modal Logic (Screenshot Replica)
+    function openBookModal() {
+      // Set default order based on current count
+      const nextOrder = (state.missions.books.length + 1) + "권째";
+      document.getElementById("modalBookOrder").value = nextOrder;
+      document.getElementById("modalBookTitle").value = "";
+      document.getElementById("modalBookScore").value = "";
+      document.getElementById("modalBookStatus").value = "독서시작";
+      document.getElementById("modalBookPageStart").value = "";
+      document.getElementById("modalBookPageEnd").value = "";
+      document.getElementById("modalBookDuration").value = "";
+      document.getElementById("modalBookMemo").value = "";
+
+      document.getElementById("bookModal").classList.remove("hidden");
+      document.getElementById("modalBookTitle").focus();
+    }
+
+    function closeBookModal() {
+      document.getElementById("bookModal").classList.add("hidden");
+    }
+
+    function saveCurrentBookFromModal() {
+      const title = document.getElementById("modalBookTitle").value.trim();
+      if (!title) {
+        alert("도서명을 입력해 주세요 📖");
+        return false;
+      }
+
+      const book = {
+        id: "book_" + Date.now(),
+        order: document.getElementById("modalBookOrder").value,
+        genre: document.getElementById("modalBookGenre").value,
+        title: title,
+        score: document.getElementById("modalBookScore").value.trim(),
+        status: document.getElementById("modalBookStatus").value,
+        pageStart: document.getElementById("modalBookPageStart").value.trim(),
+        pageEnd: document.getElementById("modalBookPageEnd").value.trim(),
+        duration: document.getElementById("modalBookDuration").value.trim(),
+        memo: document.getElementById("modalBookMemo").value.trim()
+      };
+
+      state.missions.books.push(book);
+      renderBookList();
+      updateProgress();
+      return true;
+    }
+
+    function saveBookAndClose() {
+      if (saveCurrentBookFromModal()) {
+        closeBookModal();
+      }
+    }
+
+    function saveBookAndAddNext() {
+      if (saveCurrentBookFromModal()) {
+        const nextOrder = (state.missions.books.length + 1) + "권째";
+        document.getElementById("modalBookOrder").value = nextOrder;
+        document.getElementById("modalBookTitle").value = "";
+        document.getElementById("modalBookScore").value = "";
+        document.getElementById("modalBookStatus").value = "독서시작";
+        document.getElementById("modalBookPageStart").value = "";
+        document.getElementById("modalBookPageEnd").value = "";
+        document.getElementById("modalBookDuration").value = "";
+        document.getElementById("modalBookMemo").value = "";
+        document.getElementById("modalBookTitle").focus();
+      }
+    }
+
+    function removeBook(id) {
+      state.missions.books = state.missions.books.filter(b => b.id !== id);
+      renderBookList();
+      updateProgress();
+    }
+
+    function renderBookList() {
+      const container = document.getElementById("bookListContainer");
+      if (!container) return;
+
+      if (state.missions.books.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <p class="text-3xl mb-1">📖</p>
+            <p class="text-xs sm:text-sm font-semibold text-slate-500">아직 오늘 등록된 도서가 없습니다.</p>
+            <button onclick="openBookModal()" class="mt-2 text-emerald-600 font-bold text-xs underline">
+              + 첫 번째 도서 등록하기
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = "";
+      state.missions.books.forEach((b, idx) => {
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200 gap-3";
+
+        let scoreBadge = b.score ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-xs">${b.score}점</span>` : '';
+        let pageInfo = (b.pageStart || b.pageEnd) ? `(${b.pageStart || 1}~${b.pageEnd || ''}쪽)` : '';
+        let durationInfo = b.duration ? `• ${b.duration}분` : '';
+
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
+              ${idx + 1}
+            </span>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-[10px] font-bold">${b.genre}</span>
+                <span class="font-extrabold text-slate-900 text-sm">${b.title}</span>
+                <span class="text-xs text-slate-500 font-medium">${pageInfo}</span>
+                ${scoreBadge}
+              </div>
+              <p class="text-[11px] text-slate-500 mt-0.5 font-medium">
+                <span class="text-emerald-700 font-bold">${b.status}</span> ${durationInfo} ${b.memo ? `• 메모: ${b.memo}` : ''}
+              </p>
+            </div>
+          </div>
+          <button onclick="removeBook('${b.id}')" class="text-slate-400 hover:text-red-500 p-1.5 transition text-xs font-bold">
+            삭제
+          </button>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // 8. Step 2 & 4 State Handlers
+    function setNoteStatus(status) {
+      state.missions.noteStatus = status;
+      document.querySelectorAll(".note-status-btn").forEach(btn => {
+        if (btn.dataset.val === status) {
+          btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-sm";
+        } else {
+          btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        }
+      });
+      updateProgress();
+    }
+
+    function setHwStatus(status) {
+      state.missions.hwStatus = status;
+      document.querySelectorAll(".hw-status-btn").forEach(btn => {
+        if (btn.dataset.val === status) {
+          btn.className = "hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500 text-white shadow-sm";
+        } else {
+          btn.className = "hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        }
+      });
+      updateProgress();
+    }
+
+    // 9. Step 6 Event Dropdown Toggle
+    function toggleNumberInput() {
+      const sel = document.getElementById("eventSetSelect").value;
+      const box = document.getElementById("eventNumberContainer");
+      if (sel) {
+        box.classList.remove("hidden");
+      } else {
+        box.classList.add("hidden");
+      }
+      updateProgress();
+    }
+
+    // 10. Realtime Progress Calculation
+    function updateProgress() {
+      let score = 0;
+
+      // 1. Book registered (30%)
+      if (state.missions.books.length > 0) score += 30;
+
+      // 2. Note status (15%)
+      if (state.missions.noteStatus === "완료") score += 15;
+      else if (state.missions.noteStatus === "작성중") score += 8;
+
+      // 3. Training (15%)
+      if (document.getElementById("trainingDoneCheck").checked || document.getElementById("trainingTypeSelect").value) score += 15;
+
+      // 4. Homework (15%)
+      if (state.missions.hwStatus) score += 15;
+
+      // 5. Next Book (10%)
+      if (document.getElementById("nextBookTitleInput").value.trim()) score += 10;
+
+      // 6. Growth Event / Reflection (15%)
+      if (document.getElementById("eventSetSelect").value || document.getElementById("eventSoloSelect").value || document.getElementById("grammarDoneCheck").checked) score += 15;
+
+      score = Math.min(100, Math.max(0, score));
+
+      document.getElementById("dashProgressBar").style.width = `${score}%`;
+      document.getElementById("dashPercentText").innerText = `${score}%`;
+
+      // Update Summary Box
+      const booksSummary = state.missions.books.length > 0 
+        ? state.missions.books.map(b => `${b.title}(${b.status}${b.score ? `/${b.score}점` : ''})`).join(", ")
+        : "등록된 도서 없음";
+      document.getElementById("sumBooks").innerText = booksSummary;
+      document.getElementById("sumNotes").innerText = state.missions.noteStatus;
+      
+      const training = document.getElementById("trainingTypeSelect").value;
+      const trainingDetail = document.getElementById("trainingDetailInput").value;
+      document.getElementById("sumTraining").innerText = training ? `${training} (${trainingDetail || '완료'})` : "선택 안 함";
+      document.getElementById("sumHomework").innerText = state.missions.hwStatus;
+
+      const eventSet = document.getElementById("eventSetSelect").value;
+      const eventSolo = document.getElementById("eventSoloSelect").value;
+      const num = document.getElementById("eventNumberInput").value;
+      document.getElementById("sumEvent").innerText = [
+        eventSet ? `${eventSet}${num ? ` ${num}` : ''}` : '',
+        eventSolo ? `${eventSolo}` : ''
+      ].filter(Boolean).join(" / ") || "선택 안 함";
+    }
+
+    // 11. Final Mission Submit & Logout
+    function submitAllMissions() {
+      if (!state.currentStudent) return;
+
+      const student = state.currentStudent;
+      const btn = document.getElementById("btnSubmitMissions");
+      btn.disabled = true;
+      btn.innerHTML = `<span>⏳ 저장 및 하원 처리 중...</span>`;
+
+      // 1. Gather all inputs
+      const eventSet = document.getElementById("eventSetSelect").value;
+      const eventNum = document.getElementById("eventNumberInput").value.trim();
+      const eventSolo = document.getElementById("eventSoloSelect").value;
+      const grammarDone = document.getElementById("grammarDoneCheck").checked ? "완료" : "";
+
+      // Determine Event string (Col 9) and Number string (Col 8)
+      let finalEvent = eventSet || eventSolo || "";
+      if (eventSet && eventSolo) {
+        finalEvent = `${eventSet}, ${eventSolo}`;
+      }
+      let finalNumber = eventNum;
+
+      // Compile Col 11 (contents)
+      const bookSummaries = state.missions.books.map(b => {
+        let p = (b.pageStart || b.pageEnd) ? `(${b.pageStart || 1}~${b.pageEnd}p)` : '';
+        let s = b.score ? `${b.score}점` : '';
+        return `${b.title}${p} [${b.status}${s ? `/${s}` : ''}]`;
+      }).join("; ");
+
+      const noteText = document.getElementById("noteSummaryInput").value.trim();
+      const trType = document.getElementById("trainingTypeSelect").value;
+      const trDetail = document.getElementById("trainingDetailInput").value.trim();
+      const hwTitle = document.getElementById("hwBookTitleInput").value.trim();
+      const hwErr = document.getElementById("hwErrorsInput").value.trim();
+      const nextBook = document.getElementById("nextBookTitleInput").value.trim();
+      const isReread = document.getElementById("nextBookRereadCheck").checked ? "(재독예약)" : "";
+      const reflection = document.getElementById("studentReflectionInput").value.trim();
+
+      const contentParts = [];
+      if (bookSummaries) contentParts.push(`[독서] ${bookSummaries}`);
+      if (state.missions.noteStatus) contentParts.push(`[노트] ${state.missions.noteStatus}${noteText ? `(${noteText})` : ''}`);
+      if (trType) contentParts.push(`[트레이닝] ${trType}${trDetail ? `(${trDetail})` : ''}`);
+      if (state.missions.hwStatus) contentParts.push(`[숙제] ${state.missions.hwStatus}${hwTitle ? ` ${hwTitle}` : ''}${hwErr ? `(${hwErr})` : ''}`);
+      if (nextBook) contentParts.push(`[다음책] ${nextBook}${isReread}`);
+      if (reflection) contentParts.push(`[소감] ${reflection}`);
+
+      const finalContents = contentParts.join(" | ");
+
+      // Find or build Daily Log
+      const nowTimeStr = new Date().toTimeString().slice(0, 5);
+      const scheduledTime = (student.times && student.times[state.todayDay]) || "시간 외";
+
+      let targetLog = state.dailyLogs.find(l => 
+        (l.name || "").replace(/\s+/g, '') === (student.name || "").replace(/\s+/g, '') &&
+        isSameDate(l.date, state.todayDateStr)
+      );
+
+      const updates = [];
+
+      if (targetLog) {
+        // Update existing row
+        targetLog.status = "수업완료";
+        targetLog.number = finalNumber;
+        targetLog.event = finalEvent;
+        targetLog.grammarDone = grammarDone;
+        targetLog.contents = finalContents;
+
+        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "status", value: "수업완료", name: student.name, date: targetLog.date, time: targetLog.time });
+        if (finalNumber) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "number", value: finalNumber, name: student.name, date: targetLog.date, time: targetLog.time });
+        if (finalEvent) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "event", value: finalEvent, name: student.name, date: targetLog.date, time: targetLog.time });
+        if (grammarDone) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: grammarDone, name: student.name, date: targetLog.date, time: targetLog.time });
+        if (finalContents) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents, name: student.name, date: targetLog.date, time: targetLog.time });
+
+        sendBatchUpdates(updates);
+      } else {
+        // Create new dailyLog row via GAS addDailyLog
+        const newRow = state.dailyLogs.length > 0 ? Math.max(...state.dailyLogs.map(l => l.row)) + 1 : 3;
+        targetLog = {
+          id: "daily_" + newRow,
+          row: newRow,
+          date: state.todayDateStr,
+          time: scheduledTime,
+          name: student.name,
+          notes: student.notes || "",
+          status: "수업완료",
+          inTime: nowTimeStr,
+          reason: "",
+          number: finalNumber,
+          event: finalEvent,
+          grammarDone: grammarDone,
+          contents: finalContents
+        };
+        state.dailyLogs.push(targetLog);
+
+        sendNewLog(targetLog);
+      }
+
+      // Update local storage
+      localStorage.setItem("academy_attendance_state", JSON.stringify({
+        students: state.students,
+        dailyLogs: state.dailyLogs
+      }));
+
+      // Trigger Celebration Animation & Modal
+      btn.innerHTML = `<span>🚀 오늘의 학습 완료 및 하원 / 로그아웃</span>`;
+      btn.disabled = false;
+      showCelebration(student.name);
+    }
+
+    function showCelebration(name) {
+      document.getElementById("celebrateStudentName").innerText = `${name} 학생`;
+      document.getElementById("celebrateModal").classList.remove("hidden");
+
+      // Confetti effect
+      if (typeof confetti === "function") {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
+
+      // Auto logout and return to student selection screen after 3.5s
+      setTimeout(() => {
+        document.getElementById("celebrateModal").classList.add("hidden");
+        logoutStudent();
+      }, 3500);
+    }
+
+    function confirmLogout() {
+      if (confirm("학습 화면을 종료하고 로그인 화면으로 돌아가시겠습니까?")) {
+        logoutStudent();
+      }
+    }
+
+    function logoutStudent() {
+      state.currentStudent = null;
+      state.currentDailyLog = null;
+      document.getElementById("userHeaderPill").classList.add("hidden");
+      document.getElementById("userHeaderPill").classList.remove("flex");
+      document.getElementById("btnLogout").classList.add("hidden");
+
+      document.getElementById("viewDashboard").classList.add("hidden");
+      document.getElementById("viewLogin").classList.remove("hidden");
+      renderStudentGrid();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 12. Manual Login Modal Handlers
+    function openManualLoginModal() {
+      document.getElementById("manualNameInput").value = "";
+      document.getElementById("manualLoginModal").classList.remove("hidden");
+      document.getElementById("manualNameInput").focus();
+    }
+
+    function closeManualLoginModal() {
+      document.getElementById("manualLoginModal").classList.add("hidden");
+    }
+
+    function submitManualLogin() {
+      const name = document.getElementById("manualNameInput").value.trim();
+      const grade = document.getElementById("manualGradeInput").value;
+      const duration = document.getElementById("manualDurationInput").value;
+
+      if (!name) {
+        alert("학생 이름을 입력해 주세요.");
+        return;
+      }
+
+      // Find in state or create synthetic student
+      let student = state.students.find(s => (s.name || '').replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+      if (!student) {
+        student = {
+          id: "manual_" + Date.now(),
+          name: name,
+          grade: grade,
+          classes: duration,
+          times: { [state.todayDay]: "시간 외" },
+          notes: "직접 로그인 학생"
+        };
+      }
+
+      closeManualLoginModal();
+      loginStudent(student, null);
+    }
+
+    // 13. Config Modal Handlers
+    function openConfigModal() {
+      document.getElementById("configAcademyName").value = state.config.academyName;
+      document.getElementById("configGasUrl").value = state.config.gasWebhookUrl;
+      document.getElementById("configModal").classList.remove("hidden");
+    }
+
+    function closeConfigModal() {
+      document.getElementById("configModal").classList.add("hidden");
+    }
+
+    function saveConfigModal() {
+      const name = document.getElementById("configAcademyName").value.trim();
+      const url = document.getElementById("configGasUrl").value.trim();
+
+      state.config.academyName = name;
+      state.config.gasWebhookUrl = url;
+
+      localStorage.setItem("academy_name", name);
+      localStorage.setItem("gas_webhook_url", url);
+
+      applyBranding();
+      closeConfigModal();
+      fetchFreshData();
+      alert("연동 설정이 저장되었습니다.");
+    }
+
+    // 14. Network Communication Helpers
+    function sendBatchUpdates(updates) {
+      if (!state.config.gasWebhookUrl || !updates || updates.length === 0) return;
+
+      fetch(state.config.gasWebhookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "batchUpdate",
+          updates: updates
+        })
+      }).catch(err => console.error("GAS batchUpdate error:", err));
+    }
+
+    function sendNewLog(log) {
+      if (!state.config.gasWebhookUrl || !log) return;
+
+      fetch(state.config.gasWebhookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "addDailyLog",
+          date: log.date,
+          time: log.time,
+          name: log.name,
+          notes: log.notes,
+          status: log.status,
+          inTime: log.inTime,
+          reason: log.reason,
+          number: log.number,
+          event: log.event,
+          grammarDone: log.grammarDone,
+          contents: log.contents
+        })
+      }).catch(err => console.error("GAS addDailyLog error:", err));
+    }
+
+    // 15. UI Interaction & Search Helpers
+    function setupGradeTabs() {
+      document.querySelectorAll(".grade-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".grade-tab").forEach(t => {
+            t.className = "grade-tab px-3 sm:px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition font-semibold";
+          });
+          tab.className = "grade-tab px-3 sm:px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-sm transition font-semibold";
+          state.activeGradeFilter = tab.dataset.grade;
+          renderStudentGrid();
+        });
+      });
+    }
+
+    function setupSearchInput() {
+      const input = document.getElementById("studentSearchInput");
+      if (input) {
+        input.addEventListener("input", () => {
+          renderStudentGrid();
+        });
+      }
+    }
+
+    function isSameDate(d1, d2) {
+      if (!d1 || !d2) return false;
+      const clean1 = String(d1).replace(/[^0-9]/g, '');
+      const clean2 = String(d2).replace(/[^0-9]/g, '');
+      return clean1 === clean2;
+    }
+
+    function matchInitialSearch(target, query) {
+      const CHO_SUNG = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+      let initials = "";
+      for (let i = 0; i < target.length; i++) {
+        const code = target.charCodeAt(i) - 44032;
+        if (code >= 0 && code <= 11171) {
+          initials += CHO_SUNG[Math.floor(code / 588)];
+        } else {
+          initials += target[i];
+        }
+      }
+      return initials.includes(query);
+    }
+  </script>
+
+</body>
+</html>
