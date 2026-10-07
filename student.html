@@ -93,6 +93,7 @@
       <div class="flex items-center gap-3">
         <div id="userHeaderPill" class="hidden items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-full text-xs font-semibold text-indigo-700">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="headerStudentStatusBadge" class="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">등원</span>
           <span id="headerStudentName">홍길동</span>
           <span class="text-indigo-300">|</span>
           <span id="headerStudentGrade">중1</span>
@@ -169,16 +170,16 @@
           <label class="block text-xs font-bold text-slate-700 mb-1.5">학년 선택 *</label>
           <select id="loginGradeSelect" required
                   class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-            <option value="초1">초등학교 1학년 (초1)</option>
-            <option value="초2">초등학교 2학년 (초2)</option>
-            <option value="초3">초등학교 3학년 (초3)</option>
-            <option value="초4">초등학교 4학년 (초4)</option>
-            <option value="초5">초등학교 5학년 (초5)</option>
-            <option value="초6">초등학교 6학년 (초6)</option>
-            <option value="중1" selected>중학교 1학년 (중1)</option>
-            <option value="중2">중학교 2학년 (중2)</option>
-            <option value="중3">중학교 3학년 (중3)</option>
-            <option value="고등">고등학교 (고등)</option>
+            <option value="초1">초등학교 1학년</option>
+            <option value="초2">초등학교 2학년</option>
+            <option value="초3">초등학교 3학년</option>
+            <option value="초4">초등학교 4학년</option>
+            <option value="초5">초등학교 5학년</option>
+            <option value="초6">초등학교 6학년</option>
+            <option value="중1" selected>중학교 1학년</option>
+            <option value="중2">중학교 2학년</option>
+            <option value="중3">중학교 3학년</option>
+            <option value="고등">고등학교</option>
           </select>
         </div>
 
@@ -212,9 +213,15 @@
     <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-950 rounded-3xl p-6 text-white shadow-xl shadow-indigo-950/20">
       <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <div class="flex items-center gap-2">
-            <span class="px-2.5 py-1 rounded-lg bg-indigo-700/60 text-indigo-200 text-xs font-bold uppercase tracking-wider">오늘의 미션 라운지</span>
-            <span id="dashInTimeBadge" class="text-xs text-indigo-300">등원: 15:30</span>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold flex items-center gap-1.5 shadow-sm">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              등원 • 수업 진행 중
+            </span>
+            <span id="dashInTimeBadge" class="text-xs text-indigo-200 bg-white/10 px-2.5 py-1 rounded-lg font-bold">등원: 15:30</span>
+            <div id="dashRemainingTimeBadge" class="px-3 py-1 rounded-xl bg-indigo-500/30 border border-indigo-400/40 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm">
+              ⏳ 남은 수업 시간: <span class="text-amber-300 font-black">--분</span>
+            </div>
           </div>
           <h2 class="text-2xl sm:text-3xl font-extrabold mt-1 tracking-tight">
             <span id="dashStudentName">홍길동</span> 학생, 오늘의 학습을 시작해요! ✨
@@ -812,6 +819,8 @@
       todayDateStr: "",
       currentStudent: null,
       currentDailyLog: null,
+      currentInTime: "",
+      remainingTimerInterval: null,
       // Active Student Missions
       missions: {
         books: [], // { order, genre, level, course, title, score, status, memo }
@@ -980,7 +989,13 @@
         const dur = getClassDuration(matched);
         info.innerText = `(${matched.grade || ''} | ${dur}분 수업)`;
         if (matched.grade) {
-          document.getElementById("loginGradeSelect").value = matched.grade;
+          const select = document.getElementById("loginGradeSelect");
+          for (let opt of select.options) {
+            if (opt.value === matched.grade || opt.text === matched.grade || opt.text.includes(matched.grade) || matched.grade.includes(opt.value)) {
+              select.value = opt.value;
+              break;
+            }
+          }
         }
         document.getElementById("loginDurationSelect").value = `${dur}분`;
       } else {
@@ -1034,8 +1049,8 @@
 
     function getClassDuration(student) {
       if (!student) return 90;
-      const str = ((student.classes || '') + ' ' + (student.notes || '')).toLowerCase();
-      if (str.includes("60분") || str.includes("60m") || str.includes("초등1") || student.grade === "초1") {
+      const str = ((student.classes || '') + ' ' + (student.notes || '') + ' ' + (student.grade || '')).toLowerCase();
+      if (str.includes("60분") || str.includes("60m") || str.includes("초등1") || student.grade === "초1" || student.grade === "초등학교 1학년") {
         return 60;
       }
       return 90;
@@ -1045,7 +1060,57 @@
     function loginStudent(student, existingLog) {
       try {
         state.currentStudent = student;
-        state.currentDailyLog = existingLog || null;
+
+        const nowTimeStr = new Date().toTimeString().slice(0, 5);
+        const scheduledTime = (student.times && student.times[state.todayDay]) || "시간 외";
+
+        // 1. Locate or create today's daily log
+        let dailyLog = existingLog;
+        if (!dailyLog && Array.isArray(state.dailyLogs)) {
+          dailyLog = [...state.dailyLogs].reverse().find(l => 
+            l && (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') &&
+            isSameDate(l.date, state.todayDateStr)
+          ) || null;
+        }
+
+        const inTime = (dailyLog && dailyLog.inTime) ? dailyLog.inTime : nowTimeStr;
+        state.currentInTime = inTime;
+
+        // 2. Sync to Google Sheets: Ensure status is '등원' and inTime is recorded
+        if (dailyLog) {
+          const updates = [];
+          if (dailyLog.status !== "등원") {
+            dailyLog.status = "등원";
+            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "등원", name: student.name, date: dailyLog.date, time: dailyLog.time });
+          }
+          if (!dailyLog.inTime) {
+            dailyLog.inTime = nowTimeStr;
+            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: nowTimeStr, name: student.name, date: dailyLog.date, time: dailyLog.time });
+          }
+          if (updates.length > 0) {
+            sendBatchUpdates(updates);
+          }
+        } else {
+          const newRow = state.dailyLogs.length > 0 ? Math.max(...state.dailyLogs.map(l => l.row)) + 1 : 3;
+          dailyLog = {
+            id: "daily_" + newRow,
+            row: newRow,
+            date: state.todayDateStr,
+            time: scheduledTime,
+            name: student.name,
+            notes: student.notes || "",
+            status: "등원",
+            inTime: nowTimeStr,
+            reason: "",
+            number: "",
+            event: "",
+            grammarDone: "",
+            contents: ""
+          };
+          state.dailyLogs.push(dailyLog);
+          sendNewLog(dailyLog);
+        }
+        state.currentDailyLog = dailyLog;
 
         const pill = document.getElementById("userHeaderPill");
         if (pill) { pill.classList.remove("hidden"); pill.classList.add("flex"); }
@@ -1066,16 +1131,19 @@
         const dashDur = document.getElementById("dashDuration");
         if (dashDur) dashDur.innerText = `${duration}분 수업`;
 
-        const nowTimeStr = new Date().toTimeString().slice(0, 5);
-        const inTime = (existingLog && existingLog.inTime) ? existingLog.inTime : nowTimeStr;
         const inTimeBadge = document.getElementById("dashInTimeBadge");
         if (inTimeBadge) inTimeBadge.innerText = `등원: ${inTime}`;
+
+        // 3. Start remaining class time timer
+        if (state.remainingTimerInterval) clearInterval(state.remainingTimerInterval);
+        updateRemainingTimeDisplay();
+        state.remainingTimerInterval = setInterval(updateRemainingTimeDisplay, 10000);
 
         resetMissions();
         checkPersistentNextBook(student);
 
-        if (existingLog) {
-          populateExistingMissions(existingLog);
+        if (dailyLog) {
+          populateExistingMissions(dailyLog);
         }
 
         const viewLogin = document.getElementById("viewLogin");
@@ -1090,6 +1158,37 @@
         // Force view switch even if something threw an exception
         document.getElementById("viewLogin").classList.add("hidden");
         document.getElementById("viewDashboard").classList.remove("hidden");
+      }
+    }
+
+    function updateRemainingTimeDisplay() {
+      if (!state.currentStudent) return;
+      const dailyLog = state.currentDailyLog;
+      const inTime = (dailyLog && dailyLog.inTime) || state.currentInTime || new Date().toTimeString().slice(0, 5);
+      const duration = getClassDuration(state.currentStudent);
+      const parts = inTime.split(":");
+      if (parts.length < 2) return;
+
+      const inHrs = parseInt(parts[0], 10);
+      const inMins = parseInt(parts[1], 10);
+      const now = new Date();
+      const inDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), inHrs, inMins, 0);
+      const elapsedMins = Math.floor((now.getTime() - inDate.getTime()) / 60000);
+      const remainingMins = duration - elapsedMins;
+
+      const remainEl = document.getElementById("dashRemainingTimeBadge");
+      if (!remainEl) return;
+
+      if (remainingMins > 10) {
+        remainEl.className = "px-3 py-1 rounded-xl bg-indigo-500/30 border border-indigo-400/40 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm";
+        remainEl.innerHTML = `⏳ 남은 수업 시간: <span class="text-amber-300 font-black text-sm sm:text-base">${remainingMins}분</span> <span class="text-indigo-200 text-xs font-normal">/ ${duration}분</span>`;
+      } else if (remainingMins > 0) {
+        remainEl.className = "px-3 py-1 rounded-xl bg-amber-500/40 border border-amber-300 text-amber-100 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 animate-pulse shadow-sm";
+        remainEl.innerHTML = `⚠️ 곧 수업 종료: <span class="text-white font-black text-sm sm:text-base">${remainingMins}분 남음</span> <span class="text-amber-200 text-xs font-normal">/ ${duration}분</span>`;
+      } else {
+        const overMins = Math.abs(remainingMins);
+        remainEl.className = "px-3 py-1 rounded-xl bg-rose-600/40 border border-rose-400 text-rose-100 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm";
+        remainEl.innerHTML = `⏰ 수업 시간 종료 <span class="text-white font-black text-sm sm:text-base">${overMins > 0 ? `(${overMins}분 초과)` : ''}</span> <span class="text-rose-200 text-xs font-semibold">• 미션을 마무리해 주세요</span>`;
       }
     }
 
@@ -1675,8 +1774,13 @@
     }
 
     function logoutStudent() {
+      if (state.remainingTimerInterval) {
+        clearInterval(state.remainingTimerInterval);
+        state.remainingTimerInterval = null;
+      }
       state.currentStudent = null;
       state.currentDailyLog = null;
+      state.currentInTime = "";
       document.getElementById("userHeaderPill").classList.add("hidden");
       document.getElementById("userHeaderPill").classList.remove("flex");
       document.getElementById("btnLogout").classList.add("hidden");
