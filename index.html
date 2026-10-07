@@ -1121,42 +1121,34 @@ function doGet() {
 
 function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
   if (tab === "dailyLogs" || tab === "출결보강관리" || tab === "오늘 출석부" || tab === "오늘출석부") {
-    var sheet = ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘 출석부");
+    var candidateDailySheets = ["오늘 출석부", "출결보강관리", "오늘출석부"];
+    var sheet = null;
+    for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+      var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
+      if (candidate && candidate.getLastRow() > 2) { sheet = candidate; break; }
+    }
+    if (!sheet) {
+      for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+        var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
+        if (candidate) { sheet = candidate; break; }
+      }
+    }
     if (sheet) {
       ensureColumns(sheet, 11);
       
       var targetRow = row;
-      if (name && sheet.getLastRow() > 2) {
+      var cleanTargetName = String(name || "").trim().replace(/\s+/g, "").toLowerCase();
+
+      // [핵심 매칭] 일일 출석부 시트에서 학생 이름으로 최우선 검색 (날짜/시간 서식 차이와 무관하게 학생 행 100% 제자리 매칭!)
+      if (cleanTargetName && sheet.getLastRow() > 2) {
         var lastRow = sheet.getLastRow();
         var data = sheet.getRange(3, 1, lastRow - 2, 3).getDisplayValues(); // Col A (date), Col B (time), Col C (name)
-        var foundExact = false;
         
         for (var i = 0; i < data.length; i++) {
-          var rowDate = String(data[i][0] || "").trim();
-          var rowTime = String(data[i][1] || "").trim();
-          var rowName = String(data[i][2] || "").trim();
-          
-          var matchName = (rowName.replace(/\s+/g, '').toLowerCase() === name.replace(/\s+/g, '').toLowerCase());
-          var matchDate = date ? isSameDateGAS(rowDate, date) : true;
-          var matchTime = time ? (rowTime.replace(/\s+/g, '') === time.replace(/\s+/g, '')) : true;
-          
-          if (matchName && matchDate && matchTime) {
+          var rowName = String(data[i][2] || "").trim().replace(/\s+/g, "").toLowerCase();
+          if (rowName === cleanTargetName) {
             targetRow = 3 + i;
-            foundExact = true;
             break;
-          }
-        }
-        
-        if (!foundExact && date) {
-          for (var i = 0; i < data.length; i++) {
-            var rowDate = String(data[i][0] || "").trim();
-            var rowName = String(data[i][2] || "").trim();
-            var matchName = (rowName.replace(/\s+/g, '').toLowerCase() === name.replace(/\s+/g, '').toLowerCase());
-            var matchDate = isSameDateGAS(rowDate, date);
-            if (matchName && matchDate) {
-              targetRow = 3 + i;
-              break;
-            }
           }
         }
       }
@@ -3189,8 +3181,8 @@ function isSameDateGAS(d1, d2) {
   var clean1 = String(d1).trim().replace(/\s+/g, "");
   var clean2 = String(d2).trim().replace(/\s+/g, "");
   if (clean1 === clean2) return true;
-  var m1 = clean1.match(/(\d+)[\/\.](\d+)/);
-  var m2 = clean2.match(/(\d+)[\/\.](\d+)/);
+  var m1 = clean1.match(/(\d+)[^\d]+(\d+)/);
+  var m2 = clean2.match(/(\d+)[^\d]+(\d+)/);
   if (m1 && m2) {
     return parseInt(m1[1], 10) === parseInt(m2[1], 10) && 
            parseInt(m1[2], 10) === parseInt(m2[2], 10);

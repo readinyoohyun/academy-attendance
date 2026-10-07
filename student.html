@@ -72,8 +72,8 @@
             📖
           </span>
           <div>
-            <h1 id="academyTitle" class="text-lg font-bold text-slate-900 leading-tight">리드인 성장 일지</h1>
-            <p id="liveDateText" class="text-xs text-slate-500 font-medium tracking-tight">2026. 10. 07. (수)</p>
+            <h1 id="academyTitle" class="text-lg font-bold text-slate-900 leading-tight">유현리드인 한그루역사</h1>
+            <p id="liveDateText" class="text-xs text-slate-500 font-medium tracking-tight">2026. 10. 08. (목)</p>
           </div>
         </div>
       </div>
@@ -150,37 +150,31 @@
       <!-- Single Direct Login Form -->
       <form onsubmit="handleDirectLogin(event)" class="space-y-5">
         
-        <!-- Student Name Input with Datalist Autocomplete -->
+        <!-- Student Name Input -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">학생 이름 *</label>
           <div class="relative">
-            <input type="text" id="loginNameInput" list="studentsDatalist" placeholder="이름을 입력하세요 (예: 홍길동)" required
-                   oninput="handleNameInputAutoMatch()"
+            <input type="text" id="loginNameInput" placeholder="이름을 입력하세요 (예: 홍길동)" required
                    class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" />
             <svg class="w-5 h-5 text-slate-400 absolute left-4 top-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <!-- Datalist for existing student auto-matching -->
-          <datalist id="studentsDatalist"></datalist>
-          <p id="studentMatchedBadge" class="hidden text-xs text-emerald-600 font-bold mt-1.5 flex items-center gap-1">
-            <span>✓ 기존 등록 학생 확인됨</span>
-            <span id="studentMatchedInfo" class="text-slate-500 font-normal"></span>
-          </p>
         </div>
 
-        <!-- Grade Selection -->
+        <!-- Grade Selection (본인이 직접 선택 필수) -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">학년 선택 *</label>
           <select id="loginGradeSelect" required
                   class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+            <option value="" disabled selected>본인의 학년을 직접 선택해 주세요</option>
             <option value="초1">초등학교 1학년</option>
             <option value="초2">초등학교 2학년</option>
             <option value="초3">초등학교 3학년</option>
             <option value="초4">초등학교 4학년</option>
             <option value="초5">초등학교 5학년</option>
             <option value="초6">초등학교 6학년</option>
-            <option value="중1" selected>중학교 1학년</option>
+            <option value="중1">중학교 1학년</option>
             <option value="중2">중학교 2학년</option>
             <option value="중3">중학교 3학년</option>
             <option value="고등">고등학교</option>
@@ -318,8 +312,8 @@
             <span>📚 글쓰기 대상 도서 선택</span>
             <span class="text-[11px] text-slate-400 font-normal">(클릭하여 도서를 지정하세요)</span>
           </label>
-          <button type="button" onclick="promptCustomNoteBook()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline">
-            + 직접 도서명 입력
+          <button type="button" onclick="promptCustomNoteBook()" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-xs border border-indigo-200 transition shadow-sm flex items-center gap-1 active:scale-95">
+            <span>➕</span><span>직접 도서명 입력</span>
           </button>
         </div>
         <div id="noteBookChipsContainer" class="flex flex-wrap items-center gap-2">
@@ -341,21 +335,31 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <!-- 1. 종목 정식 명칭 -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">트레이닝 종목 선택</label>
-          <select id="trainingTypeSelect" onchange="updateProgress()"
-                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="">(선택 안 함)</option>
-            <option value="읽기트레이닝">읽기트레이닝</option>
-            <option value="독해트레이닝">독해트레이닝</option>
-            <option value="듣기트레이닝">듣기트레이닝</option>
-            <option value="문해력트레이닝">문해력트레이닝</option>
-          </select>
+      <!-- 1. 종목 다중 선택 (복수 선택 가능) -->
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+          <span>🎯 트레이닝 종목 선택</span>
+          <span class="text-[11px] text-slate-400 font-normal">(여러 종목을 동시에 선택할 수 있습니다)</span>
+        </label>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="toggleTrainingType('읽기트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95" data-type="읽기트레이닝">
+            <span>📖</span> <span>읽기트레이닝</span>
+          </button>
+          <button type="button" onclick="toggleTrainingType('독해트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95" data-type="독해트레이닝">
+            <span>🧐</span> <span>독해트레이닝</span>
+          </button>
+          <button type="button" onclick="toggleTrainingType('듣기트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95" data-type="듣기트레이닝">
+            <span>🎧</span> <span>듣기트레이닝</span>
+          </button>
+          <button type="button" onclick="toggleTrainingType('문해력트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95" data-type="문해력트레이닝">
+            <span>💡</span> <span>문해력트레이닝</span>
+          </button>
         </div>
+      </div>
 
-        <!-- 2. 교재 권 수 (1~10) -->
+      <!-- 2. 세부 내역: 권 수, 차시, 오답 개수 -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- 1. 교재 권 수 (1~10) -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">교재 권 수</label>
           <select id="trainingVolumeSelect" onchange="updateProgress()"
@@ -374,14 +378,14 @@
           </select>
         </div>
 
-        <!-- 3. 차시 선택 (학생 직접 기입) -->
+        <!-- 2. 차시 선택 (학생 직접 기입) -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">차시 (기입)</label>
           <input type="text" id="trainingSessionInput" placeholder="예: 3" oninput="updateProgress(500)"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
 
-        <!-- 4. 오답 개수 (0~7) -->
+        <!-- 3. 오답 개수 (0~7) -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 개수</label>
           <select id="trainingErrorsSelect" onchange="updateProgress()"
@@ -421,19 +425,21 @@
           <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black text-sm">4</span>
           <div>
             <h3 class="text-lg font-bold text-slate-900">숙제 점검</h3>
-            <p class="text-xs text-slate-500">과제 지참 상태와 교재 풀이 내역을 확인합니다.</p>
+            <p class="text-xs text-slate-500">과제 지참 상태와 오답 수정 완료 여부를 확인합니다.</p>
           </div>
         </div>
 
-        <!-- Homework Status Badges (숙제완료, 미지참, 학원에서 풀기) -->
-        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-end sm:self-auto">
+        <!-- Homework Status Badges (숙제완료, 오답수정 완료, 오답수정 미완, 미지참, 학원에서 풀기) -->
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-end sm:self-auto flex-wrap">
           <button type="button" onclick="setHwStatus('숙제완료')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500 text-white shadow-sm" data-val="숙제완료">숙제완료 👍</button>
+          <button type="button" onclick="setHwStatus('오답수정 완료')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="오답수정 완료">오답수정 완료 ✅</button>
+          <button type="button" onclick="setHwStatus('오답수정 미완')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="오답수정 미완">오답수정 미완 ⚠️</button>
           <button type="button" onclick="setHwStatus('미지참')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="미지참">미지참 ⚠️</button>
           <button type="button" onclick="setHwStatus('학원에서 풀기')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="학원에서 풀기">학원에서 풀기 🏫</button>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <!-- 교재명 드롭다운 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">교재명 선택</label>
@@ -458,42 +464,78 @@
 
         <!-- 오답 개수 -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 및 고친 개수</label>
-          <input type="text" id="hwErrorsInput" placeholder="예: 틀린 2개 / 고친 2개" oninput="updateProgress(500)"
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 개수</label>
+          <input type="text" id="hwWrongInput" placeholder="예: 5개" oninput="updateProgress(500)"
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+        </div>
+
+        <!-- 고친 개수 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">고친 개수</label>
+          <input type="text" id="hwFixedInput" placeholder="예: 5개" oninput="updateProgress(500)"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
         </div>
       </div>
     </div>
 
 
-    <!-- ================= 5단계: 다음 책 선정 및 재독 예약 ================= -->
+    <!-- ================= 5단계: 다음 책 선정 및 재독 예약 (방향 B 적용) ================= -->
     <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 mb-5">
         <div class="flex items-center gap-3">
           <span class="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-sm">5</span>
           <div>
-            <h3 class="text-lg font-bold text-slate-900">다음 책 선정 및 재독 예약</h3>
-            <p class="text-xs text-slate-500">다음에 읽을 책을 입력하면 1단계 도서 등록 창에 자동으로 연동됩니다.</p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-lg font-bold text-slate-900">다음 책 선정 및 재독 예약</h3>
+              <span id="selectedNextBookBadge" class="hidden px-2.5 py-0.5 bg-purple-100 text-purple-800 rounded-lg text-xs font-bold border border-purple-200 flex items-center gap-1">
+                <span>📖 다음/재독:</span>
+                <strong id="selectedNextBookName"></strong>
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">오늘 읽은 책을 눌러 재독 예약하거나, 다음 시간 새 책을 지정하세요.</p>
           </div>
         </div>
-        <label class="flex items-center gap-2 cursor-pointer bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200">
-          <input type="checkbox" id="nextBookRereadCheck" onchange="syncNextBookToStep1()" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500" />
-          <span class="text-xs font-bold text-purple-800">재독(다시 읽기) 예약</span>
-        </label>
+
+        <button type="button" onclick="promptCustomNextBook()" class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-lg text-xs border border-purple-200 transition shadow-sm flex items-center gap-1 active:scale-95 self-end sm:self-auto">
+          <span>➕</span><span>새 도서명 직접 입력</span>
+        </button>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">다음에 읽을 도서명 *</label>
-          <input type="text" id="nextBookTitleInput" placeholder="다음 시간에 읽을 책 제목 입력" oninput="syncNextBookToStep1()"
-                 class="w-full p-3 bg-slate-50 border border-purple-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-          <p class="text-[11px] text-purple-600 mt-1">* 입력 시 1단계 도서 등록 화면에 바로 자동 반영됩니다.</p>
+      <!-- 1. 원클릭 재독 및 다음 책 선택 칩 영역 -->
+      <div class="mb-4">
+        <label class="text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+          <span>📚 도서 선택 (클릭하여 예약)</span>
+        </label>
+        <div id="nextBookChipsContainer" class="flex flex-wrap items-center gap-2">
+          <!-- Rendered via renderNextBookChips() -->
         </div>
+      </div>
+
+      <!-- 2. 시간 여유 시 사전 학습: 어휘지 / 도서정보지 듀얼 버튼 -->
+      <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고</label>
-          <input type="text" id="nextBookMemoInput" placeholder="예: 2권부터 읽을 예정입니다" oninput="updateProgress(500)"
-                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+          <label class="text-xs font-bold text-slate-700 flex items-center gap-1">
+            <span>⏱️ 시간 여유 시 활동 선택 (다중 선택 가능)</span>
+          </label>
+          <p class="text-[11px] text-slate-400">새 도서 선정 후 시간이 남아 수행한 항목을 눌러주세요.</p>
         </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="btnNextBookVocab" onclick="toggleNextBookActivity('어휘지')" 
+                  class="px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-1.5 active:scale-95">
+            <span>📝</span><span>어휘지 완료</span>
+          </button>
+          <button type="button" id="btnNextBookInfo" onclick="toggleNextBookActivity('도서정보지')" 
+                  class="px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-1.5 active:scale-95">
+            <span>📄</span><span>도서정보지 완료</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. 비고 / 메모 입력 -->
+      <div class="mt-4 pt-3 border-t border-slate-100">
+        <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+        <input type="text" id="nextBookMemoInput" placeholder="예: 2권부터 읽을 예정입니다" oninput="updateProgress(500)"
+               class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
       </div>
     </div>
 
@@ -885,7 +927,7 @@
     const state = {
       config: {
         gasWebhookUrl: localStorage.getItem("gas_webhook_url") || DEFAULT_GAS_URL,
-        academyName: localStorage.getItem("academy_name") || "리드인",
+        academyName: localStorage.getItem("academy_name") || "유현리드인 한그루역사",
         logoUrl: localStorage.getItem("logo_url") || "",
         teacherPin: localStorage.getItem("teacher_pin") || "1234"
       },
@@ -904,7 +946,7 @@
         noteBookTitle: "", // [6번] 글쓰기 대상 도서명
         recentDiagnosedBook: "", // [6번] 최근 이전 진단 도서명
         noteStatus: "작성안함",
-        trainingType: "",
+        trainingTypes: [], // [6번 개편] 다중 선택 종목 목록 (읽기, 독해, 듣기, 문해력)
         trainingVolume: "",
         trainingSession: "",
         trainingErrors: "",
@@ -912,9 +954,13 @@
         hwStatus: "숙제완료",
         hwBook: "",
         hwChapter: "",
+        hwWrongCount: "",
+        hwFixedCount: "",
         hwErrors: "",
         nextBookTitle: "",
         nextBookReread: false,
+        nextBookVocab: false, // [8번] 어휘지 완료 여부
+        nextBookInfo: false,  // [8번] 도서정보지 완료 여부
         nextBookMemo: "",
         setEvents: [], // array of { event, number }
         soloEvents: [], // array of title strings
@@ -942,13 +988,14 @@
       state.todayDay = WEEKDAYS[now.getDay()];
       
       const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const date = String(now.getDate()).padStart(2, '0');
-      state.todayDateStr = `${month}/${date}`;
+      const month = now.getMonth() + 1;
+      const date = now.getDate();
+      const dayChar = state.todayDay.slice(0, 1);
+      state.todayDateStr = `${month}/${date}(${dayChar})`; // [1번 개편] 10/8(목) 통일
 
       const dateTextEl = document.getElementById("liveDateText");
       if (dateTextEl) {
-        dateTextEl.innerText = `${year}. ${month}. ${date}. (${state.todayDay.slice(0, 1)})`;
+        dateTextEl.innerText = `${year}. ${String(month).padStart(2, '0')}. ${String(date).padStart(2, '0')}. (${dayChar})`;
       }
     }
 
@@ -971,8 +1018,8 @@
 
     function applyBranding() {
       const titleEl = document.getElementById("academyTitle");
-      if (titleEl && state.config.academyName) {
-        titleEl.innerText = `${state.config.academyName} 성장 일지`;
+      if (titleEl) {
+        titleEl.innerText = state.config.academyName || "유현리드인 한그루역사";
       }
     }
 
@@ -988,8 +1035,9 @@
           teacherOverrideApproved: !!state.teacherOverrideApproved,
           missions: {
             books: state.missions.books || [],
+            noteBookTitle: state.missions.noteBookTitle || "",
             noteStatus: state.missions.noteStatus || "작성안함",
-            trainingType: document.getElementById("trainingTypeSelect") ? document.getElementById("trainingTypeSelect").value : (state.missions.trainingType || ""),
+            trainingTypes: state.missions.trainingTypes || [],
             trainingVolume: document.getElementById("trainingVolumeSelect") ? document.getElementById("trainingVolumeSelect").value : (state.missions.trainingVolume || ""),
             trainingSession: document.getElementById("trainingSessionInput") ? document.getElementById("trainingSessionInput").value.trim() : (state.missions.trainingSession || ""),
             trainingErrors: document.getElementById("trainingErrorsSelect") ? document.getElementById("trainingErrorsSelect").value : (state.missions.trainingErrors || ""),
@@ -997,9 +1045,12 @@
             hwStatus: state.missions.hwStatus || "숙제완료",
             hwBook: document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : (state.missions.hwBook || ""),
             hwChapter: document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : (state.missions.hwChapter || ""),
-            hwErrors: document.getElementById("hwErrorsInput") ? document.getElementById("hwErrorsInput").value.trim() : (state.missions.hwErrors || ""),
-            nextBookTitle: document.getElementById("nextBookTitleInput") ? document.getElementById("nextBookTitleInput").value.trim() : (state.missions.nextBookTitle || ""),
-            nextBookReread: document.getElementById("nextBookRereadCheck") ? document.getElementById("nextBookRereadCheck").checked : (state.missions.nextBookReread || false),
+            hwWrongCount: document.getElementById("hwWrongInput") ? document.getElementById("hwWrongInput").value.trim() : (state.missions.hwWrongCount || ""),
+            hwFixedCount: document.getElementById("hwFixedInput") ? document.getElementById("hwFixedInput").value.trim() : (state.missions.hwFixedCount || ""),
+            nextBookTitle: state.missions.nextBookTitle || "",
+            nextBookReread: !!state.missions.nextBookReread,
+            nextBookVocab: !!state.missions.nextBookVocab,
+            nextBookInfo: !!state.missions.nextBookInfo,
             nextBookMemo: document.getElementById("nextBookMemoInput") ? document.getElementById("nextBookMemoInput").value.trim() : (state.missions.nextBookMemo || ""),
             setEvents: state.missions.setEvents || [],
             soloEvents: state.missions.soloEvents || [],
@@ -1061,8 +1112,9 @@
         const m = session.missions || {};
         state.missions = {
           books: m.books || [],
+          noteBookTitle: m.noteBookTitle || "",
           noteStatus: m.noteStatus || "작성안함",
-          trainingType: m.trainingType || "",
+          trainingTypes: m.trainingTypes || (m.trainingType ? [m.trainingType] : []),
           trainingVolume: m.trainingVolume || "",
           trainingSession: m.trainingSession || "",
           trainingErrors: m.trainingErrors || "",
@@ -1070,9 +1122,12 @@
           hwStatus: m.hwStatus || "숙제완료",
           hwBook: m.hwBook || "",
           hwChapter: m.hwChapter || "",
-          hwErrors: m.hwErrors || "",
+          hwWrongCount: m.hwWrongCount || "",
+          hwFixedCount: m.hwFixedCount || "",
           nextBookTitle: m.nextBookTitle || "",
           nextBookReread: !!m.nextBookReread,
+          nextBookVocab: !!m.nextBookVocab,
+          nextBookInfo: !!m.nextBookInfo,
           nextBookMemo: m.nextBookMemo || "",
           setEvents: m.setEvents || [],
           soloEvents: m.soloEvents || [],
@@ -1081,19 +1136,21 @@
         };
 
         renderBookList();
+        renderNoteBookChips();
+        renderTrainingTypeButtons();
         setNoteStatus(state.missions.noteStatus);
         setHwStatus(state.missions.hwStatus);
 
-        if (document.getElementById("trainingTypeSelect")) document.getElementById("trainingTypeSelect").value = state.missions.trainingType;
         if (document.getElementById("trainingVolumeSelect")) document.getElementById("trainingVolumeSelect").value = state.missions.trainingVolume;
         if (document.getElementById("trainingSessionInput")) document.getElementById("trainingSessionInput").value = state.missions.trainingSession;
         if (document.getElementById("trainingErrorsSelect")) document.getElementById("trainingErrorsSelect").value = state.missions.trainingErrors;
         setTrainingUnderstanding(state.missions.trainingUnderstanding);
         if (document.getElementById("hwBookSelect")) document.getElementById("hwBookSelect").value = state.missions.hwBook;
         if (document.getElementById("hwChapterInput")) document.getElementById("hwChapterInput").value = state.missions.hwChapter;
-        if (document.getElementById("hwErrorsInput")) document.getElementById("hwErrorsInput").value = state.missions.hwErrors;
-        if (document.getElementById("nextBookTitleInput")) document.getElementById("nextBookTitleInput").value = state.missions.nextBookTitle;
-        if (document.getElementById("nextBookRereadCheck")) document.getElementById("nextBookRereadCheck").checked = state.missions.nextBookReread;
+        if (document.getElementById("hwWrongInput")) document.getElementById("hwWrongInput").value = state.missions.hwWrongCount;
+        if (document.getElementById("hwFixedInput")) document.getElementById("hwFixedInput").value = state.missions.hwFixedCount;
+        renderNextBookChips();
+        renderNextBookActivityButtons();
         if (document.getElementById("nextBookMemoInput")) document.getElementById("nextBookMemoInput").value = state.missions.nextBookMemo;
         if (document.getElementById("grammarDoneCheck")) document.getElementById("grammarDoneCheck").checked = state.missions.grammarDone;
         if (document.getElementById("studentReflectionInput")) document.getElementById("studentReflectionInput").value = state.missions.studentReflection;
@@ -1204,30 +1261,15 @@
     // Direct Login Input Matching
     function handleNameInputAutoMatch() {
       const name = (document.getElementById("loginNameInput").value || "").trim();
-      const badge = document.getElementById("studentMatchedBadge");
-      const info = document.getElementById("studentMatchedInfo");
-      if (!name) {
-        badge.classList.add("hidden");
-        return;
-      }
+      if (!name) return;
 
       const matched = state.students.find(s => (s.name || '').replace(/\s+/g, '') === name.replace(/\s+/g, ''));
       if (matched) {
-        badge.classList.remove("hidden");
         const dur = getClassDuration(matched);
-        info.innerText = `(${matched.grade || ''} | ${dur}분 수업)`;
-        if (matched.grade) {
-          const select = document.getElementById("loginGradeSelect");
-          for (let opt of select.options) {
-            if (opt.value === matched.grade || opt.text === matched.grade || opt.text.includes(matched.grade) || matched.grade.includes(opt.value)) {
-              select.value = opt.value;
-              break;
-            }
-          }
+        const durEl = document.getElementById("loginDurationSelect");
+        if (dur && durEl) {
+          durEl.value = `${dur}분`;
         }
-        document.getElementById("loginDurationSelect").value = `${dur}분`;
-      } else {
-        badge.classList.add("hidden");
       }
     }
 
@@ -1257,6 +1299,10 @@
 
       if (!name) {
         alert("학생 이름을 입력해 주세요.");
+        return;
+      }
+      if (!grade) {
+        alert("본인의 학년을 선택해 주세요.");
         return;
       }
 
@@ -1316,56 +1362,27 @@
     // Helper: Allocate a guaranteed safe, non-colliding row number for a student
     function getSafeNextDailyLogRow(studentName) {
       const cleanName = String(studentName || "").trim().replace(/\s+/g, "");
-      const occupiedRows = new Set();
 
+      // 1. 이미 active logs에 본인의 행이 있다면 그 행 반환
+      if (cleanName && Array.isArray(state.dailyLogs)) {
+        const myLog = state.dailyLogs.find(l => l && (String(l.name || '').trim().replace(/\s+/g, '') === cleanName));
+        if (myLog && myLog.row) {
+          const r = parseInt(myLog.row, 10);
+          if (!isNaN(r) && r >= 3) return r;
+        }
+      }
+
+      // 2. 현재 시트에 존재하는 실제 행 번호 중 최댓값 바로 다음 행 반환 (과거 삭제된 테스트 누적 오차 원천 차단)
+      let highestRow = 2;
       if (Array.isArray(state.dailyLogs)) {
         state.dailyLogs.forEach(l => {
           if (l && l.row) {
             const r = parseInt(l.row, 10);
-            if (!isNaN(r) && r > 0) occupiedRows.add(r);
+            if (!isNaN(r) && r > highestRow) highestRow = r;
           }
         });
       }
-
-      // Check stored student row allocations
-      let studentRowMap = {};
-      try {
-        studentRowMap = JSON.parse(localStorage.getItem("student_assigned_rows_" + state.todayDateStr) || "{}");
-      } catch(e) {
-        studentRowMap = {};
-      }
-
-      // If this student was already assigned a safe row today, verify it does not collide with another student
-      if (cleanName && studentRowMap[cleanName]) {
-        const assigned = parseInt(studentRowMap[cleanName], 10);
-        const occupiedByOther = state.dailyLogs.some(l => 
-          parseInt(l.row, 10) === assigned && 
-          String(l.name || "").trim().replace(/\s+/g, "") !== cleanName
-        );
-        if (!occupiedByOther && assigned >= 3) {
-          return assigned;
-        }
-      }
-
-      // Add other students' allocated rows to occupied list
-      Object.entries(studentRowMap).forEach(([sName, rNum]) => {
-        if (sName !== cleanName && rNum) {
-          occupiedRows.add(parseInt(rNum, 10));
-        }
-      });
-
-      // Data rows start at row 3 (rows 1-2 are header & template)
-      let highestRow = 2;
-      occupiedRows.forEach(r => {
-        if (r > highestRow) highestRow = r;
-      });
-
-      const nextSafeRow = highestRow + 1;
-      if (cleanName) {
-        studentRowMap[cleanName] = nextSafeRow;
-        localStorage.setItem("student_assigned_rows_" + state.todayDateStr, JSON.stringify(studentRowMap));
-      }
-      return nextSafeRow;
+      return highestRow + 1;
     }
 
     // Helper: Teacher PIN prompt for early checkout authorization
@@ -1666,8 +1683,15 @@
           titleSpan.innerText = savedNextBook;
           alertBox.classList.remove("hidden");
           const modalTitle = document.getElementById("modalBookTitle");
+          const modalCourse = document.getElementById("modalBookCourse");
+          const isReread = savedNextBook.includes("(재독예약)") || savedNextBook.includes("재독");
+          const cleanTitle = savedNextBook.replace(/\(재독예약\)/g, '').replace(/\(재독\)/g, '').trim();
+
           if (modalTitle && !modalTitle.value) {
-            modalTitle.value = savedNextBook.replace(/\(재독예약\)/g, '').trim();
+            modalTitle.value = cleanTitle;
+          }
+          if (modalCourse && isReread) {
+            modalCourse.value = "재독";
           }
         } else if (alertBox) {
           alertBox.classList.add("hidden");
@@ -1715,7 +1739,7 @@
         noteBookTitle: "",
         recentDiagnosedBook: "",
         noteStatus: "작성안함",
-        trainingType: "",
+        trainingTypes: [],
         trainingVolume: "",
         trainingSession: "",
         trainingErrors: "",
@@ -1723,9 +1747,13 @@
         hwStatus: "숙제완료",
         hwBook: "",
         hwChapter: "",
+        hwWrongCount: "",
+        hwFixedCount: "",
         hwErrors: "",
         nextBookTitle: "",
         nextBookReread: false,
+        nextBookVocab: false,
+        nextBookInfo: false,
         nextBookMemo: "",
         setEvents: [],
         soloEvents: [],
@@ -1734,27 +1762,28 @@
       };
       renderBookList();
       renderNoteBookChips();
+      renderTrainingTypeButtons();
       renderSetEventItems();
       renderSoloEventItems();
+      renderNextBookChips();
+      renderNextBookActivityButtons();
       setNoteStatus("작성안함");
       setHwStatus("숙제완료");
 
-      document.getElementById("trainingTypeSelect").value = "";
-      document.getElementById("trainingVolumeSelect").value = "";
+      if (document.getElementById("trainingVolumeSelect")) document.getElementById("trainingVolumeSelect").value = "";
       if (document.getElementById("trainingSessionInput")) document.getElementById("trainingSessionInput").value = "";
-      document.getElementById("trainingErrorsSelect").value = "";
+      if (document.getElementById("trainingErrorsSelect")) document.getElementById("trainingErrorsSelect").value = "";
       setTrainingUnderstanding("");
-      document.getElementById("hwBookSelect").value = "";
-      document.getElementById("hwChapterInput").value = "";
-      document.getElementById("hwErrorsInput").value = "";
-      document.getElementById("nextBookTitleInput").value = "";
-      document.getElementById("nextBookRereadCheck").checked = false;
-      document.getElementById("nextBookMemoInput").value = "";
-      document.getElementById("eventSetSelect").value = "";
-      document.getElementById("eventNumberSelect").value = "";
-      document.getElementById("eventSoloSelect").value = "";
-      document.getElementById("grammarDoneCheck").checked = false;
-      document.getElementById("studentReflectionInput").value = "";
+      if (document.getElementById("hwBookSelect")) document.getElementById("hwBookSelect").value = "";
+      if (document.getElementById("hwChapterInput")) document.getElementById("hwChapterInput").value = "";
+      if (document.getElementById("hwWrongInput")) document.getElementById("hwWrongInput").value = "";
+      if (document.getElementById("hwFixedInput")) document.getElementById("hwFixedInput").value = "";
+      if (document.getElementById("nextBookMemoInput")) document.getElementById("nextBookMemoInput").value = "";
+      if (document.getElementById("eventSetSelect")) document.getElementById("eventSetSelect").value = "";
+      if (document.getElementById("eventNumberSelect")) document.getElementById("eventNumberSelect").value = "";
+      if (document.getElementById("eventSoloSelect")) document.getElementById("eventSoloSelect").value = "";
+      if (document.getElementById("grammarDoneCheck")) document.getElementById("grammarDoneCheck").checked = false;
+      if (document.getElementById("studentReflectionInput")) document.getElementById("studentReflectionInput").value = "";
     }
 
     function populateExistingMissions(log) {
@@ -1791,9 +1820,12 @@
 
       handleModalScoreChange();
 
-      const nextBookTyped = document.getElementById("nextBookTitleInput").value.trim();
+      const nextBookTyped = (state.missions.nextBookTitle || "").trim();
       if (nextBookTyped && !document.getElementById("modalBookTitle").value) {
         document.getElementById("modalBookTitle").value = nextBookTyped;
+        if (state.missions.nextBookReread) {
+          document.getElementById("modalBookCourse").value = "재독";
+        }
       }
 
       document.getElementById("bookModal").classList.remove("hidden");
@@ -1913,6 +1945,7 @@
       }
       renderBookList();
       renderNoteBookChips();
+      renderNextBookChips();
       updateProgress();
       return true;
     }
@@ -1958,6 +1991,7 @@
       state.missions.books = state.missions.books.filter(b => b.id !== id);
       renderBookList();
       renderNoteBookChips();
+      renderNextBookChips();
       updateProgress();
     }
 
@@ -1969,10 +2003,8 @@
         container.innerHTML = `
           <div class="text-center py-7 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
             <p class="text-3xl mb-1">📖</p>
-            <p class="text-xs sm:text-sm font-semibold text-slate-500">아직 오늘 등록된 도서가 없습니다.</p>
-            <button onclick="openBookModal()" class="mt-2 text-emerald-600 font-bold text-xs underline">
-              + 첫 번째 도서 등록하기
-            </button>
+            <p class="text-xs sm:text-sm font-semibold text-slate-500">아직 오늘 등록된 도서 정보가 없습니다.</p>
+            <p class="text-xs text-slate-400 mt-1">우측 상단의 <strong class="text-emerald-700">[📖 도서 정보 등록]</strong> 버튼을 눌러 책을 등록해 주세요.</p>
           </div>
         `;
         return;
@@ -2137,33 +2169,183 @@
       updateProgress();
     }
 
+    // 8. Step 3 Training Type Multi-Select Handlers
+    function toggleTrainingType(type) {
+      if (!state.missions.trainingTypes) {
+        state.missions.trainingTypes = [];
+      }
+      const idx = state.missions.trainingTypes.indexOf(type);
+      if (idx >= 0) {
+        state.missions.trainingTypes.splice(idx, 1);
+      } else {
+        state.missions.trainingTypes.push(type);
+      }
+      renderTrainingTypeButtons();
+      updateProgress();
+    }
+
+    function renderTrainingTypeButtons() {
+      const current = state.missions.trainingTypes || [];
+      document.querySelectorAll(".tr-type-btn").forEach(btn => {
+        const t = btn.dataset.type;
+        if (current.includes(t)) {
+          btn.className = "tr-type-btn px-3.5 py-2 rounded-xl text-xs font-black transition border-2 border-indigo-500 bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-200 active:scale-95 flex items-center gap-1.5";
+        } else {
+          btn.className = "tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 flex items-center gap-1.5";
+        }
+      });
+    }
+
+    // 9. Step 4 Homework Handlers
     function setHwStatus(status) {
       state.missions.hwStatus = status;
       document.querySelectorAll(".hw-status-btn").forEach(btn => {
         if (btn.dataset.val === status) {
-          btn.className = "hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500 text-white shadow-sm";
+          btn.className = "hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500 text-white shadow-sm ring-2 ring-amber-200";
         } else {
           btn.className = "hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
         }
       });
+
+      if (status === "오답수정 완료" || status === "오답수정 미완") {
+        const wrongInput = document.getElementById("hwWrongInput");
+        if (wrongInput && !wrongInput.value) {
+          wrongInput.focus();
+        }
+      }
+
       updateProgress();
     }
 
-    // 9. Step 5 Next Book -> Step 1 Auto Sync
-    function syncNextBookToStep1() {
-      const val = document.getElementById("nextBookTitleInput").value.trim();
-      const isReread = document.getElementById("nextBookRereadCheck").checked;
-      state.missions.nextBookTitle = val;
-      state.missions.nextBookReread = isReread;
+    // 10. Step 5 Next Book / Re-read Reservation (Direction B)
+    function renderNextBookChips() {
+      const container = document.getElementById("nextBookChipsContainer");
+      if (!container) return;
 
-      if (val && state.currentStudent) {
-        localStorage.setItem("next_book_" + state.currentStudent.name, val + (isReread ? "(재독예약)" : ""));
-        document.getElementById("modalBookTitle").value = val;
-        if (isReread) {
-          document.getElementById("modalBookCourse").value = "재독";
+      const candidates = [];
+      const addedTitles = new Set();
+
+      // 1. Books registered in today's Step 1 (오늘 읽은 도서 -> 재독 예약 후보)
+      if (Array.isArray(state.missions.books)) {
+        state.missions.books.forEach(b => {
+          if (b && b.title && !addedTitles.has(b.title.trim())) {
+            addedTitles.add(b.title.trim());
+            candidates.push({ title: b.title.trim(), tag: "오늘 독서" });
+          }
+        });
+      }
+
+      // 2. Custom selected next book if not in today's books
+      const currentTitle = (state.missions.nextBookTitle || "").trim();
+      if (currentTitle && !addedTitles.has(currentTitle)) {
+        addedTitles.add(currentTitle);
+        candidates.push({ 
+          title: currentTitle, 
+          tag: state.missions.nextBookReread ? "재독 예약" : "새 도서" 
+        });
+      }
+
+      // Update Top Badge
+      const badge = document.getElementById("selectedNextBookBadge");
+      const nameEl = document.getElementById("selectedNextBookName");
+      if (currentTitle && badge && nameEl) {
+        nameEl.innerHTML = `${currentTitle} <span class="text-[10px] text-purple-700 font-normal">(${state.missions.nextBookReread ? '재독 예약' : '신규 선정'})</span>`;
+        badge.classList.remove("hidden");
+        badge.classList.add("inline-flex");
+      } else if (badge) {
+        badge.classList.add("hidden");
+        badge.classList.remove("inline-flex");
+      }
+
+      if (candidates.length === 0) {
+        container.innerHTML = `
+          <div class="flex items-center gap-2 py-1 text-xs text-slate-400 italic">
+            <span>오늘 독서에 등록된 책이 있으면 여기에 <b>[🔄 재독 예약]</b> 버튼이 표시됩니다. 또는 우측 상단 <b>[➕ 새 도서명 직접 입력]</b>을 눌러주세요.</span>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = "";
+      candidates.forEach(cand => {
+        const isSelected = (cand.title === currentTitle);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.onclick = () => selectNextBook(cand.title, cand.tag === "오늘 독서" || isSelected ? true : false);
+
+        if (isSelected) {
+          btn.className = "px-3 py-1.5 rounded-xl text-xs font-black bg-purple-600 text-white shadow-sm ring-2 ring-purple-300 flex items-center gap-1.5 transition transform active:scale-95";
+          btn.innerHTML = `<span>✓</span><span>${cand.title}</span><span class="text-[10px] bg-purple-700/80 px-1.5 py-0.5 rounded-md font-normal">${state.missions.nextBookReread ? '재독 예약됨' : '선정됨'}</span><span class="text-[11px] opacity-75 hover:opacity-100 ml-1">✕</span>`;
+        } else {
+          btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 border border-slate-200 flex items-center gap-1.5 transition transform active:scale-95";
+          btn.innerHTML = `<span>🔄</span><span>${cand.title}</span><span class="text-[10px] text-purple-600 font-semibold bg-purple-50 border border-purple-200 px-1 py-0.5 rounded">재독 예약</span>`;
+        }
+        container.appendChild(btn);
+      });
+    }
+
+    function selectNextBook(title, isReread = false) {
+      if (!title) return;
+      // If clicking on already selected book, toggle/unselect
+      if (state.missions.nextBookTitle === title.trim()) {
+        state.missions.nextBookTitle = "";
+        state.missions.nextBookReread = false;
+      } else {
+        state.missions.nextBookTitle = title.trim();
+        state.missions.nextBookReread = isReread;
+      }
+
+      if (state.currentStudent && state.missions.nextBookTitle) {
+        localStorage.setItem("next_book_" + state.currentStudent.name, state.missions.nextBookTitle + (state.missions.nextBookReread ? "(재독예약)" : ""));
+      } else if (state.currentStudent) {
+        localStorage.removeItem("next_book_" + state.currentStudent.name);
+      }
+
+      renderNextBookChips();
+      updateProgress();
+    }
+
+    function promptCustomNextBook() {
+      const entered = prompt("📚 다음에 읽을 새 도서명을 입력해 주세요:");
+      if (entered && entered.trim()) {
+        selectNextBook(entered.trim(), false);
+      }
+    }
+
+    // Step 5 Activity Dual Buttons (어휘지, 도서정보지 완료)
+    function toggleNextBookActivity(act) {
+      if (act === "어휘지") {
+        state.missions.nextBookVocab = !state.missions.nextBookVocab;
+      } else if (act === "도서정보지") {
+        state.missions.nextBookInfo = !state.missions.nextBookInfo;
+      }
+      renderNextBookActivityButtons();
+      updateProgress();
+    }
+
+    function renderNextBookActivityButtons() {
+      const btnVocab = document.getElementById("btnNextBookVocab");
+      const btnInfo = document.getElementById("btnNextBookInfo");
+
+      if (btnVocab) {
+        if (state.missions.nextBookVocab) {
+          btnVocab.className = "px-3.5 py-2 rounded-xl text-xs font-black transition bg-purple-600 text-white shadow-sm ring-2 ring-purple-300 border-2 border-purple-500 flex items-center gap-1.5 active:scale-95";
+          btnVocab.innerHTML = `<span>✓</span><span>어휘지 완료</span>`;
+        } else {
+          btnVocab.className = "px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-1.5 active:scale-95";
+          btnVocab.innerHTML = `<span>📝</span><span>어휘지 완료</span>`;
         }
       }
-      updateProgress();
+
+      if (btnInfo) {
+        if (state.missions.nextBookInfo) {
+          btnInfo.className = "px-3.5 py-2 rounded-xl text-xs font-black transition bg-purple-600 text-white shadow-sm ring-2 ring-purple-300 border-2 border-purple-500 flex items-center gap-1.5 active:scale-95";
+          btnInfo.innerHTML = `<span>✓</span><span>도서정보지 완료</span>`;
+        } else {
+          btnInfo.className = "px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-1.5 active:scale-95";
+          btnInfo.innerHTML = `<span>📄</span><span>도서정보지 완료</span>`;
+        }
+      }
     }
 
     // 10. Step 6 Multiple Set Events & Solo Events Handlers
@@ -2342,16 +2524,24 @@
       const finalColI = allEvents.join(", ");
 
       // 3. Build Col K (수업내용 및 특이사항)
-      const trType = document.getElementById("trainingTypeSelect") ? document.getElementById("trainingTypeSelect").value : "";
+      const trTypes = (state.missions.trainingTypes && state.missions.trainingTypes.length > 0) ? state.missions.trainingTypes.join(", ") : "";
       const trVol = document.getElementById("trainingVolumeSelect") ? document.getElementById("trainingVolumeSelect").value : "";
       const trSession = document.getElementById("trainingSessionInput") ? document.getElementById("trainingSessionInput").value.trim() : (state.missions.trainingSession || "");
       const trErr = document.getElementById("trainingErrorsSelect") ? document.getElementById("trainingErrorsSelect").value : "";
       const trUnder = state.missions.trainingUnderstanding || "";
       const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
       const hwChapter = document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : "";
-      const hwErrors = document.getElementById("hwErrorsInput") ? document.getElementById("hwErrorsInput").value.trim() : "";
-      const nextBook = document.getElementById("nextBookTitleInput") ? document.getElementById("nextBookTitleInput").value.trim() : "";
-      const isReread = (document.getElementById("nextBookRereadCheck") && document.getElementById("nextBookRereadCheck").checked) ? "(재독예약)" : "";
+      const hwWrong = document.getElementById("hwWrongInput") ? document.getElementById("hwWrongInput").value.trim() : (state.missions.hwWrongCount || "");
+      const hwFixed = document.getElementById("hwFixedInput") ? document.getElementById("hwFixedInput").value.trim() : (state.missions.hwFixedCount || "");
+      const nextBook = (state.missions.nextBookTitle || "").trim();
+      const isReread = state.missions.nextBookReread ? "(재독예약)" : "";
+      const nextMemo = document.getElementById("nextBookMemoInput") ? document.getElementById("nextBookMemoInput").value.trim() : "";
+
+      const actList = [];
+      if (state.missions.nextBookVocab) actList.push("어휘지");
+      if (state.missions.nextBookInfo) actList.push("도서정보지");
+      const actStr = actList.length > 0 ? `(${actList.join(", ")})` : "";
+
       const reflection = document.getElementById("studentReflectionInput") ? document.getElementById("studentReflectionInput").value.trim() : "";
 
       const contentParts = [];
@@ -2361,15 +2551,37 @@
         contentParts.push(`[독서노트] ${noteBook ? noteBook + ' ' : ''}${noteLabel}`);
       }
       const trParts = [];
-      if (trType) trParts.push(trType);
+      if (trTypes) trParts.push(trTypes);
       if (trVol) trParts.push(trVol);
       if (trSession) trParts.push(`${trSession}차시`);
       if (trErr) trParts.push(`오답:${trErr}`);
       if (trUnder) trParts.push(`이해도:${trUnder}`);
       if (trParts.length > 0) contentParts.push(`[트레이닝] ${trParts.join(" ")}`);
-      if (state.missions.hwStatus) contentParts.push(`[숙제] ${state.missions.hwStatus}${hwBook ? ` ${hwBook}` : ''}${hwChapter ? `(${hwChapter})` : ''}${hwErrors ? ` [오답:${hwErrors}]` : ''}`);
-      if (nextBook) contentParts.push(`[다음책] ${nextBook}${isReread}`);
-      if (reflection) contentParts.push(`[소감] ${reflection}`);
+
+      if (state.missions.hwStatus) {
+        let hwPart = `[숙제] ${state.missions.hwStatus}`;
+        if (hwBook) hwPart += ` ${hwBook}`;
+        if (hwChapter) hwPart += `(${hwChapter})`;
+        if (hwWrong || hwFixed) {
+          const counts = [];
+          if (hwWrong) counts.push(`오답:${hwWrong}`);
+          if (hwFixed) counts.push(`고침:${hwFixed}`);
+          hwPart += ` [${counts.join("/")}]`;
+        }
+        contentParts.push(hwPart);
+      }
+
+      if (nextBook) {
+        contentParts.push(`[다음책] ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`);
+      } else if (actStr) {
+        contentParts.push(`[사전학습] ${actStr}`);
+      }
+      if (nextMemo) {
+        contentParts.push(`[선생님메모] ${nextMemo}`);
+      }
+      if (reflection) {
+        contentParts.push(`[소감] ${reflection}`);
+      }
 
       const finalContents = contentParts.join(" | ");
 
@@ -2425,17 +2637,17 @@
       else if (state.missions.noteStatus === "작성중") score += 8;
 
       // 3. Focused Training (15%)
-      const trType = document.getElementById("trainingTypeSelect").value;
-      if (trType) score += 15;
+      const hasTraining = (state.missions.trainingTypes && state.missions.trainingTypes.length > 0);
+      if (hasTraining) score += 15;
 
       // 4. Homework check (15%)
       if (state.missions.hwStatus) score += 15;
 
-      // 5. Next Book (10%)
-      if (document.getElementById("nextBookTitleInput").value.trim()) score += 10;
+      // 5. Next Book or Activity (10%)
+      if (state.missions.nextBookTitle || state.missions.nextBookVocab || state.missions.nextBookInfo) score += 10;
 
       // 6. Growth Event / Reflection (15%)
-      if (state.missions.setEvents.length > 0 || state.missions.soloEvents.length > 0 || document.getElementById("grammarDoneCheck").checked) score += 15;
+      if (state.missions.setEvents.length > 0 || state.missions.soloEvents.length > 0 || (document.getElementById("grammarDoneCheck") && document.getElementById("grammarDoneCheck").checked)) score += 15;
 
       score = Math.min(100, Math.max(0, score));
 
@@ -2456,21 +2668,28 @@
 
       document.getElementById("sumNotes").innerText = noteBook ? `[${noteBook}] ${noteStat}` : noteStat;
 
-      const trVol = document.getElementById("trainingVolumeSelect").value;
+      const trVol = document.getElementById("trainingVolumeSelect") ? document.getElementById("trainingVolumeSelect").value : "";
       const trSession = document.getElementById("trainingSessionInput") ? document.getElementById("trainingSessionInput").value.trim() : (state.missions.trainingSession || "");
-      const trErr = document.getElementById("trainingErrorsSelect").value;
+      const trErr = document.getElementById("trainingErrorsSelect") ? document.getElementById("trainingErrorsSelect").value : "";
       const trUnder = state.missions.trainingUnderstanding || "";
       const sumTrParts = [];
-      if (trType) sumTrParts.push(trType);
+      if (state.missions.trainingTypes && state.missions.trainingTypes.length > 0) sumTrParts.push(state.missions.trainingTypes.join(", "));
       if (trVol) sumTrParts.push(`(${trVol})`);
       if (trSession) sumTrParts.push(`${trSession}차시`);
       if (trErr) sumTrParts.push(`[오답: ${trErr}]`);
       if (trUnder) sumTrParts.push(`[이해도: ${trUnder}]`);
       document.getElementById("sumTraining").innerText = sumTrParts.join(" ") || "선택 안 함";
 
-      const hwBook = document.getElementById("hwBookSelect").value;
-      const hwChapter = document.getElementById("hwChapterInput").value.trim();
-      document.getElementById("sumHomework").innerText = `${state.missions.hwStatus}${hwBook ? ` - ${hwBook}` : ''}${hwChapter ? ` (${hwChapter})` : ''}`;
+      const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
+      const hwChapter = document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : "";
+      const hwWrong = document.getElementById("hwWrongInput") ? document.getElementById("hwWrongInput").value.trim() : "";
+      const hwFixed = document.getElementById("hwFixedInput") ? document.getElementById("hwFixedInput").value.trim() : "";
+      let hwSummary = state.missions.hwStatus || "선택 안 함";
+      if (hwBook) hwSummary += ` - ${hwBook}`;
+      if (hwChapter) hwSummary += ` (${hwChapter})`;
+      if (hwWrong) hwSummary += ` [오답: ${hwWrong}]`;
+      if (hwFixed) hwSummary += ` [고침: ${hwFixed}]`;
+      document.getElementById("sumHomework").innerText = hwSummary;
 
       const allSetSummary = state.missions.setEvents.map(s => `${s.event}${s.number ? `(${s.number})` : ''}`);
       const allEvents = [...allSetSummary, ...state.missions.soloEvents];
@@ -2554,17 +2773,25 @@
       const finalColI = allEvents.join(", ");
 
       // 3. Build Col K (수업내용 및 특이사항)
-      const trType = document.getElementById("trainingTypeSelect").value;
-      const trVol = document.getElementById("trainingVolumeSelect").value;
+      const trTypes = (state.missions.trainingTypes && state.missions.trainingTypes.length > 0) ? state.missions.trainingTypes.join(", ") : "";
+      const trVol = document.getElementById("trainingVolumeSelect") ? document.getElementById("trainingVolumeSelect").value : "";
       const trSession = document.getElementById("trainingSessionInput") ? document.getElementById("trainingSessionInput").value.trim() : (state.missions.trainingSession || "");
-      const trErr = document.getElementById("trainingErrorsSelect").value;
+      const trErr = document.getElementById("trainingErrorsSelect") ? document.getElementById("trainingErrorsSelect").value : "";
       const trUnder = state.missions.trainingUnderstanding || "";
-      const hwBook = document.getElementById("hwBookSelect").value;
-      const hwChapter = document.getElementById("hwChapterInput").value.trim();
-      const hwErrors = document.getElementById("hwErrorsInput").value.trim();
-      const nextBook = document.getElementById("nextBookTitleInput").value.trim();
-      const isReread = document.getElementById("nextBookRereadCheck").checked ? "(재독예약)" : "";
-      const reflection = document.getElementById("studentReflectionInput").value.trim();
+      const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
+      const hwChapter = document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : "";
+      const hwWrong = document.getElementById("hwWrongInput") ? document.getElementById("hwWrongInput").value.trim() : (state.missions.hwWrongCount || "");
+      const hwFixed = document.getElementById("hwFixedInput") ? document.getElementById("hwFixedInput").value.trim() : (state.missions.hwFixedCount || "");
+      const nextBook = (state.missions.nextBookTitle || "").trim();
+      const isReread = state.missions.nextBookReread ? "(재독예약)" : "";
+      const nextMemo = document.getElementById("nextBookMemoInput") ? document.getElementById("nextBookMemoInput").value.trim() : "";
+
+      const actList = [];
+      if (state.missions.nextBookVocab) actList.push("어휘지");
+      if (state.missions.nextBookInfo) actList.push("도서정보지");
+      const actStr = actList.length > 0 ? `(${actList.join(", ")})` : "";
+
+      const reflection = document.getElementById("studentReflectionInput") ? document.getElementById("studentReflectionInput").value.trim() : "";
 
       const contentParts = [];
       if (finalColJ) contentParts.push(`[진단/독서] ${finalColJ}`);
@@ -2573,15 +2800,37 @@
         contentParts.push(`[독서노트] ${noteBook ? noteBook + ' ' : ''}${noteLabel}`);
       }
       const trParts = [];
-      if (trType) trParts.push(trType);
+      if (trTypes) trParts.push(trTypes);
       if (trVol) trParts.push(trVol);
       if (trSession) trParts.push(`${trSession}차시`);
       if (trErr) trParts.push(`오답:${trErr}`);
       if (trUnder) trParts.push(`이해도:${trUnder}`);
       if (trParts.length > 0) contentParts.push(`[트레이닝] ${trParts.join(" ")}`);
-      if (state.missions.hwStatus) contentParts.push(`[숙제] ${state.missions.hwStatus}${hwBook ? ` ${hwBook}` : ''}${hwChapter ? `(${hwChapter})` : ''}${hwErrors ? ` [오답:${hwErrors}]` : ''}`);
-      if (nextBook) contentParts.push(`[다음책] ${nextBook}${isReread}`);
-      if (reflection) contentParts.push(`[소감] ${reflection}`);
+
+      if (state.missions.hwStatus) {
+        let hwPart = `[숙제] ${state.missions.hwStatus}`;
+        if (hwBook) hwPart += ` ${hwBook}`;
+        if (hwChapter) hwPart += `(${hwChapter})`;
+        if (hwWrong || hwFixed) {
+          const counts = [];
+          if (hwWrong) counts.push(`오답:${hwWrong}`);
+          if (hwFixed) counts.push(`고침:${hwFixed}`);
+          hwPart += ` [${counts.join("/")}]`;
+        }
+        contentParts.push(hwPart);
+      }
+
+      if (nextBook) {
+        contentParts.push(`[다음책] ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`);
+      } else if (actStr) {
+        contentParts.push(`[사전학습] ${actStr}`);
+      }
+      if (nextMemo) {
+        contentParts.push(`[선생님메모] ${nextMemo}`);
+      }
+      if (reflection) {
+        contentParts.push(`[소감] ${reflection}`);
+      }
 
       const finalContents = contentParts.join(" | ");
 
@@ -2648,6 +2897,8 @@
       // Persist next book for next session
       if (nextBook) {
         localStorage.setItem("next_book_" + student.name, nextBook + isReread);
+      } else {
+        localStorage.removeItem("next_book_" + student.name);
       }
 
       localStorage.setItem("academy_attendance_state", JSON.stringify({
@@ -2799,15 +3050,8 @@
       const clean2 = String(dateStr2).trim().replace(/\s+/g, "");
       if (clean1 === clean2) return true;
       
-      const full1 = clean1.match(/(?:\d{4}[-\.\/])?(\d{1,2})[-\.\/](\d{1,2})/);
-      const full2 = clean2.match(/(?:\d{4}[-\.\/])?(\d{1,2})[-\.\/](\d{1,2})/);
-      if (full1 && full2) {
-        return parseInt(full1[1], 10) === parseInt(full2[1], 10) && 
-               parseInt(full1[2], 10) === parseInt(full2[2], 10);
-      }
-
-      const m1 = clean1.match(/(\d+)[\/\.](\d+)/);
-      const m2 = clean2.match(/(\d+)[\/\.](\d+)/);
+      const m1 = clean1.match(/(\d+)[^\d]+(\d+)/);
+      const m2 = clean2.match(/(\d+)[^\d]+(\d+)/);
       if (m1 && m2) {
         return parseInt(m1[1], 10) === parseInt(m2[1], 10) && 
                parseInt(m1[2], 10) === parseInt(m2[2], 10);
