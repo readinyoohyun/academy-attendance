@@ -283,22 +283,23 @@
     </div>
 
 
-    <!-- ================= 2단계: 독서노트 & 글쓰기 점검 ================= -->
+    <!-- ================= 2단계: 독서노트 & 글쓰기 ================= -->
     <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black text-sm">2</span>
           <div>
-            <h3 class="text-lg font-bold text-slate-900">독서노트 & 글쓰기 점검</h3>
-            <p class="text-xs text-slate-500">독서노트 작성 완료 시 구글 시트 J열에 [글완]이 자동 기록됩니다.</p>
+            <h3 class="text-lg font-bold text-slate-900">독서노트 & 글쓰기</h3>
+            <p class="text-xs text-slate-500">독서노트 작성 완료 시 구글 시트 J열에 [글완], 요약 시 [요약]이 자동 기록됩니다.</p>
           </div>
         </div>
 
         <!-- Note Status Radio Buttons -->
-        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl flex-wrap self-end sm:self-auto">
           <button type="button" onclick="setNoteStatus('작성안함')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="작성안함">작성 안 함</button>
           <button type="button" onclick="setNoteStatus('작성중')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="작성중">작성중</button>
           <button type="button" onclick="setNoteStatus('완료')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-sm" data-val="완료">완료 ✍️ (글완)</button>
+          <button type="button" onclick="setNoteStatus('요약하기')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="요약하기">요약하기 📝</button>
         </div>
       </div>
     </div>
@@ -311,12 +312,12 @@
           <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm">3</span>
           <div>
             <h3 class="text-lg font-bold text-slate-900">집중 트레이닝</h3>
-            <p class="text-xs text-slate-500">읽기, 독해, 듣기, 문해력 트레이닝 진행 내역과 권 수, 오답 개수를 기록합니다.</p>
+            <p class="text-xs text-slate-500">읽기, 독해, 듣기, 문해력 트레이닝 진행 내역과 권 수, 차시, 오답 개수를 기록합니다.</p>
           </div>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <!-- 1. 종목 정식 명칭 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">트레이닝 종목 선택</label>
@@ -349,7 +350,14 @@
           </select>
         </div>
 
-        <!-- 3. 오답 개수 (0~7) -->
+        <!-- 3. 차시 선택 (학생 직접 기입) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">차시 (기입)</label>
+          <input type="text" id="trainingSessionInput" placeholder="예: 3" oninput="updateProgress(500)"
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <!-- 4. 오답 개수 (0~7) -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 개수</label>
           <select id="trainingErrorsSelect" onchange="updateProgress()"
@@ -364,6 +372,19 @@
             <option value="6개">6개</option>
             <option value="7개">7개</option>
           </select>
+        </div>
+      </div>
+
+      <!-- 추가항목: 이해도 자기 평가 -->
+      <div class="mt-4 pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-0.5">이해도 자기 평가</label>
+          <p class="text-[11px] text-slate-500">오늘 진행한 트레이닝의 이해도를 스스로 선택해 보세요.</p>
+        </div>
+        <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl flex-wrap">
+          <button type="button" onclick="setTrainingUnderstanding('잘 이해했어요')" class="training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="잘 이해했어요">😀 잘 이해했어요</button>
+          <button type="button" onclick="setTrainingUnderstanding('보통이에요')" class="training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="보통이에요">🙂 보통이에요</button>
+          <button type="button" onclick="setTrainingUnderstanding('아직 헷갈려요')" class="training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="아직 헷갈려요">😕 아직 헷갈려요</button>
         </div>
       </div>
     </div>
@@ -399,6 +420,8 @@
             <option value="빠작 어휘">빠작 어휘</option>
             <option value="똑똑한 하루 어휘">똑똑한 하루 어휘</option>
             <option value="메가 어휘력">메가 어휘력</option>
+            <option value="문학">문학</option>
+            <option value="비문학">비문학</option>
           </select>
         </div>
 
@@ -438,7 +461,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">다음에 읽을 도서명 *</label>
-          <input type="text" id="nextBookTitleInput" placeholder="다음 시간에 읽고 싶은 책 제목 입력" oninput="syncNextBookToStep1()"
+          <input type="text" id="nextBookTitleInput" placeholder="다음 시간에 읽을 책 제목 입력" oninput="syncNextBookToStep1()"
                  class="w-full p-3 bg-slate-50 border border-purple-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500" />
           <p class="text-[11px] text-purple-600 mt-1">* 입력 시 1단계 도서 등록 화면에 바로 자동 반영됩니다.</p>
         </div>
@@ -593,9 +616,11 @@
 
       <!-- Student Memo / Reflection -->
       <div class="mt-4 pt-4 border-t border-white/10">
-        <label class="block text-xs font-bold text-slate-300 mb-1.5">오늘의 소감 및 선생님께 한마디 😊</label>
-        <input type="text" id="studentReflectionInput" placeholder="오늘 공부하며 뿌듯했던 점이나 선생님께 전하고 싶은 말씀" oninput="updateProgress(500)"
-               class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        <label class="block text-xs font-bold text-slate-300 mb-1.5">오늘 수업 돌아보기 & 선생님께 한마디 😊</label>
+        <textarea id="studentReflectionInput" rows="2"
+               placeholder="오늘 배운 것 중 내가 설명할 수 있는 것은 무엇인지, 아직 헷갈리는 것은 무엇인지 한 줄로 적어 보세요.선생님께 하고 싶은 말도 함께 남겨 주세요."
+               oninput="updateProgress(500)"
+               class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-400/80 resize-none"></textarea>
       </div>
     </div>
 
@@ -704,7 +729,7 @@
               <option value="8레벨">8레벨</option>
               <option value="9레벨">9레벨</option>
               <option value="10레벨">10레벨</option>
-              <option value="자율 독서">자율 독서</option>
+              <option value="[자율]">[자율]</option>
             </select>
           </div>
           <div>
@@ -729,15 +754,15 @@
                      class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
             <div class="col-span-3">
-              <input type="number" id="modalBookScore" placeholder="점수(선택)" min="0" max="100"
+              <input type="number" id="modalBookScore" placeholder="점수" min="0" max="100" oninput="handleModalScoreChange()"
                      class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
             <div class="col-span-3">
-              <select id="modalBookStatus" class="w-full p-3 bg-white border-2 border-emerald-500 text-emerald-700 rounded-2xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value="진단완료">진단완료</option>
-                <option value="완독">완독</option>
-                <option value="독서중">독서중</option>
-                <option value="독서시작">독서시작</option>
+              <select id="modalBookStatus" onchange="handleModalStatusChange()" class="w-full p-3 bg-white border-2 border-emerald-500 text-emerald-700 rounded-2xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="진단완료" id="optStatusDiag" disabled>진단완료 (점수필요)</option>
+                <option value="완독" id="optStatusFinished" selected>완독</option>
+                <option value="독서중" id="optStatusReading">독서중</option>
+                <option value="독서시작" id="optStatusStart">독서시작</option>
               </select>
             </div>
           </div>
@@ -855,7 +880,9 @@
         noteStatus: "작성안함",
         trainingType: "",
         trainingVolume: "",
+        trainingSession: "",
         trainingErrors: "",
+        trainingUnderstanding: "",
         hwStatus: "숙제완료",
         hwBook: "",
         hwChapter: "",
@@ -938,7 +965,9 @@
             noteStatus: state.missions.noteStatus || "작성안함",
             trainingType: document.getElementById("trainingTypeSelect") ? document.getElementById("trainingTypeSelect").value : (state.missions.trainingType || ""),
             trainingVolume: document.getElementById("trainingVolumeSelect") ? document.getElementById("trainingVolumeSelect").value : (state.missions.trainingVolume || ""),
+            trainingSession: document.getElementById("trainingSessionInput") ? document.getElementById("trainingSessionInput").value.trim() : (state.missions.trainingSession || ""),
             trainingErrors: document.getElementById("trainingErrorsSelect") ? document.getElementById("trainingErrorsSelect").value : (state.missions.trainingErrors || ""),
+            trainingUnderstanding: state.missions.trainingUnderstanding || "",
             hwStatus: state.missions.hwStatus || "숙제완료",
             hwBook: document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : (state.missions.hwBook || ""),
             hwChapter: document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : (state.missions.hwChapter || ""),
@@ -1009,7 +1038,9 @@
           noteStatus: m.noteStatus || "작성안함",
           trainingType: m.trainingType || "",
           trainingVolume: m.trainingVolume || "",
+          trainingSession: m.trainingSession || "",
           trainingErrors: m.trainingErrors || "",
+          trainingUnderstanding: m.trainingUnderstanding || "",
           hwStatus: m.hwStatus || "숙제완료",
           hwBook: m.hwBook || "",
           hwChapter: m.hwChapter || "",
@@ -1029,7 +1060,9 @@
 
         if (document.getElementById("trainingTypeSelect")) document.getElementById("trainingTypeSelect").value = state.missions.trainingType;
         if (document.getElementById("trainingVolumeSelect")) document.getElementById("trainingVolumeSelect").value = state.missions.trainingVolume;
+        if (document.getElementById("trainingSessionInput")) document.getElementById("trainingSessionInput").value = state.missions.trainingSession;
         if (document.getElementById("trainingErrorsSelect")) document.getElementById("trainingErrorsSelect").value = state.missions.trainingErrors;
+        setTrainingUnderstanding(state.missions.trainingUnderstanding);
         if (document.getElementById("hwBookSelect")) document.getElementById("hwBookSelect").value = state.missions.hwBook;
         if (document.getElementById("hwChapterInput")) document.getElementById("hwChapterInput").value = state.missions.hwChapter;
         if (document.getElementById("hwErrorsInput")) document.getElementById("hwErrorsInput").value = state.missions.hwErrors;
@@ -1285,8 +1318,14 @@
       if (enteredPin.trim() === expectedPin) {
         state.teacherOverrideApproved = true;
         saveActiveSession();
-        alert("✅ 선생님 조기 하원 승인이 완료되었습니다!\n이제 수업 시간이 남아있어도 즉시 학습 완료 및 하원할 수 있습니다.");
         updateRemainingTimeDisplay();
+        
+        // 원스톱 자동 하원 여부 즉시 확인 및 처리
+        if (confirm("✅ 선생님 조기 하원이 승인되었습니다!\n\n지금 바로 오늘의 학습을 완료하고 구글 출석부에 [수업완료]로 하원 처리하시겠습니까?\n\n(확인을 누르면 즉시 하원 완료되며, 취소를 누르면 화면에서 미션을 마저 확인하실 수 있습니다.)")) {
+          submitAllMissions();
+        } else {
+          alert("조기 하원 권한이 승인되었습니다.\n미션을 마무리하신 후 하단의 [학습 완료 및 조기 하원하기] 버튼을 눌러주세요.");
+        }
       } else {
         alert("❌ 비밀번호가 올바르지 않습니다. 다시 확인해 주세요.");
       }
@@ -1589,7 +1628,9 @@
         noteStatus: "작성안함",
         trainingType: "",
         trainingVolume: "",
+        trainingSession: "",
         trainingErrors: "",
+        trainingUnderstanding: "",
         hwStatus: "숙제완료",
         hwBook: "",
         hwChapter: "",
@@ -1610,7 +1651,9 @@
 
       document.getElementById("trainingTypeSelect").value = "";
       document.getElementById("trainingVolumeSelect").value = "";
+      if (document.getElementById("trainingSessionInput")) document.getElementById("trainingSessionInput").value = "";
       document.getElementById("trainingErrorsSelect").value = "";
+      setTrainingUnderstanding("");
       document.getElementById("hwBookSelect").value = "";
       document.getElementById("hwChapterInput").value = "";
       document.getElementById("hwErrorsInput").value = "";
@@ -1653,8 +1696,10 @@
       document.getElementById("modalBookLevel").value = "3레벨";
       document.getElementById("modalBookCourse").value = "1코스";
       document.getElementById("modalBookScore").value = "";
-      document.getElementById("modalBookStatus").value = "진단완료";
+      document.getElementById("modalBookStatus").value = "완독";
       document.getElementById("modalBookMemo").value = "";
+
+      handleModalScoreChange();
 
       const nextBookTyped = document.getElementById("nextBookTitleInput").value.trim();
       if (nextBookTyped && !document.getElementById("modalBookTitle").value) {
@@ -1665,10 +1710,47 @@
       document.getElementById("modalBookTitle").focus();
     }
 
+    function handleModalScoreChange() {
+      const scoreInput = document.getElementById("modalBookScore");
+      const statusSelect = document.getElementById("modalBookStatus");
+      const diagOpt = document.getElementById("optStatusDiag");
+      const scoreVal = scoreInput ? scoreInput.value.trim() : "";
+
+      if (scoreVal !== "") {
+        if (diagOpt) {
+          diagOpt.disabled = false;
+          diagOpt.innerText = "진단완료 💯";
+        }
+        if (statusSelect && (statusSelect.value === "완독" || statusSelect.value === "독서시작")) {
+          statusSelect.value = "진단완료";
+        }
+      } else {
+        if (diagOpt) {
+          diagOpt.disabled = true;
+          diagOpt.innerText = "진단완료 (점수필요)";
+        }
+        if (statusSelect && statusSelect.value === "진단완료") {
+          statusSelect.value = "완독";
+        }
+      }
+    }
+
+    function handleModalStatusChange() {
+      const scoreInput = document.getElementById("modalBookScore");
+      const statusSelect = document.getElementById("modalBookStatus");
+      const scoreVal = scoreInput ? scoreInput.value.trim() : "";
+
+      if (statusSelect && statusSelect.value === "진단완료" && scoreVal === "") {
+        alert("💡 '진단완료'는 점수를 입력해야 선택할 수 있습니다.\n점수가 없는 경우 '완독', '독서중', '독서시작' 중 하나를 선택해 주세요.");
+        statusSelect.value = "완독";
+        if (scoreInput) scoreInput.focus();
+      }
+    }
+
     function handleModalLevelChange() {
       const lvl = document.getElementById("modalBookLevel").value;
       const crsSelect = document.getElementById("modalBookCourse");
-      if (lvl === "자율 독서" || lvl === "자율") {
+      if (lvl === "[자율]" || lvl === "자율 독서" || lvl === "자율") {
         crsSelect.value = "선택 안 함";
       } else if (crsSelect.value === "선택 안 함" || crsSelect.value === "선택 안함") {
         crsSelect.value = "1코스";
@@ -1679,12 +1761,17 @@
       document.getElementById("bookModal").classList.add("hidden");
     }
 
-    function formatJColBookRecord(level, course, title, score, isNoteDone = false) {
+    function formatJColBookRecord(level, course, title, score, noteStatus = "") {
       let sc = score ? ` ${score}` : '';
-      let noteTag = isNoteDone ? " 글완" : "";
+      let noteTag = "";
+      if (noteStatus === "완료" || noteStatus === true) {
+        noteTag = " 글완";
+      } else if (noteStatus === "요약하기" || noteStatus === "요약") {
+        noteTag = " 요약";
+      }
 
-      if (level === "자율 독서" || level === "자율" || course === "선택 안 함" || course === "선택 안함") {
-        return `자율 ${title}${sc}${noteTag}`.trim();
+      if (level === "[자율]" || level === "자율 독서" || level === "자율" || course === "선택 안 함" || course === "선택 안함") {
+        return `[자율] ${title}${sc}${noteTag}`.trim();
       }
 
       let lvl = String(level || '1').replace("레벨", "").trim();
@@ -1700,10 +1787,17 @@
         return false;
       }
 
-      const level = document.getElementById("modalBookLevel").value;
-      const course = document.getElementById("modalBookCourse").value;
       const score = document.getElementById("modalBookScore").value.trim();
       const status = document.getElementById("modalBookStatus").value;
+
+      if (status === "진단완료" && !score) {
+        alert("진단완료를 선택하려면 점수를 입력해 주세요 💯");
+        document.getElementById("modalBookScore").focus();
+        return false;
+      }
+
+      const level = document.getElementById("modalBookLevel").value;
+      const course = (level === "[자율]" || level.includes("자율")) ? "선택 안 함" : document.getElementById("modalBookCourse").value;
 
       const book = {
         id: "book_" + Date.now(),
@@ -1715,7 +1809,7 @@
         score: score,
         status: status,
         memo: document.getElementById("modalBookMemo").value.trim(),
-        jFormatted: formatJColBookRecord(level, course, title, score, state.missions.noteStatus === "완료")
+        jFormatted: formatJColBookRecord(level, course, title, score, state.missions.noteStatus)
       };
 
       state.missions.books.push(book);
@@ -1738,10 +1832,27 @@
         document.getElementById("modalBookCourse").value = "1코스";
         document.getElementById("modalBookTitle").value = "";
         document.getElementById("modalBookScore").value = "";
-        document.getElementById("modalBookStatus").value = "진단완료";
+        document.getElementById("modalBookStatus").value = "완독";
         document.getElementById("modalBookMemo").value = "";
+        handleModalScoreChange();
         document.getElementById("modalBookTitle").focus();
       }
+    }
+
+    function setTrainingUnderstanding(val) {
+      if (state.missions.trainingUnderstanding === val) {
+        state.missions.trainingUnderstanding = "";
+      } else {
+        state.missions.trainingUnderstanding = val;
+      }
+      document.querySelectorAll(".training-under-btn").forEach(btn => {
+        if (btn.dataset.val === state.missions.trainingUnderstanding) {
+          btn.className = "training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow-sm";
+        } else {
+          btn.className = "training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        }
+      });
+      updateProgress();
     }
 
     function removeBook(id) {
@@ -1773,9 +1884,9 @@
         item.className = "flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200 gap-3";
 
         let scoreBadge = b.score ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-xs">${b.score}점</span>` : '';
-        let jBadge = `<span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold text-[11px]">J열: ${formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus === "완료")}</span>`;
-        const lvlCrsBadge = (b.level === "자율 독서" || b.level === "자율" || b.course === "선택 안 함" || b.course === "선택 안함") 
-          ? "자율 독서" 
+        let jBadge = `<span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold text-[11px]">J열: ${formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus)}</span>`;
+        const lvlCrsBadge = (b.level === "[자율]" || b.level === "자율 독서" || b.level === "자율" || b.course === "선택 안 함" || b.course === "선택 안함") 
+          ? "[자율]" 
           : `${b.level} · ${b.course}`;
 
         item.innerHTML = `
@@ -1990,10 +2101,11 @@
 
       // 1. Build Col J (진단글쓰기 / 특별수업)
       const jEntries = state.missions.books.map(b => 
-        formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus === "완료")
+        formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus)
       );
-      if (jEntries.length === 0 && state.missions.noteStatus === "완료") {
-        jEntries.push("글완");
+      if (jEntries.length === 0) {
+        if (state.missions.noteStatus === "완료") jEntries.push("글완");
+        else if (state.missions.noteStatus === "요약하기") jEntries.push("요약");
       }
       const grammarEl = document.getElementById("grammarDoneCheck");
       if (grammarEl && grammarEl.checked) {
@@ -2012,7 +2124,9 @@
       // 3. Build Col K (수업내용 및 특이사항)
       const trType = document.getElementById("trainingTypeSelect") ? document.getElementById("trainingTypeSelect").value : "";
       const trVol = document.getElementById("trainingVolumeSelect") ? document.getElementById("trainingVolumeSelect").value : "";
+      const trSession = document.getElementById("trainingSessionInput") ? document.getElementById("trainingSessionInput").value.trim() : (state.missions.trainingSession || "");
       const trErr = document.getElementById("trainingErrorsSelect") ? document.getElementById("trainingErrorsSelect").value : "";
+      const trUnder = state.missions.trainingUnderstanding || "";
       const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
       const hwChapter = document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : "";
       const hwErrors = document.getElementById("hwErrorsInput") ? document.getElementById("hwErrorsInput").value.trim() : "";
@@ -2022,7 +2136,13 @@
 
       const contentParts = [];
       if (finalColJ) contentParts.push(`[진단/독서] ${finalColJ}`);
-      if (trType) contentParts.push(`[트레이닝] ${trType} ${trVol ? trVol : ''} ${trErr ? `오답:${trErr}` : ''}`.trim());
+      const trParts = [];
+      if (trType) trParts.push(trType);
+      if (trVol) trParts.push(trVol);
+      if (trSession) trParts.push(`${trSession}차시`);
+      if (trErr) trParts.push(`오답:${trErr}`);
+      if (trUnder) trParts.push(`이해도:${trUnder}`);
+      if (trParts.length > 0) contentParts.push(`[트레이닝] ${trParts.join(" ")}`);
       if (state.missions.hwStatus) contentParts.push(`[숙제] ${state.missions.hwStatus}${hwBook ? ` ${hwBook}` : ''}${hwChapter ? `(${hwChapter})` : ''}${hwErrors ? ` [오답:${hwErrors}]` : ''}`);
       if (nextBook) contentParts.push(`[다음책] ${nextBook}${isReread}`);
       if (reflection) contentParts.push(`[소감] ${reflection}`);
@@ -2077,7 +2197,7 @@
       if (state.missions.books.length > 0) score += 30;
 
       // 2. Note status (15%)
-      if (state.missions.noteStatus === "완료") score += 15;
+      if (state.missions.noteStatus === "완료" || state.missions.noteStatus === "요약하기") score += 15;
       else if (state.missions.noteStatus === "작성중") score += 8;
 
       // 3. Focused Training (15%)
@@ -2100,17 +2220,23 @@
 
       // Update Summary Box
       const jColSummary = state.missions.books.map(b => 
-        formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus === "완료")
-      ).join(", ") || (state.missions.noteStatus === "완료" ? "글완" : "등록된 도서 없음");
+        formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus)
+      ).join(", ") || (state.missions.noteStatus === "완료" ? "글완" : (state.missions.noteStatus === "요약하기" ? "요약" : "등록된 도서 없음"));
       document.getElementById("sumBooks").innerText = jColSummary;
 
       document.getElementById("sumNotes").innerText = state.missions.noteStatus;
 
       const trVol = document.getElementById("trainingVolumeSelect").value;
+      const trSession = document.getElementById("trainingSessionInput") ? document.getElementById("trainingSessionInput").value.trim() : (state.missions.trainingSession || "");
       const trErr = document.getElementById("trainingErrorsSelect").value;
-      document.getElementById("sumTraining").innerText = trType 
-        ? `${trType} ${trVol ? `(${trVol})` : ''} ${trErr ? `[오답: ${trErr}]` : ''}` 
-        : "선택 안 함";
+      const trUnder = state.missions.trainingUnderstanding || "";
+      const sumTrParts = [];
+      if (trType) sumTrParts.push(trType);
+      if (trVol) sumTrParts.push(`(${trVol})`);
+      if (trSession) sumTrParts.push(`${trSession}차시`);
+      if (trErr) sumTrParts.push(`[오답: ${trErr}]`);
+      if (trUnder) sumTrParts.push(`[이해도: ${trUnder}]`);
+      document.getElementById("sumTraining").innerText = sumTrParts.join(" ") || "선택 안 함";
 
       const hwBook = document.getElementById("hwBookSelect").value;
       const hwChapter = document.getElementById("hwChapterInput").value.trim();
@@ -2166,10 +2292,11 @@
 
       // 1. Build Col J (진단글쓰기 / 특별수업)
       const jEntries = state.missions.books.map(b => 
-        formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus === "완료")
+        formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus)
       );
-      if (jEntries.length === 0 && state.missions.noteStatus === "완료") {
-        jEntries.push("글완");
+      if (jEntries.length === 0) {
+        if (state.missions.noteStatus === "완료") jEntries.push("글완");
+        else if (state.missions.noteStatus === "요약하기") jEntries.push("요약");
       }
       if (document.getElementById("grammarDoneCheck").checked) {
         jEntries.push("특별수업완료");
@@ -2187,7 +2314,9 @@
       // 3. Build Col K (수업내용 및 특이사항)
       const trType = document.getElementById("trainingTypeSelect").value;
       const trVol = document.getElementById("trainingVolumeSelect").value;
+      const trSession = document.getElementById("trainingSessionInput") ? document.getElementById("trainingSessionInput").value.trim() : (state.missions.trainingSession || "");
       const trErr = document.getElementById("trainingErrorsSelect").value;
+      const trUnder = state.missions.trainingUnderstanding || "";
       const hwBook = document.getElementById("hwBookSelect").value;
       const hwChapter = document.getElementById("hwChapterInput").value.trim();
       const hwErrors = document.getElementById("hwErrorsInput").value.trim();
@@ -2197,7 +2326,13 @@
 
       const contentParts = [];
       if (finalColJ) contentParts.push(`[진단/독서] ${finalColJ}`);
-      if (trType) contentParts.push(`[트레이닝] ${trType} ${trVol ? trVol : ''} ${trErr ? `오답:${trErr}` : ''}`.trim());
+      const trParts = [];
+      if (trType) trParts.push(trType);
+      if (trVol) trParts.push(trVol);
+      if (trSession) trParts.push(`${trSession}차시`);
+      if (trErr) trParts.push(`오답:${trErr}`);
+      if (trUnder) trParts.push(`이해도:${trUnder}`);
+      if (trParts.length > 0) contentParts.push(`[트레이닝] ${trParts.join(" ")}`);
       if (state.missions.hwStatus) contentParts.push(`[숙제] ${state.missions.hwStatus}${hwBook ? ` ${hwBook}` : ''}${hwChapter ? `(${hwChapter})` : ''}${hwErrors ? ` [오답:${hwErrors}]` : ''}`);
       if (nextBook) contentParts.push(`[다음책] ${nextBook}${isReread}`);
       if (reflection) contentParts.push(`[소감] ${reflection}`);
