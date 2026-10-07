@@ -617,10 +617,18 @@
         <p><strong>🏆 목표 달성 (8·9열):</strong> <span id="sumEvent">선택 안 함</span></p>
       </div>
 
-      <!-- Submit Button -->
+      <!-- Submit Button & Timer Notice Banner -->
+      <div id="checkoutNoticeBanner" class="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold mb-3 flex items-center justify-between shadow-sm">
+        <span class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+          <span>수업 종료 후 하원 가능</span>
+        </span>
+        <span id="btnRemainingNotice" class="font-black text-amber-800 text-xs sm:text-sm">남은 수업 시간: 계산 중...</span>
+      </div>
+
       <button id="btnSubmitMissions" onclick="submitAllMissions()" 
-              class="w-full py-4 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 hover:from-indigo-700 hover:to-indigo-900 text-white font-extrabold text-base sm:text-lg rounded-2xl shadow-lg shadow-indigo-500/25 transition transform active:scale-[0.99] flex items-center justify-center gap-3">
-        <span>🚀 오늘의 학습 완료 및 하원 / 로그아웃</span>
+              class="w-full py-4 bg-slate-600/90 hover:bg-slate-700 text-slate-200 font-extrabold text-base sm:text-lg rounded-2xl shadow-md transition flex items-center justify-center gap-3 cursor-not-allowed border-2 border-slate-500">
+        <span id="btnSubmitText">🔒 수업 진행 중 (남은 시간 충족 후 하원 가능)</span>
       </button>
     </div>
 
@@ -1134,10 +1142,10 @@
         const inTimeBadge = document.getElementById("dashInTimeBadge");
         if (inTimeBadge) inTimeBadge.innerText = `등원: ${inTime}`;
 
-        // 3. Start remaining class time timer
+        // 3. Start remaining class time timer (1초 단위 실시간 갱신)
         if (state.remainingTimerInterval) clearInterval(state.remainingTimerInterval);
         updateRemainingTimeDisplay();
-        state.remainingTimerInterval = setInterval(updateRemainingTimeDisplay, 10000);
+        state.remainingTimerInterval = setInterval(updateRemainingTimeDisplay, 1000);
 
         resetMissions();
         checkPersistentNextBook(student);
@@ -1161,34 +1169,102 @@
       }
     }
 
-    function updateRemainingTimeDisplay() {
-      if (!state.currentStudent) return;
+    function getRemainingClassTime() {
+      if (!state.currentStudent) {
+        return { totalRemainingSecs: 0, remainingMins: 0, remainingSecs: 0, duration: 90, elapsedMins: 0, isComplete: true };
+      }
       const dailyLog = state.currentDailyLog;
       const inTime = (dailyLog && dailyLog.inTime) || state.currentInTime || new Date().toTimeString().slice(0, 5);
       const duration = getClassDuration(state.currentStudent);
       const parts = inTime.split(":");
-      if (parts.length < 2) return;
+      if (parts.length < 2) {
+        return { totalRemainingSecs: 0, remainingMins: 0, remainingSecs: 0, duration, elapsedMins: 0, isComplete: true };
+      }
 
       const inHrs = parseInt(parts[0], 10);
       const inMins = parseInt(parts[1], 10);
       const now = new Date();
       const inDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), inHrs, inMins, 0);
-      const elapsedMins = Math.floor((now.getTime() - inDate.getTime()) / 60000);
-      const remainingMins = duration - elapsedMins;
+      const elapsedSecs = Math.floor((now.getTime() - inDate.getTime()) / 1000);
+      const totalClassSecs = duration * 60;
+      const totalRemainingSecs = totalClassSecs - elapsedSecs;
 
+      const isComplete = totalRemainingSecs <= 0;
+      const remainingMins = Math.max(0, Math.floor(totalRemainingSecs / 60));
+      const remainingSecs = Math.max(0, totalRemainingSecs % 60);
+      const elapsedMins = Math.floor(elapsedSecs / 60);
+
+      return {
+        totalRemainingSecs,
+        remainingMins,
+        remainingSecs,
+        duration,
+        elapsedMins,
+        isComplete
+      };
+    }
+
+    function updateRemainingTimeDisplay() {
+      if (!state.currentStudent) return;
+      const timeInfo = getRemainingClassTime();
+      const { totalRemainingSecs, remainingMins, remainingSecs, duration, isComplete } = timeInfo;
+      const formattedSecs = remainingSecs.toString().padStart(2, "0");
+
+      // 1. 상단 대시보드 뱃지 실시간 갱신 (초 단위까지 표시)
       const remainEl = document.getElementById("dashRemainingTimeBadge");
-      if (!remainEl) return;
+      if (remainEl) {
+        if (!isComplete) {
+          if (remainingMins >= 10) {
+            remainEl.className = "px-3 py-1 rounded-xl bg-indigo-500/30 border border-indigo-400/40 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm";
+            remainEl.innerHTML = `⏳ 남은 수업 시간: <span class="text-amber-300 font-black text-sm sm:text-base">${remainingMins}분 ${formattedSecs}초</span> <span class="text-indigo-200 text-xs font-normal">/ ${duration}분</span>`;
+          } else {
+            remainEl.className = "px-3 py-1 rounded-xl bg-amber-500/40 border border-amber-300 text-amber-100 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 animate-pulse shadow-sm";
+            remainEl.innerHTML = `⚠️ 곧 수업 종료: <span class="text-white font-black text-sm sm:text-base">${remainingMins}분 ${formattedSecs}초 남음</span> <span class="text-amber-200 text-xs font-normal">/ ${duration}분</span>`;
+          }
+        } else {
+          const overSecs = Math.abs(totalRemainingSecs);
+          const overMins = Math.floor(overSecs / 60);
+          remainEl.className = "px-3 py-1 rounded-xl bg-emerald-600/40 border border-emerald-400 text-emerald-100 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm";
+          remainEl.innerHTML = `🎉 수업 시간 완료! <span class="text-white font-black text-sm sm:text-base">${overMins > 0 ? `(${overMins}분 경과)` : ''}</span> <span class="text-emerald-200 text-xs font-semibold">• 하원할 수 있습니다</span>`;
+        }
+      }
 
-      if (remainingMins > 10) {
-        remainEl.className = "px-3 py-1 rounded-xl bg-indigo-500/30 border border-indigo-400/40 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm";
-        remainEl.innerHTML = `⏳ 남은 수업 시간: <span class="text-amber-300 font-black text-sm sm:text-base">${remainingMins}분</span> <span class="text-indigo-200 text-xs font-normal">/ ${duration}분</span>`;
-      } else if (remainingMins > 0) {
-        remainEl.className = "px-3 py-1 rounded-xl bg-amber-500/40 border border-amber-300 text-amber-100 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 animate-pulse shadow-sm";
-        remainEl.innerHTML = `⚠️ 곧 수업 종료: <span class="text-white font-black text-sm sm:text-base">${remainingMins}분 남음</span> <span class="text-amber-200 text-xs font-normal">/ ${duration}분</span>`;
-      } else {
-        const overMins = Math.abs(remainingMins);
-        remainEl.className = "px-3 py-1 rounded-xl bg-rose-600/40 border border-rose-400 text-rose-100 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm";
-        remainEl.innerHTML = `⏰ 수업 시간 종료 <span class="text-white font-black text-sm sm:text-base">${overMins > 0 ? `(${overMins}분 초과)` : ''}</span> <span class="text-rose-200 text-xs font-semibold">• 미션을 마무리해 주세요</span>`;
+      // 2. 7단계 하원 버튼 및 안내 배너 동적 제어
+      const btnSubmit = document.getElementById("btnSubmitMissions");
+      const noticeBanner = document.getElementById("checkoutNoticeBanner");
+
+      if (btnSubmit) {
+        if (!isComplete) {
+          btnSubmit.disabled = true;
+          btnSubmit.className = "w-full py-4 bg-slate-200 text-slate-500 font-extrabold text-base sm:text-lg rounded-2xl shadow-none cursor-not-allowed border-2 border-slate-300 transition flex items-center justify-center gap-3";
+          btnSubmit.innerHTML = `<span>🔒 수업 진행 중 (${remainingMins}분 ${formattedSecs}초 남음 • 수업 완료 후 하원 가능)</span>`;
+
+          if (noticeBanner) {
+            noticeBanner.className = "p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold mb-3 flex items-center justify-between shadow-sm";
+            noticeBanner.innerHTML = `
+              <span class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span>수업 시간 충족 후 하원 가능</span>
+              </span>
+              <span id="btnRemainingNotice" class="font-black text-amber-800 text-xs sm:text-sm">남은 시간: ${remainingMins}분 ${formattedSecs}초</span>
+            `;
+          }
+        } else {
+          btnSubmit.disabled = false;
+          btnSubmit.className = "w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-base sm:text-lg rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center gap-3 cursor-pointer border-2 border-emerald-400/50";
+          btnSubmit.innerHTML = `<span>🚀 수업 시간 완료! 오늘의 학습 완료 및 하원하기</span>`;
+
+          if (noticeBanner) {
+            noticeBanner.className = "p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl text-xs text-emerald-900 font-bold mb-3 flex items-center justify-between shadow-sm";
+            noticeBanner.innerHTML = `
+              <span class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span>배정된 수업 시간을 모두 충족했습니다!</span>
+              </span>
+              <span id="btnRemainingNotice" class="font-black text-emerald-800 text-xs sm:text-sm">🎉 하원 가능</span>
+            `;
+          }
+        }
       }
     }
 
@@ -1639,6 +1715,31 @@
     function submitAllMissions() {
       if (!state.currentStudent) return;
 
+      // 수업 시간 충족 여부 철저 검증 (미달 시 하원 차단)
+      const timeInfo = getRemainingClassTime();
+      if (!timeInfo.isComplete && timeInfo.totalRemainingSecs > 0) {
+        alert(`🚨 아직 수업 시간이 ${timeInfo.remainingMins}분 ${timeInfo.remainingSecs}초 남았습니다!\n\n배정된 수업 시간(${timeInfo.duration}분)을 모두 충족한 후에만 학습 완료 및 하원이 가능합니다.`);
+        return;
+      }
+
+      // Step 6 미션: 만약 드롭다운에서 선택만 하고 [➕ 추가] 버튼을 누르지 않았더라도 자동 수집
+      const pendingSetEv = document.getElementById("eventSetSelect") ? document.getElementById("eventSetSelect").value : "";
+      const pendingSetNum = document.getElementById("eventNumberSelect") ? document.getElementById("eventNumberSelect").value : "";
+      if (pendingSetEv) {
+        state.missions.setEvents.push({ event: pendingSetEv, number: pendingSetNum || "" });
+        document.getElementById("eventSetSelect").value = "";
+        document.getElementById("eventNumberSelect").value = "";
+        renderSetEventItems();
+      }
+      const pendingSolo = document.getElementById("eventSoloSelect") ? document.getElementById("eventSoloSelect").value : "";
+      if (pendingSolo) {
+        if (!state.missions.soloEvents.includes(pendingSolo)) {
+          state.missions.soloEvents.push(pendingSolo);
+        }
+        document.getElementById("eventSoloSelect").value = "";
+        renderSoloEventItems();
+      }
+
       const student = state.currentStudent;
       const btn = document.getElementById("btnSubmitMissions");
       btn.disabled = true;
@@ -1706,8 +1807,8 @@
         targetLog.contents = finalContents;
 
         updates.push({ tab: "dailyLogs", row: targetLog.row, field: "status", value: "수업완료", name: student.name, date: targetLog.date, time: targetLog.time });
-        if (finalColH) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "number", value: finalColH, name: student.name, date: targetLog.date, time: targetLog.time });
-        if (finalColI) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "event", value: finalColI, name: student.name, date: targetLog.date, time: targetLog.time });
+        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "number", value: finalColH || "", name: student.name, date: targetLog.date, time: targetLog.time });
+        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "event", value: finalColI || "", name: student.name, date: targetLog.date, time: targetLog.time });
         if (finalColJ) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ, name: student.name, date: targetLog.date, time: targetLog.time });
         if (finalContents) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents, name: student.name, date: targetLog.date, time: targetLog.time });
 
