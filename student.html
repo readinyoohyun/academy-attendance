@@ -93,12 +93,16 @@
       <div class="flex items-center gap-3">
         <div id="userHeaderPill" class="hidden items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-full text-xs font-semibold text-indigo-700">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="headerStudentStatusBadge" class="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">등원</span>
+          <span id="headerStudentStatusBadge" class="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">수업중</span>
           <span id="headerStudentName">홍길동</span>
           <span class="text-indigo-300">|</span>
           <span id="headerStudentGrade">중1</span>
           <span class="text-indigo-300">|</span>
           <span id="headerStudentDuration">90분</span>
+          <span class="text-indigo-300">|</span>
+          <span id="liveSyncStatusBadge" class="text-[10px] text-emerald-700 font-bold hidden sm:inline-flex items-center gap-1 transition-opacity opacity-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>시트 실시간 연동됨
+          </span>
         </div>
 
         <button id="btnLogout" onclick="confirmLogout()" class="hidden px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">
@@ -216,7 +220,7 @@
           <div class="flex items-center gap-2 flex-wrap">
             <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold flex items-center gap-1.5 shadow-sm">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              등원 • 수업 진행 중
+              수업중
             </span>
             <span id="dashInTimeBadge" class="text-xs text-indigo-200 bg-white/10 px-2.5 py-1 rounded-lg font-bold">등원: 15:30</span>
             <div id="dashRemainingTimeBadge" class="px-3 py-1 rounded-xl bg-indigo-500/30 border border-indigo-400/40 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm">
@@ -401,14 +405,14 @@
         <!-- 풀이 단원 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">풀이 단원 (쪽수)</label>
-          <input type="text" id="hwChapterInput" placeholder="예: 3단원, p.12~15" oninput="updateProgress()"
+          <input type="text" id="hwChapterInput" placeholder="예: 3단원, p.12~15" oninput="updateProgress(500)"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
         </div>
 
         <!-- 오답 개수 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 및 고친 개수</label>
-          <input type="text" id="hwErrorsInput" placeholder="예: 틀린 2개 / 고친 2개" oninput="updateProgress()"
+          <input type="text" id="hwErrorsInput" placeholder="예: 틀린 2개 / 고친 2개" oninput="updateProgress(500)"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
         </div>
       </div>
@@ -590,7 +594,7 @@
       <!-- Student Memo / Reflection -->
       <div class="mt-4 pt-4 border-t border-white/10">
         <label class="block text-xs font-bold text-slate-300 mb-1.5">오늘의 소감 및 선생님께 한마디 😊</label>
-        <input type="text" id="studentReflectionInput" placeholder="오늘 공부하며 뿌듯했던 점이나 선생님께 전하고 싶은 말씀" oninput="updateProgress()"
+        <input type="text" id="studentReflectionInput" placeholder="오늘 공부하며 뿌듯했던 점이나 선생님께 전하고 싶은 말씀" oninput="updateProgress(500)"
                class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
       </div>
     </div>
@@ -1084,12 +1088,12 @@
         const inTime = (dailyLog && dailyLog.inTime) ? dailyLog.inTime : nowTimeStr;
         state.currentInTime = inTime;
 
-        // 2. Sync to Google Sheets: Ensure status is '등원' and inTime is recorded
+        // 2. Sync to Google Sheets: Ensure status is '수업중' and inTime is recorded
         if (dailyLog) {
           const updates = [];
-          if (dailyLog.status !== "등원") {
-            dailyLog.status = "등원";
-            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "등원", name: student.name, date: dailyLog.date, time: dailyLog.time });
+          if (dailyLog.status !== "수업중") {
+            dailyLog.status = "수업중";
+            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업중", name: student.name, date: dailyLog.date, time: dailyLog.time });
           }
           if (!dailyLog.inTime) {
             dailyLog.inTime = nowTimeStr;
@@ -1107,7 +1111,7 @@
             time: scheduledTime,
             name: student.name,
             notes: student.notes || "",
-            status: "등원",
+            status: "수업중",
             inTime: nowTimeStr,
             reason: "",
             number: "",
@@ -1124,6 +1128,9 @@
         if (pill) { pill.classList.remove("hidden"); pill.classList.add("flex"); }
         const btnLogout = document.getElementById("btnLogout");
         if (btnLogout) btnLogout.classList.remove("hidden");
+
+        const statusBadge = document.getElementById("headerStudentStatusBadge");
+        if (statusBadge) statusBadge.innerText = "수업중";
 
         const headerName = document.getElementById("headerStudentName");
         if (headerName) headerName.innerText = student.name;
@@ -1659,8 +1666,114 @@
       });
     }
 
-    // 11. Realtime Progress & Summary Box Calculation
-    function updateProgress() {
+    // 11. Realtime Progress & Summary Box Calculation + Auto Sync to Google Sheets
+    let realtimeSyncTimer = null;
+    function triggerRealtimeSync(delay = 0) {
+      if (!state.currentStudent) return;
+      if (realtimeSyncTimer) clearTimeout(realtimeSyncTimer);
+      if (delay > 0) {
+        realtimeSyncTimer = setTimeout(syncMissionsRealtime, delay);
+      } else {
+        syncMissionsRealtime();
+      }
+    }
+
+    function syncMissionsRealtime() {
+      if (!state.currentStudent) return;
+      const student = state.currentStudent;
+
+      let targetLog = state.currentDailyLog;
+      if (!targetLog && Array.isArray(state.dailyLogs)) {
+        targetLog = [...state.dailyLogs].reverse().find(l => 
+          l && (l.name || "").replace(/\s+/g, '') === (student.name || "").replace(/\s+/g, '') &&
+          isSameDate(l.date, state.todayDateStr)
+        );
+      }
+      if (!targetLog) return;
+
+      // 1. Build Col J (진단글쓰기 / 특별수업)
+      const jEntries = state.missions.books.map(b => 
+        formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus === "완료")
+      );
+      if (jEntries.length === 0 && state.missions.noteStatus === "완료") {
+        jEntries.push("글완");
+      }
+      const grammarEl = document.getElementById("grammarDoneCheck");
+      if (grammarEl && grammarEl.checked) {
+        jEntries.push("특별수업완료");
+      }
+      const finalColJ = jEntries.join(", ");
+
+      // 2. Build Col H (numbers) & Col I (events)
+      const setNumbers = state.missions.setEvents.map(s => s.number || "");
+      const setEvents = state.missions.setEvents.map(s => s.event);
+      const allEvents = [...setEvents, ...state.missions.soloEvents];
+
+      const finalColH = setNumbers.filter(Boolean).join(", ");
+      const finalColI = allEvents.join(", ");
+
+      // 3. Build Col K (수업내용 및 특이사항)
+      const trType = document.getElementById("trainingTypeSelect") ? document.getElementById("trainingTypeSelect").value : "";
+      const trVol = document.getElementById("trainingVolumeSelect") ? document.getElementById("trainingVolumeSelect").value : "";
+      const trErr = document.getElementById("trainingErrorsSelect") ? document.getElementById("trainingErrorsSelect").value : "";
+      const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
+      const hwChapter = document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : "";
+      const hwErrors = document.getElementById("hwErrorsInput") ? document.getElementById("hwErrorsInput").value.trim() : "";
+      const nextBook = document.getElementById("nextBookTitleInput") ? document.getElementById("nextBookTitleInput").value.trim() : "";
+      const isReread = (document.getElementById("nextBookRereadCheck") && document.getElementById("nextBookRereadCheck").checked) ? "(재독예약)" : "";
+      const reflection = document.getElementById("studentReflectionInput") ? document.getElementById("studentReflectionInput").value.trim() : "";
+
+      const contentParts = [];
+      if (finalColJ) contentParts.push(`[진단/독서] ${finalColJ}`);
+      if (trType) contentParts.push(`[트레이닝] ${trType} ${trVol ? trVol : ''} ${trErr ? `오답:${trErr}` : ''}`.trim());
+      if (state.missions.hwStatus) contentParts.push(`[숙제] ${state.missions.hwStatus}${hwBook ? ` ${hwBook}` : ''}${hwChapter ? `(${hwChapter})` : ''}${hwErrors ? ` [오답:${hwErrors}]` : ''}`);
+      if (nextBook) contentParts.push(`[다음책] ${nextBook}${isReread}`);
+      if (reflection) contentParts.push(`[소감] ${reflection}`);
+
+      const finalContents = contentParts.join(" | ");
+
+      // Avoid unnecessary duplicate network calls
+      if (targetLog.number === finalColH &&
+          targetLog.event === finalColI &&
+          targetLog.grammarDone === finalColJ &&
+          targetLog.contents === finalContents) {
+        return;
+      }
+
+      targetLog.number = finalColH;
+      targetLog.event = finalColI;
+      targetLog.grammarDone = finalColJ;
+      targetLog.contents = finalContents;
+      if (targetLog.status !== "수업완료") {
+        targetLog.status = "수업중";
+      }
+
+      const updates = [
+        { tab: "dailyLogs", row: targetLog.row, field: "number", value: finalColH || "", name: student.name, date: targetLog.date, time: targetLog.time },
+        { tab: "dailyLogs", row: targetLog.row, field: "event", value: finalColI || "", name: student.name, date: targetLog.date, time: targetLog.time },
+        { tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ || "", name: student.name, date: targetLog.date, time: targetLog.time },
+        { tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents || "", name: student.name, date: targetLog.date, time: targetLog.time }
+      ];
+      if (targetLog.status !== "수업완료") {
+        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "status", value: "수업중", name: student.name, date: targetLog.date, time: targetLog.time });
+      }
+
+      sendBatchUpdates(updates);
+      showLiveSyncStatus();
+    }
+
+    function showLiveSyncStatus() {
+      const badge = document.getElementById("liveSyncStatusBadge");
+      if (badge) {
+        const now = new Date();
+        const timeStr = now.toTimeString().slice(0, 8);
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>시트 실시간 저장 (${timeStr})`;
+        badge.classList.remove("opacity-0");
+        badge.classList.add("opacity-100");
+      }
+    }
+
+    function updateProgress(syncDelay = 0) {
       let score = 0;
 
       // 1. Books registered (30%)
@@ -1709,6 +1822,9 @@
       const allSetSummary = state.missions.setEvents.map(s => `${s.event}${s.number ? `(${s.number})` : ''}`);
       const allEvents = [...allSetSummary, ...state.missions.soloEvents];
       document.getElementById("sumEvent").innerText = allEvents.join(" / ") || "선택 안 함";
+
+      // 실시간 구글 시트 자동 동기화 트리거
+      triggerRealtimeSync(syncDelay);
     }
 
     // 12. Final Mission Submit & Google Sheets Batch Update
