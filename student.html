@@ -444,7 +444,7 @@
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고</label>
-          <input type="text" id="nextBookMemoInput" placeholder="예: 2권부터 읽을 예정입니다" 
+          <input type="text" id="nextBookMemoInput" placeholder="예: 2권부터 읽을 예정입니다" oninput="updateProgress(500)"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
         </div>
       </div>
@@ -913,12 +913,153 @@
         }
       }
       applyBranding();
+      restoreActiveSession();
     }
 
     function applyBranding() {
       const titleEl = document.getElementById("academyTitle");
       if (titleEl && state.config.academyName) {
         titleEl.innerText = `${state.config.academyName} 성장 일지`;
+      }
+    }
+
+    // Session Persistence: Save & Restore active student session across page reloads (F5)
+    function saveActiveSession() {
+      if (!state.currentStudent) return;
+      try {
+        const sessionData = {
+          date: state.todayDateStr,
+          student: state.currentStudent,
+          dailyLog: state.currentDailyLog,
+          inTime: state.currentInTime,
+          teacherOverrideApproved: !!state.teacherOverrideApproved,
+          missions: {
+            books: state.missions.books || [],
+            noteStatus: state.missions.noteStatus || "작성안함",
+            trainingType: document.getElementById("trainingTypeSelect") ? document.getElementById("trainingTypeSelect").value : (state.missions.trainingType || ""),
+            trainingVolume: document.getElementById("trainingVolumeSelect") ? document.getElementById("trainingVolumeSelect").value : (state.missions.trainingVolume || ""),
+            trainingErrors: document.getElementById("trainingErrorsSelect") ? document.getElementById("trainingErrorsSelect").value : (state.missions.trainingErrors || ""),
+            hwStatus: state.missions.hwStatus || "숙제완료",
+            hwBook: document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : (state.missions.hwBook || ""),
+            hwChapter: document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : (state.missions.hwChapter || ""),
+            hwErrors: document.getElementById("hwErrorsInput") ? document.getElementById("hwErrorsInput").value.trim() : (state.missions.hwErrors || ""),
+            nextBookTitle: document.getElementById("nextBookTitleInput") ? document.getElementById("nextBookTitleInput").value.trim() : (state.missions.nextBookTitle || ""),
+            nextBookReread: document.getElementById("nextBookRereadCheck") ? document.getElementById("nextBookRereadCheck").checked : (state.missions.nextBookReread || false),
+            nextBookMemo: document.getElementById("nextBookMemoInput") ? document.getElementById("nextBookMemoInput").value.trim() : (state.missions.nextBookMemo || ""),
+            setEvents: state.missions.setEvents || [],
+            soloEvents: state.missions.soloEvents || [],
+            grammarDone: document.getElementById("grammarDoneCheck") ? document.getElementById("grammarDoneCheck").checked : (state.missions.grammarDone || false),
+            studentReflection: document.getElementById("studentReflectionInput") ? document.getElementById("studentReflectionInput").value.trim() : (state.missions.studentReflection || "")
+          }
+        };
+        localStorage.setItem("active_student_session", JSON.stringify(sessionData));
+      } catch (err) {
+        console.warn("saveActiveSession error:", err);
+      }
+    }
+
+    function restoreActiveSession() {
+      try {
+        const raw = localStorage.getItem("active_student_session");
+        if (!raw) return false;
+        const session = JSON.parse(raw);
+        if (!session || !session.student || !session.date) return false;
+
+        // Verify session date matches today
+        if (!isSameDate(session.date, state.todayDateStr)) {
+          localStorage.removeItem("active_student_session");
+          return false;
+        }
+
+        state.currentStudent = session.student;
+        state.currentDailyLog = session.dailyLog || findStudentTodayLog(session.student.name);
+        state.currentInTime = session.inTime || (state.currentDailyLog && state.currentDailyLog.inTime) || new Date().toTimeString().slice(0, 5);
+        state.teacherOverrideApproved = !!session.teacherOverrideApproved;
+
+        // Restore header UI
+        const pill = document.getElementById("userHeaderPill");
+        if (pill) { pill.classList.remove("hidden"); pill.classList.add("flex"); }
+        const btnLogout = document.getElementById("btnLogout");
+        if (btnLogout) btnLogout.classList.remove("hidden");
+
+        const statusBadge = document.getElementById("headerStudentStatusBadge");
+        if (statusBadge) statusBadge.innerText = (state.currentDailyLog && state.currentDailyLog.status) || "수업중";
+
+        const headerName = document.getElementById("headerStudentName");
+        if (headerName) headerName.innerText = session.student.name;
+        const headerGrade = document.getElementById("headerStudentGrade");
+        if (headerGrade) headerGrade.innerText = session.student.grade || "학생";
+
+        const duration = getClassDuration(session.student);
+        const headerDur = document.getElementById("headerStudentDuration");
+        if (headerDur) headerDur.innerText = `${duration}분`;
+
+        const dashName = document.getElementById("dashStudentName");
+        if (dashName) dashName.innerText = session.student.name;
+        const dashDur = document.getElementById("dashDuration");
+        if (dashDur) dashDur.innerText = `${duration}분 수업`;
+
+        const inTimeBadge = document.getElementById("dashInTimeBadge");
+        if (inTimeBadge) inTimeBadge.innerText = `등원: ${state.currentInTime}`;
+
+        // Restore missions
+        const m = session.missions || {};
+        state.missions = {
+          books: m.books || [],
+          noteStatus: m.noteStatus || "작성안함",
+          trainingType: m.trainingType || "",
+          trainingVolume: m.trainingVolume || "",
+          trainingErrors: m.trainingErrors || "",
+          hwStatus: m.hwStatus || "숙제완료",
+          hwBook: m.hwBook || "",
+          hwChapter: m.hwChapter || "",
+          hwErrors: m.hwErrors || "",
+          nextBookTitle: m.nextBookTitle || "",
+          nextBookReread: !!m.nextBookReread,
+          nextBookMemo: m.nextBookMemo || "",
+          setEvents: m.setEvents || [],
+          soloEvents: m.soloEvents || [],
+          grammarDone: !!m.grammarDone,
+          studentReflection: m.studentReflection || ""
+        };
+
+        renderBookList();
+        setNoteStatus(state.missions.noteStatus);
+        setHwStatus(state.missions.hwStatus);
+
+        if (document.getElementById("trainingTypeSelect")) document.getElementById("trainingTypeSelect").value = state.missions.trainingType;
+        if (document.getElementById("trainingVolumeSelect")) document.getElementById("trainingVolumeSelect").value = state.missions.trainingVolume;
+        if (document.getElementById("trainingErrorsSelect")) document.getElementById("trainingErrorsSelect").value = state.missions.trainingErrors;
+        if (document.getElementById("hwBookSelect")) document.getElementById("hwBookSelect").value = state.missions.hwBook;
+        if (document.getElementById("hwChapterInput")) document.getElementById("hwChapterInput").value = state.missions.hwChapter;
+        if (document.getElementById("hwErrorsInput")) document.getElementById("hwErrorsInput").value = state.missions.hwErrors;
+        if (document.getElementById("nextBookTitleInput")) document.getElementById("nextBookTitleInput").value = state.missions.nextBookTitle;
+        if (document.getElementById("nextBookRereadCheck")) document.getElementById("nextBookRereadCheck").checked = state.missions.nextBookReread;
+        if (document.getElementById("nextBookMemoInput")) document.getElementById("nextBookMemoInput").value = state.missions.nextBookMemo;
+        if (document.getElementById("grammarDoneCheck")) document.getElementById("grammarDoneCheck").checked = state.missions.grammarDone;
+        if (document.getElementById("studentReflectionInput")) document.getElementById("studentReflectionInput").value = state.missions.studentReflection;
+
+        renderSetEventItems();
+        renderSoloEventItems();
+        checkPersistentNextBook(session.student);
+
+        // Start timer
+        if (state.remainingTimerInterval) clearInterval(state.remainingTimerInterval);
+        updateRemainingTimeDisplay();
+        state.remainingTimerInterval = setInterval(updateRemainingTimeDisplay, 1000);
+
+        // Show dashboard, hide login
+        const viewLogin = document.getElementById("viewLogin");
+        const viewDash = document.getElementById("viewDashboard");
+        if (viewLogin) viewLogin.classList.add("hidden");
+        if (viewDash) viewDash.classList.remove("hidden");
+
+        updateProgress();
+        console.log(`[Session Restored] ${session.student.name} 학생 세션이 복원되었습니다.`);
+        return true;
+      } catch (err) {
+        console.warn("restoreActiveSession error:", err);
+        return false;
       }
     }
 
@@ -1143,6 +1284,7 @@
       const expectedPin = state.config.teacherPin || "1234";
       if (enteredPin.trim() === expectedPin) {
         state.teacherOverrideApproved = true;
+        saveActiveSession();
         alert("✅ 선생님 조기 하원 승인이 완료되었습니다!\n이제 수업 시간이 남아있어도 즉시 학습 완료 및 하원할 수 있습니다.");
         updateRemainingTimeDisplay();
       } else {
@@ -1980,6 +2122,9 @@
 
       // 실시간 구글 시트 자동 동기화 트리거
       triggerRealtimeSync(syncDelay);
+
+      // 브라우저 새로고침 및 창 닫힘 대비 실시간 세션 자동 저장
+      saveActiveSession();
     }
 
     // 12. Final Mission Submit & Google Sheets Batch Update
@@ -2167,6 +2312,7 @@
       state.currentDailyLog = null;
       state.currentInTime = "";
       state.teacherOverrideApproved = false;
+      localStorage.removeItem("active_student_session");
       document.getElementById("userHeaderPill").classList.add("hidden");
       document.getElementById("userHeaderPill").classList.remove("flex");
       document.getElementById("btnLogout").classList.add("hidden");
