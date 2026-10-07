@@ -2545,11 +2545,6 @@
       const reflection = document.getElementById("studentReflectionInput") ? document.getElementById("studentReflectionInput").value.trim() : "";
 
       const contentParts = [];
-      if (finalColJ) contentParts.push(`[진단/독서] ${finalColJ}`);
-      if (noteStat !== "작성안함") {
-        const noteLabel = (noteStat === "완료" || noteStat === true) ? "글완" : (noteStat === "요약하기" ? "요약" : "작성중");
-        contentParts.push(`[독서노트] ${noteBook ? noteBook + ' ' : ''}${noteLabel}`);
-      }
       const trParts = [];
       if (trTypes) trParts.push(trTypes);
       if (trVol) trParts.push(trVol);
@@ -2794,11 +2789,6 @@
       const reflection = document.getElementById("studentReflectionInput") ? document.getElementById("studentReflectionInput").value.trim() : "";
 
       const contentParts = [];
-      if (finalColJ) contentParts.push(`[진단/독서] ${finalColJ}`);
-      if (noteStat !== "작성안함") {
-        const noteLabel = (noteStat === "완료" || noteStat === true) ? "글완" : (noteStat === "요약하기" ? "요약" : "작성중");
-        contentParts.push(`[독서노트] ${noteBook ? noteBook + ' ' : ''}${noteLabel}`);
-      }
       const trParts = [];
       if (trTypes) trParts.push(trTypes);
       if (trVol) trParts.push(trVol);
@@ -2867,8 +2857,8 @@
         updates.push({ tab: "dailyLogs", row: targetLog.row, field: "status", value: "수업완료", name: student.name, date: targetLog.date, time: targetLog.time });
         updates.push({ tab: "dailyLogs", row: targetLog.row, field: "number", value: finalColH || "", name: student.name, date: targetLog.date, time: targetLog.time });
         updates.push({ tab: "dailyLogs", row: targetLog.row, field: "event", value: finalColI || "", name: student.name, date: targetLog.date, time: targetLog.time });
-        if (finalColJ) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ, name: student.name, date: targetLog.date, time: targetLog.time });
-        if (finalContents) updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents, name: student.name, date: targetLog.date, time: targetLog.time });
+        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ || "", name: student.name, date: targetLog.date, time: targetLog.time });
+        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents || "", name: student.name, date: targetLog.date, time: targetLog.time });
 
         sendBatchUpdates(updates);
       } else {
