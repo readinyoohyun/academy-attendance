@@ -1287,7 +1287,36 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
       };
       var col = cols[field];
       if (col) {
-        var cell = sheet.getRange(row, col);
+        var targetRow = row;
+        // [Safety Guard] Verify student name at target row to strictly prevent overwriting another student
+        if (name && targetRow >= 3) {
+          var cleanExpectedName = String(name).trim().replace(/\s+/g, "");
+          var currentNameAtRow = String(sheet.getRange(targetRow, 3).getValue() || "").trim().replace(/\s+/g, "");
+          if (currentNameAtRow && currentNameAtRow !== cleanExpectedName) {
+            // Row is occupied by another student! Search for this student's actual row
+            var lastRow = sheet.getLastRow();
+            var foundRow = -1;
+            if (lastRow >= 3) {
+              var namesData = sheet.getRange(3, 3, lastRow - 2, 1).getValues();
+              for (var nIdx = 0; nIdx < namesData.length; nIdx++) {
+                if (String(namesData[nIdx][0] || "").trim().replace(/\s+/g, "") === cleanExpectedName) {
+                  foundRow = 3 + nIdx;
+                  break;
+                }
+              }
+            }
+            if (foundRow !== -1) {
+              targetRow = foundRow;
+            } else {
+              // Student row not found, append safely at the end of the sheet
+              targetRow = lastRow + 1;
+              sheet.getRange(targetRow, 3).setValue(name);
+              if (date) sheet.getRange(targetRow, 1).setValue(date);
+              if (time) sheet.getRange(targetRow, 2).setValue(time);
+            }
+          }
+        }
+        var cell = sheet.getRange(targetRow, col);
         try {
           cell.setValue(value);
         } catch (err) {
@@ -1299,7 +1328,7 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
           }
         }
         if (field === "number" || field === "event" || field === "grammarDone" || field === "contents") {
-          accumulateDailyEventToMemberAnalysis(sheet, row);
+          accumulateDailyEventToMemberAnalysis(sheet, targetRow);
         }
       }
     }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>학생 학습 라운지 | 리드인</title>
+  <title>리드인 성장 일지</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Canvas Confetti for Celebration -->
@@ -72,8 +72,8 @@
             📖
           </span>
           <div>
-            <h1 id="academyTitle" class="text-lg font-bold text-slate-900 leading-tight">학생 학습 라운지</h1>
-            <p id="liveDateText" class="text-xs text-slate-500 font-medium tracking-tight">2026. 10. 06. (화)</p>
+            <h1 id="academyTitle" class="text-lg font-bold text-slate-900 leading-tight">리드인 성장 일지</h1>
+            <p id="liveDateText" class="text-xs text-slate-500 font-medium tracking-tight">2026. 10. 07. (수)</p>
           </div>
         </div>
       </div>
@@ -91,21 +91,21 @@
 
       <!-- Right: User Status & Logout -->
       <div class="flex items-center gap-3">
-        <div id="userHeaderPill" class="hidden items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-full text-xs font-semibold text-indigo-700">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="headerStudentStatusBadge" class="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">수업중</span>
-          <span id="headerStudentName">홍길동</span>
+        <div id="userHeaderPill" class="hidden items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-indigo-50 border border-indigo-200 rounded-full text-[11px] sm:text-xs font-semibold text-indigo-700 flex-wrap break-keep">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+          <span id="headerStudentStatusBadge" class="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold flex-shrink-0">수업중</span>
+          <span id="headerStudentName" class="font-bold">홍길동</span>
           <span class="text-indigo-300">|</span>
           <span id="headerStudentGrade">중1</span>
           <span class="text-indigo-300">|</span>
           <span id="headerStudentDuration">90분</span>
           <span class="text-indigo-300">|</span>
-          <span id="liveSyncStatusBadge" class="text-[10px] text-emerald-700 font-bold hidden sm:inline-flex items-center gap-1 transition-opacity opacity-0">
+          <span id="liveSyncStatusBadge" class="text-[10px] text-emerald-700 font-bold hidden md:inline-flex items-center gap-1 transition-opacity opacity-0 flex-shrink-0">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>시트 실시간 연동됨
           </span>
         </div>
 
-        <button id="btnLogout" onclick="confirmLogout()" class="hidden px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">
+        <button id="btnLogout" onclick="confirmLogout()" class="hidden px-2.5 sm:px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition break-keep flex-shrink-0">
           로그아웃
         </button>
 
@@ -141,7 +141,7 @@
         <span class="inline-block p-4 rounded-3xl bg-indigo-50 text-indigo-600 text-4xl mb-3 shadow-inner">
           📖
         </span>
-        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">학생 학습 라운지 로그인</h2>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">리드인 성장 일지 로그인</h2>
         <p class="text-xs sm:text-sm text-slate-500 mt-2">
           이름과 학년을 입력하고 오늘의 독서 미션을 시작하세요!
         </p>
@@ -622,16 +622,24 @@
       </div>
 
       <!-- Submit Button & Timer Notice Banner -->
-      <div id="checkoutNoticeBanner" class="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold mb-3 flex items-center justify-between shadow-sm">
+      <div id="checkoutNoticeBanner" class="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold mb-3 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left">
         <span class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-          <span>수업 종료 후 하원 가능</span>
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0"></span>
+          <span class="break-keep">수업 종료 후 하원 가능</span>
         </span>
-        <span id="btnRemainingNotice" class="font-black text-amber-800 text-xs sm:text-sm">남은 수업 시간: 계산 중...</span>
+        <span id="btnRemainingNotice" class="font-black text-amber-800 text-xs sm:text-sm flex-shrink-0">남은 수업 시간: 계산 중...</span>
+      </div>
+
+      <!-- Teacher Early Checkout Quick Link -->
+      <div class="flex items-center justify-end mb-3">
+        <button type="button" onclick="promptTeacherOverrideCheckout()" 
+                class="text-xs text-indigo-600 hover:text-indigo-800 font-bold underline flex items-center gap-1 transition p-1 break-keep">
+          <span>🔑 선생님 확인 후 조기 하원 승인</span>
+        </button>
       </div>
 
       <button id="btnSubmitMissions" onclick="submitAllMissions()" 
-              class="w-full py-4 bg-slate-600/90 hover:bg-slate-700 text-slate-200 font-extrabold text-base sm:text-lg rounded-2xl shadow-md transition flex items-center justify-center gap-3 cursor-not-allowed border-2 border-slate-500">
+              class="w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-slate-600/90 hover:bg-slate-700 text-slate-200 font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-not-allowed border-2 border-slate-500 break-keep text-center leading-snug">
         <span id="btnSubmitText">🔒 수업 진행 중 (남은 시간 충족 후 하원 가능)</span>
       </button>
     </div>
@@ -745,20 +753,20 @@
       </div>
 
       <!-- Modal Footer Buttons (Replica of Screenshot) -->
-      <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+      <div class="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 break-keep">
         <button type="button" onclick="closeBookModal()" 
-                class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-2xl transition">
+                class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-2xl transition break-keep text-center order-2 sm:order-1">
           취소 / 닫기
         </button>
 
-        <div class="flex items-center gap-2">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 order-1 sm:order-2">
           <button type="button" onclick="saveBookAndAddNext()" 
-                  class="px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-bold rounded-2xl transition flex items-center gap-1">
+                  class="px-3.5 sm:px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-bold rounded-2xl transition flex items-center justify-center gap-1 break-keep text-center">
             <span>➕ 등록 후 다음 책 추가</span>
           </button>
           <button type="button" onclick="saveBookAndClose()" 
-                  class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md shadow-emerald-600/20 transition">
-            완료 (등록 후 닫기)
+                  class="px-4 sm:px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1 break-keep text-center">
+            <span>완료 (등록 후 닫기)</span>
           </button>
         </div>
       </div>
@@ -802,6 +810,12 @@
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono" />
           <p class="text-[11px] text-slate-400 mt-1">* 원장앱 또는 키오스크와 같은 도메인일 경우 자동으로 동기화됩니다.</p>
         </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">선생님 승인 비밀번호 (조기 하원 PIN)</label>
+          <input type="password" id="configTeacherPin" placeholder="기본값: 1234" maxlength="10"
+                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono" />
+          <p class="text-[11px] text-slate-400 mt-1">* 수업 시간 미달 시 조기 하원을 승인할 때 사용하는 비밀번호입니다.</p>
+        </div>
       </div>
 
       <div class="mt-6 flex items-center justify-end gap-2">
@@ -823,8 +837,10 @@
       config: {
         gasWebhookUrl: localStorage.getItem("gas_webhook_url") || DEFAULT_GAS_URL,
         academyName: localStorage.getItem("academy_name") || "리드인",
-        logoUrl: localStorage.getItem("logo_url") || ""
+        logoUrl: localStorage.getItem("logo_url") || "",
+        teacherPin: localStorage.getItem("teacher_pin") || "1234"
       },
+      teacherOverrideApproved: false,
       students: [],
       dailyLogs: [],
       todayDay: "",
@@ -902,7 +918,7 @@
     function applyBranding() {
       const titleEl = document.getElementById("academyTitle");
       if (titleEl && state.config.academyName) {
-        titleEl.innerText = `${state.config.academyName} 학생 학습 라운지`;
+        titleEl.innerText = `${state.config.academyName} 성장 일지`;
       }
     }
 
@@ -1046,17 +1062,92 @@
         if (!student.grade) student.grade = grade;
       }
 
-      // 2. Look for today's existing log
-      let todayLog = null;
-      if (Array.isArray(state.dailyLogs)) {
-        todayLog = [...state.dailyLogs].reverse().find(l => 
-          l && (l.name || '').replace(/\s+/g, '') === name.replace(/\s+/g, '') &&
-          isSameDate(l.date, state.todayDateStr)
-        ) || null;
-      }
+      // 2. Look for today's existing log strictly for this student
+      let todayLog = findStudentTodayLog(name);
 
       // 3. Login student
       loginStudent(student, todayLog);
+    }
+
+    // Helper: Find student's today log strictly matching student name and today's date
+    function findStudentTodayLog(studentName) {
+      if (!studentName || !Array.isArray(state.dailyLogs)) return null;
+      const cleanName = String(studentName).trim().replace(/\s+/g, "");
+      return [...state.dailyLogs].reverse().find(l => {
+        if (!l || !l.name) return false;
+        const lName = String(l.name).trim().replace(/\s+/g, "");
+        return lName === cleanName && isSameDate(l.date, state.todayDateStr);
+      }) || null;
+    }
+
+    // Helper: Allocate a guaranteed safe, non-colliding row number for a student
+    function getSafeNextDailyLogRow(studentName) {
+      const cleanName = String(studentName || "").trim().replace(/\s+/g, "");
+      const occupiedRows = new Set();
+
+      if (Array.isArray(state.dailyLogs)) {
+        state.dailyLogs.forEach(l => {
+          if (l && l.row) {
+            const r = parseInt(l.row, 10);
+            if (!isNaN(r) && r > 0) occupiedRows.add(r);
+          }
+        });
+      }
+
+      // Check stored student row allocations
+      let studentRowMap = {};
+      try {
+        studentRowMap = JSON.parse(localStorage.getItem("student_assigned_rows_" + state.todayDateStr) || "{}");
+      } catch(e) {
+        studentRowMap = {};
+      }
+
+      // If this student was already assigned a safe row today, verify it does not collide with another student
+      if (cleanName && studentRowMap[cleanName]) {
+        const assigned = parseInt(studentRowMap[cleanName], 10);
+        const occupiedByOther = state.dailyLogs.some(l => 
+          parseInt(l.row, 10) === assigned && 
+          String(l.name || "").trim().replace(/\s+/g, "") !== cleanName
+        );
+        if (!occupiedByOther && assigned >= 3) {
+          return assigned;
+        }
+      }
+
+      // Add other students' allocated rows to occupied list
+      Object.entries(studentRowMap).forEach(([sName, rNum]) => {
+        if (sName !== cleanName && rNum) {
+          occupiedRows.add(parseInt(rNum, 10));
+        }
+      });
+
+      // Data rows start at row 3 (rows 1-2 are header & template)
+      let highestRow = 2;
+      occupiedRows.forEach(r => {
+        if (r > highestRow) highestRow = r;
+      });
+
+      const nextSafeRow = highestRow + 1;
+      if (cleanName) {
+        studentRowMap[cleanName] = nextSafeRow;
+        localStorage.setItem("student_assigned_rows_" + state.todayDateStr, JSON.stringify(studentRowMap));
+      }
+      return nextSafeRow;
+    }
+
+    // Helper: Teacher PIN prompt for early checkout authorization
+    function promptTeacherOverrideCheckout() {
+      const enteredPin = prompt("🔑 [선생님 승인] 조기 하원 비밀번호(PIN)를 입력해 주세요:");
+      if (enteredPin === null) return; // User cancelled
+
+      const expectedPin = state.config.teacherPin || "1234";
+      if (enteredPin.trim() === expectedPin) {
+        state.teacherOverrideApproved = true;
+        alert("✅ 선생님 조기 하원 승인이 완료되었습니다!\n이제 수업 시간이 남아있어도 즉시 학습 완료 및 하원할 수 있습니다.");
+        updateRemainingTimeDisplay();
+      } else {
+        alert("❌ 비밀번호가 올바르지 않습니다. 다시 확인해 주세요.");
+      }
     }
 
     function getClassDuration(student) {
@@ -1072,17 +1163,30 @@
     function loginStudent(student, existingLog) {
       try {
         state.currentStudent = student;
-
+        const cleanName = (student.name || '').trim().replace(/\s+/g, '');
         const nowTimeStr = new Date().toTimeString().slice(0, 5);
         const scheduledTime = (student.times && student.times[state.todayDay]) || "시간 외";
 
-        // 1. Locate or create today's daily log
-        let dailyLog = existingLog;
-        if (!dailyLog && Array.isArray(state.dailyLogs)) {
-          dailyLog = [...state.dailyLogs].reverse().find(l => 
-            l && (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') &&
-            isSameDate(l.date, state.todayDateStr)
-          ) || null;
+        // 1. Locate or create today's daily log with strict student name validation
+        let dailyLog = null;
+        if (existingLog && existingLog.name && (existingLog.name.replace(/\s+/g, '') === cleanName) && isSameDate(existingLog.date, state.todayDateStr)) {
+          dailyLog = existingLog;
+        } else {
+          dailyLog = findStudentTodayLog(student.name);
+        }
+
+        // Verify that dailyLog.row does NOT collide with another student
+        if (dailyLog && dailyLog.row) {
+          const collidingWithOther = state.dailyLogs.some(l => 
+            l !== dailyLog && 
+            parseInt(l.row, 10) === parseInt(dailyLog.row, 10) && 
+            String(l.name || '').trim().replace(/\s+/g, '') !== cleanName
+          );
+          if (collidingWithOther) {
+            console.warn(`[Row Collision Detected] Row ${dailyLog.row} already belongs to another student. Reassigning safe row for ${student.name}.`);
+            dailyLog.row = getSafeNextDailyLogRow(student.name);
+            dailyLog.id = "daily_" + dailyLog.row;
+          }
         }
 
         const inTime = (dailyLog && dailyLog.inTime) ? dailyLog.inTime : nowTimeStr;
@@ -1103,7 +1207,7 @@
             sendBatchUpdates(updates);
           }
         } else {
-          const newRow = state.dailyLogs.length > 0 ? Math.max(...state.dailyLogs.map(l => l.row)) + 1 : 3;
+          const newRow = getSafeNextDailyLogRow(student.name);
           dailyLog = {
             id: "daily_" + newRow,
             row: newRow,
@@ -1221,17 +1325,20 @@
       const remainEl = document.getElementById("dashRemainingTimeBadge");
       if (remainEl) {
         if (!isComplete) {
-          if (remainingMins >= 10) {
-            remainEl.className = "px-3 py-1 rounded-xl bg-indigo-500/30 border border-indigo-400/40 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm";
+          if (state.teacherOverrideApproved) {
+            remainEl.className = "px-3 py-1 rounded-xl bg-amber-500/30 border border-amber-400 text-amber-200 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm break-keep";
+            remainEl.innerHTML = `🔑 <span class="text-amber-300 font-bold">[선생님 승인됨]</span> <span class="text-white text-xs sm:text-sm">조기 하원 가능 (${remainingMins}분 ${formattedSecs}초 남음)</span>`;
+          } else if (remainingMins >= 10) {
+            remainEl.className = "px-3 py-1 rounded-xl bg-indigo-500/30 border border-indigo-400/40 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm break-keep";
             remainEl.innerHTML = `⏳ 남은 수업 시간: <span class="text-amber-300 font-black text-sm sm:text-base">${remainingMins}분 ${formattedSecs}초</span> <span class="text-indigo-200 text-xs font-normal">/ ${duration}분</span>`;
           } else {
-            remainEl.className = "px-3 py-1 rounded-xl bg-amber-500/40 border border-amber-300 text-amber-100 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 animate-pulse shadow-sm";
+            remainEl.className = "px-3 py-1 rounded-xl bg-amber-500/40 border border-amber-300 text-amber-100 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 animate-pulse shadow-sm break-keep";
             remainEl.innerHTML = `⚠️ 곧 수업 종료: <span class="text-white font-black text-sm sm:text-base">${remainingMins}분 ${formattedSecs}초 남음</span> <span class="text-amber-200 text-xs font-normal">/ ${duration}분</span>`;
           }
         } else {
           const overSecs = Math.abs(totalRemainingSecs);
           const overMins = Math.floor(overSecs / 60);
-          remainEl.className = "px-3 py-1 rounded-xl bg-emerald-600/40 border border-emerald-400 text-emerald-100 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm";
+          remainEl.className = "px-3 py-1 rounded-xl bg-emerald-600/40 border border-emerald-400 text-emerald-100 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm break-keep";
           remainEl.innerHTML = `🎉 수업 시간 완료! <span class="text-white font-black text-sm sm:text-base">${overMins > 0 ? `(${overMins}분 경과)` : ''}</span> <span class="text-emerald-200 text-xs font-semibold">• 하원할 수 있습니다</span>`;
         }
       }
@@ -1241,34 +1348,49 @@
       const noticeBanner = document.getElementById("checkoutNoticeBanner");
 
       if (btnSubmit) {
-        if (!isComplete) {
+        if (!isComplete && !state.teacherOverrideApproved) {
           btnSubmit.disabled = true;
-          btnSubmit.className = "w-full py-4 bg-slate-200 text-slate-500 font-extrabold text-base sm:text-lg rounded-2xl shadow-none cursor-not-allowed border-2 border-slate-300 transition flex items-center justify-center gap-3";
-          btnSubmit.innerHTML = `<span>🔒 수업 진행 중 (${remainingMins}분 ${formattedSecs}초 남음 • 수업 완료 후 하원 가능)</span>`;
+          btnSubmit.className = "w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-slate-200 text-slate-500 font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-none cursor-not-allowed border-2 border-slate-300 transition flex items-center justify-center gap-2 break-keep text-center leading-snug";
+          btnSubmit.innerHTML = `<span class="break-keep text-center leading-snug">🔒 수업 진행 중 (${remainingMins}분 ${formattedSecs}초 남음 • 수업 완료 후 하원 가능)</span>`;
 
           if (noticeBanner) {
-            noticeBanner.className = "p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold mb-3 flex items-center justify-between shadow-sm";
+            noticeBanner.className = "p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold mb-3 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left";
             noticeBanner.innerHTML = `
               <span class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-                <span>수업 시간 충족 후 하원 가능</span>
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0"></span>
+                <span class="break-keep">수업 시간 충족 후 하원 가능</span>
               </span>
-              <span id="btnRemainingNotice" class="font-black text-amber-800 text-xs sm:text-sm">남은 시간: ${remainingMins}분 ${formattedSecs}초</span>
+              <span id="btnRemainingNotice" class="font-black text-amber-800 text-xs sm:text-sm flex-shrink-0">남은 시간: ${remainingMins}분 ${formattedSecs}초</span>
+            `;
+          }
+        } else if (state.teacherOverrideApproved && !isComplete) {
+          btnSubmit.disabled = false;
+          btnSubmit.className = "w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-gradient-to-r from-amber-600 via-indigo-600 to-teal-600 hover:from-amber-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-2 border-indigo-400/50 break-keep text-center leading-snug";
+          btnSubmit.innerHTML = `<span class="break-keep text-center leading-snug">🔑 [선생님 승인 완료] 학습 완료 및 조기 하원하기 (${remainingMins}분 ${formattedSecs}초 남음)</span>`;
+
+          if (noticeBanner) {
+            noticeBanner.className = "p-3.5 bg-indigo-50 border border-indigo-300 rounded-2xl text-xs text-indigo-900 font-bold mb-3 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left";
+            noticeBanner.innerHTML = `
+              <span class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 flex-shrink-0"></span>
+                <span class="break-keep">선생님 확인 비밀번호로 조기 하원이 승인되었습니다.</span>
+              </span>
+              <span id="btnRemainingNotice" class="font-black text-indigo-800 text-xs sm:text-sm flex-shrink-0">🔑 승인 완료</span>
             `;
           }
         } else {
           btnSubmit.disabled = false;
-          btnSubmit.className = "w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-base sm:text-lg rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center gap-3 cursor-pointer border-2 border-emerald-400/50";
-          btnSubmit.innerHTML = `<span>🚀 수업 시간 완료! 오늘의 학습 완료 및 하원하기</span>`;
+          btnSubmit.className = "w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-2 border-emerald-400/50 break-keep text-center leading-snug";
+          btnSubmit.innerHTML = `<span class="break-keep text-center leading-snug">🚀 수업 시간 완료! 오늘의 학습 완료 및 하원하기</span>`;
 
           if (noticeBanner) {
-            noticeBanner.className = "p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl text-xs text-emerald-900 font-bold mb-3 flex items-center justify-between shadow-sm";
+            noticeBanner.className = "p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl text-xs text-emerald-900 font-bold mb-3 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left";
             noticeBanner.innerHTML = `
               <span class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span>배정된 수업 시간을 모두 충족했습니다!</span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                <span class="break-keep">배정된 수업 시간을 모두 충족했습니다!</span>
               </span>
-              <span id="btnRemainingNotice" class="font-black text-emerald-800 text-xs sm:text-sm">🎉 하원 가능</span>
+              <span id="btnRemainingNotice" class="font-black text-emerald-800 text-xs sm:text-sm flex-shrink-0">🎉 하원 가능</span>
             `;
           }
         }
@@ -1681,15 +1803,48 @@
     function syncMissionsRealtime() {
       if (!state.currentStudent) return;
       const student = state.currentStudent;
+      const cleanName = (student.name || '').trim().replace(/\s+/g, '');
 
       let targetLog = state.currentDailyLog;
-      if (!targetLog && Array.isArray(state.dailyLogs)) {
-        targetLog = [...state.dailyLogs].reverse().find(l => 
-          l && (l.name || "").replace(/\s+/g, '') === (student.name || "").replace(/\s+/g, '') &&
-          isSameDate(l.date, state.todayDateStr)
-        );
+      if (!targetLog || !targetLog.name || (targetLog.name.replace(/\s+/g, '') !== cleanName)) {
+        targetLog = findStudentTodayLog(student.name);
       }
-      if (!targetLog) return;
+
+      if (!targetLog) {
+        const newRow = getSafeNextDailyLogRow(student.name);
+        const nowTimeStr = new Date().toTimeString().slice(0, 5);
+        const scheduledTime = (student.times && student.times[state.todayDay]) || "시간 외";
+        targetLog = {
+          id: "daily_" + newRow,
+          row: newRow,
+          date: state.todayDateStr,
+          time: scheduledTime,
+          name: student.name,
+          notes: student.notes || "",
+          status: "수업중",
+          inTime: state.currentInTime || nowTimeStr,
+          reason: "",
+          number: "",
+          event: "",
+          grammarDone: "",
+          contents: ""
+        };
+        state.dailyLogs.push(targetLog);
+        sendNewLog(targetLog);
+      }
+
+      // Verify row does not collide with another student
+      const isColliding = state.dailyLogs.some(l => 
+        l !== targetLog && 
+        parseInt(l.row, 10) === parseInt(targetLog.row, 10) && 
+        String(l.name || '').trim().replace(/\s+/g, '') !== cleanName
+      );
+      if (isColliding) {
+        console.warn(`[Row Collision Detected in syncMissionsRealtime] Reassigning row for ${student.name}`);
+        targetLog.row = getSafeNextDailyLogRow(student.name);
+        targetLog.id = "daily_" + targetLog.row;
+      }
+      state.currentDailyLog = targetLog;
 
       // 1. Build Col J (진단글쓰기 / 특별수업)
       const jEntries = state.missions.books.map(b => 
@@ -1830,11 +1985,15 @@
     // 12. Final Mission Submit & Google Sheets Batch Update
     function submitAllMissions() {
       if (!state.currentStudent) return;
+      const student = state.currentStudent;
+      const cleanName = (student.name || '').trim().replace(/\s+/g, '');
 
-      // 수업 시간 충족 여부 철저 검증 (미달 시 하원 차단)
+      // 수업 시간 충족 여부 철저 검증 (미달 시 조기 하원 승인 확인)
       const timeInfo = getRemainingClassTime();
-      if (!timeInfo.isComplete && timeInfo.totalRemainingSecs > 0) {
-        alert(`🚨 아직 수업 시간이 ${timeInfo.remainingMins}분 ${timeInfo.remainingSecs}초 남았습니다!\n\n배정된 수업 시간(${timeInfo.duration}분)을 모두 충족한 후에만 학습 완료 및 하원이 가능합니다.`);
+      if (!timeInfo.isComplete && timeInfo.totalRemainingSecs > 0 && !state.teacherOverrideApproved) {
+        if (confirm(`🚨 아직 수업 시간이 ${timeInfo.remainingMins}분 ${timeInfo.remainingSecs}초 남았습니다!\n\n배정된 수업 시간(${timeInfo.duration}분)을 채우지 않고 조기 하원하려면 선생님 확인이 필요합니다.\n\n선생님 비밀번호를 입력하시겠습니까?`)) {
+          promptTeacherOverrideCheckout();
+        }
         return;
       }
 
@@ -1856,7 +2015,6 @@
         renderSoloEventItems();
       }
 
-      const student = state.currentStudent;
       const btn = document.getElementById("btnSubmitMissions");
       btn.disabled = true;
       btn.innerHTML = `<span>⏳ 구글 시트에 저장 및 하원 처리 중...</span>`;
@@ -1901,21 +2059,30 @@
 
       const finalContents = contentParts.join(" | ");
 
-      // Find or build Daily Log
+      // Find or build Daily Log with strict student matching
       const nowTimeStr = new Date().toTimeString().slice(0, 5);
       const scheduledTime = (student.times && student.times[state.todayDay]) || "시간 외";
 
       let targetLog = state.currentDailyLog;
-      if (!targetLog && Array.isArray(state.dailyLogs)) {
-        targetLog = [...state.dailyLogs].reverse().find(l => 
-          l && (l.name || "").replace(/\s+/g, '') === (student.name || "").replace(/\s+/g, '') &&
-          isSameDate(l.date, state.todayDateStr)
-        );
+      if (!targetLog || !targetLog.name || (targetLog.name.replace(/\s+/g, '') !== cleanName)) {
+        targetLog = findStudentTodayLog(student.name);
       }
 
       const updates = [];
 
       if (targetLog) {
+        // Verify no collision with another student
+        const isColliding = state.dailyLogs.some(l => 
+          l !== targetLog && 
+          parseInt(l.row, 10) === parseInt(targetLog.row, 10) && 
+          String(l.name || '').trim().replace(/\s+/g, '') !== cleanName
+        );
+        if (isColliding) {
+          console.warn(`[Row Collision Detected in submitAllMissions] Reassigning row for ${student.name}`);
+          targetLog.row = getSafeNextDailyLogRow(student.name);
+          targetLog.id = "daily_" + targetLog.row;
+        }
+
         targetLog.status = "수업완료";
         targetLog.number = finalColH;
         targetLog.event = finalColI;
@@ -1930,7 +2097,7 @@
 
         sendBatchUpdates(updates);
       } else {
-        const newRow = state.dailyLogs.length > 0 ? Math.max(...state.dailyLogs.map(l => l.row)) + 1 : 3;
+        const newRow = getSafeNextDailyLogRow(student.name);
         targetLog = {
           id: "daily_" + newRow,
           row: newRow,
@@ -1939,7 +2106,7 @@
           name: student.name,
           notes: student.notes || "",
           status: "수업완료",
-          inTime: nowTimeStr,
+          inTime: state.currentInTime || nowTimeStr,
           reason: "",
           number: finalColH,
           event: finalColI,
@@ -1950,6 +2117,7 @@
 
         sendNewLog(targetLog);
       }
+      state.currentDailyLog = targetLog;
 
       // Persist next book for next session
       if (nextBook) {
@@ -1998,6 +2166,7 @@
       state.currentStudent = null;
       state.currentDailyLog = null;
       state.currentInTime = "";
+      state.teacherOverrideApproved = false;
       document.getElementById("userHeaderPill").classList.add("hidden");
       document.getElementById("userHeaderPill").classList.remove("flex");
       document.getElementById("btnLogout").classList.add("hidden");
@@ -2016,6 +2185,8 @@
     function openConfigModal() {
       document.getElementById("configAcademyName").value = state.config.academyName;
       document.getElementById("configGasUrl").value = state.config.gasWebhookUrl;
+      const pinEl = document.getElementById("configTeacherPin");
+      if (pinEl) pinEl.value = state.config.teacherPin || "1234";
       document.getElementById("configModal").classList.remove("hidden");
     }
 
@@ -2026,12 +2197,16 @@
     function saveConfigModal() {
       const name = document.getElementById("configAcademyName").value.trim();
       const url = document.getElementById("configGasUrl").value.trim();
+      const pinEl = document.getElementById("configTeacherPin");
+      const pin = pinEl ? (pinEl.value.trim() || "1234") : (state.config.teacherPin || "1234");
 
       state.config.academyName = name;
       state.config.gasWebhookUrl = url;
+      state.config.teacherPin = pin;
 
       localStorage.setItem("academy_name", name);
       localStorage.setItem("gas_webhook_url", url);
+      localStorage.setItem("teacher_pin", pin);
 
       applyBranding();
       closeConfigModal();
