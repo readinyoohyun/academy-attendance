@@ -926,8 +926,22 @@ function doGet() {
     }
   }
 
-  // 2. 출결보강관리 (dailyLogs)
-  var sheetDaily = ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘 출석부");
+  // 2. 출결보강관리 / 오늘 출석부 (dailyLogs)
+  var candidateDailySheets = ["오늘 출석부", "출결보강관리", "오늘출석부"];
+  var sheetDaily = null;
+  for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+    var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
+    if (candidate && candidate.getLastRow() > 2) {
+      sheetDaily = candidate;
+      break;
+    }
+  }
+  if (!sheetDaily) {
+    for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+      var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
+      if (candidate) { sheetDaily = candidate; break; }
+    }
+  }
   var dailyLogsData = [];
   if (sheetDaily) {
     var lastRow = sheetDaily.getLastRow();
@@ -1527,31 +1541,61 @@ function doPost(e) {
     }
     
     else if (postData.action === "addDailyLog") {
-      var sheet = ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘 출석부");
+      var candidateDailySheets = ["오늘 출석부", "출결보강관리", "오늘출석부"];
+      var sheet = null;
+      for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+        var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
+        if (candidate && candidate.getLastRow() > 2) { sheet = candidate; break; }
+      }
       if (!sheet) {
-        sheet = ss.insertSheet("출결보강관리");
+        for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+          var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
+          if (candidate) { sheet = candidate; break; }
+        }
+      }
+      if (!sheet) {
+        sheet = ss.insertSheet("오늘 출석부");
         sheet.appendRow([
           "날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유",
           "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
         ]);
       }
-      var lastRow = sheet.getLastRow();
-      var nextRow = lastRow + 1;
       ensureColumns(sheet, 11);
       
-      sheet.getRange(nextRow, 1).setValue(postData.date); // 날짜요일
-      sheet.getRange(nextRow, 2).setValue(postData.time); // 시간
-      sheet.getRange(nextRow, 3).setValue(postData.name); // 이름
-      sheet.getRange(nextRow, 4).setValue(postData.notes || ""); // 특이사항
-      sheet.getRange(nextRow, 5).setValue(postData.status || "대기"); // 등원여부
-      sheet.getRange(nextRow, 6).setValue(postData.inTime || ""); // 등원시간
-      sheet.getRange(nextRow, 7).setValue(postData.reason || ""); // 보강결석사유
-      sheet.getRange(nextRow, 8).setValue(postData.number || "");
-      sheet.getRange(nextRow, 9).setValue(postData.event || "");
-      sheet.getRange(nextRow, 10).setValue(postData.grammarDone || "");
-      sheet.getRange(nextRow, 11).setValue(postData.contents || "");
+      var lastRow = sheet.getLastRow();
+      var targetRow = -1;
+      var cleanTargetName = String(postData.name || "").trim().replace(/\s+/g, "");
+
+      // 1. 이미 시트 위쪽 시간표에 동일한 학생이 배정되어 있는지 검색!
+      if (cleanTargetName && lastRow >= 3) {
+        var existingNames = sheet.getRange(3, 3, lastRow - 2, 1).getValues();
+        for (var nIdx = 0; nIdx < existingNames.length; nIdx++) {
+          if (String(existingNames[nIdx][0] || "").trim().replace(/\s+/g, "") === cleanTargetName) {
+            targetRow = 3 + nIdx;
+            break;
+          }
+        }
+      }
+
+      // 2. 기존 시간표에 학생이 있다면 해당 행을 업데이트, 없으면 맨 아래(lastRow + 1)에 신규 추가!
+      var isExisting = (targetRow !== -1);
+      if (!isExisting) {
+        targetRow = lastRow + 1;
+        sheet.getRange(targetRow, 1).setValue(postData.date); // 날짜요일
+        sheet.getRange(targetRow, 2).setValue(postData.time); // 시간
+        sheet.getRange(targetRow, 3).setValue(postData.name); // 이름
+      }
       
-      return ContentService.createTextOutput(JSON.stringify({ status: "success", row: nextRow }))
+      if (postData.notes) sheet.getRange(targetRow, 4).setValue(postData.notes);
+      sheet.getRange(targetRow, 5).setValue(postData.status || "수업중"); // 등원여부
+      if (postData.inTime) sheet.getRange(targetRow, 6).setValue(postData.inTime); // 등원시간
+      if (postData.reason) sheet.getRange(targetRow, 7).setValue(postData.reason);
+      if (postData.number) sheet.getRange(targetRow, 8).setValue(postData.number);
+      if (postData.event) sheet.getRange(targetRow, 9).setValue(postData.event);
+      if (postData.grammarDone) sheet.getRange(targetRow, 10).setValue(postData.grammarDone);
+      if (postData.contents) sheet.getRange(targetRow, 11).setValue(postData.contents);
+      
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", row: targetRow, updatedExisting: isExisting }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     
