@@ -765,6 +765,10 @@
               <option value="2코스">2코스</option>
               <option value="3코스">3코스</option>
               <option value="4코스">4코스</option>
+              <option value="재미있는책읽기">재미있는책읽기</option>
+              <option value="새싹">새싹</option>
+              <option value="씨앗">씨앗</option>
+              <option value="꽃">꽃</option>
               <option value="재독">재독</option>
               <option value="선택 안 함">선택 안 함</option>
             </select>
@@ -1733,7 +1737,7 @@
             const sorted = [...studentPastLogs].reverse();
             for (let log of sorted) {
               const text = (log.grammarDone || "") + " " + (log.contents || "");
-              const match = text.match(/(?:\[진단\/독서\]|\[독서\]|\[자율\]|레벨|\d-\d)\s*([^0-9\(\[\|\,\n]{2,25})/);
+              const match = text.match(/(?:\[진단\/독서\]|\[독서\]|\[자율\]|\[기초\]|기초(?:-[^\s]+)?|레벨|\d-\d)\s*([^0-9\(\[\|\,\n]{2,25})/);
               if (match && match[1]) {
                 const candidate = match[1].replace(/글완|요약|작성중|진단완료|완독/g, '').trim();
                 if (candidate) {
@@ -1924,8 +1928,21 @@
         noteTag = " 요약";
       }
 
-      if (level === "[자율]" || level === "자율 독서" || level === "자율" || course === "선택 안 함" || course === "선택 안함") {
+      if (level === "[자율]" || level === "자율 독서" || level === "자율") {
         return `[자율] ${title}${sc}${noteTag}`.trim();
+      }
+
+      if (level === "기초") {
+        if (!course || course === "선택 안 함" || course === "선택 안함") {
+          return `기초 ${title}${sc}${noteTag}`.trim();
+        }
+        let crs = String(course).replace("코스", "").trim();
+        return `기초-${crs} ${title}${sc}${noteTag}`.trim();
+      }
+
+      if (!course || course === "선택 안 함" || course === "선택 안함") {
+        let lvl = String(level || '1').replace("레벨", "").trim();
+        return `${lvl} ${title}${sc}${noteTag}`.trim();
       }
 
       let lvl = String(level || '1').replace("레벨", "").trim();
@@ -2049,9 +2066,14 @@
 
         let scoreBadge = b.score ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-xs">${b.score}점</span>` : '';
         let jBadge = `<span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold text-[11px]">J열: ${formatJColBookRecord(b.level, b.course, b.title, b.score, state.missions.noteStatus)}</span>`;
-        const lvlCrsBadge = (b.level === "[자율]" || b.level === "자율 독서" || b.level === "자율" || b.course === "선택 안 함" || b.course === "선택 안함") 
-          ? "[자율]" 
-          : `${b.level} · ${b.course}`;
+        let lvlCrsBadge = "";
+        if (b.level === "[자율]" || b.level === "자율 독서" || b.level === "자율") {
+          lvlCrsBadge = "[자율]";
+        } else if (b.course === "선택 안 함" || b.course === "선택 안함" || !b.course) {
+          lvlCrsBadge = b.level;
+        } else {
+          lvlCrsBadge = `${b.level} · ${b.course}`;
+        }
 
         item.innerHTML = `
           <div class="flex items-center gap-3">
