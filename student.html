@@ -1633,7 +1633,7 @@
             const sorted = [...studentPastLogs].reverse();
             for (let log of sorted) {
               const contents = log.contents || "";
-              const match = contents.match(/\[다음책\]\s*([^|;]+)/);
+              const match = contents.match(/(?:\[다음책\]|다음책:)\s*([^|;]+)/);
               if (match && match[1]) {
                 savedNextBook = match[1].trim();
                 break;
@@ -2948,13 +2948,13 @@
 
       const contentParts = [];
       if (trSummary) {
-        let trPart = `[트레이닝] ${trSummary}`;
-        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` (이해도:${trUnder})`;
+        let trPart = trSummary;
+        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
         contentParts.push(trPart);
       }
 
       if (state.missions.hwStatus) {
-        let hwPart = `[숙제] ${state.missions.hwStatus}`;
+        let hwPart = state.missions.hwStatus;
         if (hwBook) hwPart += ` ${hwBook}`;
         if (hwChapter) hwPart += `(${hwChapter})`;
         if (hwWrong || hwFixed) {
@@ -2967,15 +2967,15 @@
       }
 
       if (nextBook) {
-        contentParts.push(`[다음책] ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`);
+        contentParts.push(`다음책: ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`);
       } else if (actStr) {
-        contentParts.push(`[사전학습] ${actStr}`);
+        contentParts.push(`사전학습: ${actStr}`);
       }
       if (nextMemo) {
-        contentParts.push(`[선생님메모] ${nextMemo}`);
+        contentParts.push(`메모: ${nextMemo}`);
       }
       if (reflection) {
-        contentParts.push(`[소감] ${reflection}`);
+        contentParts.push(reflection);
       }
 
       const finalContents = contentParts.join(" | ");
@@ -3196,13 +3196,13 @@
 
       const contentParts = [];
       if (trSummary) {
-        let trPart = `[트레이닝] ${trSummary}`;
-        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` (이해도:${trUnder})`;
+        let trPart = trSummary;
+        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
         contentParts.push(trPart);
       }
 
       if (state.missions.hwStatus) {
-        let hwPart = `[숙제] ${state.missions.hwStatus}`;
+        let hwPart = state.missions.hwStatus;
         if (hwBook) hwPart += ` ${hwBook}`;
         if (hwChapter) hwPart += `(${hwChapter})`;
         if (hwWrong || hwFixed) {
@@ -3215,15 +3215,15 @@
       }
 
       if (nextBook) {
-        contentParts.push(`[다음책] ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`);
+        contentParts.push(`다음책: ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`);
       } else if (actStr) {
-        contentParts.push(`[사전학습] ${actStr}`);
+        contentParts.push(`사전학습: ${actStr}`);
       }
       if (nextMemo) {
-        contentParts.push(`[선생님메모] ${nextMemo}`);
+        contentParts.push(`메모: ${nextMemo}`);
       }
       if (reflection) {
-        contentParts.push(`[소감] ${reflection}`);
+        contentParts.push(reflection);
       }
 
       const finalContents = contentParts.join(" | ");
