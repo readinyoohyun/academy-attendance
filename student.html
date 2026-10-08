@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>리드인 성장 일지</title>
+  <title>독서 & 국어 성장 기록</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Canvas Confetti for Celebration -->
@@ -100,6 +100,10 @@
           <span class="text-indigo-300">|</span>
           <span id="headerStudentDuration">90분</span>
           <span class="text-indigo-300">|</span>
+          <div id="headerTimerBadge" class="px-2 py-0.5 rounded-lg bg-indigo-100 text-indigo-900 border border-indigo-300 font-black text-[11px] sm:text-xs flex items-center gap-1 shadow-sm break-keep">
+            ⏳ <span id="headerRemainingTime">--분 --초</span>
+          </div>
+          <span class="text-indigo-300 hidden md:inline">|</span>
           <span id="liveSyncStatusBadge" class="text-[10px] text-emerald-700 font-bold hidden md:inline-flex items-center gap-1 transition-opacity opacity-0 flex-shrink-0">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>시트 실시간 연동됨
           </span>
@@ -141,7 +145,7 @@
         <span class="inline-block p-4 rounded-3xl bg-indigo-50 text-indigo-600 text-4xl mb-3 shadow-inner">
           📖
         </span>
-        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">리드인 성장 일지 로그인</h2>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">독서 & 국어 성장 기록</h2>
         <p class="text-xs sm:text-sm text-slate-500 mt-2">
           이름과 학년을 입력하고 오늘의 독서 미션을 시작하세요!
         </p>
@@ -246,12 +250,15 @@
 
 
     <!-- ================= 1단계: 오늘 독서 & 진단 기록 (Core) ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 mb-5">
+    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-emerald-200 transition hover:shadow-md">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-emerald-100 mb-5">
         <div class="flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm">1</span>
+          <span class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-base shadow-sm">1</span>
           <div>
-            <h3 class="text-lg font-bold text-slate-900">오늘 독서 & 진단 기록</h3>
+            <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+              <span>오늘 독서 & 진단 기록</span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">1단계 📖</span>
+            </h3>
             <p class="text-xs text-slate-500">순번, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요. (시트 J열 자동 연동)</p>
           </div>
         </div>
@@ -280,13 +287,16 @@
 
 
     <!-- ================= 2단계: 독서노트 & 글쓰기 ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-blue-200 transition hover:shadow-md">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-blue-100 mb-4">
         <div class="flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black text-sm">2</span>
+          <span class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-base shadow-sm">2</span>
           <div>
             <div class="flex items-center gap-2 flex-wrap">
-              <h3 class="text-lg font-bold text-slate-900">독서노트 & 글쓰기</h3>
+              <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                <span>독서노트 & 글쓰기</span>
+                <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">2단계 ✍️</span>
+              </h3>
               <span id="selectedNoteBookBadge" class="hidden px-2.5 py-0.5 bg-blue-100 text-blue-800 rounded-lg text-xs font-bold border border-blue-200 flex items-center gap-1">
                 <span>📖 대상:</span>
                 <strong id="selectedNoteBookName"></strong>
@@ -324,12 +334,15 @@
 
 
     <!-- ================= 3단계: 집중 트레이닝 ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-indigo-200 transition hover:shadow-md">
+      <div class="flex items-center justify-between pb-4 border-b border-indigo-100 mb-5">
         <div class="flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm">3</span>
+          <span class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-base shadow-sm">3</span>
           <div>
-            <h3 class="text-lg font-bold text-slate-900">집중 트레이닝</h3>
+            <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+              <span>집중 트레이닝</span>
+              <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">3단계 🎯</span>
+            </h3>
             <p class="text-xs text-slate-500">읽기, 독해, 듣기, 문해력 트레이닝 진행 내역과 권 수, 차시, 오답 개수를 기록합니다.</p>
           </div>
         </div>
@@ -367,19 +380,23 @@
 
 
     <!-- ================= 4단계: 숙제 점검 ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 mb-5">
+    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-amber-300 transition hover:shadow-md">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-amber-100 mb-5">
         <div class="flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black text-sm">4</span>
+          <span class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-base shadow-sm">4</span>
           <div>
-            <h3 class="text-lg font-bold text-slate-900">숙제 점검</h3>
+            <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+              <span>숙제 점검</span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">4단계 📝</span>
+            </h3>
             <p class="text-xs text-slate-500">과제 지참 상태와 오답 수정 완료 여부를 확인합니다.</p>
           </div>
         </div>
 
-        <!-- Homework Status Badges (숙제완료, 오답수정 완료, 오답수정 미완, 미지참, 학원에서 풀기) -->
+        <!-- Homework Status Badges (숙제완료, 숙제미완, 오답수정 완료, 오답수정 미완, 미지참, 학원에서 풀기) -->
         <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-end sm:self-auto flex-wrap">
           <button type="button" onclick="setHwStatus('숙제완료')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="숙제완료">숙제완료 👍</button>
+          <button type="button" onclick="setHwStatus('숙제미완')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="숙제미완">숙제미완 ❌</button>
           <button type="button" onclick="setHwStatus('오답수정 완료')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="오답수정 완료">오답수정 완료 ✅</button>
           <button type="button" onclick="setHwStatus('오답수정 미완')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="오답수정 미완">오답수정 미완 ⚠️</button>
           <button type="button" onclick="setHwStatus('미지참')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="미지참">미지참 ⚠️</button>
@@ -428,13 +445,16 @@
 
 
     <!-- ================= 5단계: 다음 책 선정 및 재독 예약 (방향 B 적용) ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition hover:shadow-md">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 mb-5">
+    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-purple-200 transition hover:shadow-md">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-purple-100 mb-5">
         <div class="flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-sm">5</span>
+          <span class="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-base shadow-sm">5</span>
           <div>
             <div class="flex items-center gap-2 flex-wrap">
-              <h3 class="text-lg font-bold text-slate-900">다음 책 선정 및 재독 예약</h3>
+              <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                <span>다음 책 선정 및 재독 예약</span>
+                <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-bold">5단계 📚</span>
+              </h3>
               <span id="selectedNextBookBadge" class="hidden px-2.5 py-0.5 bg-purple-100 text-purple-800 rounded-lg text-xs font-bold border border-purple-200 flex items-center gap-1">
                 <span>📖 다음/재독:</span>
                 <strong id="selectedNextBookName"></strong>
@@ -489,14 +509,14 @@
 
 
     <!-- ================= 6단계: 성장 기록 & 목표 달성 (원장님 필수 요청) ================= -->
-    <div class="bg-gradient-to-tr from-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-lg border border-indigo-900/50">
+    <div class="bg-gradient-to-tr from-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-xl border-2 border-indigo-700/60">
       <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
         <div class="flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm">6</span>
+          <span class="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-base shadow-sm">6</span>
           <div>
-            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <h3 class="text-lg sm:text-xl font-black text-white flex items-center gap-2">
               <span>성장 기록 & 목표 달성</span>
-              <span class="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-bold">출석부 8·9열 자동 연동</span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-bold">6단계 🏆</span>
             </h3>
             <p class="text-xs text-slate-300">오늘 달성한 코스업, 레벨업, 교재완료 및 특별 타이틀을 복수 선택할 수 있습니다.</p>
           </div>
@@ -641,23 +661,38 @@
           <span>[특별수업 / 기록 완료]</span>
         </button>
       </div>
-      <div class="mt-4 pt-4 border-t border-white/10">
-        <label class="block text-xs font-bold text-slate-300 mb-1.5">오늘 수업 돌아보기 & 선생님께 한마디 😊</label>
+
+      <!-- 6단계 특급 강조: 오늘 수업 돌아보기 & 선생님께 한마디 -->
+      <div class="mt-5 p-4 sm:p-5 bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-yellow-500/25 rounded-2xl border-2 border-amber-400 shadow-xl">
+        <div class="flex items-center justify-between mb-2.5 flex-wrap gap-1.5">
+          <label class="block text-sm sm:text-base font-black text-amber-200 flex items-center gap-2">
+            <span>✍️ 오늘 수업 돌아보기 & 선생님께 한마디</span>
+            <span class="px-2.5 py-0.5 bg-amber-400 text-slate-950 text-[11px] font-black rounded-lg shadow-sm">필수 작성 🌟</span>
+          </label>
+          <span class="text-xs text-amber-300 font-bold">아이들의 소중한 배움과 생각을 적어주세요!</span>
+        </div>
         <textarea id="studentReflectionInput" rows="2"
-               placeholder="오늘 배운 것 중 내가 설명할 수 있는 것은 무엇인지, 아직 헷갈리는 것은 무엇인지 한 줄로 적어 보세요.선생님께 하고 싶은 말도 함께 남겨 주세요."
+               placeholder="오늘 배운 것 중 내가 설명할 수 있는 것은 무엇인지, 아직 헷갈리는 것은 무엇인지 한 줄로 적어 보세요. 선생님께 하고 싶은 말도 함께 남겨 주세요 😊"
                oninput="updateProgress(500)"
-               class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-400/80 resize-none"></textarea>
+               class="w-full p-3.5 bg-white border-2 border-amber-300 rounded-xl text-xs sm:text-sm text-slate-900 font-bold focus:outline-none focus:ring-4 focus:ring-amber-300/50 placeholder:text-slate-400 shadow-inner resize-none"></textarea>
       </div>
     </div>
 
 
     <!-- ================= 7단계: 미션 최종 제출 & 하원 ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-md border-2 border-indigo-200">
-      <div class="flex items-center justify-between mb-4">
+    <div class="bg-white rounded-3xl p-6 shadow-md border-2 border-indigo-300">
+      <div class="flex items-center justify-between pb-4 border-b border-indigo-100 mb-4">
         <div class="flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm">7</span>
+          <span class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-base shadow-sm">7</span>
           <div>
-            <h3 class="text-lg font-bold text-slate-900">오늘의 학습 완료 및 하원</h3>
+            <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+              <span>오늘의 학습 완료 및 하원</span>
+              <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">7단계 🚀</span>
+            </h3>
+            <p class="text-xs text-slate-500">모든 학습 기록을 구글 출석부에 안전하게 저장하고 하원합니다.</p>
+          </div>
+        </div>
+      </div>
             <p class="text-xs text-slate-500">모든 학습 기록을 구글 출석부에 안전하게 저장하고 하원합니다.</p>
           </div>
         </div>
@@ -1546,6 +1581,26 @@
       const timeInfo = getRemainingClassTime();
       const { totalRemainingSecs, remainingMins, remainingSecs, duration, isComplete } = timeInfo;
       const formattedSecs = remainingSecs.toString().padStart(2, "0");
+
+      // 0. 최상단 고정 헤더 뱃지 실시간 갱신 (스크롤 시에도 상단 고정 노출)
+      const headerTimerEl = document.getElementById("headerTimerBadge");
+      if (headerTimerEl) {
+        if (!isComplete) {
+          if (state.teacherOverrideApproved) {
+            headerTimerEl.className = "px-2 py-0.5 rounded-lg bg-amber-200 text-amber-950 border border-amber-400 font-extrabold text-[11px] sm:text-xs flex items-center gap-1 shadow-sm break-keep";
+            headerTimerEl.innerHTML = `🔑 <span>조기하원 승인됨</span>`;
+          } else if (remainingMins >= 10) {
+            headerTimerEl.className = "px-2.5 py-0.5 rounded-lg bg-indigo-100 text-indigo-900 border border-indigo-300 font-black text-[11px] sm:text-xs flex items-center gap-1 shadow-sm break-keep";
+            headerTimerEl.innerHTML = `⏳ <span class="text-indigo-950 font-black">${remainingMins}분 ${formattedSecs}초</span><span class="text-indigo-600 font-semibold text-[10px]">남음</span>`;
+          } else {
+            headerTimerEl.className = "px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-400 font-black text-[11px] sm:text-xs flex items-center gap-1 shadow-sm animate-pulse break-keep";
+            headerTimerEl.innerHTML = `⚠️ <span class="text-amber-950 font-black">${remainingMins}분 ${formattedSecs}초</span><span class="text-amber-700 font-bold text-[10px]">남음</span>`;
+          }
+        } else {
+          headerTimerEl.className = "px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 font-black text-[11px] sm:text-xs flex items-center gap-1 shadow-sm break-keep";
+          headerTimerEl.innerHTML = `🎉 <span class="text-emerald-900 font-black">수업완료! (하원가능)</span>`;
+        }
+      }
 
       // 1. 상단 대시보드 뱃지 실시간 갱신 (초 단위까지 표시)
       const remainEl = document.getElementById("dashRemainingTimeBadge");
