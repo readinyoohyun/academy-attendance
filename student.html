@@ -1412,7 +1412,6 @@
           btnTeacher.innerHTML = `<span>✅ 선생님 확인 완료됨</span>`;
         }
 
-        alert("✅ 선생님 확인이 완료되었습니다!\n구글 출석부에 [수업완료]로 하원 처리됩니다.");
         submitAllMissions();
       } else {
         alert("❌ 비밀번호가 올바르지 않습니다. 다시 확인해 주세요.");
@@ -3322,57 +3321,6 @@
         targetLog = findStudentTodayLog(student.name);
       }
 
-      const updates = [];
-
-      if (targetLog) {
-        // Verify no collision with another student
-        const isColliding = state.dailyLogs.some(l => 
-          l !== targetLog && 
-          parseInt(l.row, 10) === parseInt(targetLog.row, 10) && 
-          String(l.name || '').trim().replace(/\s+/g, '') !== cleanName
-        );
-        if (isColliding) {
-          console.warn(`[Row Collision Detected in submitAllMissions] Reassigning row for ${student.name}`);
-          targetLog.row = getSafeNextDailyLogRow(student.name);
-          targetLog.id = "daily_" + targetLog.row;
-        }
-
-        targetLog.status = "수업완료";
-        targetLog.number = finalColH;
-        targetLog.event = finalColI;
-        targetLog.grammarDone = finalColJ;
-        targetLog.contents = finalContents;
-
-        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "status", value: "수업완료", name: student.name, date: targetLog.date, time: targetLog.time });
-        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "number", value: finalColH || "", name: student.name, date: targetLog.date, time: targetLog.time });
-        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "event", value: finalColI || "", name: student.name, date: targetLog.date, time: targetLog.time });
-        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ || "", name: student.name, date: targetLog.date, time: targetLog.time });
-        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents || "", name: student.name, date: targetLog.date, time: targetLog.time });
-
-        await sendBatchUpdates(updates);
-      } else {
-        const newRow = getSafeNextDailyLogRow(student.name);
-        targetLog = {
-          id: "daily_" + newRow,
-          row: newRow,
-          date: state.todayDateStr,
-          time: scheduledTime,
-          name: student.name,
-          notes: student.notes || "",
-          status: "수업완료",
-          inTime: state.currentInTime || nowTimeStr,
-          reason: "",
-          number: finalColH,
-          event: finalColI,
-          grammarDone: finalColJ,
-          contents: finalContents
-        };
-        state.dailyLogs.push(targetLog);
-
-        await sendNewLog(targetLog);
-      }
-      state.currentDailyLog = targetLog;
-
       // Persist next book for next session
       if (nextBook) {
         localStorage.setItem("next_book_" + student.name, nextBook + isReread);
@@ -3389,29 +3337,107 @@
         state.missions.recentDiagnosedBook = "";
       }
 
-      localStorage.setItem("academy_attendance_state", JSON.stringify({
-        students: state.students,
-        dailyLogs: state.dailyLogs
-      }));
+      // [핵심] 백그라운드 비동기 구글 시트 저장 및 상태 업데이트 Promise 정의
+      const savePromise = (async () => {
+        try {
+          const updates = [];
+          if (targetLog) {
+            const isColliding = state.dailyLogs.some(l => 
+              l !== targetLog && 
+              parseInt(l.row, 10) === parseInt(targetLog.row, 10) && 
+              String(l.name || '').trim().replace(/\s+/g, '') !== cleanName
+            );
+            if (isColliding) {
+              console.warn(`[Row Collision Detected in submitAllMissions] Reassigning row for ${student.name}`);
+              targetLog.row = getSafeNextDailyLogRow(student.name);
+              targetLog.id = "daily_" + targetLog.row;
+            }
 
-      btn.innerHTML = `<span>🚀 오늘의 수업 완료 및 하원 / 로그아웃</span>`;
-      btn.disabled = false;
-      showCelebration(student.name);
+            targetLog.status = "수업완료";
+            targetLog.number = finalColH;
+            targetLog.event = finalColI;
+            targetLog.grammarDone = finalColJ;
+            targetLog.contents = finalContents;
+
+            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "status", value: "수업완료", name: student.name, date: targetLog.date, time: targetLog.time });
+            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "number", value: finalColH || "", name: student.name, date: targetLog.date, time: targetLog.time });
+            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "event", value: finalColI || "", name: student.name, date: targetLog.date, time: targetLog.time });
+            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ || "", name: student.name, date: targetLog.date, time: targetLog.time });
+            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents || "", name: student.name, date: targetLog.date, time: targetLog.time });
+
+            await sendBatchUpdates(updates);
+          } else {
+            const newRow = getSafeNextDailyLogRow(student.name);
+            targetLog = {
+              id: "daily_" + newRow,
+              row: newRow,
+              date: state.todayDateStr,
+              time: scheduledTime,
+              name: student.name,
+              notes: student.notes || "",
+              status: "수업완료",
+              inTime: state.currentInTime || nowTimeStr,
+              reason: "",
+              number: finalColH,
+              event: finalColI,
+              grammarDone: finalColJ,
+              contents: finalContents
+            };
+            state.dailyLogs.push(targetLog);
+
+            await sendNewLog(targetLog);
+          }
+          state.currentDailyLog = targetLog;
+
+          localStorage.setItem("academy_attendance_state", JSON.stringify({
+            students: state.students,
+            dailyLogs: state.dailyLogs
+          }));
+        } catch (err) {
+          console.error("[submitAllMissions] Background save error:", err);
+        }
+      })();
+
+      // [즉각 반응!] 딜레이 없이 0초 만에 꽃다발 폭죽 및 축하 모달 실행!
+      showCelebration(student.name, savePromise);
     }
 
-    function showCelebration(name) {
+    function showCelebration(name, savePromise) {
       document.getElementById("celebrateStudentName").innerText = `${name} 학생`;
       document.getElementById("celebrateModal").classList.remove("hidden");
 
       if (typeof confetti === "function") {
+        // 즉시 첫 번째 큰 폭죽 발사!
         confetti({
-          particleCount: 120,
-          spread: 80,
+          particleCount: 130,
+          spread: 85,
           origin: { y: 0.6 }
         });
+        // 0.35초 뒤 좌우 보조 폭죽 발사로 더욱 화려하게 연출
+        setTimeout(() => {
+          confetti({
+            particleCount: 70,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0.15, y: 0.7 }
+          });
+          confetti({
+            particleCount: 70,
+            angle: 120,
+            spread: 55,
+            origin: { x: 0.85, y: 0.7 }
+          });
+        }, 350);
       }
 
-      setTimeout(() => {
+      setTimeout(async () => {
+        if (savePromise) {
+          try {
+            await savePromise;
+          } catch (e) {
+            console.error("[Celebration] Waiting for save error:", e);
+          }
+        }
         document.getElementById("celebrateModal").classList.add("hidden");
         logoutStudent();
       }, 3500);
