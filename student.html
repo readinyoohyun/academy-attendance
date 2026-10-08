@@ -1669,14 +1669,64 @@
       openBookModal();
     }
 
-    // [6번] 학생의 최근 진단/완독 도서 기억 불러오기 (초경량 localStorage + 과거 dailyLogs)
+    // [독서노트 글쓰기 완료 여부 정밀 판정 로직 - 원장님 승인]
+    function isBookWritingCompleted(studentName, bookTitle) {
+      if (!studentName || !bookTitle) return false;
+      const cleanTitle = String(bookTitle).trim().replace(/\s+/g, '');
+      if (!cleanTitle) return false;
+      const cleanStudent = String(studentName).trim().replace(/\s+/g, '');
+
+      // 1. 현재 세션에서 '완료' 또는 '요약하기' 상태인지 확인
+      if (state.missions.noteStatus === "완료" || state.missions.noteStatus === "요약하기") {
+        if ((state.missions.noteBookTitle || '').replace(/\s+/g, '') === cleanTitle) {
+          return true;
+        }
+      }
+
+      // 2. localStorage 완료 캐시 확인
+      if (localStorage.getItem("note_completed_" + cleanStudent + "_" + cleanTitle) === "true") {
+        return true;
+      }
+
+      // 3. 과거 dailyLogs 기록 확인 (해당 도서명 뒤에 '글완' 또는 '완료', '요약'이 기재되어 있는지 확인)
+      if (Array.isArray(state.dailyLogs)) {
+        const studentLogs = state.dailyLogs.filter(l => 
+          l && (l.name || '').replace(/\s+/g, '') === cleanStudent
+        );
+        for (const log of studentLogs) {
+          const text = (log.grammarDone || "") + " " + (log.contents || "");
+          const noSpaceText = text.replace(/\s+/g, '');
+          if (noSpaceText.includes(cleanTitle)) {
+            const escaped = cleanTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // cleanTitle 뒤에 바로 글완 또는 요약이 붙어 있는 패턴
+            const regex = new RegExp(escaped + '[^,\n|]{0,25}(?:글완|요약|글쓰기완료|작성완료)');
+            if (regex.test(noSpaceText)) {
+              return true;
+            }
+            // [독서노트] [cleanTitle] 글완 패턴
+            const noteRegex = new RegExp('(?:독서노트|단기작업)[^,\n|]{0,30}' + escaped + '[^,\n|]{0,20}(?:글완|요약)');
+            if (noteRegex.test(noSpaceText)) {
+              return true;
+            }
+          }
+        }
+      }
+
+      return false;
+    }
+
+    // [6번] 학생의 최근 진단/완독 도서 불러오기 (글쓰기 완료된 책은 제외하고, '미완료' 도서만 선별!)
     function checkRecentDiagnosedBook(student) {
       if (!student || !student.name) return;
       try {
-        let recentBook = localStorage.getItem("recent_diagnosed_book_" + student.name) || "";
-        if (!recentBook && Array.isArray(state.dailyLogs)) {
+        const studentName = student.name;
+        const cleanStudent = studentName.replace(/\s+/g, '');
+        let uncompletedRecentBook = "";
+
+        // 1. 과거 dailyLogs를 역순(최신순)으로 탐색하여 진단완료되었으나 글쓰기가 안 된 도서 탐색
+        if (Array.isArray(state.dailyLogs)) {
           const studentPastLogs = state.dailyLogs.filter(l => 
-            l && (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '')
+            l && (l.name || '').replace(/\s+/g, '') === cleanStudent
           );
           if (studentPastLogs.length > 0) {
             const sorted = [...studentPastLogs].reverse();
@@ -1684,13 +1734,34 @@
               const text = (log.grammarDone || "") + " " + (log.contents || "");
               const match = text.match(/(?:\[진단\/독서\]|\[독서\]|\[자율\]|레벨|\d-\d)\s*([^0-9\(\[\|\,\n]{2,25})/);
               if (match && match[1]) {
-                recentBook = match[1].replace(/글완|요약|작성중|진단완료|완독/g, '').trim();
-                if (recentBook) break;
+                const candidate = match[1].replace(/글완|요약|작성중|진단완료|완독/g, '').trim();
+                if (candidate) {
+                  // 이미 글쓰기가 완료된 책인지 검증
+                  const isDone = isBookWritingCompleted(studentName, candidate);
+                  if (!isDone) {
+                    // 진단은 되었지만 글쓰기(글완)가 아직 안 된 도서 발견!
+                    uncompletedRecentBook = candidate;
+                    break;
+                  }
+                }
               }
             }
           }
         }
-        state.missions.recentDiagnosedBook = recentBook;
+
+        // 2. localStorage 캐시 확인 (캐시된 책도 이미 글완이면 삭제)
+        if (!uncompletedRecentBook) {
+          const cached = localStorage.getItem("recent_diagnosed_book_" + studentName) || "";
+          if (cached) {
+            if (!isBookWritingCompleted(studentName, cached)) {
+              uncompletedRecentBook = cached;
+            } else {
+              localStorage.removeItem("recent_diagnosed_book_" + studentName);
+            }
+          }
+        }
+
+        state.missions.recentDiagnosedBook = uncompletedRecentBook;
         renderNoteBookChips();
       } catch (e) {
         console.warn("checkRecentDiagnosedBook error:", e);
@@ -2007,13 +2078,14 @@
       });
     }
 
-    // [6번] 글쓰기 대상 도서 선택 바 렌더링
+    // [6번] 글쓰기 대상 도서 선택 바 렌더링 (글쓰기 완료된 도서는 제외, 미완료 도서만 표출!)
     function renderNoteBookChips() {
       const container = document.getElementById("noteBookChipsContainer");
       if (!container) return;
 
       const candidates = [];
       const addedTitles = new Set();
+      const currentStudentName = state.currentStudent ? state.currentStudent.name : "";
 
       // 1. 오늘 1단계에서 등록한 도서들
       if (Array.isArray(state.missions.books)) {
@@ -2025,22 +2097,34 @@
         });
       }
 
-      // 2. 최근 이전 수업 진단/완독 도서
+      // 2. 최근 이전 수업 진단/완독 도서 (글쓰기 완료된 책은 제외하고, '미완료' 도서만 선별!)
       const recent = state.missions.recentDiagnosedBook;
       if (recent && !addedTitles.has(recent.trim())) {
-        addedTitles.add(recent.trim());
-        candidates.push({ title: recent.trim(), tag: "최근 진단" });
+        if (!isBookWritingCompleted(currentStudentName, recent)) {
+          addedTitles.add(recent.trim());
+          candidates.push({ title: recent.trim(), tag: "최근 진단" });
+        }
       }
 
-      // 3. 직접 입력/지정된 도서
+      // 3. 직접 입력/지정된 도서 (이미 완료된 도서가 아닐 때만 유지)
       const currentSelected = state.missions.noteBookTitle;
       if (currentSelected && !addedTitles.has(currentSelected.trim())) {
-        addedTitles.add(currentSelected.trim());
-        candidates.push({ title: currentSelected.trim(), tag: "지정 도서" });
+        if (!isBookWritingCompleted(currentStudentName, currentSelected) || addedTitles.size === 0) {
+          addedTitles.add(currentSelected.trim());
+          candidates.push({ title: currentSelected.trim(), tag: "지정 도서" });
+        }
       }
 
-      // 대상 도서가 아직 없는데 후보가 1개 이상이면 첫 번째를 기본 선택
-      if (!state.missions.noteBookTitle && candidates.length > 0) {
+      // 대상 도서가 이미 완료된 책이거나 후보 목록에 없다면 정리
+      if (state.missions.noteBookTitle) {
+        const isCurrentDone = isBookWritingCompleted(currentStudentName, state.missions.noteBookTitle);
+        const inCandidates = candidates.some(c => c.title === state.missions.noteBookTitle);
+        if (isCurrentDone && !state.missions.books.some(b => b.title === state.missions.noteBookTitle)) {
+          state.missions.noteBookTitle = candidates.length > 0 ? candidates[0].title : "";
+        } else if (!inCandidates && candidates.length > 0) {
+          state.missions.noteBookTitle = candidates.length > 0 ? candidates[0].title : "";
+        }
+      } else if (candidates.length > 0) {
         state.missions.noteBookTitle = candidates[0].title;
       }
 
@@ -2060,7 +2144,7 @@
       if (candidates.length === 0) {
         container.innerHTML = `
           <div class="flex items-center gap-2 py-1 text-xs text-slate-400 italic">
-            <span>등록된 도서가 없습니다. 우측의 [+ 직접 도서명 입력]을 눌러 책 제목을 입력해 주세요.</span>
+            <span>글쓰기 대기 중인 도서가 없습니다. (최근 진단 도서가 모두 글완 되었거나 새 도서가 없을 때 우측 [+ 직접 도서명 입력]으로 지정 가능합니다.)</span>
           </div>
         `;
         return;
@@ -2106,7 +2190,7 @@
       if (status !== "작성안함" && !state.missions.noteBookTitle) {
         if (state.missions.books.length > 0) {
           state.missions.noteBookTitle = state.missions.books[0].title;
-        } else if (state.missions.recentDiagnosedBook) {
+        } else if (state.missions.recentDiagnosedBook && !isBookWritingCompleted(state.currentStudent ? state.currentStudent.name : "", state.missions.recentDiagnosedBook)) {
           state.missions.noteBookTitle = state.missions.recentDiagnosedBook;
         } else {
           const t = prompt("✍️ 어떤 도서에 대해 독서노트/글쓰기를 진행하시나요?\n책 제목을 입력해 주세요:");
@@ -2117,6 +2201,14 @@
       }
 
       state.missions.noteStatus = status;
+
+      // 글쓰기가 '완료' 또는 '요약하기'로 설정되면 해당 도서의 완료 상태 캐싱
+      if (state.currentStudent && state.missions.noteBookTitle && (status === "완료" || status === "요약하기")) {
+        const cleanS = (state.currentStudent.name || '').replace(/\s+/g, '');
+        const cleanT = state.missions.noteBookTitle.replace(/\s+/g, '');
+        localStorage.setItem("note_completed_" + cleanS + "_" + cleanT, "true");
+        localStorage.removeItem("recent_diagnosed_book_" + state.currentStudent.name);
+      }
       document.querySelectorAll(".note-status-btn").forEach(btn => {
         if (btn.dataset.val === status) {
           btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-sm";
@@ -3200,6 +3292,15 @@
         localStorage.setItem("next_book_" + student.name, nextBook + isReread);
       } else {
         localStorage.removeItem("next_book_" + student.name);
+      }
+
+      // 독서노트 완료 상태 영구 기록 및 최근 진단 임시 캐시 해제 (원장님 승인)
+      if (noteBook && (noteStat === "완료" || noteStat === "요약하기")) {
+        const cleanS = (student.name || '').replace(/\s+/g, '');
+        const cleanT = noteBook.replace(/\s+/g, '');
+        localStorage.setItem("note_completed_" + cleanS + "_" + cleanT, "true");
+        localStorage.removeItem("recent_diagnosed_book_" + student.name);
+        state.missions.recentDiagnosedBook = "";
       }
 
       localStorage.setItem("academy_attendance_state", JSON.stringify({
