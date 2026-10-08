@@ -250,16 +250,17 @@
 
 
     <!-- ================= 1단계: 오늘 독서 & 진단 기록 (Core) ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-emerald-200 transition hover:shadow-md">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-emerald-100 mb-5">
+    <div class="bg-emerald-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-emerald-400 transition hover:shadow-md">
+      <!-- 1단계 컬러 헤더 배너 -->
+      <div class="bg-emerald-100/90 border-b-2 border-emerald-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <span class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-base shadow-sm">1</span>
           <div>
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
               <span>오늘 독서 & 진단 기록</span>
-              <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">1단계 📖</span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 text-[10px] font-bold">1단계 📖</span>
             </h3>
-            <p class="text-xs text-slate-500">순번, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요. (시트 J열 자동 연동)</p>
+            <p class="text-xs text-emerald-950 font-medium">순번, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요.</p>
           </div>
         </div>
 
@@ -268,242 +269,258 @@
         </button>
       </div>
 
-      <!-- Persistent Next Book Memory Notice -->
-      <div id="persistentNextBookAlert" class="hidden mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center justify-between text-xs text-indigo-800">
-        <div class="flex items-center gap-2">
-          <span>💡</span>
-          <span><strong>지난 시간 예약 도서:</strong> <span id="persistentNextBookTitle" class="font-bold underline text-indigo-900"></span></span>
+      <div class="p-5 sm:p-6">
+        <!-- Persistent Next Book Memory Notice -->
+        <div id="persistentNextBookAlert" class="hidden mb-4 p-3 bg-white border border-emerald-200 rounded-2xl flex items-center justify-between text-xs text-emerald-900 shadow-sm">
+          <div class="flex items-center gap-2">
+            <span>💡</span>
+            <span><strong>지난 시간 예약 도서:</strong> <span id="persistentNextBookTitle" class="font-bold underline text-emerald-900"></span></span>
+          </div>
+          <button type="button" onclick="applyPersistentNextBook()" class="px-2.5 py-1 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition">
+            도서 등록에 바로 입력
+          </button>
         </div>
-        <button type="button" onclick="applyPersistentNextBook()" class="px-2.5 py-1 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition">
-          도서 등록에 바로 입력
-        </button>
-      </div>
 
-      <!-- Book List Table / Empty State -->
-      <div id="bookListContainer" class="space-y-3">
-        <!-- Rendered via JS -->
+        <!-- Book List Table / Empty State -->
+        <div id="bookListContainer" class="space-y-3">
+          <!-- Rendered via JS -->
+        </div>
       </div>
     </div>
 
 
     <!-- ================= 2단계: 독서노트 & 글쓰기 ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-blue-200 transition hover:shadow-md">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-blue-100 mb-4">
+    <div class="bg-sky-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-sky-400 transition hover:shadow-md">
+      <!-- 2단계 컬러 헤더 배너 -->
+      <div class="bg-sky-100/90 border-b-2 border-sky-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <span class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-base shadow-sm">2</span>
+          <span class="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center font-black text-base shadow-sm">2</span>
           <div>
             <div class="flex items-center gap-2 flex-wrap">
               <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
                 <span>독서노트 & 글쓰기</span>
-                <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">2단계 ✍️</span>
+                <span class="px-2 py-0.5 rounded-full bg-sky-200 text-sky-900 text-[10px] font-bold">2단계 ✍️</span>
               </h3>
-              <span id="selectedNoteBookBadge" class="hidden px-2.5 py-0.5 bg-blue-100 text-blue-800 rounded-lg text-xs font-bold border border-blue-200 flex items-center gap-1">
+              <span id="selectedNoteBookBadge" class="hidden px-2.5 py-0.5 bg-sky-200 text-sky-900 rounded-lg text-xs font-bold border border-sky-300 flex items-center gap-1">
                 <span>📖 대상:</span>
                 <strong id="selectedNoteBookName"></strong>
               </span>
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">글쓰기 대상 도서를 선택한 후 작성 상태(작성중, 글완, 요약)를 눌러주세요.</p>
+            <p class="text-xs text-sky-950 font-medium mt-0.5">글쓰기 대상 도서를 선택한 후 작성 상태(작성중, 글완, 요약)를 눌러주세요.</p>
           </div>
         </div>
 
         <!-- Note Status Radio Buttons -->
-        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl flex-wrap self-end sm:self-auto">
+        <div class="flex items-center gap-1.5 bg-white/90 border border-sky-200 p-1 rounded-xl flex-wrap self-end sm:self-auto shadow-sm">
           <button type="button" onclick="setNoteStatus('작성안함')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="작성안함">작성 안 함</button>
           <button type="button" onclick="setNoteStatus('작성중')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="작성중">작성중</button>
-          <button type="button" onclick="setNoteStatus('완료')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-sm" data-val="완료">완료 ✍️ (글완)</button>
+          <button type="button" onclick="setNoteStatus('완료')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-sky-600 text-white shadow-sm" data-val="완료">완료 ✍️ (글완)</button>
           <button type="button" onclick="setNoteStatus('요약하기')" class="note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="요약하기">요약하기 📝</button>
         </div>
       </div>
 
-      <!-- [6번 신규] 글쓰기 대상 도서 선택 바 (오늘 읽은 책 / 최근 진단 도서 / 직접 입력) -->
-      <div class="mt-4 pt-3 border-t border-slate-100">
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-            <span>📚 글쓰기 대상 도서 선택</span>
-            <span class="text-[11px] text-slate-400 font-normal">(클릭하여 도서를 지정하세요)</span>
-          </label>
-          <button type="button" onclick="promptCustomNoteBook()" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-xs border border-indigo-200 transition shadow-sm flex items-center gap-1 active:scale-95">
-            <span>➕</span><span>직접 도서명 입력</span>
-          </button>
-        </div>
-        <div id="noteBookChipsContainer" class="flex flex-wrap items-center gap-2">
-          <!-- Rendered via renderNoteBookChips() -->
+      <div class="p-5 sm:p-6">
+        <!-- 글쓰기 대상 도서 선택 바 (오늘 읽은 책 / 최근 진단 도서 / 직접 입력) -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <span>📚 글쓰기 대상 도서 선택</span>
+              <span class="text-[11px] text-slate-500 font-normal">(클릭하여 도서를 지정하세요)</span>
+            </label>
+            <button type="button" onclick="promptCustomNoteBook()" class="px-2.5 py-1 bg-white hover:bg-sky-50 text-sky-700 font-bold rounded-lg text-xs border border-sky-300 transition shadow-sm flex items-center gap-1 active:scale-95">
+              <span>➕</span><span>직접 도서명 입력</span>
+            </button>
+          </div>
+          <div id="noteBookChipsContainer" class="flex flex-wrap items-center gap-2">
+            <!-- Rendered via renderNoteBookChips() -->
+          </div>
         </div>
       </div>
     </div>
 
 
     <!-- ================= 3단계: 집중 트레이닝 ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-indigo-200 transition hover:shadow-md">
-      <div class="flex items-center justify-between pb-4 border-b border-indigo-100 mb-5">
+    <div class="bg-indigo-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-indigo-400 transition hover:shadow-md">
+      <!-- 3단계 컬러 헤더 배너 -->
+      <div class="bg-indigo-100/90 border-b-2 border-indigo-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <span class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-base shadow-sm">3</span>
           <div>
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
               <span>집중 트레이닝</span>
-              <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">3단계 🎯</span>
+              <span class="px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-900 text-[10px] font-bold">3단계 🎯</span>
             </h3>
-            <p class="text-xs text-slate-500">읽기, 독해, 듣기, 문해력 트레이닝 진행 내역과 권 수, 차시, 오답 개수를 기록합니다.</p>
+            <p class="text-xs text-indigo-950 font-medium">읽기, 독해, 듣기, 문해력 트레이닝 진행 내역과 권 수, 차시, 오답 개수를 기록합니다.</p>
           </div>
         </div>
       </div>
 
-      <!-- 1. 종목 다중 선택 (복수 선택 가능) -->
-      <div class="mb-4">
-        <label class="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-          <span>🎯 트레이닝 종목 선택</span>
-          <span class="text-[11px] text-slate-400 font-normal">(여러 종목을 동시에 선택할 수 있습니다)</span>
-        </label>
-        <div class="flex flex-wrap items-center gap-2">
-          <button type="button" onclick="toggleTrainingType('읽기트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95" data-type="읽기트레이닝">
-            <span>📖</span> <span>읽기트레이닝</span>
-          </button>
-          <button type="button" onclick="toggleTrainingType('독해트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95" data-type="독해트레이닝">
-            <span>🧐</span> <span>독해트레이닝</span>
-          </button>
-          <button type="button" onclick="toggleTrainingType('듣기트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95" data-type="듣기트레이닝">
-            <span>🎧</span> <span>듣기트레이닝</span>
-          </button>
-          <button type="button" onclick="toggleTrainingType('문해력트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95" data-type="문해력트레이닝">
-            <span>💡</span> <span>문해력트레이닝</span>
-          </button>
+      <div class="p-5 sm:p-6">
+        <!-- 1. 종목 다중 선택 (복수 선택 가능) -->
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+            <span>🎯 트레이닝 종목 선택</span>
+            <span class="text-[11px] text-slate-500 font-normal">(여러 종목을 동시에 선택할 수 있습니다)</span>
+          </label>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="toggleTrainingType('읽기트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-indigo-200 bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 shadow-sm" data-type="읽기트레이닝">
+              <span>📖</span> <span>읽기트레이닝</span>
+            </button>
+            <button type="button" onclick="toggleTrainingType('독해트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-indigo-200 bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 shadow-sm" data-type="독해트레이닝">
+              <span>🧐</span> <span>독해트레이닝</span>
+            </button>
+            <button type="button" onclick="toggleTrainingType('듣기트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-indigo-200 bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 shadow-sm" data-type="듣기트레이닝">
+              <span>🎧</span> <span>듣기트레이닝</span>
+            </button>
+            <button type="button" onclick="toggleTrainingType('문해력트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-indigo-200 bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 shadow-sm" data-type="문해력트레이닝">
+              <span>💡</span> <span>문해력트레이닝</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. 선택된 종목별 세부 입력 카드 컨테이너 (동적 생성) -->
+        <div id="trainingDetailsContainer" class="space-y-3 mb-4">
+          <!-- Rendered via renderTrainingCards() -->
         </div>
       </div>
-
-      <!-- 2. 선택된 종목별 세부 입력 카드 컨테이너 (동적 생성) -->
-      <div id="trainingDetailsContainer" class="space-y-3 mb-4">
-        <!-- Rendered via renderTrainingCards() -->
-      </div>
-
-      <!-- (이해도 자기 평가는 원장님 요청에 따라 각 트레이닝 카드 하단에 개별 생성됩니다) -->
     </div>
 
 
     <!-- ================= 4단계: 숙제 점검 ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-amber-300 transition hover:shadow-md">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-amber-100 mb-5">
+    <div class="bg-amber-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-amber-400 transition hover:shadow-md">
+      <!-- 4단계 컬러 헤더 배너 -->
+      <div class="bg-amber-100/90 border-b-2 border-amber-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <span class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-base shadow-sm">4</span>
           <div>
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
               <span>숙제 점검</span>
-              <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">4단계 📝</span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">4단계 📝</span>
             </h3>
-            <p class="text-xs text-slate-500">과제 지참 상태와 오답 수정 완료 여부를 확인합니다.</p>
+            <p class="text-xs text-amber-950 font-medium">과제 지참 상태와 오답 수정 완료 여부를 확인합니다. (복수 선택 가능)</p>
           </div>
         </div>
 
-        <!-- Homework Status Badges (숙제완료, 숙제미완, 오답수정 완료, 오답수정 미완, 미지참, 학원에서 풀기) -->
-        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-end sm:self-auto flex-wrap">
-          <button type="button" onclick="setHwStatus('숙제완료')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="숙제완료">숙제완료 👍</button>
-          <button type="button" onclick="setHwStatus('숙제미완')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="숙제미완">숙제미완 ❌</button>
-          <button type="button" onclick="setHwStatus('오답수정 완료')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="오답수정 완료">오답수정 완료 ✅</button>
-          <button type="button" onclick="setHwStatus('오답수정 미완')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="오답수정 미완">오답수정 미완 ⚠️</button>
-          <button type="button" onclick="setHwStatus('미지참')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="미지참">미지참 ⚠️</button>
-          <button type="button" onclick="setHwStatus('학원에서 풀기')" class="hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="학원에서 풀기">학원에서 풀기 🏫</button>
+        <!-- Homework Status Badges (다중 선택 지원) -->
+        <div class="flex items-center gap-1.5 bg-white/90 border border-amber-200 p-1.5 rounded-2xl self-end sm:self-auto flex-wrap shadow-sm">
+          <div class="flex items-center gap-1 border-r border-amber-200 pr-1.5 mr-0.5">
+            <button type="button" onclick="toggleHwDoneStatus('숙제완료')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="숙제완료">숙제완료 👍</button>
+            <button type="button" onclick="toggleHwDoneStatus('숙제미완')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="숙제미완">숙제미완 ❌</button>
+            <button type="button" onclick="toggleHwDoneStatus('미지참')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="미지참">미지참 ⚠️</button>
+            <button type="button" onclick="toggleHwDoneStatus('학원에서 풀기')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="학원에서 풀기">학원에서 풀기 🏫</button>
+          </div>
+          <div class="flex items-center gap-1">
+            <button type="button" onclick="toggleHwFixStatus('오답수정 완료')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="오답수정 완료">오답수정 완료 ✅</button>
+            <button type="button" onclick="toggleHwFixStatus('오답수정 미완')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="오답수정 미완">오답수정 미완 ⚠️</button>
+          </div>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <!-- 교재명 드롭다운 -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">교재명 선택</label>
-          <select id="hwBookSelect" onchange="updateProgress()"
-                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500">
-            <option value="">(선택 안 함)</option>
-            <option value="훈민정음">훈민정음</option>
-            <option value="빠작 어휘">빠작 어휘</option>
-            <option value="똑똑한 하루 어휘">똑똑한 하루 어휘</option>
-            <option value="메가 어휘력">메가 어휘력</option>
-            <option value="문학">문학</option>
-            <option value="비문학">비문학</option>
-          </select>
-        </div>
+      <div class="p-5 sm:p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <!-- 교재명 드롭다운 -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">교재명 선택</label>
+            <select id="hwBookSelect" onchange="updateProgress()"
+                    class="w-full p-3 bg-white border border-amber-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
+              <option value="">(선택 안 함)</option>
+              <option value="훈민정음">훈민정음</option>
+              <option value="빠작 어휘">빠작 어휘</option>
+              <option value="똑똑한 하루 어휘">똑똑한 하루 어휘</option>
+              <option value="메가 어휘력">메가 어휘력</option>
+              <option value="문학">문학</option>
+              <option value="비문학">비문학</option>
+            </select>
+          </div>
 
-        <!-- 풀이 단원 -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">풀이 단원 (쪽수)</label>
-          <input type="text" id="hwChapterInput" placeholder="예: 3단원, p.12~15" oninput="updateProgress(500)"
-                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-        </div>
+          <!-- 풀이 단원 -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">풀이 단원 (쪽수)</label>
+            <input type="text" id="hwChapterInput" placeholder="예: 3단원, p.12~15" oninput="updateProgress(500)"
+                   class="w-full p-3 bg-white border border-amber-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm" />
+          </div>
 
-        <!-- 오답 개수 -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 개수</label>
-          <input type="text" id="hwWrongInput" placeholder="예: 5개" oninput="updateProgress(500)"
-                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-        </div>
+          <!-- 오답 개수 -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 개수</label>
+            <input type="text" id="hwWrongInput" placeholder="예: 5개" oninput="updateProgress(500)"
+                   class="w-full p-3 bg-white border border-amber-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm" />
+          </div>
 
-        <!-- 고친 개수 -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">고친 개수</label>
-          <input type="text" id="hwFixedInput" placeholder="예: 5개" oninput="updateProgress(500)"
-                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          <!-- 고친 개수 -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">고친 개수</label>
+            <input type="text" id="hwFixedInput" placeholder="예: 5개" oninput="updateProgress(500)"
+                   class="w-full p-3 bg-white border border-amber-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm" />
+          </div>
         </div>
       </div>
     </div>
 
 
     <!-- ================= 5단계: 다음 책 선정 및 재독 예약 (방향 B 적용) ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-purple-200 transition hover:shadow-md">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-purple-100 mb-5">
+    <div class="bg-purple-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-purple-400 transition hover:shadow-md">
+      <!-- 5단계 컬러 헤더 배너 -->
+      <div class="bg-purple-100/90 border-b-2 border-purple-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <span class="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-base shadow-sm">5</span>
           <div>
             <div class="flex items-center gap-2 flex-wrap">
               <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
                 <span>다음 책 선정 및 재독 예약</span>
-                <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-bold">5단계 📚</span>
+                <span class="px-2 py-0.5 rounded-full bg-purple-200 text-purple-900 text-[10px] font-bold">5단계 📚</span>
               </h3>
-              <span id="selectedNextBookBadge" class="hidden px-2.5 py-0.5 bg-purple-100 text-purple-800 rounded-lg text-xs font-bold border border-purple-200 flex items-center gap-1">
+              <span id="selectedNextBookBadge" class="hidden px-2.5 py-0.5 bg-purple-200 text-purple-900 rounded-lg text-xs font-bold border border-purple-300 flex items-center gap-1">
                 <span>📖 다음/재독:</span>
                 <strong id="selectedNextBookName"></strong>
               </span>
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">오늘 읽은 책을 눌러 재독 예약하거나, 다음 시간 새 책을 지정하세요.</p>
+            <p class="text-xs text-purple-950 font-medium mt-0.5">다음 시간에 읽을 책을 선정하거나 재독을 예약하세요.</p>
           </div>
         </div>
 
-        <button type="button" onclick="promptCustomNextBook()" class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-lg text-xs border border-purple-200 transition shadow-sm flex items-center gap-1 active:scale-95 self-end sm:self-auto">
+        <button type="button" onclick="promptCustomNextBook()" class="px-3 py-2 bg-white hover:bg-purple-50 text-purple-700 font-bold rounded-xl text-xs border border-purple-300 transition shadow-sm flex items-center gap-1 active:scale-95 self-end sm:self-auto">
           <span>➕</span><span>새 도서명 직접 입력</span>
         </button>
       </div>
 
-      <!-- 1. 원클릭 재독 및 다음 책 선택 칩 영역 -->
-      <div class="mb-4">
-        <label class="text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-          <span>📚 도서 선택 (클릭하여 예약)</span>
-        </label>
-        <div id="nextBookChipsContainer" class="flex flex-wrap items-center gap-2">
-          <!-- Rendered via renderNextBookChips() -->
-        </div>
-      </div>
-
-      <!-- 2. 시간 여유 시 사전 학습: 어휘지 / 도서정보지 듀얼 버튼 -->
-      <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <label class="text-xs font-bold text-slate-700 flex items-center gap-1">
-            <span>⏱️ 시간 여유 시 활동 선택 (다중 선택 가능)</span>
+      <div class="p-5 sm:p-6">
+        <!-- 1. 원클릭 재독 및 다음 책 선택 칩 영역 -->
+        <div class="mb-4">
+          <label class="text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+            <span>📚 도서 선택 (클릭하여 예약)</span>
           </label>
-          <p class="text-[11px] text-slate-400">새 도서 선정 후 시간이 남아 수행한 항목을 눌러주세요.</p>
+          <div id="nextBookChipsContainer" class="flex flex-wrap items-center gap-2">
+            <!-- Rendered via renderNextBookChips() -->
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button type="button" id="btnNextBookVocab" onclick="toggleNextBookActivity('어휘지')" 
-                  class="px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-1.5 active:scale-95">
-            <span>📝</span><span>어휘지 완료</span>
-          </button>
-          <button type="button" id="btnNextBookInfo" onclick="toggleNextBookActivity('도서정보지')" 
-                  class="px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-200 bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-1.5 active:scale-95">
-            <span>📄</span><span>도서정보지 완료</span>
-          </button>
-        </div>
-      </div>
 
-      <!-- 3. 비고 / 메모 입력 -->
-      <div class="mt-4 pt-3 border-t border-slate-100">
-        <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
-        <input type="text" id="nextBookMemoInput" placeholder="예: 2권부터 읽을 예정입니다" oninput="updateProgress(500)"
-               class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        <!-- 2. 시간 여유 시 사전 학습: 어휘지 / 도서정보지 듀얼 버튼 -->
+        <div class="pt-3 border-t border-purple-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <label class="text-xs font-bold text-slate-700 flex items-center gap-1">
+              <span>⏱️ 시간 여유 시 활동 선택 (다중 선택 가능)</span>
+            </label>
+            <p class="text-[11px] text-slate-500">새 도서 선정 후 시간이 남아 수행한 항목을 눌러주세요.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="btnNextBookVocab" onclick="toggleNextBookActivity('어휘지')" 
+                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition border border-purple-200 bg-white text-slate-700 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-1.5 active:scale-95 shadow-sm">
+              <span>📝</span><span>어휘지 완료</span>
+            </button>
+            <button type="button" id="btnNextBookInfo" onclick="toggleNextBookActivity('도서정보지')" 
+                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition border border-purple-200 bg-white text-slate-700 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-1.5 active:scale-95 shadow-sm">
+              <span>📄</span><span>도서정보지 완료</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. 비고 / 메모 입력 -->
+        <div class="mt-4 pt-3 border-t border-purple-100">
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+          <input type="text" id="nextBookMemoInput" placeholder="예: 2권부터 읽을 예정입니다" oninput="updateProgress(500)"
+                 class="w-full p-3 bg-white border border-purple-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm" />
+        </div>
       </div>
     </div>
 
@@ -521,19 +538,14 @@
             <p class="text-xs text-slate-300">오늘 달성한 코스업, 레벨업, 교재완료 및 특별 타이틀을 복수 선택할 수 있습니다.</p>
           </div>
         </div>
-        <span class="px-3 py-1.5 rounded-xl bg-white/10 text-slate-300 text-xs font-semibold border border-white/10 flex items-center gap-1.5">
-          <span>🎯</span>
-          <span>출석부 8·9·J열 연동</span>
-        </span>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         
-        <!-- Dropdown 1: Set Record (Col 8 Number Dropdown + Col 9 Event Dropdown) -->
+        <!-- Dropdown 1: Level Up / Course Up / Workbook (레벨업, 코스업, 교재완료) -->
         <div class="bg-white/5 border border-white/10 rounded-2xl p-4.5">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-amber-300">1. 세트 기록 (이벤트 + 숫자 드롭다운)</span>
-            <span class="text-[10px] text-slate-400">8열(숫자) & 9열(이벤트) 짝 매칭</span>
+            <span class="text-xs font-bold text-amber-300">1. 레벨업, 코스업, 교재완료</span>
           </div>
 
           <div class="flex items-center gap-2 mb-3">
@@ -613,15 +625,14 @@
 
           <!-- Selected Set Events Tag List -->
           <div id="setEventListContainer" class="space-y-1.5 min-h-[40px]">
-            <p class="text-xs text-slate-500 italic py-1">선택된 세트 이벤트가 없습니다.</p>
+            <p class="text-xs text-slate-500 italic py-1">선택된 항목이 없습니다.</p>
           </div>
         </div>
 
-        <!-- Dropdown 2: Solo Title (Col 9 Event Solo) - Multi-selectable -->
+        <!-- Dropdown 2: Sticker Board Complete (스티커판 완성) -->
         <div class="bg-white/5 border border-white/10 rounded-2xl p-4.5">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-indigo-300">2. 단독 타이틀 (이벤트 단독)</span>
-            <span class="text-[10px] text-slate-400">9열(이벤트) 단독 저장</span>
+            <span class="text-xs font-bold text-indigo-300">2. 스티커판 완성</span>
           </div>
 
           <div class="flex items-center gap-2 mb-3">
@@ -643,7 +654,7 @@
 
           <!-- Selected Solo Events Tag List -->
           <div id="soloEventListContainer" class="space-y-1.5 min-h-[40px]">
-            <p class="text-xs text-slate-500 italic py-1">선택된 단독 타이틀이 없습니다.</p>
+            <p class="text-xs text-slate-500 italic py-1">선택된 스티커판 완성이 없습니다.</p>
           </div>
         </div>
 
@@ -653,7 +664,7 @@
       <div class="mt-4 p-3.5 bg-white/10 rounded-2xl border border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3">
         <label class="flex items-center gap-2.5 cursor-pointer bg-slate-800/90 hover:bg-slate-800 px-3.5 py-2.5 rounded-xl border border-emerald-500/40 text-emerald-300 font-bold text-xs select-none">
           <input type="checkbox" id="grammarDoneCheck" onchange="updateProgress()" class="w-4 h-4 text-emerald-500 rounded border-slate-400 focus:ring-emerald-400" />
-          <span>✨ 특별수업 완료 포함 (출석부 J열 연동)</span>
+          <span>✨ 특별수업 완료 포함</span>
         </label>
         <button type="button" onclick="completeStep6Records()" 
                 class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs sm:text-sm font-extrabold rounded-xl transition shadow-lg flex items-center justify-center gap-2 active:scale-95">
@@ -679,55 +690,59 @@
     </div>
 
 
-    <!-- ================= 7단계: 미션 최종 제출 & 하원 ================= -->
-    <div class="bg-white rounded-3xl p-6 shadow-md border-2 border-indigo-300">
-      <div class="flex items-center justify-between pb-4 border-b border-indigo-100 mb-4">
+    <!-- ================= 7단계: 오늘의 수업 완료 및 기록장 검사 ================= -->
+    <div class="bg-rose-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-rose-400 transition hover:shadow-md">
+      <!-- 7단계 컬러 헤더 배너 -->
+      <div class="bg-rose-100/90 border-b-2 border-rose-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <span class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-base shadow-sm">7</span>
+          <span class="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-base shadow-sm">7</span>
           <div>
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
-              <span>오늘의 학습 완료 및 하원</span>
-              <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">7단계 🚀</span>
+              <span>오늘의 수업 완료 및 기록장 검사</span>
+              <span class="px-2 py-0.5 rounded-full bg-rose-200 text-rose-900 text-[10px] font-bold">7단계 🚀</span>
             </h3>
-            <p class="text-xs text-slate-500">모든 학습 기록을 구글 출석부에 안전하게 저장하고 하원합니다.</p>
-          </div>
-        </div>
-      </div>
-            <p class="text-xs text-slate-500">모든 학습 기록을 구글 출석부에 안전하게 저장하고 하원합니다.</p>
           </div>
         </div>
       </div>
 
-      <!-- Live Summary Box -->
-      <div id="missionSummaryBox" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs sm:text-sm space-y-1.5 mb-5 text-slate-700">
-        <p><strong>📖 독서 (J열):</strong> <span id="sumBooks" class="font-bold text-indigo-700">등록된 도서 없음</span></p>
-        <p><strong>✍️ 독서노트:</strong> <span id="sumNotes">작성 안 함</span></p>
-        <p><strong>🎯 집중 트레이닝:</strong> <span id="sumTraining">선택 안 함</span></p>
-        <p><strong>📚 숙제 점검:</strong> <span id="sumHomework">숙제완료</span></p>
-        <p><strong>🏆 목표 달성 (8·9열):</strong> <span id="sumEvent">선택 안 함</span></p>
-      </div>
+      <div class="p-5 sm:p-6">
+        <!-- Live Summary Box -->
+        <div id="missionSummaryBox" class="p-4 bg-white rounded-2xl border border-rose-200 text-xs sm:text-sm space-y-1.5 mb-5 text-slate-700 shadow-sm">
+          <p><strong>📖 오늘 독서:</strong> <span id="sumBooks" class="font-bold text-rose-700">등록된 도서 없음</span></p>
+          <p><strong>✍️ 독서노트:</strong> <span id="sumNotes">작성 안 함</span></p>
+          <p><strong>🎯 집중 트레이닝:</strong> <span id="sumTraining">선택 안 함</span></p>
+          <p><strong>📚 숙제 점검:</strong> <span id="sumHomework">선택 안 함</span></p>
+          <p><strong>🏆 목표 달성:</strong> <span id="sumEvent">선택 안 함</span></p>
+        </div>
 
-      <!-- Submit Button & Timer Notice Banner -->
-      <div id="checkoutNoticeBanner" class="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold mb-3 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left">
-        <span class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0"></span>
-          <span class="break-keep">수업 종료 후 하원 가능</span>
-        </span>
-        <span id="btnRemainingNotice" class="font-black text-amber-800 text-xs sm:text-sm flex-shrink-0">남은 수업 시간: 계산 중...</span>
-      </div>
+        <!-- Timer Notice Banner -->
+        <div id="checkoutNoticeBanner" class="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold mb-4 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left">
+          <span class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0"></span>
+            <span class="break-keep">기록장을 선생님께 보여드리고 확인을 받으세요!</span>
+          </span>
+          <span id="btnRemainingNotice" class="font-black text-amber-800 text-xs sm:text-sm flex-shrink-0">남은 수업 시간: 계산 중...</span>
+        </div>
 
-      <!-- Teacher Early Checkout Quick Link -->
-      <div class="flex items-center justify-end mb-3">
-        <button type="button" onclick="promptTeacherOverrideCheckout()" 
-                class="text-xs text-indigo-600 hover:text-indigo-800 font-bold underline flex items-center gap-1 transition p-1 break-keep">
-          <span>🔑 선생님 확인 후 조기 하원 승인</span>
+        <!-- Teacher Verification Action Box (선생님 확인 기능) -->
+        <div class="p-4 bg-gradient-to-r from-rose-500/10 to-indigo-500/10 border-2 border-rose-300 rounded-2xl mb-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+          <div class="text-center sm:text-left">
+            <h4 class="text-xs sm:text-sm font-black text-slate-900 flex items-center justify-center sm:justify-start gap-1.5">
+              <span>📋</span><span>선생님 기록장 검사 확인</span>
+            </h4>
+            <p class="text-[11px] text-slate-600 mt-0.5">기록장을 선생님께 제출하고 [선생님 확인]을 받아야 하원이 완료됩니다.</p>
+          </div>
+          <button type="button" id="btnTeacherVerifyCheckout" onclick="promptTeacherVerifyCheckout()" 
+                  class="w-full sm:w-auto px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95 whitespace-nowrap">
+            <span>🔒 선생님 확인 및 하원 승인</span>
+          </button>
+        </div>
+
+        <button id="btnSubmitMissions" onclick="submitAllMissions()" 
+                class="w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-slate-600/90 hover:bg-slate-700 text-slate-200 font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-not-allowed border-2 border-slate-500 break-keep text-center leading-snug">
+          <span id="btnSubmitText">🔒 선생님 확인 대기 중 (선생님 승인 후 하원 가능)</span>
         </button>
       </div>
-
-      <button id="btnSubmitMissions" onclick="submitAllMissions()" 
-              class="w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-slate-600/90 hover:bg-slate-700 text-slate-200 font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-not-allowed border-2 border-slate-500 break-keep text-center leading-snug">
-        <span id="btnSubmitText">🔒 수업 진행 중 (남은 시간 충족 후 하원 가능)</span>
-      </button>
     </div>
 
   </main>
@@ -1389,23 +1404,34 @@
       return highestRow + 1;
     }
 
-    // Helper: Teacher PIN prompt for early checkout authorization
-    function promptTeacherOverrideCheckout() {
-      const enteredPin = prompt("🔑 [선생님 승인] 조기 하원 비밀번호(PIN)를 입력해 주세요:");
+    // Helper: Teacher PIN prompt for Record Book Inspection & Checkout Authorization
+    function promptTeacherVerifyCheckout() {
+      const enteredPin = prompt("🔑 [선생님 확인] 기록장 검사 및 하원을 승인하려면 관리자 비밀번호(PIN)를 입력해 주세요:");
       if (enteredPin === null) return; // User cancelled
 
       const expectedPin = state.config.teacherPin || "2026";
       if (enteredPin.trim() === expectedPin) {
+        state.teacherVerifiedCheckout = true;
         state.teacherOverrideApproved = true;
         saveActiveSession();
         updateRemainingTimeDisplay();
         
-        // 선생님 비번 승인 즉시 시트에 수업완료 전송 + 하원 처리 일원화
-        alert("✅ 선생님 조기 하원이 승인되었습니다.\n지금 바로 구글 출석부에 [수업완료]로 하원 처리됩니다.");
+        // 7단계 선생님 확인 버튼 상태 업데이트
+        const btnTeacher = document.getElementById("btnTeacherVerifyCheckout");
+        if (btnTeacher) {
+          btnTeacher.className = "w-full sm:w-auto px-5 py-3 bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 whitespace-nowrap";
+          btnTeacher.innerHTML = `<span>✅ 선생님 확인 완료됨</span>`;
+        }
+
+        alert("✅ 선생님 확인이 완료되었습니다!\n구글 출석부에 [수업완료]로 하원 처리됩니다.");
         submitAllMissions();
       } else {
         alert("❌ 비밀번호가 올바르지 않습니다. 다시 확인해 주세요.");
       }
+    }
+
+    function promptTeacherOverrideCheckout() {
+      promptTeacherVerifyCheckout();
     }
 
     function getClassDuration(student) {
@@ -1629,49 +1655,54 @@
       const noticeBanner = document.getElementById("checkoutNoticeBanner");
 
       if (btnSubmit) {
-        if (!isComplete && !state.teacherOverrideApproved) {
-          btnSubmit.disabled = true;
-          btnSubmit.className = "w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-slate-200 text-slate-500 font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-none cursor-not-allowed border-2 border-slate-300 transition flex items-center justify-center gap-2 break-keep text-center leading-snug";
-          btnSubmit.innerHTML = `<span class="break-keep text-center leading-snug">🔒 수업 진행 중 (${remainingMins}분 ${formattedSecs}초 남음 • 수업 완료 후 하원 가능)</span>`;
+        const isTeacherApproved = !!(state.teacherVerifiedCheckout || state.teacherOverrideApproved);
+
+        if (isTeacherApproved) {
+          btnSubmit.disabled = false;
+          btnSubmit.onclick = submitAllMissions;
+          btnSubmit.className = "w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-2 border-emerald-400/50 break-keep text-center leading-snug";
+          btnSubmit.innerHTML = `<span class="break-keep text-center leading-snug">🚀 [선생님 확인 완료] 오늘의 수업 완료 및 하원하기</span>`;
 
           if (noticeBanner) {
-            noticeBanner.className = "p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold mb-3 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left";
+            noticeBanner.className = "p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl text-xs text-emerald-900 font-bold mb-4 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left";
+            noticeBanner.innerHTML = `
+              <span class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                <span class="break-keep">선생님 기록장 검사가 완료되었습니다!</span>
+              </span>
+              <span id="btnRemainingNotice" class="font-black text-emerald-800 text-xs sm:text-sm flex-shrink-0">✅ 하원 승인 완료</span>
+            `;
+          }
+        } else if (!isComplete) {
+          btnSubmit.disabled = false;
+          btnSubmit.onclick = () => promptTeacherVerifyCheckout();
+          btnSubmit.className = "w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-slate-200 text-slate-600 hover:bg-amber-100 hover:text-amber-900 font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-sm border-2 border-slate-300 transition flex items-center justify-center gap-2 break-keep text-center leading-snug cursor-pointer";
+          btnSubmit.innerHTML = `<span class="break-keep text-center leading-snug">🔒 수업 진행 중 (${remainingMins}분 ${formattedSecs}초 남음 • 선생님 확인 후 하원 가능)</span>`;
+
+          if (noticeBanner) {
+            noticeBanner.className = "p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold mb-4 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left";
             noticeBanner.innerHTML = `
               <span class="flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0"></span>
-                <span class="break-keep">수업 시간 충족 후 하원 가능</span>
+                <span class="break-keep">기록장을 선생님께 보여드리고 확인을 받으세요!</span>
               </span>
               <span id="btnRemainingNotice" class="font-black text-amber-800 text-xs sm:text-sm flex-shrink-0">남은 시간: ${remainingMins}분 ${formattedSecs}초</span>
             `;
           }
-        } else if (state.teacherOverrideApproved && !isComplete) {
+        } else {
           btnSubmit.disabled = false;
-          btnSubmit.className = "w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-gradient-to-r from-amber-600 via-indigo-600 to-teal-600 hover:from-amber-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-2 border-indigo-400/50 break-keep text-center leading-snug";
-          btnSubmit.innerHTML = `<span class="break-keep text-center leading-snug">🔑 [선생님 승인 완료] 학습 완료 및 조기 하원하기 (${remainingMins}분 ${formattedSecs}초 남음)</span>`;
+          btnSubmit.onclick = () => promptTeacherVerifyCheckout();
+          btnSubmit.className = "w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-gradient-to-r from-indigo-600 to-rose-600 hover:from-indigo-500 hover:to-rose-500 text-white font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-2 border-indigo-400/50 break-keep text-center leading-snug";
+          btnSubmit.innerHTML = `<span class="break-keep text-center leading-snug">📋 수업 시간 완료! 선생님 확인 후 하원하기 (클릭하여 승인)</span>`;
 
           if (noticeBanner) {
-            noticeBanner.className = "p-3.5 bg-indigo-50 border border-indigo-300 rounded-2xl text-xs text-indigo-900 font-bold mb-3 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left";
+            noticeBanner.className = "p-3.5 bg-indigo-50 border border-indigo-300 rounded-2xl text-xs text-indigo-900 font-bold mb-4 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left";
             noticeBanner.innerHTML = `
               <span class="flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 flex-shrink-0"></span>
-                <span class="break-keep">선생님 확인 비밀번호로 조기 하원이 승인되었습니다.</span>
+                <span class="break-keep">배정된 수업 시간 완료! 선생님께 기록장을 검사받으세요.</span>
               </span>
-              <span id="btnRemainingNotice" class="font-black text-indigo-800 text-xs sm:text-sm flex-shrink-0">🔑 승인 완료</span>
-            `;
-          }
-        } else {
-          btnSubmit.disabled = false;
-          btnSubmit.className = "w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-2 border-emerald-400/50 break-keep text-center leading-snug";
-          btnSubmit.innerHTML = `<span class="break-keep text-center leading-snug">🚀 수업 시간 완료! 오늘의 학습 완료 및 하원하기</span>`;
-
-          if (noticeBanner) {
-            noticeBanner.className = "p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl text-xs text-emerald-900 font-bold mb-3 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm break-keep text-center sm:text-left";
-            noticeBanner.innerHTML = `
-              <span class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
-                <span class="break-keep">배정된 수업 시간을 모두 충족했습니다!</span>
-              </span>
-              <span id="btnRemainingNotice" class="font-black text-emerald-800 text-xs sm:text-sm flex-shrink-0">🎉 하원 가능</span>
+              <span id="btnRemainingNotice" class="font-black text-indigo-800 text-xs sm:text-sm flex-shrink-0">검사 대기</span>
             `;
           }
         }
@@ -2637,29 +2668,58 @@
       return list.join(", ");
     }
 
-    // 9. Step 4 Homework Handlers
-    function setHwStatus(status) {
-      if (state.missions.hwStatus === status) {
-        state.missions.hwStatus = "";
+    // 9. Step 4 Homework Handlers (다중 선택 지원)
+    function toggleHwDoneStatus(val) {
+      if (state.missions.hwDoneStatus === val) {
+        state.missions.hwDoneStatus = "";
       } else {
-        state.missions.hwStatus = status;
+        state.missions.hwDoneStatus = val;
       }
-      document.querySelectorAll(".hw-status-btn").forEach(btn => {
-        if (state.missions.hwStatus && btn.dataset.val === state.missions.hwStatus) {
-          btn.className = "hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500 text-white shadow-sm ring-2 ring-amber-200";
-        } else {
-          btn.className = "hw-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
-        }
-      });
+      refreshHwCombinedStatus();
+    }
 
-      if (state.missions.hwStatus === "오답수정 완료" || state.missions.hwStatus === "오답수정 미완") {
+    function toggleHwFixStatus(val) {
+      if (state.missions.hwFixStatus === val) {
+        state.missions.hwFixStatus = "";
+      } else {
+        state.missions.hwFixStatus = val;
+      }
+      if (state.missions.hwFixStatus === "오답수정 완료" || state.missions.hwFixStatus === "오답수정 미완") {
         const wrongInput = document.getElementById("hwWrongInput");
         if (wrongInput && !wrongInput.value) {
           wrongInput.focus();
         }
       }
+      refreshHwCombinedStatus();
+    }
+
+    function refreshHwCombinedStatus() {
+      const parts = [];
+      if (state.missions.hwDoneStatus) parts.push(state.missions.hwDoneStatus);
+      if (state.missions.hwFixStatus) parts.push(state.missions.hwFixStatus);
+      state.missions.hwStatus = parts.join(" / ");
+
+      // Button UI 업데이트
+      document.querySelectorAll(".hw-status-btn").forEach(btn => {
+        const val = btn.dataset.val;
+        const isSelected = (val === state.missions.hwDoneStatus || val === state.missions.hwFixStatus);
+        if (isSelected) {
+          btn.className = "hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-black transition bg-amber-500 text-white shadow-sm ring-2 ring-amber-300";
+        } else {
+          btn.className = "hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900";
+        }
+      });
 
       updateProgress();
+    }
+
+    // 하위 호환 단일 세터
+    function setHwStatus(status) {
+      if (status === "오답수정 완료" || status === "오답수정 미완") {
+        toggleHwFixStatus(status);
+      } else {
+        toggleHwDoneStatus(status);
+      }
     }
 
     // 10. Step 5 Next Book / Re-read Reservation (Direction B)
@@ -2671,12 +2731,21 @@
       const addedTitles = new Set();
 
       // 1. Books registered in today's Step 1 (오늘 읽은 도서 -> 재독 예약 후보)
+      // [대표님 지시] 완독 후 진단완료 된 도서는 자동 재독 예약 목록에서 제외!
       if (Array.isArray(state.missions.books)) {
         state.missions.books.forEach(b => {
-          if (b && b.title && !addedTitles.has(b.title.trim())) {
-            addedTitles.add(b.title.trim());
-            candidates.push({ title: b.title.trim(), tag: "오늘 독서" });
+          if (!b || !b.title) return;
+          const trimmed = b.title.trim();
+          if (addedTitles.has(trimmed)) return;
+
+          // 진단완료(점수 등록) 여부 검사
+          const isDiagnosed = (b.status === "진단완료" || (b.score !== undefined && b.score !== null && String(b.score).trim() !== ""));
+          if (isDiagnosed) {
+            return; // 완독 후 진단완료 도서는 재독 예약에 자동 추천하지 않음!
           }
+
+          addedTitles.add(trimmed);
+          candidates.push({ title: trimmed, tag: "오늘 독서" });
         });
       }
 
@@ -2705,7 +2774,7 @@
       if (candidates.length === 0) {
         container.innerHTML = `
           <div class="flex items-center gap-2 py-1 text-xs text-slate-400 italic">
-            <span>오늘 독서에 등록된 책이 있으면 여기에 <b>[🔄 재독 예약]</b> 버튼이 표시됩니다. 또는 우측 상단 <b>[➕ 새 도서명 직접 입력]</b>을 눌러주세요.</span>
+            <span>오늘 미진단 또는 재독할 도서가 없으면 우측 상단 <b>[➕ 새 도서명 직접 입력]</b>을 눌러주세요.</span>
           </div>
         `;
         return;
@@ -2916,7 +2985,7 @@
     // 11. Realtime Progress & Summary Box Calculation + Auto Sync to Google Sheets
     let realtimeSyncTimer = null;
     function triggerRealtimeSync(delay = 0) {
-      if (!state.currentStudent) return;
+      if (!state.currentStudent || state.isCheckingOut) return;
       if (realtimeSyncTimer) clearTimeout(realtimeSyncTimer);
       if (delay > 0) {
         realtimeSyncTimer = setTimeout(syncMissionsRealtime, delay);
@@ -2926,7 +2995,7 @@
     }
 
     function syncMissionsRealtime() {
-      if (!state.currentStudent) return;
+      if (!state.currentStudent || state.isCheckingOut) return;
       const student = state.currentStudent;
       const cleanName = (student.name || '').trim().replace(/\s+/g, '');
 
@@ -3184,16 +3253,26 @@
     }
 
     // 12. Final Mission Submit & Google Sheets Batch Update
-    function submitAllMissions() {
+    async function submitAllMissions() {
       if (!state.currentStudent) return;
       const student = state.currentStudent;
       const cleanName = (student.name || '').trim().replace(/\s+/g, '');
 
-      // 수업 시간 충족 여부 철저 검증 (미달 시 조기 하원 승인 확인)
-      const timeInfo = getRemainingClassTime();
-      if (!timeInfo.isComplete && timeInfo.totalRemainingSecs > 0 && !state.teacherOverrideApproved) {
-        if (confirm(`🚨 아직 수업 시간이 ${timeInfo.remainingMins}분 ${timeInfo.remainingSecs}초 남았습니다!\n\n배정된 수업 시간(${timeInfo.duration}분)을 채우지 않고 조기 하원하려면 선생님 확인이 필요합니다.\n\n선생님 비밀번호를 입력하시겠습니까?`)) {
-          promptTeacherOverrideCheckout();
+      // [핵심 해결 1] 대기 중인 모든 실시간 저장 타이머 즉시 강제 취소! (덮어쓰기 원천 차단)
+      if (realtimeSyncTimer) {
+        clearTimeout(realtimeSyncTimer);
+        realtimeSyncTimer = null;
+      }
+
+      // [핵심 해결 2] 하원 진행 중 플래그 활성화 (이후 어떠한 자동 저장도 시트를 '수업중'으로 되돌리지 못함)
+      state.isCheckingOut = true;
+
+      // [선생님 기록장 검사 확인 검증]
+      if (!state.teacherVerifiedCheckout && !state.teacherOverrideApproved) {
+        if (confirm("📋 [선생님 확인 필요]\n기록장을 선생님께 보여드리고 [선생님 확인]을 받아야 하원할 수 있습니다.\n\n선생님 확인 비밀번호를 입력하시겠습니까?")) {
+          promptTeacherVerifyCheckout();
+        } else {
+          state.isCheckingOut = false;
         }
         return;
       }
@@ -3341,7 +3420,7 @@
         updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ || "", name: student.name, date: targetLog.date, time: targetLog.time });
         updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents || "", name: student.name, date: targetLog.date, time: targetLog.time });
 
-        sendBatchUpdates(updates);
+        await sendBatchUpdates(updates);
       } else {
         const newRow = getSafeNextDailyLogRow(student.name);
         targetLog = {
@@ -3361,7 +3440,7 @@
         };
         state.dailyLogs.push(targetLog);
 
-        sendNewLog(targetLog);
+        await sendNewLog(targetLog);
       }
       state.currentDailyLog = targetLog;
 
@@ -3386,7 +3465,7 @@
         dailyLogs: state.dailyLogs
       }));
 
-      btn.innerHTML = `<span>🚀 오늘의 학습 완료 및 하원 / 로그아웃</span>`;
+      btn.innerHTML = `<span>🚀 오늘의 수업 완료 및 하원 / 로그아웃</span>`;
       btn.disabled = false;
       showCelebration(student.name);
     }
@@ -3424,6 +3503,8 @@
       state.currentDailyLog = null;
       state.currentInTime = "";
       state.teacherOverrideApproved = false;
+      state.teacherVerifiedCheckout = false;
+      state.isCheckingOut = false;
       localStorage.removeItem("active_student_session");
       document.getElementById("userHeaderPill").classList.add("hidden");
       document.getElementById("userHeaderPill").classList.remove("flex");
@@ -3480,42 +3561,80 @@
     }
 
     // 14. Network Communication Helpers
-    function sendBatchUpdates(updates) {
-      if (!state.config.gasWebhookUrl || !updates || updates.length === 0) return;
+    async function sendBatchUpdates(updates, retries = 3) {
+      if (!state.config.gasWebhookUrl || !updates || updates.length === 0) return false;
 
-      fetch(state.config.gasWebhookUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "batchUpdate",
-          updates: updates
-        })
-      }).catch(err => console.error("GAS batchUpdate error:", err));
+      const payload = JSON.stringify({
+        action: "batchUpdate",
+        updates: updates
+      });
+
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
+          await fetch(state.config.gasWebhookUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          return true;
+        } catch (err) {
+          console.warn(`[sendBatchUpdates] Attempt ${attempt} failed:`, err);
+          if (attempt === retries) {
+            console.error("[sendBatchUpdates] All retry attempts failed:", err);
+            return false;
+          }
+          await new Promise(r => setTimeout(r, 800));
+        }
+      }
+      return false;
     }
 
-    function sendNewLog(log) {
-      if (!state.config.gasWebhookUrl || !log) return;
+    async function sendNewLog(log, retries = 3) {
+      if (!state.config.gasWebhookUrl || !log) return false;
 
-      fetch(state.config.gasWebhookUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "addDailyLog",
-          date: log.date,
-          time: log.time,
-          name: log.name,
-          notes: log.notes,
-          status: log.status,
-          inTime: log.inTime,
-          reason: log.reason,
-          number: log.number,
-          event: log.event,
-          grammarDone: log.grammarDone,
-          contents: log.contents
-        })
-      }).catch(err => console.error("GAS addDailyLog error:", err));
+      const payload = JSON.stringify({
+        action: "addDailyLog",
+        date: log.date,
+        time: log.time,
+        name: log.name,
+        notes: log.notes,
+        status: log.status,
+        inTime: log.inTime,
+        reason: log.reason,
+        number: log.number,
+        event: log.event,
+        grammarDone: log.grammarDone,
+        contents: log.contents
+      });
+
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
+          await fetch(state.config.gasWebhookUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          return true;
+        } catch (err) {
+          console.warn(`[sendNewLog] Attempt ${attempt} failed:`, err);
+          if (attempt === retries) {
+            console.error("[sendNewLog] All retry attempts failed:", err);
+            return false;
+          }
+          await new Promise(r => setTimeout(r, 800));
+        }
+      }
+      return false;
     }
 
     function isSameDate(dateStr1, dateStr2) {
