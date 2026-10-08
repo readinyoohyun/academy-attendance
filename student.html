@@ -523,7 +523,8 @@
               <option value="">이벤트 선택...</option>
               <option value="코스업">코스업</option>
               <option value="레벨업">레벨업</option>
-              <option value="훈민정음/숙제교재완료">훈민정음/숙제교재완료</option>
+              <option value="훈민정음/숙제교재 완료">훈민정음/숙제교재 완료</option>
+              <option value="문해력교재완성">문해력교재완성</option>
               <option value="읽트완료">읽트완료</option>
               <option value="듣트완료">듣트완료</option>
               <option value="한자교재완료">한자교재완료</option>
@@ -1826,7 +1827,7 @@
         const events = (log.event || "").split(",").map(e => e.trim()).filter(Boolean);
         const numbers = (log.number || "").split(",").map(n => n.trim()).filter(Boolean);
 
-        const setOptions = ["코스업", "레벨업", "훈민정음/숙제교재완료", "읽트완료", "듣트완료", "한자교재완료", "정독완"];
+        const setOptions = ["코스업", "레벨업", "훈민정음/숙제교재 완료", "문해력교재완성", "읽트완료", "듣트완료", "한자교재완료", "정독완", "훈민정음/숙제교재완료"];
         events.forEach((ev, idx) => {
           if (setOptions.includes(ev)) {
             state.missions.setEvents.push({ event: ev, number: numbers[idx] || "" });
