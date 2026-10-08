@@ -362,18 +362,7 @@
         <!-- Rendered via renderTrainingCards() -->
       </div>
 
-      <!-- 추가항목: 이해도 자기 평가 -->
-      <div class="mt-4 pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-0.5">이해도 자기 평가</label>
-          <p class="text-[11px] text-slate-500">오늘 진행한 트레이닝의 이해도를 스스로 선택해 보세요.</p>
-        </div>
-        <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl flex-wrap">
-          <button type="button" onclick="setTrainingUnderstanding('잘 이해했어요')" class="training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="잘 이해했어요">😀 잘 이해했어요</button>
-          <button type="button" onclick="setTrainingUnderstanding('보통이에요')" class="training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="보통이에요">🙂 보통이에요</button>
-          <button type="button" onclick="setTrainingUnderstanding('아직 헷갈려요')" class="training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900" data-val="아직 헷갈려요">😕 아직 헷갈려요</button>
-        </div>
-      </div>
+      <!-- (이해도 자기 평가는 원장님 요청에 따라 각 트레이닝 카드 하단에 개별 생성됩니다) -->
     </div>
 
 
@@ -512,10 +501,10 @@
             <p class="text-xs text-slate-300">오늘 달성한 코스업, 레벨업, 교재완료 및 특별 타이틀을 복수 선택할 수 있습니다.</p>
           </div>
         </div>
-        <label class="flex items-center gap-2 cursor-pointer bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
-          <input type="checkbox" id="grammarDoneCheck" onchange="updateProgress()" class="w-4 h-4 text-emerald-500 rounded border-slate-400 focus:ring-emerald-400" />
-          <span class="text-xs font-bold text-emerald-300">특별수업 완료</span>
-        </label>
+        <span class="px-3 py-1.5 rounded-xl bg-white/10 text-slate-300 text-xs font-semibold border border-white/10 flex items-center gap-1.5">
+          <span>🎯</span>
+          <span>출석부 8·9·J열 연동</span>
+        </span>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -639,7 +628,18 @@
 
       </div>
 
-      <!-- Student Memo / Reflection -->
+      <!-- 6단계 완료 및 특별수업 액션 바 (원장님 승인 방안 2) -->
+      <div class="mt-4 p-3.5 bg-white/10 rounded-2xl border border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <label class="flex items-center gap-2.5 cursor-pointer bg-slate-800/90 hover:bg-slate-800 px-3.5 py-2.5 rounded-xl border border-emerald-500/40 text-emerald-300 font-bold text-xs select-none">
+          <input type="checkbox" id="grammarDoneCheck" onchange="updateProgress()" class="w-4 h-4 text-emerald-500 rounded border-slate-400 focus:ring-emerald-400" />
+          <span>✨ 특별수업 완료 포함 (출석부 J열 연동)</span>
+        </label>
+        <button type="button" onclick="completeStep6Records()" 
+                class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs sm:text-sm font-extrabold rounded-xl transition shadow-lg flex items-center justify-center gap-2 active:scale-95">
+          <span>✅</span>
+          <span>[특별수업 / 기록 완료]</span>
+        </button>
+      </div>
       <div class="mt-4 pt-4 border-t border-white/10">
         <label class="block text-xs font-bold text-slate-300 mb-1.5">오늘 수업 돌아보기 & 선생님께 한마디 😊</label>
         <textarea id="studentReflectionInput" rows="2"
@@ -2149,6 +2149,9 @@
       },
       "문해력트레이닝": {
         icon: "💡",
+        isLiteracy: true,
+        fieldLabel: "분야 선택 (5가지)",
+        fields: ["복합", "문학", "비문학", "어휘", "문법"],
         label: "단계 선택 (1~6단계)",
         options: ["1단계", "2단계", "3단계", "4단계", "5단계", "6단계"]
       }
@@ -2168,7 +2171,14 @@
       } else {
         state.missions.trainingTypes.push(type);
         if (!state.missions.trainingDetails[type]) {
-          state.missions.trainingDetails[type] = { vol: "", session: "", errors: "" };
+          state.missions.trainingDetails[type] = {
+            vol: type === "문해력트레이닝" ? "1단계" : (type === "듣기트레이닝" ? "문학교훈" : "1권"),
+            field: type === "문해력트레이닝" ? "복합" : "",
+            session: "",
+            errors: "",
+            items: [],
+            understanding: ""
+          };
         }
       }
       renderTrainingTypeButtons();
@@ -2188,6 +2198,63 @@
       });
     }
 
+    function setPerTrainingUnderstanding(type, val) {
+      if (!state.missions.trainingDetails) state.missions.trainingDetails = {};
+      if (!state.missions.trainingDetails[type]) {
+        state.missions.trainingDetails[type] = { vol: "", session: "", errors: "", understanding: "" };
+      }
+      if (state.missions.trainingDetails[type].understanding === val) {
+        state.missions.trainingDetails[type].understanding = "";
+      } else {
+        state.missions.trainingDetails[type].understanding = val;
+      }
+      renderTrainingCards();
+      updateProgress();
+    }
+
+    function addLiteracyItem() {
+      if (!state.missions.trainingDetails) state.missions.trainingDetails = {};
+      if (!state.missions.trainingDetails["문해력트레이닝"]) {
+        state.missions.trainingDetails["문해력트레이닝"] = { items: [] };
+      }
+      const d = state.missions.trainingDetails["문해력트레이닝"];
+      if (!Array.isArray(d.items)) d.items = [];
+
+      const fEl = document.getElementById("literacyFieldSelect");
+      const vEl = document.getElementById("literacyVolSelect");
+      const sEl = document.getElementById("literacySessionInput");
+      const eEl = document.getElementById("literacyErrorsInput");
+
+      const field = fEl ? fEl.value : (d.field || "복합");
+      const vol = vEl ? vEl.value : (d.vol || "1단계");
+      const session = sEl ? sEl.value.trim() : (d.session || "");
+      const errors = eEl ? eEl.value.trim() : (d.errors || "");
+
+      if (!session && !errors && !field) {
+        alert("문해력 세부 기록(차시, 문항수/오답개수 등)을 입력해 주세요.");
+        return;
+      }
+
+      d.items.push({ field, vol, session, errors });
+      
+      // Reset draft inputs
+      d.session = "";
+      d.errors = "";
+      if (sEl) sEl.value = "";
+      if (eEl) eEl.value = "";
+
+      renderTrainingCards();
+      updateProgress();
+    }
+
+    function removeLiteracyItem(idx) {
+      if (state.missions.trainingDetails && state.missions.trainingDetails["문해력트레이닝"] && Array.isArray(state.missions.trainingDetails["문해력트레이닝"].items)) {
+        state.missions.trainingDetails["문해력트레이닝"].items.splice(idx, 1);
+        renderTrainingCards();
+        updateProgress();
+      }
+    }
+
     function renderTrainingCards() {
       const container = document.getElementById("trainingDetailsContainer");
       if (!container) return;
@@ -2205,24 +2272,132 @@
       container.innerHTML = "";
       types.forEach(type => {
         const conf = TRAINING_CONFIG[type] || { icon: "🎯", label: "교재/단계", options: ["1권", "2권", "3권", "4권", "5권"] };
-        const detail = (state.missions.trainingDetails && state.missions.trainingDetails[type]) || { vol: "", session: "", errors: "" };
+        const detail = (state.missions.trainingDetails && state.missions.trainingDetails[type]) || { vol: "", session: "", errors: "", understanding: "" };
 
         const card = document.createElement("div");
-        card.className = "p-4 bg-slate-50/80 rounded-2xl border border-indigo-100 shadow-sm transition";
+        card.className = "p-4 bg-slate-50/90 rounded-2xl border border-indigo-100 shadow-sm transition space-y-3";
 
-        const optHtml = ['<option value="">(선택 안 함)</option>']
-          .concat(conf.options.map(opt => `<option value="${opt}" ${detail.vol === opt ? 'selected' : ''}>${opt}</option>`))
-          .join("");
+        let contentHtml = "";
 
-        const errOptions = ["(선택 안 함)", "0개 (완벽! 💯)", "1개", "2개", "3개", "4개", "5개", "6개", "7개"];
-        const errHtml = errOptions.map(opt => {
-          const val = opt.includes("(선택 안 함)") ? "" : (opt.includes("0개") ? "0개" : opt);
-          const isSel = (detail.errors === val);
-          return `<option value="${val}" ${isSel ? 'selected' : ''}>${opt}</option>`;
-        }).join("");
+        if (conf.isLiteracy) {
+          // 문해력 트레이닝 전용 (원장님 요청 4개 항목 + 다중 추가 지원)
+          const fieldOpts = conf.fields.map(f => `<option value="${f}" ${(detail.field || '복합') === f ? 'selected' : ''}>${f}</option>`).join("");
+          const volOpts = conf.options.map(v => `<option value="${v}" ${(detail.vol || '1단계') === v ? 'selected' : ''}>${v}</option>`).join("");
+
+          let registeredHtml = "";
+          if (detail.items && detail.items.length > 0) {
+            registeredHtml = `
+              <div class="p-3 bg-indigo-50/80 rounded-xl border border-indigo-200/80 mb-3">
+                <div class="text-[11px] font-bold text-indigo-900 mb-1.5 flex items-center justify-between">
+                  <span>📋 등록된 세부 기록 (${detail.items.length}건):</span>
+                  <span class="text-[10px] text-slate-500 font-normal">다중 기록 완료</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  ${detail.items.map((it, idx) => `
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-indigo-300 rounded-lg text-xs font-semibold text-indigo-900 shadow-xs">
+                      <span><strong>${it.field || '기본'}</strong> ${it.vol || ''} ${it.session ? it.session + '차시' : ''} ${it.errors ? `(${it.errors})` : ''}</span>
+                      <button type="button" onclick="removeLiteracyItem(${idx})" class="text-indigo-400 hover:text-red-500 font-bold ml-1 text-sm leading-none" title="삭제">✕</button>
+                    </span>
+                  `).join("")}
+                </div>
+              </div>
+            `;
+          }
+
+          contentHtml = `
+            ${registeredHtml}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">1. 분야 선택</label>
+                <select id="literacyFieldSelect" onchange="updateTrainingDetail('${type}', 'field', this.value)"
+                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  ${fieldOpts}
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">2. 단계 선택</label>
+                <select id="literacyVolSelect" onchange="updateTrainingDetail('${type}', 'vol', this.value)"
+                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  ${volOpts}
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">3. 차시 (수기입력)</label>
+                <input type="text" id="literacySessionInput" value="${detail.session || ''}" placeholder="예: 3"
+                       oninput="updateTrainingDetail('${type}', 'session', this.value.trim(), 500)"
+                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">4. 문항수 / 오답개수</label>
+                <input type="text" id="literacyErrorsInput" value="${detail.errors || ''}" placeholder="예: 10/2 또는 2개"
+                       oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
+                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            </div>
+            <div class="flex justify-end pt-1">
+              <button type="button" onclick="addLiteracyItem()" 
+                      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-95">
+                <span>➕</span> <span>세부기록 추가 (다중 선택/기록)</span>
+              </button>
+            </div>
+          `;
+        } else {
+          // 읽기, 독해, 듣기 트레이닝
+          const optHtml = ['<option value="">(선택 안 함)</option>']
+            .concat(conf.options.map(opt => `<option value="${opt}" ${detail.vol === opt ? 'selected' : ''}>${opt}</option>`))
+            .join("");
+
+          contentHtml = `
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">${conf.label}</label>
+                <select onchange="updateTrainingDetail('${type}', 'vol', this.value)"
+                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  ${optHtml}
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">차시 (수기 입력)</label>
+                <input type="text" value="${detail.session || ''}" placeholder="예: 3"
+                       oninput="updateTrainingDetail('${type}', 'session', this.value.trim(), 500)"
+                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">문항수 / 오답개수</label>
+                <input type="text" value="${detail.errors || ''}" placeholder="예: 10/2 또는 2개"
+                       oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
+                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            </div>
+          `;
+        }
+
+        // 종목별 개별 이해도 평가 버튼 영역 (원장님 필수 요청)
+        const underHtml = `
+          <div class="pt-3 border-t border-indigo-100/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-slate-800">이해도 평가:</span>
+              <span class="text-[11px] text-slate-500 font-medium">${type}의 이해도를 스스로 선택해 보세요</span>
+            </div>
+            <div class="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-slate-200 flex-wrap">
+              <button type="button" onclick="setPerTrainingUnderstanding('${type}', '잘 이해했어요')" 
+                      class="${detail.understanding === '잘 이해했어요' ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400' : 'text-slate-600 hover:text-slate-900'} px-2.5 py-1 rounded-lg text-xs font-bold transition">
+                😀 잘 이해했어요
+              </button>
+              <button type="button" onclick="setPerTrainingUnderstanding('${type}', '보통이에요')" 
+                      class="${detail.understanding === '보통이에요' ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400' : 'text-slate-600 hover:text-slate-900'} px-2.5 py-1 rounded-lg text-xs font-bold transition">
+                🙂 보통이에요
+              </button>
+              <button type="button" onclick="setPerTrainingUnderstanding('${type}', '아직 헷갈려요')" 
+                      class="${detail.understanding === '아직 헷갈려요' ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400' : 'text-slate-600 hover:text-slate-900'} px-2.5 py-1 rounded-lg text-xs font-bold transition">
+                😕 아직 헷갈려요
+              </button>
+            </div>
+          </div>
+        `;
 
         card.innerHTML = `
-          <div class="flex items-center justify-between mb-3 pb-2 border-b border-indigo-100/60">
+          <div class="flex items-center justify-between pb-2 border-b border-indigo-100/60">
             <span class="text-xs font-black text-indigo-900 flex items-center gap-1.5">
               <span>${conf.icon}</span>
               <span>${type} 세부 기록</span>
@@ -2231,28 +2406,8 @@
               ✕ 종목 닫기
             </button>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">${conf.label}</label>
-              <select onchange="updateTrainingDetail('${type}', 'vol', this.value)"
-                      class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                ${optHtml}
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">차시 (수기 입력)</label>
-              <input type="text" value="${detail.session || ''}" placeholder="예: 3"
-                     oninput="updateTrainingDetail('${type}', 'session', this.value.trim(), 500)"
-                     class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 개수</label>
-              <select onchange="updateTrainingDetail('${type}', 'errors', this.value)"
-                      class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                ${errHtml}
-              </select>
-            </div>
-          </div>
+          ${contentHtml}
+          ${underHtml}
         `;
         container.appendChild(card);
       });
@@ -2260,7 +2415,7 @@
 
     function updateTrainingDetail(type, field, val, syncDelay = 0) {
       if (!state.missions.trainingDetails) state.missions.trainingDetails = {};
-      if (!state.missions.trainingDetails[type]) state.missions.trainingDetails[type] = { vol: "", session: "", errors: "" };
+      if (!state.missions.trainingDetails[type]) state.missions.trainingDetails[type] = { vol: "", session: "", errors: "", understanding: "" };
       state.missions.trainingDetails[type][field] = val;
       updateProgress(syncDelay);
     }
@@ -2272,12 +2427,41 @@
 
       const list = types.map(t => {
         const d = details[t] || {};
-        const sub = [];
-        if (d.vol) sub.push(d.vol);
-        if (d.session) sub.push(`${d.session}차시`);
-        if (d.errors) sub.push(`오답:${d.errors}`);
         const shortName = t.replace("트레이닝", "");
-        return sub.length > 0 ? `${shortName}(${sub.join(" ")})` : shortName;
+
+        if (t === "문해력트레이닝") {
+          const items = (d.items && Array.isArray(d.items)) ? [...d.items] : [];
+          // If draft fields are filled in but not yet added via '+'
+          if ((d.session || d.errors) && !items.some(it => it.session === d.session && it.errors === d.errors)) {
+            items.push({ field: d.field || "복합", vol: d.vol || "1단계", session: d.session, errors: d.errors });
+          }
+
+          const itemStrs = items.map(it => {
+            const sub = [];
+            if (it.field) sub.push(it.field);
+            if (it.vol) sub.push(it.vol);
+            if (it.session) sub.push(`${it.session}차시`);
+            if (it.errors) sub.push(`(${it.errors})`);
+            return sub.join(" ");
+          }).filter(Boolean);
+
+          let res = shortName;
+          if (itemStrs.length > 0) {
+            res += `[${itemStrs.join(", ")}]`;
+          }
+          if (d.understanding) {
+            res += ` [이해도:${d.understanding}]`;
+          }
+          return res;
+        } else {
+          const sub = [];
+          if (d.vol) sub.push(d.vol);
+          if (d.session) sub.push(`${d.session}차시`);
+          if (d.errors) sub.push(`(${d.errors})`);
+          let res = sub.length > 0 ? `${shortName}(${sub.join(" ")})` : shortName;
+          if (d.understanding) res += ` [이해도:${d.understanding}]`;
+          return res;
+        }
       });
 
       return list.join(", ");
@@ -2522,6 +2706,43 @@
       });
     }
 
+    // [원장님 승인 방안 2] 6단계 특별수업 및 성장기록 일괄 완료 등록 핸들러
+    function completeStep6Records() {
+      let addedCount = 0;
+      const setEv = document.getElementById("eventSetSelect") ? document.getElementById("eventSetSelect").value : "";
+      const setNum = document.getElementById("eventNumberSelect") ? document.getElementById("eventNumberSelect").value : "";
+      if (setEv) {
+        state.missions.setEvents.push({ event: setEv, number: setNum || "" });
+        document.getElementById("eventSetSelect").value = "";
+        if (document.getElementById("eventNumberSelect")) document.getElementById("eventNumberSelect").value = "";
+        renderSetEventItems();
+        addedCount++;
+      }
+
+      const soloEv = document.getElementById("eventSoloSelect") ? document.getElementById("eventSoloSelect").value : "";
+      if (soloEv) {
+        if (!state.missions.soloEvents.includes(soloEv)) {
+          state.missions.soloEvents.push(soloEv);
+        }
+        document.getElementById("eventSoloSelect").value = "";
+        renderSoloEventItems();
+        addedCount++;
+      }
+
+      const grammarEl = document.getElementById("grammarDoneCheck");
+      if (grammarEl && !grammarEl.checked && addedCount === 0 && state.missions.setEvents.length === 0 && state.missions.soloEvents.length === 0) {
+        grammarEl.checked = true;
+        state.missions.grammarDone = true;
+        addedCount++;
+      } else if (grammarEl && grammarEl.checked) {
+        state.missions.grammarDone = true;
+      }
+
+      updateProgress();
+      const msg = (grammarEl && grammarEl.checked) ? "✅ 성장 기록 및 특별수업 완료가 7단계 요약에 성공적으로 등록되었습니다!" : "✅ 성장 기록이 7단계 요약에 성공적으로 등록되었습니다!";
+      alert(msg);
+    }
+
     // 11. Realtime Progress & Summary Box Calculation + Auto Sync to Google Sheets
     let realtimeSyncTimer = null;
     function triggerRealtimeSync(delay = 0) {
@@ -2635,7 +2856,7 @@
       const contentParts = [];
       if (trSummary) {
         let trPart = `[트레이닝] ${trSummary}`;
-        if (trUnder) trPart += ` (이해도:${trUnder})`;
+        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` (이해도:${trUnder})`;
         contentParts.push(trPart);
       }
 
@@ -2745,14 +2966,24 @@
         const effectiveNoteStatus = isTargetForNote ? noteStat : "";
         return formatJColBookRecord(b.level, b.course, b.title, b.score, effectiveNoteStatus);
       }).join(", ") || (noteStat === "완료" ? "글완" : (noteStat === "요약하기" ? "요약" : "등록된 도서 없음"));
-      document.getElementById("sumBooks").innerText = jColSummary;
+
+      const isGrammar = (document.getElementById("grammarDoneCheck") && document.getElementById("grammarDoneCheck").checked) || !!state.missions.grammarDone;
+      let finalBooksDisplay = jColSummary;
+      if (isGrammar) {
+        if (finalBooksDisplay && finalBooksDisplay !== "등록된 도서 없음") {
+          finalBooksDisplay += " / [특별수업완료]";
+        } else {
+          finalBooksDisplay = "[특별수업완료]";
+        }
+      }
+      document.getElementById("sumBooks").innerText = finalBooksDisplay;
 
       document.getElementById("sumNotes").innerText = noteBook ? `[${noteBook}] ${noteStat}` : noteStat;
 
       const trSummary = buildTrainingSummaryString();
       const trUnder = state.missions.trainingUnderstanding || "";
       let sumTrDisplay = trSummary || "선택 안 함";
-      if (trSummary && trUnder) sumTrDisplay += ` [이해도: ${trUnder}]`;
+      if (trSummary && trUnder && !trSummary.includes("[이해도:")) sumTrDisplay += ` [이해도: ${trUnder}]`;
       document.getElementById("sumTraining").innerText = sumTrDisplay;
 
       const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
@@ -2768,7 +2999,12 @@
 
       const allSetSummary = state.missions.setEvents.map(s => `${s.event}${s.number ? `(${s.number})` : ''}`);
       const allEvents = [...allSetSummary, ...state.missions.soloEvents];
-      document.getElementById("sumEvent").innerText = allEvents.join(" / ") || "선택 안 함";
+      let eventDisplayText = allEvents.join(" / ");
+      if (isGrammar) {
+        if (!eventDisplayText) eventDisplayText = "특별수업완료";
+        else eventDisplayText += " (특별수업포함)";
+      }
+      document.getElementById("sumEvent").innerText = eventDisplayText || "선택 안 함";
 
       // 실시간 구글 시트 자동 동기화 트리거
       triggerRealtimeSync(syncDelay);
@@ -2868,7 +3104,7 @@
       const contentParts = [];
       if (trSummary) {
         let trPart = `[트레이닝] ${trSummary}`;
-        if (trUnder) trPart += ` (이해도:${trUnder})`;
+        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` (이해도:${trUnder})`;
         contentParts.push(trPart);
       }
 
