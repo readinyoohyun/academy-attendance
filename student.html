@@ -862,7 +862,7 @@
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">선생님 승인 비밀번호 (조기 하원 PIN)</label>
-          <input type="password" id="configTeacherPin" placeholder="기본값: 1234" maxlength="10"
+          <input type="password" id="configTeacherPin" placeholder="기본값: 2026" maxlength="10"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono" />
           <p class="text-[11px] text-slate-400 mt-1">* 수업 시간 미달 시 조기 하원을 승인할 때 사용하는 비밀번호입니다.</p>
         </div>
@@ -880,15 +880,28 @@
   <script>
     // Global Constants
     const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec";
+    const OLD_GAS_URL = "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec";
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbygKb7Xmd_iXyKW8xAFWZwbZ_3yFxdKrQZixr8D0fokHsK00QmvQsSBM7l5zqFxI-U1Ww/exec";
+
+    // Auto-migrate legacy default GAS URL and PIN
+    let initialGasUrl = localStorage.getItem("gas_webhook_url");
+    if (!initialGasUrl || initialGasUrl === OLD_GAS_URL) {
+      initialGasUrl = DEFAULT_GAS_URL;
+      localStorage.setItem("gas_webhook_url", DEFAULT_GAS_URL);
+    }
+    let initialTeacherPin = localStorage.getItem("teacher_pin");
+    if (!initialTeacherPin || initialTeacherPin === "1234") {
+      initialTeacherPin = "2026";
+      localStorage.setItem("teacher_pin", "2026");
+    }
 
     // App State
     const state = {
       config: {
-        gasWebhookUrl: localStorage.getItem("gas_webhook_url") || DEFAULT_GAS_URL,
+        gasWebhookUrl: initialGasUrl,
         academyName: localStorage.getItem("academy_name") || "유현리드인 한그루역사",
         logoUrl: localStorage.getItem("logo_url") || "",
-        teacherPin: localStorage.getItem("teacher_pin") || "1234"
+        teacherPin: initialTeacherPin
       },
       teacherOverrideApproved: false,
       students: [],
@@ -1341,7 +1354,7 @@
       const enteredPin = prompt("🔑 [선생님 승인] 조기 하원 비밀번호(PIN)를 입력해 주세요:");
       if (enteredPin === null) return; // User cancelled
 
-      const expectedPin = state.config.teacherPin || "1234";
+      const expectedPin = state.config.teacherPin || "2026";
       if (enteredPin.trim() === expectedPin) {
         state.teacherOverrideApproved = true;
         saveActiveSession();
@@ -3013,7 +3026,7 @@
 
     // 13. Config Modal Handlers (선생님 인증 필수)
     function openConfigModal() {
-      const expectedPin = state.config.teacherPin || "1234";
+      const expectedPin = state.config.teacherPin || "2026";
       const entered = prompt("🔒 [선생님 인증] 환경설정을 열려면 관리자 비밀번호(PIN)를 입력해 주세요:");
       if (entered === null) return;
       if (entered.trim() !== expectedPin) {
@@ -3023,7 +3036,7 @@
       document.getElementById("configAcademyName").value = state.config.academyName;
       document.getElementById("configGasUrl").value = state.config.gasWebhookUrl;
       const pinEl = document.getElementById("configTeacherPin");
-      if (pinEl) pinEl.value = state.config.teacherPin || "1234";
+      if (pinEl) pinEl.value = state.config.teacherPin || "2026";
       document.getElementById("configModal").classList.remove("hidden");
     }
 
@@ -3035,7 +3048,7 @@
       const name = document.getElementById("configAcademyName").value.trim();
       const url = document.getElementById("configGasUrl").value.trim();
       const pinEl = document.getElementById("configTeacherPin");
-      const pin = pinEl ? (pinEl.value.trim() || "1234") : (state.config.teacherPin || "1234");
+      const pin = pinEl ? (pinEl.value.trim() || "2026") : (state.config.teacherPin || "2026");
 
       state.config.academyName = name;
       state.config.gasWebhookUrl = url;
