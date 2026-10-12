@@ -318,7 +318,7 @@
                 <strong id="selectedNoteBookName"></strong>
               </span>
             </div>
-            <p class="text-xs text-sky-950 font-medium mt-0.5">글쓰기 대상 도서를 선택한 후 작성 상태(작성중, 글완, 요약)를 눌러주세요.</p>
+            <p class="text-xs text-sky-950 font-medium mt-0.5">글쓰기 대상 도서를 선택하고 작성 상태를 지정한 뒤 [등록 후 추가]를 눌러 복수로 기록할 수 있습니다.</p>
           </div>
         </div>
 
@@ -331,7 +331,7 @@
         </div>
       </div>
 
-      <div class="p-5 sm:p-6">
+      <div class="p-5 sm:p-6 space-y-4">
         <!-- 글쓰기 대상 도서 선택 바 (오늘 읽은 책 / 최근 진단 도서 / 직접 입력) -->
         <div>
           <div class="flex items-center justify-between mb-2">
@@ -346,6 +346,23 @@
           <div id="noteBookChipsContainer" class="flex flex-wrap items-center gap-2">
             <!-- Rendered via renderNoteBookChips() -->
           </div>
+        </div>
+
+        <!-- 등록 후 추가 버튼 바 -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t border-sky-200/70">
+          <div class="text-xs text-sky-900 font-semibold flex items-center gap-1.5 flex-wrap">
+            <span>📝 현재 선택:</span>
+            <span id="currentNotePreview" class="font-extrabold text-sky-950 bg-sky-100/90 border border-sky-200 px-2.5 py-1 rounded-lg">도서 미지정</span>
+          </div>
+          <button type="button" onclick="addWritingRecordFromCurrent()"
+                  class="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-md shadow-sky-600/20 transition flex items-center justify-center gap-1.5 active:scale-95 whitespace-nowrap">
+            <span>➕</span><span>등록 후 추가 (복수 기록)</span>
+          </button>
+        </div>
+
+        <!-- 등록된 복수 글쓰기 목록 컨테이너 -->
+        <div id="writingListContainer">
+          <!-- Rendered via renderWritingList() -->
         </div>
       </div>
     </div>
@@ -385,6 +402,9 @@
             </button>
             <button type="button" onclick="toggleTrainingType('문해력트레이닝')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-indigo-200 bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 shadow-sm" data-type="문해력트레이닝">
               <span>💡</span> <span>문해력트레이닝</span>
+            </button>
+            <button type="button" onclick="toggleTrainingType('오답수정+선지분석')" class="tr-type-btn px-3.5 py-2 rounded-xl text-xs font-bold transition border border-indigo-200 bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 shadow-sm" data-type="오답수정+선지분석">
+              <span>✏️</span> <span>오답수정+선지분석</span>
             </button>
           </div>
         </div>
@@ -434,6 +454,8 @@
             <select id="hwBookSelect" onchange="updateProgress()"
                     class="w-full p-3 bg-white border border-amber-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
               <option value="">(선택 안 함)</option>
+              <option value="복합">복합</option>
+              <option value="어휘">어휘</option>
               <option value="훈민정음">훈민정음</option>
               <option value="빠작 어휘">빠작 어휘</option>
               <option value="똑똑한 하루 어휘">똑똑한 하루 어휘</option>
@@ -969,6 +991,7 @@
         noteBookTitle: "", // [6번] 글쓰기 대상 도서명
         recentDiagnosedBook: "", // [6번] 최근 이전 진단 도서명
         noteStatus: "작성안함",
+        writingList: [], // [2단계] 복수 글쓰기 기록 목록 [{ id, title, status }]
         trainingTypes: [], // [6번 개편] 다중 선택 종목 목록 (읽기, 독해, 듣기, 문해력)
         trainingDetails: {}, // [개별 트레이닝 권수, 차시, 오답 개수]
         trainingUnderstanding: "",
@@ -1094,29 +1117,34 @@
 
     // 4. Fetch Live Data from Google Sheets API
     function fetchFreshData() {
-      if (!state.config.gasWebhookUrl) return;
+      return fetchFreshDataPromise();
+    }
+
+    async function fetchFreshDataPromise() {
+      if (!state.config.gasWebhookUrl) return false;
 
       const sep = state.config.gasWebhookUrl.includes("?") ? "&" : "?";
       const url = `${state.config.gasWebhookUrl}${sep}_t=${Date.now()}`;
 
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          if (data && typeof data === 'object') {
-            state.students = data.students || [];
-            state.dailyLogs = data.dailyLogs || [];
-            
-            localStorage.setItem("academy_attendance_state", JSON.stringify({
-              students: state.students,
-              dailyLogs: state.dailyLogs
-            }));
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          state.students = data.students || [];
+          state.dailyLogs = data.dailyLogs || [];
+          
+          localStorage.setItem("academy_attendance_state", JSON.stringify({
+            students: state.students,
+            dailyLogs: state.dailyLogs
+          }));
 
-            populateStudentsDatalist();
-          }
-        })
-        .catch(err => {
-          console.warn("Background fetch failed, relying on cache:", err);
-        });
+          populateStudentsDatalist();
+          return true;
+        }
+      } catch (err) {
+        console.warn("fetchFreshDataPromise error, relying on cache:", err);
+      }
+      return false;
     }
 
     // Populate Datalist for Autocomplete (Option 2: Filtered to Today's Expected Students)
@@ -1306,7 +1334,7 @@
     }
 
     // 5. Handle Single Direct Login Submit
-    function handleDirectLogin(e) {
+    async function handleDirectLogin(e) {
       if (e) e.preventDefault();
 
       const name = (document.getElementById("loginNameInput").value || "").trim();
@@ -1320,6 +1348,24 @@
       if (!grade) {
         alert("본인의 학년을 선택해 주세요.");
         return;
+      }
+
+      // [출결 연동 핵심] 태블릿에서 출석 체크한 최신 등원 시각(inTime)을 구글 시트에서 즉시 동기화
+      const submitBtn = (e && e.target && e.target.querySelector("button[type='submit']")) || document.querySelector("#loginForm button[type='submit']");
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : "";
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span>⏳ 출결 시트 최신 등원 정보 확인 중...</span>`;
+      }
+      try {
+        await fetchFreshDataPromise();
+      } catch (err) {
+        console.warn("handleDirectLogin fetch error:", err);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
       }
 
       // 1. Look for student in state.students matching today's schedule
@@ -1640,6 +1686,27 @@
       }
     }
 
+    function parseInTimeToDate(inTimeStr) {
+      if (!inTimeStr) return new Date();
+      const str = String(inTimeStr).trim();
+      const now = new Date();
+      
+      const isPM = /오후|PM/i.test(str);
+      const isAM = /오전|AM/i.test(str);
+      
+      const nums = str.match(/\d+/g);
+      if (!nums || nums.length < 2) return now;
+
+      let hrs = parseInt(nums[0], 10);
+      let mins = parseInt(nums[1], 10);
+      let secs = nums[2] ? parseInt(nums[2], 10) : 0;
+
+      if (isPM && hrs < 12) hrs += 12;
+      if (isAM && hrs === 12) hrs = 0;
+
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hrs, mins, secs);
+    }
+
     function getRemainingClassTime() {
       if (!state.currentStudent) {
         return { totalRemainingSecs: 0, remainingMins: 0, remainingSecs: 0, duration: 90, elapsedMins: 0, isComplete: true };
@@ -1647,16 +1714,9 @@
       const dailyLog = state.currentDailyLog;
       const inTime = (dailyLog && dailyLog.inTime) || state.currentInTime || new Date().toTimeString().slice(0, 5);
       const duration = getClassDuration(state.currentStudent);
-      const parts = inTime.split(":");
-      if (parts.length < 2) {
-        return { totalRemainingSecs: 0, remainingMins: 0, remainingSecs: 0, duration, elapsedMins: 0, isComplete: true };
-      }
-
-      const inHrs = parseInt(parts[0], 10);
-      const inMins = parseInt(parts[1], 10);
+      const inDate = parseInTimeToDate(inTime);
       const now = new Date();
-      const inDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), inHrs, inMins, 0);
-      const elapsedSecs = Math.floor((now.getTime() - inDate.getTime()) / 1000);
+      const elapsedSecs = Math.max(0, Math.floor((now.getTime() - inDate.getTime()) / 1000));
       const totalClassSecs = duration * 60;
       const totalRemainingSecs = totalClassSecs - elapsedSecs;
 
@@ -1938,6 +1998,7 @@
         noteBookTitle: "",
         recentDiagnosedBook: "",
         noteStatus: "작성안함",
+        writingList: [], // [2단계] 복수 글쓰기 기록 목록 [{ id, title, status }]
         trainingTypes: [],
         trainingDetails: {},
         trainingUnderstanding: "",
@@ -1959,6 +2020,8 @@
       };
       renderBookList();
       renderNoteBookChips();
+      renderWritingList();
+      updateCurrentNotePreview();
       renderTrainingTypeButtons();
       renderTrainingCards();
       renderSetEventItems();
@@ -2350,6 +2413,7 @@
       state.missions.noteBookTitle = title.trim();
       renderNoteBookChips();
       renderBookList();
+      updateCurrentNotePreview();
       updateProgress();
     }
 
@@ -2395,7 +2459,116 @@
       });
       renderNoteBookChips();
       renderBookList();
+      updateCurrentNotePreview();
       updateProgress();
+    }
+
+    // [2단계 핵심] 현재 선택 도서 및 상태 미리보기 갱신
+    function updateCurrentNotePreview() {
+      const el = document.getElementById("currentNotePreview");
+      if (!el) return;
+      const title = state.missions.noteBookTitle || "";
+      const status = state.missions.noteStatus || "작성안함";
+      if (title) {
+        el.className = "font-extrabold text-sky-950 bg-sky-100 border border-sky-300 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5 shadow-xs";
+        el.innerHTML = `<span>📖</span> <span>${title}</span> <span class="text-sky-700 font-bold text-[11px] bg-white/80 px-1.5 py-0.5 rounded">(${status})</span>`;
+      } else {
+        el.className = "font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5";
+        el.innerHTML = `<span>도서 미지정 (위에서 도서를 선택하거나 직접 입력하세요)</span>`;
+      }
+    }
+
+    // [2단계 핵심] '등록 후 추가' 기능: 복수 글쓰기 기록 리스트에 추가
+    function addWritingRecordFromCurrent() {
+      if (!state.missions.writingList) state.missions.writingList = [];
+      const title = (state.missions.noteBookTitle || "").trim();
+      const status = state.missions.noteStatus || "완료";
+
+      if (!title) {
+        alert("✍️ 등록할 글쓰기 대상 도서를 먼저 선택하거나 직접 입력해 주세요.");
+        promptCustomNoteBook();
+        return;
+      }
+
+      const existingIdx = state.missions.writingList.findIndex(w => w.title.replace(/\s+/g, '') === title.replace(/\s+/g, ''));
+      if (existingIdx >= 0) {
+        state.missions.writingList[existingIdx].status = status;
+      } else {
+        state.missions.writingList.push({
+          id: "wr_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+          title: title,
+          status: status
+        });
+      }
+
+      if (state.currentStudent && (status === "완료" || status === "요약하기")) {
+        const cleanS = (state.currentStudent.name || '').replace(/\s+/g, '');
+        const cleanT = title.replace(/\s+/g, '');
+        localStorage.setItem("note_completed_" + cleanS + "_" + cleanT, "true");
+        localStorage.removeItem("recent_diagnosed_book_" + state.currentStudent.name);
+      }
+
+      renderWritingList();
+      updateCurrentNotePreview();
+      updateProgress();
+    }
+
+    function removeWritingItem(idx) {
+      if (!state.missions.writingList) return;
+      state.missions.writingList.splice(idx, 1);
+      renderWritingList();
+      updateProgress();
+    }
+
+    function renderWritingList() {
+      const container = document.getElementById("writingListContainer");
+      if (!container) return;
+
+      const list = state.missions.writingList || [];
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="py-3 px-4 bg-sky-50/50 rounded-2xl border border-dashed border-sky-200 text-xs text-slate-400 text-center flex items-center justify-center gap-2">
+            <span>ℹ️</span>
+            <span>등록된 추가 글쓰기 기록이 없습니다. (위에서 도서와 작성 상태를 선택 후 <strong>[등록 후 추가]</strong>를 눌러 복수로 기록할 수 있습니다)</span>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="p-3.5 bg-sky-50/90 rounded-2xl border border-sky-200 shadow-xs space-y-2 mt-2">
+          <div class="text-xs font-bold text-sky-950 flex items-center justify-between">
+            <span class="flex items-center gap-1.5">
+              <span>📋</span> <span>등록된 글쓰기 목록 (${list.length}건):</span>
+            </span>
+            <span class="text-[11px] text-sky-600 font-normal">복수 기록 반영 완료</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            ${list.map((w, idx) => {
+              const statBadge = w.status === "완료"
+                ? `<span class="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-md font-bold text-[11px]">완료 (글완)</span>`
+                : (w.status === "요약하기"
+                  ? `<span class="bg-indigo-100 text-indigo-800 border border-indigo-300 px-2 py-0.5 rounded-md font-bold text-[11px]">요약하기</span>`
+                  : `<span class="bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-md font-bold text-[11px]">${w.status}</span>`);
+              return `
+                <div class="p-2.5 bg-white border border-sky-200 rounded-xl flex items-center justify-between gap-2 shadow-xs">
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-extrabold text-slate-900 truncate flex items-center gap-1">
+                      <span>✍️</span> <span>${w.title}</span>
+                    </p>
+                    <div class="mt-1">
+                      ${statBadge}
+                    </div>
+                  </div>
+                  <button type="button" onclick="removeWritingItem(${idx})" class="text-slate-400 hover:text-red-500 p-1 font-bold text-xs transition" title="삭제">
+                    ✕
+                  </button>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `;
     }
 
     // 8. Step 3 Training Type Multi-Select Handlers
@@ -2423,6 +2596,12 @@
         fields: ["복합", "문학", "비문학", "어휘", "문법"],
         label: "단계 선택 (1~6단계)",
         options: ["1단계", "2단계", "3단계", "4단계", "5단계", "6단계"]
+      },
+      "오답수정+선지분석": {
+        icon: "✏️",
+        isAnalysis: true,
+        fieldLabel: "분야 선택 (5가지)",
+        fields: ["복합", "문학", "비문학", "어휘", "문법"]
       }
     };
 
@@ -2441,10 +2620,11 @@
         state.missions.trainingTypes.push(type);
         if (!state.missions.trainingDetails[type]) {
           state.missions.trainingDetails[type] = {
-            vol: type === "문해력트레이닝" ? "1단계" : (type === "듣기트레이닝" ? "문학교훈" : "1권"),
-            field: type === "문해력트레이닝" ? "복합" : "",
+            vol: type === "문해력트레이닝" ? "1단계" : (type === "듣기트레이닝" ? "문학교훈" : (type === "오답수정+선지분석" ? "" : "1권")),
+            field: (type === "문해력트레이닝" || type === "오답수정+선지분석") ? "복합" : "",
             session: "",
             errors: "",
+            fixed: "",
             items: [],
             understanding: ""
           };
@@ -2524,6 +2704,47 @@
       }
     }
 
+    function addAnalysisItem() {
+      if (!state.missions.trainingDetails) state.missions.trainingDetails = {};
+      if (!state.missions.trainingDetails["오답수정+선지분석"]) {
+        state.missions.trainingDetails["오답수정+선지분석"] = { items: [] };
+      }
+      const d = state.missions.trainingDetails["오답수정+선지분석"];
+      if (!Array.isArray(d.items)) d.items = [];
+
+      const fEl = document.getElementById("analysisFieldSelect");
+      const eEl = document.getElementById("analysisErrorsInput");
+      const xEl = document.getElementById("analysisFixedInput");
+
+      const field = fEl ? fEl.value : (d.field || "복합");
+      const errors = eEl ? eEl.value.trim() : (d.errors || "");
+      const fixed = xEl ? xEl.value.trim() : (d.fixed || "");
+
+      if (!errors && !fixed && !field) {
+        alert("오답수정+선지분석 세부 기록(오답 개수, 오답 수정 개수 등)을 입력해 주세요.");
+        return;
+      }
+
+      d.items.push({ field, errors, fixed });
+
+      // Reset draft inputs
+      d.errors = "";
+      d.fixed = "";
+      if (eEl) eEl.value = "";
+      if (xEl) xEl.value = "";
+
+      renderTrainingCards();
+      updateProgress();
+    }
+
+    function removeAnalysisItem(idx) {
+      if (state.missions.trainingDetails && state.missions.trainingDetails["오답수정+선지분석"] && Array.isArray(state.missions.trainingDetails["오답수정+선지분석"].items)) {
+        state.missions.trainingDetails["오답수정+선지분석"].items.splice(idx, 1);
+        renderTrainingCards();
+        updateProgress();
+      }
+    }
+
     function renderTrainingCards() {
       const container = document.getElementById("trainingDetailsContainer");
       if (!container) return;
@@ -2532,7 +2753,7 @@
       if (types.length === 0) {
         container.innerHTML = `
           <div class="py-4 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs text-slate-400">
-            위의 종목 버튼(읽기, 독해, 듣기, 문해력)을 눌러 오늘 진행할 트레이닝을 선택해 주세요.
+            위의 종목 버튼(읽기, 독해, 듣기, 문해력, 오답수정+선지분석)을 눌러 오늘 진행할 트레이닝을 선택해 주세요.
           </div>
         `;
         return;
@@ -2541,7 +2762,7 @@
       container.innerHTML = "";
       types.forEach(type => {
         const conf = TRAINING_CONFIG[type] || { icon: "🎯", label: "교재/단계", options: ["1권", "2권", "3권", "4권", "5권"] };
-        const detail = (state.missions.trainingDetails && state.missions.trainingDetails[type]) || { vol: "", session: "", errors: "", understanding: "" };
+        const detail = (state.missions.trainingDetails && state.missions.trainingDetails[type]) || { vol: "", session: "", errors: "", fixed: "", understanding: "" };
 
         const card = document.createElement("div");
         card.className = "p-4 bg-slate-50/90 rounded-2xl border border-indigo-100 shadow-sm transition space-y-3";
@@ -2579,14 +2800,14 @@
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">1. 분야 선택</label>
                 <select id="literacyFieldSelect" onchange="updateTrainingDetail('${type}', 'field', this.value)"
-                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
                   ${fieldOpts}
                 </select>
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">2. 단계 선택</label>
                 <select id="literacyVolSelect" onchange="updateTrainingDetail('${type}', 'vol', this.value)"
-                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
                   ${volOpts}
                 </select>
               </div>
@@ -2594,17 +2815,71 @@
                 <label class="block text-xs font-bold text-slate-700 mb-1">3. 차시 (수기입력)</label>
                 <input type="text" id="literacySessionInput" value="${detail.session || ''}" placeholder="예: 3"
                        oninput="updateTrainingDetail('${type}', 'session', this.value.trim(), 500)"
-                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">4. 문항수 / 오답개수</label>
                 <input type="text" id="literacyErrorsInput" value="${detail.errors || ''}" placeholder="예: 10/2 또는 2개"
                        oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
-                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
             </div>
             <div class="flex justify-end pt-1">
               <button type="button" onclick="addLiteracyItem()" 
+                      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-95">
+                <span>➕</span> <span>세부기록 추가 (다중 선택/기록)</span>
+              </button>
+            </div>
+          `;
+        } else if (conf.isAnalysis) {
+          // [4번 신설] 오답수정+선지분석 전용 (1.분야선택, 2.오답 개수, 3.오답 수정 개수)
+          const fieldOpts = conf.fields.map(f => `<option value="${f}" ${(detail.field || '복합') === f ? 'selected' : ''}>${f}</option>`).join("");
+
+          let registeredHtml = "";
+          if (detail.items && detail.items.length > 0) {
+            registeredHtml = `
+              <div class="p-3 bg-indigo-50/80 rounded-xl border border-indigo-200/80 mb-3">
+                <div class="text-[11px] font-bold text-indigo-900 mb-1.5 flex items-center justify-between">
+                  <span>📋 등록된 세부 기록 (${detail.items.length}건):</span>
+                  <span class="text-[10px] text-slate-500 font-normal">다중 기록 완료</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  ${detail.items.map((it, idx) => `
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-indigo-300 rounded-lg text-xs font-semibold text-indigo-900 shadow-xs">
+                      <span><strong>${it.field || '기본'}</strong> ${it.errors ? `(오답:${it.errors})` : ''} ${it.fixed ? `(수정:${it.fixed})` : ''}</span>
+                      <button type="button" onclick="removeAnalysisItem(${idx})" class="text-indigo-400 hover:text-red-500 font-bold ml-1 text-sm leading-none" title="삭제">✕</button>
+                    </span>
+                  `).join("")}
+                </div>
+              </div>
+            `;
+          }
+
+          contentHtml = `
+            ${registeredHtml}
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">1. 분야 선택</label>
+                <select id="analysisFieldSelect" onchange="updateTrainingDetail('${type}', 'field', this.value)"
+                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
+                  ${fieldOpts}
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">2. 오답 개수 (수기입력)</label>
+                <input type="text" id="analysisErrorsInput" value="${detail.errors || ''}" placeholder="예: 3 또는 3개"
+                       oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
+                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">3. 오답 수정 개수 (수기입력)</label>
+                <input type="text" id="analysisFixedInput" value="${detail.fixed || ''}" placeholder="예: 3 또는 3개"
+                       oninput="updateTrainingDetail('${type}', 'fixed', this.value.trim(), 500)"
+                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+              </div>
+            </div>
+            <div class="flex justify-end pt-1">
+              <button type="button" onclick="addAnalysisItem()" 
                       class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-95">
                 <span>➕</span> <span>세부기록 추가 (다중 선택/기록)</span>
               </button>
@@ -2621,7 +2896,7 @@
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">${conf.label}</label>
                 <select onchange="updateTrainingDetail('${type}', 'vol', this.value)"
-                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
                   ${optHtml}
                 </select>
               </div>
@@ -2629,37 +2904,44 @@
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">차시 (수기 입력)</label>
                 <input type="text" value="${detail.session || ''}" placeholder="예: 3"
                        oninput="updateTrainingDetail('${type}', 'session', this.value.trim(), 500)"
-                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">문항수 / 오답개수</label>
                 <input type="text" value="${detail.errors || ''}" placeholder="예: 10/2 또는 2개"
                        oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
-                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                       class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
             </div>
           `;
         }
 
-        // 종목별 개별 이해도 평가 버튼 영역 (원장님 필수 요청)
+        // [5번 핵심] 종목별 개별 이해도 평가 버튼 영역 (중앙 배치 + 구글 심볼 컬러 초록, 노랑, 빨강 눈에 띄는 블럭 표시)
+        const isGood = detail.understanding === '잘 이해했어요';
+        const isNormal = detail.understanding === '보통이에요';
+        const isHard = detail.understanding === '아직 헷갈려요';
+
         const underHtml = `
-          <div class="pt-3 border-t border-indigo-100/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-            <div class="flex items-center gap-1.5">
-              <span class="text-xs font-bold text-slate-800">이해도 평가:</span>
-              <span class="text-[11px] text-slate-500 font-medium">${type}의 이해도를 스스로 선택해 보세요</span>
+          <div class="pt-4 border-t border-indigo-100 flex flex-col items-center justify-center gap-2.5 text-center w-full">
+            <div class="flex items-center justify-center gap-2">
+              <span class="text-xs sm:text-sm font-black text-slate-800">🎯 ${type} 이해도 자가 평가</span>
+              <span class="text-[11px] text-slate-500 font-medium">(솔직하게 스스로의 이해도를 선택해 주세요)</span>
             </div>
-            <div class="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-slate-200 flex-wrap">
+            <div class="flex items-center justify-center gap-2.5 sm:gap-3 flex-wrap w-full py-1">
               <button type="button" onclick="setPerTrainingUnderstanding('${type}', '잘 이해했어요')" 
-                      class="${detail.understanding === '잘 이해했어요' ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400' : 'text-slate-600 hover:text-slate-900'} px-2.5 py-1 rounded-lg text-xs font-bold transition">
-                😀 잘 이해했어요
+                      style="${isGood ? 'background-color: #34A853; color: #ffffff; border: 2px solid #2d9249;' : 'background-color: #E6F4EA; color: #137333; border: 1.5px solid #CEEAD6;'}"
+                      class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition transform active:scale-95 flex items-center justify-center gap-1.5 shadow-sm ${isGood ? 'ring-2 ring-emerald-300 scale-105' : 'hover:bg-[#CEEAD6]'}">
+                <span>😀</span> <span>잘 이해했어요</span>
               </button>
               <button type="button" onclick="setPerTrainingUnderstanding('${type}', '보통이에요')" 
-                      class="${detail.understanding === '보통이에요' ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400' : 'text-slate-600 hover:text-slate-900'} px-2.5 py-1 rounded-lg text-xs font-bold transition">
-                🙂 보통이에요
+                      style="${isNormal ? 'background-color: #FBBC05; color: #202124; border: 2px solid #F29900;' : 'background-color: #FEF7E0; color: #B06000; border: 1.5px solid #FEEFC3;'}"
+                      class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition transform active:scale-95 flex items-center justify-center gap-1.5 shadow-sm ${isNormal ? 'ring-2 ring-amber-300 scale-105' : 'hover:bg-[#FEEFC3]'}">
+                <span>🙂</span> <span>보통이에요</span>
               </button>
               <button type="button" onclick="setPerTrainingUnderstanding('${type}', '아직 헷갈려요')" 
-                      class="${detail.understanding === '아직 헷갈려요' ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400' : 'text-slate-600 hover:text-slate-900'} px-2.5 py-1 rounded-lg text-xs font-bold transition">
-                😕 아직 헷갈려요
+                      style="${isHard ? 'background-color: #EA4335; color: #ffffff; border: 2px solid #C5221F;' : 'background-color: #FCE8E6; color: #C5221F; border: 1.5px solid #FAD2CF;'}"
+                      class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition transform active:scale-95 flex items-center justify-center gap-1.5 shadow-sm ${isHard ? 'ring-2 ring-red-300 scale-105' : 'hover:bg-[#FAD2CF]'}">
+                <span>😕</span> <span>아직 헷갈려요</span>
               </button>
             </div>
           </div>
@@ -2684,7 +2966,7 @@
 
     function updateTrainingDetail(type, field, val, syncDelay = 0) {
       if (!state.missions.trainingDetails) state.missions.trainingDetails = {};
-      if (!state.missions.trainingDetails[type]) state.missions.trainingDetails[type] = { vol: "", session: "", errors: "", understanding: "" };
+      if (!state.missions.trainingDetails[type]) state.missions.trainingDetails[type] = { vol: "", session: "", errors: "", fixed: "", understanding: "" };
       state.missions.trainingDetails[type][field] = val;
       updateProgress(syncDelay);
     }
@@ -2700,7 +2982,6 @@
 
         if (t === "문해력트레이닝") {
           const items = (d.items && Array.isArray(d.items)) ? [...d.items] : [];
-          // If draft fields are filled in but not yet added via '+'
           if ((d.session || d.errors) && !items.some(it => it.session === d.session && it.errors === d.errors)) {
             items.push({ field: d.field || "복합", vol: d.vol || "1단계", session: d.session, errors: d.errors });
           }
@@ -2715,6 +2996,28 @@
           }).filter(Boolean);
 
           let res = shortName;
+          if (itemStrs.length > 0) {
+            res += `[${itemStrs.join(", ")}]`;
+          }
+          if (d.understanding) {
+            res += ` [이해도:${d.understanding}]`;
+          }
+          return res;
+        } else if (t === "오답수정+선지분석") {
+          const items = (d.items && Array.isArray(d.items)) ? [...d.items] : [];
+          if ((d.errors || d.fixed) && !items.some(it => it.field === d.field && it.errors === d.errors && it.fixed === d.fixed)) {
+            items.push({ field: d.field || "복합", errors: d.errors, fixed: d.fixed });
+          }
+
+          const itemStrs = items.map(it => {
+            const sub = [];
+            if (it.field) sub.push(it.field);
+            if (it.errors) sub.push(`오답:${it.errors}`);
+            if (it.fixed) sub.push(`수정:${it.fixed}`);
+            return sub.join(" ");
+          }).filter(Boolean);
+
+          let res = "오답수정+선지분석";
           if (itemStrs.length > 0) {
             res += `[${itemStrs.join(", ")}]`;
           }
@@ -3016,6 +3319,46 @@
 
     // 11. Realtime Progress & Summary Box Calculation + Auto Sync to Google Sheets
     let realtimeSyncTimer = null;
+
+    // [2단계 핵심] 복수 글쓰기 기록(writingList)과 오늘 도서 기록을 결합하여 J열 문자열 생성
+    function buildColJString() {
+      const noteBook = (state.missions.noteBookTitle || "").trim();
+      const noteStat = state.missions.noteStatus || "작성안함";
+
+      // 1. 등록된 복수 글쓰기 목록 수집
+      const writings = [...(state.missions.writingList || [])];
+      // 현재 선택된 도서가 writingList에 없고 상태가 '작성안함'이 아니면 함께 반영
+      if (noteBook && noteStat !== "작성안함") {
+        if (!writings.some(w => w.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''))) {
+          writings.push({ title: noteBook, status: noteStat });
+        }
+      }
+
+      // 2. 오늘 독서한 도서(1단계) 목록과 글쓰기 상태 매핑
+      const jEntries = state.missions.books.map(b => {
+        const cleanBTitle = b.title.replace(/\s+/g, '');
+        const matchedWriting = writings.find(w => w.title.replace(/\s+/g, '') === cleanBTitle);
+        const effectiveNoteStatus = matchedWriting ? matchedWriting.status : (cleanBTitle === noteBook.replace(/\s+/g, '') ? noteStat : "");
+        return formatJColBookRecord(b.level, b.course, b.title, b.score, effectiveNoteStatus);
+      });
+
+      // 3. 오늘 독서 외의 도서(이전 진단도서, 직접 입력 도서 등)의 글쓰기 기록 추가
+      writings.forEach(w => {
+        const isInToday = state.missions.books.some(b => b.title.replace(/\s+/g, '') === w.title.replace(/\s+/g, ''));
+        if (!isInToday && w.status !== "작성안함") {
+          const noteLabel = (w.status === "완료" || w.status === true) ? "글완" : (w.status === "요약하기" ? "요약" : "작성중");
+          jEntries.push(`[${w.title}] ${noteLabel}`);
+        }
+      });
+
+      if (jEntries.length === 0 && noteStat !== "작성안함") {
+        const noteLabel = (noteStat === "완료" || noteStat === true) ? "글완" : (noteStat === "요약하기" ? "요약" : "작성중");
+        jEntries.push(noteLabel);
+      }
+
+      return jEntries.join(", ");
+    }
+
     function triggerRealtimeSync(delay = 0) {
       if (!state.currentStudent || state.isCheckingOut) return;
       if (realtimeSyncTimer) clearTimeout(realtimeSyncTimer);
@@ -3072,27 +3415,8 @@
       }
       state.currentDailyLog = targetLog;
 
-      // 1. Build Col J (진단글쓰기 / 특별수업)
-      const noteBook = (state.missions.noteBookTitle || "").trim();
-      const noteStat = state.missions.noteStatus || "작성안함";
-      const isNoteBookInTodayBooks = state.missions.books.some(b => b.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''));
-
-      const jEntries = state.missions.books.map(b => {
-        const isTargetForNote = (noteBook && b.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''));
-        const effectiveNoteStatus = isTargetForNote ? noteStat : "";
-        return formatJColBookRecord(b.level, b.course, b.title, b.score, effectiveNoteStatus);
-      });
-
-      if (noteStat !== "작성안함") {
-        if (!isNoteBookInTodayBooks && noteBook) {
-          const noteLabel = (noteStat === "완료" || noteStat === true) ? "글완" : (noteStat === "요약하기" ? "요약" : "작성중");
-          jEntries.push(`[${noteBook}] ${noteLabel}`);
-        } else if (jEntries.length === 0) {
-          const noteLabel = (noteStat === "완료" || noteStat === true) ? "글완" : (noteStat === "요약하기" ? "요약" : "작성중");
-          jEntries.push(noteLabel);
-        }
-      }
-      const finalColJ = jEntries.join(", ");
+      // 1. Build Col J (진단글쓰기 / 특별수업 - 복수 글쓰기 완벽 반영)
+      const finalColJ = buildColJString();
 
       // 2. Build Col H (numbers) & Col I (events)
       const setNumbers = state.missions.setEvents.map(s => s.number || "");
@@ -3201,8 +3525,9 @@
       // 1. Books registered (30%)
       if (state.missions.books.length > 0) score += 30;
 
-      // 2. Note status (15%)
-      if (state.missions.noteStatus === "완료" || state.missions.noteStatus === "요약하기") score += 15;
+      // 2. Note status (15% - 복수 글쓰기 포함)
+      const hasWritingList = state.missions.writingList && state.missions.writingList.length > 0;
+      if (hasWritingList || state.missions.noteStatus === "완료" || state.missions.noteStatus === "요약하기") score += 15;
       else if (state.missions.noteStatus === "작성중") score += 8;
 
       // 3. Focused Training (15%)
@@ -3227,17 +3552,17 @@
       // Update Summary Box
       const noteBook = (state.missions.noteBookTitle || "").trim();
       const noteStat = state.missions.noteStatus || "작성안함";
-      const isNoteBookInTodayBooks = state.missions.books.some(b => b.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''));
 
-      const jColSummary = state.missions.books.map(b => {
-        const isTargetForNote = (noteBook && b.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''));
-        const effectiveNoteStatus = isTargetForNote ? noteStat : "";
-        return formatJColBookRecord(b.level, b.course, b.title, b.score, effectiveNoteStatus);
-      }).join(", ") || (noteStat === "완료" ? "글완" : (noteStat === "요약하기" ? "요약" : "등록된 도서 없음"));
-
+      const jColSummary = buildColJString() || "등록된 도서 없음";
       document.getElementById("sumBooks").innerText = jColSummary;
 
-      document.getElementById("sumNotes").innerText = noteBook ? `[${noteBook}] ${noteStat}` : noteStat;
+      let sumNotesText = "";
+      if (state.missions.writingList && state.missions.writingList.length > 0) {
+        sumNotesText = state.missions.writingList.map(w => `[${w.title}] ${w.status}`).join(", ");
+      } else {
+        sumNotesText = noteBook ? `[${noteBook}] ${noteStat}` : noteStat;
+      }
+      document.getElementById("sumNotes").innerText = sumNotesText;
 
       const trSummary = buildTrainingSummaryString();
       const trUnder = state.missions.trainingUnderstanding || "";
@@ -3315,27 +3640,10 @@
       btn.disabled = true;
       btn.innerHTML = `<span>⏳ 구글 시트에 저장 및 하원 처리 중...</span>`;
 
-      // 1. Build Col J (진단글쓰기 / 특별수업)
+      // 1. Build Col J (진단글쓰기 / 특별수업 - 복수 글쓰기 완벽 반영)
       const noteBook = (state.missions.noteBookTitle || "").trim();
       const noteStat = state.missions.noteStatus || "작성안함";
-      const isNoteBookInTodayBooks = state.missions.books.some(b => b.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''));
-
-      const jEntries = state.missions.books.map(b => {
-        const isTargetForNote = (noteBook && b.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''));
-        const effectiveNoteStatus = isTargetForNote ? noteStat : "";
-        return formatJColBookRecord(b.level, b.course, b.title, b.score, effectiveNoteStatus);
-      });
-
-      if (noteStat !== "작성안함") {
-        if (!isNoteBookInTodayBooks && noteBook) {
-          const noteLabel = (noteStat === "완료" || noteStat === true) ? "글완" : (noteStat === "요약하기" ? "요약" : "작성중");
-          jEntries.push(`[${noteBook}] ${noteLabel}`);
-        } else if (jEntries.length === 0) {
-          const noteLabel = (noteStat === "완료" || noteStat === true) ? "글완" : (noteStat === "요약하기" ? "요약" : "작성중");
-          jEntries.push(noteLabel);
-        }
-      }
-      const finalColJ = jEntries.join(", ");
+      const finalColJ = buildColJString();
 
       // 2. Build Col H (numbers) & Col I (events) sequential matching
       const setNumbers = state.missions.setEvents.map(s => s.number || "");
@@ -3412,14 +3720,22 @@
         localStorage.removeItem("next_book_" + student.name);
       }
 
-      // 독서노트 완료 상태 영구 기록 및 최근 진단 임시 캐시 해제 (원장님 승인)
+      // 독서노트 완료 상태 영구 기록 및 최근 진단 임시 캐시 해제 (복수 글쓰기 목록 전체 반영)
+      const allDoneWritings = [...(state.missions.writingList || [])];
       if (noteBook && (noteStat === "완료" || noteStat === "요약하기")) {
-        const cleanS = (student.name || '').replace(/\s+/g, '');
-        const cleanT = noteBook.replace(/\s+/g, '');
-        localStorage.setItem("note_completed_" + cleanS + "_" + cleanT, "true");
-        localStorage.removeItem("recent_diagnosed_book_" + student.name);
-        state.missions.recentDiagnosedBook = "";
+        if (!allDoneWritings.some(w => w.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''))) {
+          allDoneWritings.push({ title: noteBook, status: noteStat });
+        }
       }
+      allDoneWritings.forEach(w => {
+        if (w.title && (w.status === "완료" || w.status === "요약하기")) {
+          const cleanS = (student.name || '').replace(/\s+/g, '');
+          const cleanT = w.title.replace(/\s+/g, '');
+          localStorage.setItem("note_completed_" + cleanS + "_" + cleanT, "true");
+        }
+      });
+      localStorage.removeItem("recent_diagnosed_book_" + student.name);
+      state.missions.recentDiagnosedBook = "";
 
       // [핵심] 백그라운드 비동기 구글 시트 저장 및 상태 업데이트 Promise 정의
       const savePromise = (async () => {
