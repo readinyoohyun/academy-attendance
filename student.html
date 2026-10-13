@@ -1411,19 +1411,20 @@
     // Helper: Find student's today log strictly matching student name and today's date
     function findStudentTodayLog(studentName) {
       if (!studentName || !Array.isArray(state.dailyLogs)) return null;
-      const cleanName = String(studentName).trim().replace(/\s+/g, "");
-      // 1. 당일 날짜와 이름이 모두 일치하는 행 우선 검색
-      let found = [...state.dailyLogs].reverse().find(l => {
+      const cleanName = String(studentName).trim().replace(/\s+/g, "").toLowerCase();
+      
+      // 1. 당일 날짜와 이름이 모두 일치하는 행을 시간표 순서대로 검색 (중복 시 위쪽 정규 배정 행 우선)
+      let found = state.dailyLogs.find(l => {
         if (!l || !l.name) return false;
-        const lName = String(l.name).trim().replace(/\s+/g, "");
+        const lName = String(l.name).trim().replace(/\s+/g, "").toLowerCase();
         return lName === cleanName && isSameDate(l.date, state.todayDateStr);
       });
       if (found) return found;
 
-      // 2. [날짜 불일치 방어] 시트가 익일(내일)로 미리 생성되었거나 날짜 포맷이 미세하게 달라도 기존 시간표 행 매칭!
-      return [...state.dailyLogs].reverse().find(l => {
+      // 2. [날짜 불일치 방어] 시트 날짜 서식이 다르더라도 오늘 출석부에 이름이 배정된 행 매칭
+      return state.dailyLogs.find(l => {
         if (!l || !l.name) return false;
-        const lName = String(l.name).trim().replace(/\s+/g, "");
+        const lName = String(l.name).trim().replace(/\s+/g, "").toLowerCase();
         return lName === cleanName;
       }) || null;
     }
@@ -1571,24 +1572,10 @@
 
         // 1. Locate or create today's daily log with strict student name validation
         let dailyLog = null;
-        if (existingLog && existingLog.name && (existingLog.name.replace(/\s+/g, '') === cleanName) && isSameDate(existingLog.date, state.todayDateStr)) {
+        if (existingLog && existingLog.name && (String(existingLog.name).trim().replace(/\s+/g, '').toLowerCase() === cleanName.toLowerCase()) && isSameDate(existingLog.date, state.todayDateStr)) {
           dailyLog = existingLog;
         } else {
           dailyLog = findStudentTodayLog(student.name);
-        }
-
-        // Verify that dailyLog.row does NOT collide with another student
-        if (dailyLog && dailyLog.row) {
-          const collidingWithOther = state.dailyLogs.some(l => 
-            l !== dailyLog && 
-            parseInt(l.row, 10) === parseInt(dailyLog.row, 10) && 
-            String(l.name || '').trim().replace(/\s+/g, '') !== cleanName
-          );
-          if (collidingWithOther) {
-            console.warn(`[Row Collision Detected] Row ${dailyLog.row} already belongs to another student. Reassigning safe row for ${student.name}.`);
-            dailyLog.row = getSafeNextDailyLogRow(student.name);
-            dailyLog.id = "daily_" + dailyLog.row;
-          }
         }
 
         const inTime = (dailyLog && dailyLog.inTime) ? dailyLog.inTime : nowTimeStr;
@@ -3375,7 +3362,7 @@
       const cleanName = (student.name || '').trim().replace(/\s+/g, '');
 
       let targetLog = state.currentDailyLog;
-      if (!targetLog || !targetLog.name || (targetLog.name.replace(/\s+/g, '') !== cleanName)) {
+      if (!targetLog || !targetLog.name || (String(targetLog.name).trim().replace(/\s+/g, '').toLowerCase() !== cleanName.toLowerCase())) {
         targetLog = findStudentTodayLog(student.name);
       }
 
@@ -3402,17 +3389,6 @@
         sendNewLog(targetLog);
       }
 
-      // Verify row does not collide with another student
-      const isColliding = state.dailyLogs.some(l => 
-        l !== targetLog && 
-        parseInt(l.row, 10) === parseInt(targetLog.row, 10) && 
-        String(l.name || '').trim().replace(/\s+/g, '') !== cleanName
-      );
-      if (isColliding) {
-        console.warn(`[Row Collision Detected in syncMissionsRealtime] Reassigning row for ${student.name}`);
-        targetLog.row = getSafeNextDailyLogRow(student.name);
-        targetLog.id = "daily_" + targetLog.row;
-      }
       state.currentDailyLog = targetLog;
 
       // 1. Build Col J (진단글쓰기 / 특별수업 - 복수 글쓰기 완벽 반영)
@@ -3740,19 +3716,21 @@
       // [핵심] 백그라운드 비동기 구글 시트 저장 및 상태 업데이트 Promise 정의
       const savePromise = (async () => {
         try {
-          const updates = [];
-          if (targetLog) {
-            const isColliding = state.dailyLogs.some(l => 
-              l !== targetLog && 
-              parseInt(l.row, 10) === parseInt(targetLog.row, 10) && 
-              String(l.name || '').trim().replace(/\s+/g, '') !== cleanName
-            );
-            if (isColliding) {
-              console.warn(`[Row Collision Detected in submitAllMissions] Reassigning row for ${student.name}`);
-              targetLog.row = getSafeNextDailyLogRow(student.name);
-              targetLog.id = "daily_" + targetLog.row;
-            }
+          // 1. 수업 중 선생님의 시트 행 추가/삭제(행 밀림)를 완벽히 반영하기 위해 최신 출석부 데이터 비동기 동기화
+          try {
+            await fetchFreshDataPromise();
+          } catch (freshErr) {
+            console.warn("[submitAllMissions] fresh fetch error:", freshErr);
+          }
 
+          // 2. 최신 state.dailyLogs에서 본인의 정확한 행을 학생 이름으로 재검색
+          const reFoundLog = findStudentTodayLog(student.name);
+          if (reFoundLog) {
+            targetLog = reFoundLog;
+          }
+
+          const updates = [];
+          if (targetLog && targetLog.row) {
             targetLog.status = "수업완료";
             targetLog.number = finalColH;
             targetLog.event = finalColI;
@@ -4003,14 +3981,20 @@
       const clean1 = String(dateStr1).trim().replace(/\s+/g, "");
       const clean2 = String(dateStr2).trim().replace(/\s+/g, "");
       if (clean1 === clean2) return true;
-      
-      const m1 = clean1.match(/(\d+)[^\d]+(\d+)/);
-      const m2 = clean2.match(/(\d+)[^\d]+(\d+)/);
-      if (m1 && m2) {
-        return parseInt(m1[1], 10) === parseInt(m2[1], 10) && 
-               parseInt(m1[2], 10) === parseInt(m2[2], 10);
-      }
-      return false;
+
+      const nums1 = clean1.match(/\d+/g);
+      const nums2 = clean2.match(/\d+/g);
+      if (!nums1 || !nums2 || nums1.length < 2 || nums2.length < 2) return false;
+
+      // 3개 이상의 숫자가 있는 경우(예: [2026, 10, 13]) 월은 index 1, 일은 index 2
+      // 2개의 숫자가 있는 경우(예: [10, 13]) 월은 index 0, 일은 index 1
+      const m1 = nums1.length >= 3 ? parseInt(nums1[1], 10) : parseInt(nums1[0], 10);
+      const d1 = nums1.length >= 3 ? parseInt(nums1[2], 10) : parseInt(nums1[1], 10);
+
+      const m2 = nums2.length >= 3 ? parseInt(nums2[1], 10) : parseInt(nums2[0], 10);
+      const d2 = nums2.length >= 3 ? parseInt(nums2[2], 10) : parseInt(nums2[1], 10);
+
+      return m1 === m2 && d1 === d2;
     }
   </script>
 

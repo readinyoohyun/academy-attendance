@@ -1139,17 +1139,28 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
       var targetRow = row;
       var cleanTargetName = String(name || "").trim().replace(/\s+/g, "").toLowerCase();
 
-      // [핵심 매칭] 일일 출석부 시트에서 학생 이름으로 최우선 검색 (날짜/시간 서식 차이와 무관하게 학생 행 100% 제자리 매칭!)
+      // [핵심 매칭] 일일 출석부 시트에서 학생 이름으로 최우선 검색 (날짜/시간 서식 차이 및 행 추가/삭제와 무관하게 학생 행 100% 제자리 매칭!)
       if (cleanTargetName && sheet.getLastRow() > 2) {
         var lastRow = sheet.getLastRow();
         var data = sheet.getRange(3, 1, lastRow - 2, 3).getDisplayValues(); // Col A (date), Col B (time), Col C (name)
+        var matchedRow = -1;
         
         for (var i = 0; i < data.length; i++) {
           var rowName = String(data[i][2] || "").trim().replace(/\s+/g, "").toLowerCase();
           if (rowName === cleanTargetName) {
-            targetRow = 3 + i;
+            matchedRow = 3 + i;
             break;
           }
+        }
+
+        if (matchedRow !== -1) {
+          targetRow = matchedRow;
+        } else {
+          // 이름으로 검색했으나 시트에 해당 학생이 없다면, 다른 학생의 행(targetRow)을 절대 덮어쓰지 않고 새 행 생성!
+          targetRow = lastRow + 1;
+          sheet.getRange(targetRow, 1).setValue(date || Utilities.formatDate(new Date(), "GMT+9", "M/d(E)"));
+          sheet.getRange(targetRow, 2).setValue(time || "시간 외");
+          sheet.getRange(targetRow, 3).setValue(name);
         }
       }
 
@@ -1556,13 +1567,13 @@ function doPost(e) {
       
       var lastRow = sheet.getLastRow();
       var targetRow = -1;
-      var cleanTargetName = String(postData.name || "").trim().replace(/\s+/g, "");
+      var cleanTargetName = String(postData.name || "").trim().replace(/\s+/g, "").toLowerCase();
 
       // 1. 이미 시트 위쪽 시간표에 동일한 학생이 배정되어 있는지 검색!
       if (cleanTargetName && lastRow >= 3) {
-        var existingNames = sheet.getRange(3, 3, lastRow - 2, 1).getValues();
+        var existingNames = sheet.getRange(3, 3, lastRow - 2, 1).getDisplayValues();
         for (var nIdx = 0; nIdx < existingNames.length; nIdx++) {
-          if (String(existingNames[nIdx][0] || "").trim().replace(/\s+/g, "") === cleanTargetName) {
+          if (String(existingNames[nIdx][0] || "").trim().replace(/\s+/g, "").toLowerCase() === cleanTargetName) {
             targetRow = 3 + nIdx;
             break;
           }
