@@ -981,6 +981,7 @@
       dailyLogs: [],
       todayDay: "",
       todayDateStr: "",
+      sheetDateStr: "",
       currentStudent: null,
       currentDailyLog: null,
       currentInTime: "",
@@ -1027,12 +1028,6 @@
       resetLoginForm();
     });
 
-    window.addEventListener("pageshow", () => {
-      if (!state.currentStudent) {
-        resetLoginForm();
-      }
-    });
-
     // 2. Realtime Clock & Date
     function initClock() {
       const now = new Date();
@@ -1044,11 +1039,57 @@
       const dayChar = state.todayDay.slice(0, 1);
       state.todayDateStr = `${month}/${date}(${dayChar})`; // [1번 개편] 10/8(목) 통일
 
+      // 구글 시트에 이미 오늘 날짜(예: 10/13화)가 기재되어 있다면 그 포맷을 우선 동기화
+      if (Array.isArray(state.dailyLogs) && state.dailyLogs.length > 0) {
+        const topWithDate = state.dailyLogs.find(l => l && l.date && isSameDate(l.date, state.todayDateStr));
+        if (topWithDate && topWithDate.date) {
+          state.sheetDateStr = String(topWithDate.date).trim();
+        }
+      }
+
       const dateTextEl = document.getElementById("liveDateText");
       if (dateTextEl) {
         dateTextEl.innerText = `${year}. ${String(month).padStart(2, '0')}. ${String(date).padStart(2, '0')}. (${dayChar})`;
       }
     }
+
+    // [상시 실시간 날짜 동기화 4중 방어벽]
+    // 1) 1분 주기 타이머 및 자정(00:00) 롤오버: 태블릿이 며칠 동안 켜져 있어도 자정이 지나면 오늘 날짜로 자동 갱신
+    setInterval(() => {
+      const prevDate = state.todayDateStr;
+      initClock();
+      if (prevDate && state.todayDateStr !== prevDate) {
+        console.log(`[Date Rollover] Date changed from ${prevDate} to ${state.todayDateStr}. Refreshing attendance...`);
+        fetchFreshData();
+      }
+    }, 60000);
+
+    // 2) 태블릿 화면 켜짐/터치 감지 (화면 꺼짐 절전 모드에서 학생이 화면을 켤 때 즉시 날짜 갱신)
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        initClock();
+        if (!state.currentStudent) {
+          fetchFreshData();
+        }
+      }
+    });
+
+    // 3) 윈도우 포커스 감지
+    window.addEventListener("focus", () => {
+      initClock();
+      if (!state.currentStudent) {
+        fetchFreshData();
+      }
+    });
+
+    // 4) 페이지 복귀(pageshow) 감지
+    window.addEventListener("pageshow", () => {
+      initClock();
+      if (!state.currentStudent) {
+        resetLoginForm();
+        fetchFreshData();
+      }
+    });
 
     // 3. Load Cached State from localStorage
     function loadCachedData() {
@@ -1058,6 +1099,15 @@
           const parsed = JSON.parse(cached);
           state.students = parsed.students || [];
           state.dailyLogs = parsed.dailyLogs || [];
+
+          // 구글 시트 출석부 상단 행의 날짜를 추출하여 시트의 날짜 문자열 포맷 동기화
+          if (Array.isArray(state.dailyLogs) && state.dailyLogs.length > 0) {
+            const topWithDate = state.dailyLogs.find(l => l && l.date && String(l.date).trim());
+            if (topWithDate && topWithDate.date) {
+              state.sheetDateStr = String(topWithDate.date).trim();
+            }
+          }
+
           populateStudentsDatalist();
         } catch(e) {
           console.error("Cache read error:", e);
@@ -1132,6 +1182,15 @@
         if (data && typeof data === 'object') {
           state.students = data.students || [];
           state.dailyLogs = data.dailyLogs || [];
+
+          // 구글 시트 출석부 상단 행의 날짜를 추출하여 시트의 날짜 문자열 포맷을 완벽하게 동기화
+          if (Array.isArray(state.dailyLogs) && state.dailyLogs.length > 0) {
+            const topWithDate = state.dailyLogs.find(l => l && l.date && String(l.date).trim());
+            if (topWithDate && topWithDate.date) {
+              state.sheetDateStr = String(topWithDate.date).trim();
+            }
+          }
+          initClock();
           
           localStorage.setItem("academy_attendance_state", JSON.stringify({
             students: state.students,
@@ -1264,6 +1323,7 @@
 
     // Direct Login Input Matching
     function handleNameInputAutoMatch() {
+      initClock(); // 실시간 요일/날짜 즉시 갱신
       const name = (document.getElementById("loginNameInput").value || "").trim();
       const gradeEl = document.getElementById("loginGradeSelect");
       const currentGrade = gradeEl ? gradeEl.value : "";
@@ -1336,6 +1396,7 @@
     // 5. Handle Single Direct Login Submit
     async function handleDirectLogin(e) {
       if (e) e.preventDefault();
+      initClock(); // 실시간 요일/날짜 즉시 갱신
 
       const name = (document.getElementById("loginNameInput").value || "").trim();
       const grade = document.getElementById("loginGradeSelect").value;
@@ -1399,7 +1460,7 @@
       let found = state.dailyLogs.find(l => {
         if (!l || !l.name) return false;
         const lName = String(l.name).trim().replace(/\s+/g, "").toLowerCase();
-        return lName === cleanName && isSameDate(l.date, state.todayDateStr);
+        return lName === cleanName && (isSameDate(l.date, state.todayDateStr) || (state.sheetDateStr && isSameDate(l.date, state.sheetDateStr)));
       });
       if (found) return found;
 
@@ -1547,6 +1608,9 @@
     // 6. Student Login Trigger & Persistent Next Book Memory Check
     function loginStudent(student, existingLog) {
       try {
+        // [핵심] 로그인 처리 시작 즉시 실시간 날짜 재계산
+        initClock();
+
         state.currentStudent = student;
         const cleanName = (student.name || '').trim().replace(/\s+/g, '');
         const nowTimeStr = new Date().toTimeString().slice(0, 5);
@@ -1554,10 +1618,15 @@
 
         // 1. Locate or create today's daily log with strict student name validation
         let dailyLog = null;
-        if (existingLog && existingLog.name && (String(existingLog.name).trim().replace(/\s+/g, '').toLowerCase() === cleanName.toLowerCase()) && isSameDate(existingLog.date, state.todayDateStr)) {
+        if (existingLog && existingLog.name && (String(existingLog.name).trim().replace(/\s+/g, '').toLowerCase() === cleanName.toLowerCase())) {
           dailyLog = existingLog;
         } else {
           dailyLog = findStudentTodayLog(student.name);
+        }
+
+        // [중복 행 생성 절대 방어 2중 잠금] dailyLogs 배열 전체에서 동일 이름 행이 있는지 최종 확인
+        if (!dailyLog && Array.isArray(state.dailyLogs)) {
+          dailyLog = state.dailyLogs.find(l => l && l.name && (String(l.name).trim().replace(/\s+/g, '').toLowerCase() === cleanName.toLowerCase())) || null;
         }
 
         const inTime = (dailyLog && dailyLog.inTime) ? dailyLog.inTime : nowTimeStr;
@@ -1568,17 +1637,27 @@
           const updates = [];
           if (dailyLog.status !== "수업중") {
             dailyLog.status = "수업중";
-            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업중", name: student.name, date: dailyLog.date, time: dailyLog.time });
+            updates.push({
+              tab: "dailyLogs",
+              row: dailyLog.row,
+              field: "status",
+              value: "수업중",
+              name: student.name,
+              date: dailyLog.date || state.sheetDateStr || state.todayDateStr,
+              time: dailyLog.time
+            });
           }
           if (updates.length > 0) {
             sendBatchUpdates(updates);
           }
         } else {
+          // 등록 시트에 아예 이름이 없는 순수 신규/직접 등원 학생일 때만 맨 아래에 신규 행 생성
           const newRow = getSafeNextDailyLogRow(student.name);
+          const effectiveDate = state.sheetDateStr || state.todayDateStr;
           dailyLog = {
             id: "daily_" + newRow,
             row: newRow,
-            date: state.todayDateStr,
+            date: effectiveDate,
             time: scheduledTime,
             name: student.name,
             notes: student.notes || "",
@@ -3372,6 +3451,7 @@
 
     function syncMissionsRealtime() {
       if (!state.currentStudent || state.isCheckingOut) return;
+      initClock(); // 실시간 요일/날짜 즉시 갱신
       const student = state.currentStudent;
       const cleanName = (student.name || '').trim().replace(/\s+/g, '');
 
@@ -3379,15 +3459,19 @@
       if (!targetLog || !targetLog.name || (String(targetLog.name).trim().replace(/\s+/g, '').toLowerCase() !== cleanName.toLowerCase())) {
         targetLog = findStudentTodayLog(student.name);
       }
+      if (!targetLog && Array.isArray(state.dailyLogs)) {
+        targetLog = state.dailyLogs.find(l => l && l.name && (String(l.name).trim().replace(/\s+/g, '').toLowerCase() === cleanName.toLowerCase())) || null;
+      }
 
       if (!targetLog) {
         const newRow = getSafeNextDailyLogRow(student.name);
         const nowTimeStr = new Date().toTimeString().slice(0, 5);
         const scheduledTime = getStudentScheduledTime(student);
+        const effectiveDate = state.sheetDateStr || state.todayDateStr;
         targetLog = {
           id: "daily_" + newRow,
           row: newRow,
-          date: state.todayDateStr,
+          date: effectiveDate,
           time: scheduledTime,
           name: student.name,
           notes: student.notes || "",
@@ -3586,6 +3670,7 @@
     // 12. Final Mission Submit & Google Sheets Batch Update
     async function submitAllMissions() {
       if (!state.currentStudent) return;
+      initClock(); // 실시간 요일/날짜 즉시 갱신
       const student = state.currentStudent;
       const cleanName = (student.name || '').trim().replace(/\s+/g, '');
 
@@ -3698,8 +3783,11 @@
       // Find or build Daily Log with strict student matching
       const nowTimeStr = new Date().toTimeString().slice(0, 5);
       let targetLog = state.currentDailyLog;
-      if (!targetLog || !targetLog.name || (targetLog.name.replace(/\s+/g, '') !== cleanName)) {
+      if (!targetLog || !targetLog.name || (String(targetLog.name).trim().replace(/\s+/g, '').toLowerCase() !== cleanName.toLowerCase())) {
         targetLog = findStudentTodayLog(student.name);
+      }
+      if (!targetLog && Array.isArray(state.dailyLogs)) {
+        targetLog = state.dailyLogs.find(l => l && l.name && (String(l.name).trim().replace(/\s+/g, '').toLowerCase() === cleanName.toLowerCase())) || null;
       }
       const scheduledTime = (targetLog && targetLog.time) ? targetLog.time : getStudentScheduledTime(student);
 
@@ -3738,7 +3826,10 @@
           }
 
           // 2. 최신 state.dailyLogs에서 본인의 정확한 행을 학생 이름으로 재검색
-          const reFoundLog = findStudentTodayLog(student.name);
+          let reFoundLog = findStudentTodayLog(student.name);
+          if (!reFoundLog && Array.isArray(state.dailyLogs)) {
+            reFoundLog = state.dailyLogs.find(l => l && l.name && (String(l.name).trim().replace(/\s+/g, '').toLowerCase() === cleanName.toLowerCase())) || null;
+          }
           if (reFoundLog) {
             targetLog = reFoundLog;
           }
@@ -3751,19 +3842,21 @@
             targetLog.grammarDone = finalColJ;
             targetLog.contents = finalContents;
 
-            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "status", value: "수업완료", name: student.name, date: targetLog.date, time: targetLog.time });
-            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "number", value: finalColH || "", name: student.name, date: targetLog.date, time: targetLog.time });
-            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "event", value: finalColI || "", name: student.name, date: targetLog.date, time: targetLog.time });
-            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ || "", name: student.name, date: targetLog.date, time: targetLog.time });
-            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents || "", name: student.name, date: targetLog.date, time: targetLog.time });
+            const effectiveDate = targetLog.date || state.sheetDateStr || state.todayDateStr;
+            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "status", value: "수업완료", name: student.name, date: effectiveDate, time: targetLog.time });
+            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "number", value: finalColH || "", name: student.name, date: effectiveDate, time: targetLog.time });
+            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "event", value: finalColI || "", name: student.name, date: effectiveDate, time: targetLog.time });
+            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ || "", name: student.name, date: effectiveDate, time: targetLog.time });
+            updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents || "", name: student.name, date: effectiveDate, time: targetLog.time });
 
             await sendBatchUpdates(updates);
           } else {
             const newRow = getSafeNextDailyLogRow(student.name);
+            const effectiveDate = state.sheetDateStr || state.todayDateStr;
             targetLog = {
               id: "daily_" + newRow,
               row: newRow,
-              date: state.todayDateStr,
+              date: effectiveDate,
               time: scheduledTime,
               name: student.name,
               notes: student.notes || "",
