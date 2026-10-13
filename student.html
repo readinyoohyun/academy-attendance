@@ -1350,24 +1350,6 @@
         return;
       }
 
-      // [출결 연동 핵심] 태블릿에서 출석 체크한 최신 등원 시각(inTime)을 구글 시트에서 즉시 동기화
-      const submitBtn = (e && e.target && e.target.querySelector("button[type='submit']")) || document.querySelector("#loginForm button[type='submit']");
-      const origBtnHtml = submitBtn ? submitBtn.innerHTML : "";
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `<span>⏳ 출결 시트 최신 등원 정보 확인 중...</span>`;
-      }
-      try {
-        await fetchFreshDataPromise();
-      } catch (err) {
-        console.warn("handleDirectLogin fetch error:", err);
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = origBtnHtml;
-        }
-      }
-
       // 1. Look for student in state.students matching today's schedule
       let student = findStudentForToday(name, grade);
 
@@ -1581,16 +1563,12 @@
         const inTime = (dailyLog && dailyLog.inTime) ? dailyLog.inTime : nowTimeStr;
         state.currentInTime = inTime;
 
-        // 2. Sync to Google Sheets: Ensure status is '수업중' and inTime is recorded
+        // 2. Sync to Google Sheets: Ensure status is '수업중'
         if (dailyLog) {
           const updates = [];
           if (dailyLog.status !== "수업중") {
             dailyLog.status = "수업중";
             updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "status", value: "수업중", name: student.name, date: dailyLog.date, time: dailyLog.time });
-          }
-          if (!dailyLog.inTime) {
-            dailyLog.inTime = nowTimeStr;
-            updates.push({ tab: "dailyLogs", row: dailyLog.row, field: "inTime", value: nowTimeStr, name: student.name, date: dailyLog.date, time: dailyLog.time });
           }
           if (updates.length > 0) {
             sendBatchUpdates(updates);
@@ -1616,6 +1594,42 @@
           sendNewLog(dailyLog);
         }
         state.currentDailyLog = dailyLog;
+
+        // 3. [방안 1 핵심] 백그라운드 최신 등원 시각(inTime) 비동기 조회 및 타이머 자동 보정 (대기시간 0초)
+        (async () => {
+          try {
+            const refreshed = await fetchFreshDataPromise();
+            if (refreshed && state.currentStudent) {
+              const freshLog = findStudentTodayLog(state.currentStudent.name);
+              if (freshLog) {
+                state.currentDailyLog = freshLog;
+                if (freshLog.inTime) {
+                  // 구글 시트에 태블릿 등원 시간이 이미 기록되어 있는 경우 -> 그 시간으로 타이머 즉시 보정
+                  if (freshLog.inTime !== state.currentInTime) {
+                    console.log(`[inTime Auto-Calibration] Updated inTime from ${state.currentInTime} to ${freshLog.inTime} based on sheet.`);
+                    state.currentInTime = freshLog.inTime;
+                    updateRemainingTimeDisplay();
+                  }
+                } else {
+                  // 구글 시트에도 등원 시간이 비어있는 경우(태블릿 미체크) -> 현재 로그인 시각(nowTimeStr)으로 시트에 저장
+                  freshLog.inTime = nowTimeStr;
+                  state.currentInTime = nowTimeStr;
+                  sendBatchUpdates([{
+                    tab: "dailyLogs",
+                    row: freshLog.row,
+                    field: "inTime",
+                    value: nowTimeStr,
+                    name: state.currentStudent.name,
+                    date: freshLog.date,
+                    time: freshLog.time
+                  }]);
+                }
+              }
+            }
+          } catch (err) {
+            console.warn("Background inTime calibration error:", err);
+          }
+        })();
 
         const pill = document.getElementById("userHeaderPill");
         if (pill) { pill.classList.remove("hidden"); pill.classList.add("flex"); }
