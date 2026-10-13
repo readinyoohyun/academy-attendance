@@ -182,7 +182,7 @@
           <label class="block text-xs font-bold text-slate-700 mb-1.5">학년 선택 *</label>
           <select id="loginGradeSelect" required onchange="handleNameInputAutoMatch()"
                   class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-            <option value="" disabled selected>본인의 학년을 직접 선택해 주세요</option>
+            <option value="" disabled selected>학년</option>
             <option value="초1">초등학교 1학년</option>
             <option value="초2">초등학교 2학년</option>
             <option value="초3">초등학교 3학년</option>
@@ -201,7 +201,8 @@
           <label class="block text-xs font-bold text-slate-700 mb-1.5">수업 시간 배정</label>
           <select id="loginDurationSelect"
                   class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-            <option value="90분" selected>90분 수업 (표준)</option>
+            <option value="" disabled selected>수업 시간</option>
+            <option value="90분">90분 수업 (표준)</option>
             <option value="60분">60분 수업 (초등1 등)</option>
             <option value="120분">120분 수업 (2시간)</option>
             <option value="135분">135분 수업 (2시간 15분)</option>
@@ -263,12 +264,57 @@
     </div>
 
 
-    <!-- ================= 1단계: 오늘 독서 & 진단 기록 (Core) ================= -->
-    <div class="bg-emerald-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-emerald-400 transition hover:shadow-md">
+    <!-- ================= 1단계: 숙제 점검 ================= -->
+    <div class="bg-amber-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-amber-400 transition hover:shadow-md">
       <!-- 1단계 컬러 헤더 배너 -->
+      <div class="bg-amber-100/90 border-b-2 border-amber-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1.5 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">1단계</span>
+          <div>
+            <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+              <span>숙제 점검</span>
+            </h3>
+            <p class="text-xs text-amber-950 font-medium">과제 지참 상태와 교재명을 확인합니다.</p>
+          </div>
+        </div>
+
+        <!-- Homework Status Badges (숙제 상태 선택) -->
+        <div class="flex items-center gap-1.5 bg-white/90 border border-amber-200 p-1.5 rounded-2xl self-end sm:self-auto flex-wrap shadow-sm">
+          <button type="button" onclick="toggleHwDoneStatus('숙제완료')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="숙제완료">숙제완료 👍</button>
+          <button type="button" onclick="toggleHwDoneStatus('숙제미완')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="숙제미완">숙제미완 ❌</button>
+          <button type="button" onclick="toggleHwDoneStatus('미지참')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="미지참">미지참 ⚠️</button>
+          <button type="button" onclick="toggleHwDoneStatus('학원에서 풀기')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="학원에서 풀기">학원에서 풀기 🏫</button>
+        </div>
+      </div>
+
+      <div class="p-5 sm:p-6">
+        <div class="max-w-md">
+          <!-- 교재명 드롭다운 -->
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">교재명 선택</label>
+          <select id="hwBookSelect" onchange="updateProgress()"
+                  class="w-full p-3 bg-white border-2 border-amber-300 rounded-xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
+            <option value="" selected>교재명</option>
+            <option value="교과서 어휘의 힘">교과서 어휘의 힘</option>
+            <option value="속담 따라 쓰기">속담 따라 쓰기</option>
+            <option value="복합">복합</option>
+            <option value="어휘">어휘</option>
+            <option value="훈민정음">훈민정음</option>
+            <option value="빠작 어휘">빠작 어휘</option>
+            <option value="똑똑한 하루 어휘">똑똑한 하루 어휘</option>
+            <option value="문학">문학</option>
+            <option value="비문학">비문학</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= 2단계: 오늘 독서 & 진단 기록 (Core) ================= -->
+    <div class="bg-emerald-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-emerald-400 transition hover:shadow-md">
+      <!-- 2단계 컬러 헤더 배너 -->
       <div class="bg-emerald-100/90 border-b-2 border-emerald-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <span class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">1단계</span>
+          <span class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">2단계</span>
           <div>
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
               <span>오늘 독서 & 진단 기록</span>
@@ -302,12 +348,12 @@
     </div>
 
 
-    <!-- ================= 2단계: 독서노트 & 글쓰기 ================= -->
+    <!-- ================= 3단계: 독서노트 & 글쓰기 ================= -->
     <div class="bg-sky-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-sky-400 transition hover:shadow-md">
-      <!-- 2단계 컬러 헤더 배너 -->
+      <!-- 3단계 컬러 헤더 배너 -->
       <div class="bg-sky-100/90 border-b-2 border-sky-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <span class="px-3 py-1.5 rounded-xl bg-sky-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">2단계</span>
+          <span class="px-3 py-1.5 rounded-xl bg-sky-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">3단계</span>
           <div>
             <div class="flex items-center gap-2 flex-wrap">
               <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
@@ -368,12 +414,12 @@
     </div>
 
 
-    <!-- ================= 3단계: 집중 트레이닝 ================= -->
+    <!-- ================= 4단계: 집중 트레이닝 ================= -->
     <div class="bg-indigo-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-indigo-400 transition hover:shadow-md">
-      <!-- 3단계 컬러 헤더 배너 -->
+      <!-- 4단계 컬러 헤더 배너 -->
       <div class="bg-indigo-100/90 border-b-2 border-indigo-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <span class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">3단계</span>
+          <span class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">4단계</span>
           <div>
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
               <span>집중 트레이닝</span>
@@ -412,79 +458,6 @@
         <!-- 2. 선택된 종목별 세부 입력 카드 컨테이너 (동적 생성) -->
         <div id="trainingDetailsContainer" class="space-y-3 mb-4">
           <!-- Rendered via renderTrainingCards() -->
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ================= 4단계: 숙제 점검 ================= -->
-    <div class="bg-amber-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-amber-400 transition hover:shadow-md">
-      <!-- 4단계 컬러 헤더 배너 -->
-      <div class="bg-amber-100/90 border-b-2 border-amber-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <span class="px-3 py-1.5 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">4단계</span>
-          <div>
-            <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
-              <span>숙제 점검</span>
-            </h3>
-            <p class="text-xs text-amber-950 font-medium">과제 지참 상태와 오답 수정 완료 여부를 확인합니다. (복수 선택 가능)</p>
-          </div>
-        </div>
-
-        <!-- Homework Status Badges (다중 선택 지원) -->
-        <div class="flex items-center gap-1.5 bg-white/90 border border-amber-200 p-1.5 rounded-2xl self-end sm:self-auto flex-wrap shadow-sm">
-          <div class="flex items-center gap-1 border-r border-amber-200 pr-1.5 mr-0.5">
-            <button type="button" onclick="toggleHwDoneStatus('숙제완료')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="숙제완료">숙제완료 👍</button>
-            <button type="button" onclick="toggleHwDoneStatus('숙제미완')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="숙제미완">숙제미완 ❌</button>
-            <button type="button" onclick="toggleHwDoneStatus('미지참')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="미지참">미지참 ⚠️</button>
-            <button type="button" onclick="toggleHwDoneStatus('학원에서 풀기')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="학원에서 풀기">학원에서 풀기 🏫</button>
-          </div>
-          <div class="flex items-center gap-1">
-            <button type="button" onclick="toggleHwFixStatus('오답수정 완료')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="오답수정 완료">오답수정 완료 ✅</button>
-            <button type="button" onclick="toggleHwFixStatus('오답수정 미완')" class="hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-700 hover:text-slate-900" data-val="오답수정 미완">오답수정 미완 ⚠️</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-5 sm:p-6">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <!-- 교재명 드롭다운 -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">교재명 선택</label>
-            <select id="hwBookSelect" onchange="updateProgress()"
-                    class="w-full p-3 bg-white border border-amber-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
-              <option value="">(선택 안 함)</option>
-              <option value="복합">복합</option>
-              <option value="어휘">어휘</option>
-              <option value="훈민정음">훈민정음</option>
-              <option value="빠작 어휘">빠작 어휘</option>
-              <option value="똑똑한 하루 어휘">똑똑한 하루 어휘</option>
-              <option value="메가 어휘력">메가 어휘력</option>
-              <option value="문학">문학</option>
-              <option value="비문학">비문학</option>
-            </select>
-          </div>
-
-          <!-- 풀이 단원 -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">풀이 단원 (쪽수)</label>
-            <input type="text" id="hwChapterInput" placeholder="예: 3단원, p.12~15" oninput="updateProgress(500)"
-                   class="w-full p-3 bg-white border border-amber-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm" />
-          </div>
-
-          <!-- 오답 개수 -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">오답 개수</label>
-            <input type="text" id="hwWrongInput" placeholder="예: 5개" oninput="updateProgress(500)"
-                   class="w-full p-3 bg-white border border-amber-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm" />
-          </div>
-
-          <!-- 고친 개수 -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">고친 개수</label>
-            <input type="text" id="hwFixedInput" placeholder="예: 5개" oninput="updateProgress(500)"
-                   class="w-full p-3 bg-white border border-amber-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm" />
-          </div>
         </div>
       </div>
     </div>
@@ -582,7 +555,7 @@
             <!-- Event Dropdown -->
             <select id="eventSetSelect"
                     class="flex-1 p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
-              <option value="">이벤트 선택...</option>
+              <option value="">이벤트</option>
               <option value="코스업">코스업</option>
               <option value="레벨업">레벨업</option>
               <option value="훈민정음/숙제교재 완료">훈민정음/숙제교재 완료</option>
@@ -596,7 +569,7 @@
             <!-- Number Dropdown (신설/복원!) -->
             <select id="eventNumberSelect"
                     class="w-36 p-2.5 bg-slate-800 border border-amber-400/50 rounded-xl text-xs font-bold text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400">
-              <option value="">숫자 선택...</option>
+              <option value="">권 번호</option>
               <optgroup label="숫자 (단일)">
                 <option value="1">1</option>
                 <option value="2">2</option>
@@ -668,7 +641,7 @@
           <div class="flex items-center gap-2 mb-3">
             <select id="eventSoloSelect"
                     class="flex-1 p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
-              <option value="">타이틀 선택...</option>
+              <option value="">타이틀</option>
               <option value="친구완성">친구완성</option>
               <option value="탐험가완성">탐험가완성</option>
               <option value="고수완성">고수완성</option>
@@ -787,6 +760,7 @@
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1.5">순번</label>
             <select id="modalBookOrder" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="" selected>순번</option>
               <option value="1권째">1권째</option>
               <option value="2권째">2권째</option>
               <option value="3권째">3권째</option>
@@ -797,6 +771,7 @@
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1.5">독서 분야</label>
             <select id="modalBookGenre" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="" selected>독서 분야</option>
               <option value="문학">문학</option>
               <option value="인문">인문</option>
               <option value="사회">사회</option>
@@ -812,10 +787,11 @@
           <div>
             <label class="block text-xs font-bold text-emerald-800 mb-1.5">레벨 (12개)</label>
             <select id="modalBookLevel" onchange="handleModalLevelChange()" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="" selected>레벨</option>
               <option value="기초">기초</option>
               <option value="1레벨">1레벨</option>
               <option value="2레벨">2레벨</option>
-              <option value="3레벨" selected>3레벨</option>
+              <option value="3레벨">3레벨</option>
               <option value="4레벨">4레벨</option>
               <option value="5레벨">5레벨</option>
               <option value="6레벨">6레벨</option>
@@ -829,7 +805,8 @@
           <div>
             <label class="block text-xs font-bold text-emerald-800 mb-1.5">코스</label>
             <select id="modalBookCourse" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="1코스" selected>1코스</option>
+              <option value="" selected>코스</option>
+              <option value="1코스">1코스</option>
               <option value="2코스">2코스</option>
               <option value="3코스">3코스</option>
               <option value="4코스">4코스</option>
@@ -857,8 +834,9 @@
             </div>
             <div class="col-span-3">
               <select id="modalBookStatus" onchange="handleModalStatusChange()" class="w-full p-3 bg-white border-2 border-emerald-500 text-emerald-700 rounded-2xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="" selected>상태</option>
                 <option value="진단완료" id="optStatusDiag" disabled>진단완료 (점수필요)</option>
-                <option value="완독" id="optStatusFinished" selected>완독</option>
+                <option value="완독" id="optStatusFinished">완독</option>
                 <option value="독서중" id="optStatusReading">독서중</option>
                 <option value="독서시작" id="optStatusStart">독서시작</option>
               </select>
@@ -998,10 +976,6 @@
         trainingUnderstanding: "",
         hwStatus: "", // [초기 0% 시작, 학생 직접 클릭 시 15%]
         hwBook: "",
-        hwChapter: "",
-        hwWrongCount: "",
-        hwFixedCount: "",
-        hwErrors: "",
         nextBookTitle: "",
         nextBookReread: false,
         nextBookVocab: false, // [8번] 어휘지 완료 여부
@@ -1156,7 +1130,7 @@
       if (gradeSelect) gradeSelect.selectedIndex = 0;
 
       const durSelect = document.getElementById("loginDurationSelect");
-      if (durSelect) durSelect.value = "90분";
+      if (durSelect) durSelect.selectedIndex = 0;
 
       const noticeEl = document.getElementById("loginAutoMatchNotice");
       if (noticeEl) {
@@ -1400,7 +1374,7 @@
 
       const name = (document.getElementById("loginNameInput").value || "").trim();
       const grade = document.getElementById("loginGradeSelect").value;
-      const duration = document.getElementById("loginDurationSelect").value;
+      const duration = document.getElementById("loginDurationSelect").value || "90분";
 
       if (!name) {
         alert("학생 이름을 입력해 주세요.");
@@ -2084,10 +2058,6 @@
         trainingUnderstanding: "",
         hwStatus: "", // [초기 0% 시작]
         hwBook: "",
-        hwChapter: "",
-        hwWrongCount: "",
-        hwFixedCount: "",
-        hwErrors: "",
         nextBookTitle: "",
         nextBookReread: false,
         nextBookVocab: false,
@@ -2113,9 +2083,6 @@
 
       setTrainingUnderstanding("");
       if (document.getElementById("hwBookSelect")) document.getElementById("hwBookSelect").value = "";
-      if (document.getElementById("hwChapterInput")) document.getElementById("hwChapterInput").value = "";
-      if (document.getElementById("hwWrongInput")) document.getElementById("hwWrongInput").value = "";
-      if (document.getElementById("hwFixedInput")) document.getElementById("hwFixedInput").value = "";
       if (document.getElementById("nextBookMemoInput")) document.getElementById("nextBookMemoInput").value = "";
       if (document.getElementById("eventSetSelect")) document.getElementById("eventSetSelect").value = "";
       if (document.getElementById("eventNumberSelect")) document.getElementById("eventNumberSelect").value = "";
@@ -2143,12 +2110,12 @@
 
     // 7. Book Modal Logic (with Level, Course, and J-Col Code Formatter)
     function openBookModal() {
-      const nextOrder = (state.missions.books.length + 1) + "권째";
-      document.getElementById("modalBookOrder").value = nextOrder;
-      document.getElementById("modalBookLevel").value = "3레벨";
-      document.getElementById("modalBookCourse").value = "1코스";
+      document.getElementById("modalBookOrder").value = "";
+      document.getElementById("modalBookGenre").value = "";
+      document.getElementById("modalBookLevel").value = "";
+      document.getElementById("modalBookCourse").value = "";
       document.getElementById("modalBookScore").value = "";
-      document.getElementById("modalBookStatus").value = "완독";
+      document.getElementById("modalBookStatus").value = "";
       document.getElementById("modalBookMemo").value = "";
 
       handleModalScoreChange();
@@ -2176,7 +2143,7 @@
           diagOpt.disabled = false;
           diagOpt.innerText = "진단완료 💯";
         }
-        if (statusSelect && (statusSelect.value === "완독" || statusSelect.value === "독서시작")) {
+        if (statusSelect && (statusSelect.value === "완독" || statusSelect.value === "독서시작" || statusSelect.value === "")) {
           statusSelect.value = "진단완료";
         }
       } else {
@@ -2256,7 +2223,10 @@
       }
 
       const score = document.getElementById("modalBookScore").value.trim();
-      const status = document.getElementById("modalBookStatus").value;
+      let status = document.getElementById("modalBookStatus").value;
+      if (!status) {
+        status = score ? "진단완료" : "완독";
+      }
 
       if (status === "진단완료" && !score) {
         alert("진단완료를 선택하려면 점수를 입력해 주세요 💯");
@@ -2264,13 +2234,19 @@
         return false;
       }
 
-      const level = document.getElementById("modalBookLevel").value;
-      const course = (level === "[자율]" || level.includes("자율")) ? "선택 안 함" : document.getElementById("modalBookCourse").value;
+      let order = document.getElementById("modalBookOrder").value;
+      if (!order) {
+        order = (state.missions.books.length + 1) + "권째";
+      }
+
+      let genre = document.getElementById("modalBookGenre").value || "문학";
+      let level = document.getElementById("modalBookLevel").value || "3레벨";
+      let course = (level === "[자율]" || level.includes("자율")) ? "선택 안 함" : (document.getElementById("modalBookCourse").value || "1코스");
 
       const book = {
         id: "book_" + Date.now(),
-        order: document.getElementById("modalBookOrder").value,
-        genre: document.getElementById("modalBookGenre").value,
+        order: order,
+        genre: genre,
         level: level,
         course: course,
         title: title,
@@ -2304,13 +2280,13 @@
 
     function saveBookAndAddNext() {
       if (saveCurrentBookFromModal()) {
-        const nextOrder = (state.missions.books.length + 1) + "권째";
-        document.getElementById("modalBookOrder").value = nextOrder;
-        document.getElementById("modalBookLevel").value = "3레벨";
-        document.getElementById("modalBookCourse").value = "1코스";
+        document.getElementById("modalBookOrder").value = "";
+        document.getElementById("modalBookGenre").value = "";
+        document.getElementById("modalBookLevel").value = "";
+        document.getElementById("modalBookCourse").value = "";
         document.getElementById("modalBookTitle").value = "";
         document.getElementById("modalBookScore").value = "";
-        document.getElementById("modalBookStatus").value = "완독";
+        document.getElementById("modalBookStatus").value = "";
         document.getElementById("modalBookMemo").value = "";
         handleModalScoreChange();
         document.getElementById("modalBookTitle").focus();
@@ -2700,8 +2676,8 @@
         state.missions.trainingTypes.push(type);
         if (!state.missions.trainingDetails[type]) {
           state.missions.trainingDetails[type] = {
-            vol: type === "문해력트레이닝" ? "1단계" : (type === "듣기트레이닝" ? "문학교훈" : (type === "오답수정+선지분석" ? "" : "1권")),
-            field: (type === "문해력트레이닝" || type === "오답수정+선지분석") ? "복합" : "",
+            vol: "",
+            field: "",
             session: "",
             errors: "",
             fixed: "",
@@ -2851,8 +2827,8 @@
 
         if (conf.isLiteracy) {
           // 문해력 트레이닝 전용 (원장님 요청 4개 항목 + 다중 추가 지원)
-          const fieldOpts = conf.fields.map(f => `<option value="${f}" ${(detail.field || '복합') === f ? 'selected' : ''}>${f}</option>`).join("");
-          const volOpts = conf.options.map(v => `<option value="${v}" ${(detail.vol || '1단계') === v ? 'selected' : ''}>${v}</option>`).join("");
+          const fieldOpts = ['<option value=""' + (!detail.field ? ' selected' : '') + '>분야</option>'].concat(conf.fields.map(f => `<option value="${f}" ${detail.field === f ? 'selected' : ''}>${f}</option>`)).join("");
+          const volOpts = ['<option value=""' + (!detail.vol ? ' selected' : '') + '>단계</option>'].concat(conf.options.map(v => `<option value="${v}" ${detail.vol === v ? 'selected' : ''}>${v}</option>`)).join("");
 
           let registeredHtml = "";
           if (detail.items && detail.items.length > 0) {
@@ -2913,7 +2889,7 @@
           `;
         } else if (conf.isAnalysis) {
           // [4번 신설] 오답수정+선지분석 전용 (1.분야선택, 2.오답 개수, 3.오답 수정 개수)
-          const fieldOpts = conf.fields.map(f => `<option value="${f}" ${(detail.field || '복합') === f ? 'selected' : ''}>${f}</option>`).join("");
+          const fieldOpts = ['<option value=""' + (!detail.field ? ' selected' : '') + '>분야</option>'].concat(conf.fields.map(f => `<option value="${f}" ${detail.field === f ? 'selected' : ''}>${f}</option>`)).join("");
 
           let registeredHtml = "";
           if (detail.items && detail.items.length > 0) {
@@ -2967,7 +2943,7 @@
           `;
         } else {
           // 읽기, 독해, 듣기 트레이닝
-          const optHtml = ['<option value="">(선택 안 함)</option>']
+          const optHtml = [`<option value="">${conf.label || '단계'}</option>`]
             .concat(conf.options.map(opt => `<option value="${opt}" ${detail.vol === opt ? 'selected' : ''}>${opt}</option>`))
             .join("");
 
@@ -3129,31 +3105,13 @@
       refreshHwCombinedStatus();
     }
 
-    function toggleHwFixStatus(val) {
-      if (state.missions.hwFixStatus === val) {
-        state.missions.hwFixStatus = "";
-      } else {
-        state.missions.hwFixStatus = val;
-      }
-      if (state.missions.hwFixStatus === "오답수정 완료" || state.missions.hwFixStatus === "오답수정 미완") {
-        const wrongInput = document.getElementById("hwWrongInput");
-        if (wrongInput && !wrongInput.value) {
-          wrongInput.focus();
-        }
-      }
-      refreshHwCombinedStatus();
-    }
-
     function refreshHwCombinedStatus() {
-      const parts = [];
-      if (state.missions.hwDoneStatus) parts.push(state.missions.hwDoneStatus);
-      if (state.missions.hwFixStatus) parts.push(state.missions.hwFixStatus);
-      state.missions.hwStatus = parts.join(" / ");
+      state.missions.hwStatus = state.missions.hwDoneStatus || "";
 
       // Button UI 업데이트
       document.querySelectorAll(".hw-status-btn").forEach(btn => {
         const val = btn.dataset.val;
-        const isSelected = (val === state.missions.hwDoneStatus || val === state.missions.hwFixStatus);
+        const isSelected = (val === state.missions.hwDoneStatus);
         if (isSelected) {
           btn.className = "hw-status-btn px-2.5 py-1.5 rounded-lg text-xs font-black transition bg-amber-500 text-white shadow-sm ring-2 ring-amber-300";
         } else {
@@ -3166,11 +3124,7 @@
 
     // 하위 호환 단일 세터
     function setHwStatus(status) {
-      if (status === "오답수정 완료" || status === "오답수정 미완") {
-        toggleHwFixStatus(status);
-      } else {
-        toggleHwDoneStatus(status);
-      }
+      toggleHwDoneStatus(status);
     }
 
     // 10. Step 5 Next Book / Re-read Reservation (Direction B)
@@ -3504,9 +3458,6 @@
       const trSummary = buildTrainingSummaryString();
       const trUnder = state.missions.trainingUnderstanding || "";
       const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
-      const hwChapter = document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : "";
-      const hwWrong = document.getElementById("hwWrongInput") ? document.getElementById("hwWrongInput").value.trim() : (state.missions.hwWrongCount || "");
-      const hwFixed = document.getElementById("hwFixedInput") ? document.getElementById("hwFixedInput").value.trim() : (state.missions.hwFixedCount || "");
       const nextBook = (state.missions.nextBookTitle || "").trim();
       const isReread = state.missions.nextBookReread ? "(재독예약)" : "";
       const nextMemo = document.getElementById("nextBookMemoInput") ? document.getElementById("nextBookMemoInput").value.trim() : "";
@@ -3528,13 +3479,6 @@
       if (state.missions.hwStatus) {
         let hwPart = state.missions.hwStatus;
         if (hwBook) hwPart += ` ${hwBook}`;
-        if (hwChapter) hwPart += `(${hwChapter})`;
-        if (hwWrong || hwFixed) {
-          const counts = [];
-          if (hwWrong) counts.push(`오답:${hwWrong}`);
-          if (hwFixed) counts.push(`고침:${hwFixed}`);
-          hwPart += ` [${counts.join("/")}]`;
-        }
         contentParts.push(hwPart);
       }
 
@@ -3645,14 +3589,8 @@
       document.getElementById("sumTraining").innerText = sumTrDisplay;
 
       const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
-      const hwChapter = document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : "";
-      const hwWrong = document.getElementById("hwWrongInput") ? document.getElementById("hwWrongInput").value.trim() : "";
-      const hwFixed = document.getElementById("hwFixedInput") ? document.getElementById("hwFixedInput").value.trim() : "";
       let hwSummary = state.missions.hwStatus || "선택 안 함";
       if (hwBook) hwSummary += ` - ${hwBook}`;
-      if (hwChapter) hwSummary += ` (${hwChapter})`;
-      if (hwWrong) hwSummary += ` [오답: ${hwWrong}]`;
-      if (hwFixed) hwSummary += ` [고침: ${hwFixed}]`;
       document.getElementById("sumHomework").innerText = hwSummary;
 
       const allSetSummary = state.missions.setEvents.map(s => `${s.event}${s.number ? `(${s.number})` : ''}`);
@@ -3732,9 +3670,6 @@
       const trSummary = buildTrainingSummaryString();
       const trUnder = state.missions.trainingUnderstanding || "";
       const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
-      const hwChapter = document.getElementById("hwChapterInput") ? document.getElementById("hwChapterInput").value.trim() : "";
-      const hwWrong = document.getElementById("hwWrongInput") ? document.getElementById("hwWrongInput").value.trim() : (state.missions.hwWrongCount || "");
-      const hwFixed = document.getElementById("hwFixedInput") ? document.getElementById("hwFixedInput").value.trim() : (state.missions.hwFixedCount || "");
       const nextBook = (state.missions.nextBookTitle || "").trim();
       const isReread = state.missions.nextBookReread ? "(재독예약)" : "";
       const nextMemo = document.getElementById("nextBookMemoInput") ? document.getElementById("nextBookMemoInput").value.trim() : "";
@@ -3756,13 +3691,6 @@
       if (state.missions.hwStatus) {
         let hwPart = state.missions.hwStatus;
         if (hwBook) hwPart += ` ${hwBook}`;
-        if (hwChapter) hwPart += `(${hwChapter})`;
-        if (hwWrong || hwFixed) {
-          const counts = [];
-          if (hwWrong) counts.push(`오답:${hwWrong}`);
-          if (hwFixed) counts.push(`고침:${hwFixed}`);
-          hwPart += ` [${counts.join("/")}]`;
-        }
         contentParts.push(hwPart);
       }
 
