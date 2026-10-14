@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>독서 문해력 성장 기록</title>
   <meta name="application-name" content="독서 문해력 성장 기록">
   <meta name="apple-mobile-web-app-title" content="독서 문해력 성장 기록">
@@ -990,6 +990,13 @@
 
     // 1. App Initialization
     window.addEventListener("DOMContentLoaded", () => {
+      // 태블릿 자동 회전 잠금 해제 지원 (Screen Orientation Unlock)
+      try {
+        if (window.screen && window.screen.orientation && typeof window.screen.orientation.unlock === "function") {
+          window.screen.orientation.unlock().catch(() => {});
+        }
+      } catch (e) {}
+
       const urlParams = new URLSearchParams(window.location.search);
       const paramGas = urlParams.get("gas_url");
       if (paramGas) {
