@@ -305,6 +305,13 @@
             <option value="비문학">비문학</option>
           </select>
         </div>
+
+        <!-- 1단계 선생님 전달 메모 / 비고 입력 -->
+        <div class="mt-4 pt-3 border-t border-amber-200">
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+          <input type="text" id="step1MemoInput" placeholder="예: 숙제 미지참 사유, 다음 시간까지 10쪽 풀기 등" oninput="updateProgress(500)"
+                 class="w-full p-3 bg-white border border-amber-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm" />
+        </div>
       </div>
     </div>
 
@@ -344,6 +351,13 @@
         <div id="bookListContainer" class="space-y-3">
           <!-- Rendered via JS -->
         </div>
+
+        <!-- 2단계 선생님 전달 메모 / 비고 입력 -->
+        <div class="mt-4 pt-3 border-t border-emerald-200">
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+          <input type="text" id="step2MemoInput" placeholder="예: 집중도 우수, 정독 지도 완료 등" oninput="updateProgress(500)"
+                 class="w-full p-3 bg-white border border-emerald-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" />
+        </div>
       </div>
     </div>
 
@@ -359,12 +373,8 @@
               <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
                 <span>독서노트 & 글쓰기</span>
               </h3>
-              <span id="selectedNoteBookBadge" class="hidden px-2.5 py-0.5 bg-sky-200 text-sky-900 rounded-lg text-xs font-bold border border-sky-300 flex items-center gap-1">
-                <span>📖 대상:</span>
-                <strong id="selectedNoteBookName"></strong>
-              </span>
             </div>
-            <p class="text-xs text-sky-950 font-medium mt-0.5">글쓰기 대상 도서를 선택하고 작성 상태를 지정한 뒤 [등록 후 추가]를 눌러 복수로 기록할 수 있습니다.</p>
+            <p class="text-xs text-sky-950 font-medium mt-0.5">글쓰기 대상 도서를 선택하고 작성 상태를 누르면 등록된 목록에 자동 반영됩니다.</p>
           </div>
         </div>
 
@@ -394,21 +404,16 @@
           </div>
         </div>
 
-        <!-- 등록 후 추가 버튼 바 -->
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t border-sky-200/70">
-          <div class="text-xs text-sky-900 font-semibold flex items-center gap-1.5 flex-wrap">
-            <span>📝 현재 선택:</span>
-            <span id="currentNotePreview" class="font-extrabold text-sky-950 bg-sky-100/90 border border-sky-200 px-2.5 py-1 rounded-lg">도서 미지정</span>
-          </div>
-          <button type="button" onclick="addWritingRecordFromCurrent()"
-                  class="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-md shadow-sky-600/20 transition flex items-center justify-center gap-1.5 active:scale-95 whitespace-nowrap">
-            <span>➕</span><span>등록 후 추가 (복수 기록)</span>
-          </button>
-        </div>
-
         <!-- 등록된 복수 글쓰기 목록 컨테이너 -->
         <div id="writingListContainer">
           <!-- Rendered via renderWritingList() -->
+        </div>
+
+        <!-- 3단계 선생님 전달 메모 / 비고 입력 -->
+        <div class="mt-4 pt-3 border-t border-sky-200">
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+          <input type="text" id="step3MemoInput" placeholder="예: 줄거리 요약 표현력 칭찬, 글쓰기 분량 지도 등" oninput="updateProgress(500)"
+                 class="w-full p-3 bg-white border border-sky-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm" />
         </div>
       </div>
     </div>
@@ -458,6 +463,13 @@
         <!-- 2. 선택된 종목별 세부 입력 카드 컨테이너 (동적 생성) -->
         <div id="trainingDetailsContainer" class="space-y-3 mb-4">
           <!-- Rendered via renderTrainingCards() -->
+        </div>
+
+        <!-- 4단계 선생님 전달 메모 / 비고 입력 -->
+        <div class="mt-4 pt-3 border-t border-indigo-200">
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+          <input type="text" id="step4MemoInput" placeholder="예: 독해 트레이닝 시간 단축 지도 등" oninput="updateProgress(500)"
+                 class="w-full p-3 bg-white border border-indigo-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" />
         </div>
       </div>
     </div>
@@ -981,6 +993,10 @@
         nextBookVocab: false, // [8번] 어휘지 완료 여부
         nextBookInfo: false,  // [8번] 도서정보지 완료 여부
         nextBookMemo: "",
+        step1Memo: "",
+        step2Memo: "",
+        step3Memo: "",
+        step4Memo: "",
         setEvents: [], // array of { event, number }
         soloEvents: [], // array of title strings
         grammarDone: false,
@@ -1954,16 +1970,22 @@
       openBookModal();
     }
 
-    // [독서노트 글쓰기 완료 여부 정밀 판정 로직 - 원장님 승인]
+    // [독서노트 글쓰기 완료 여부 정밀 판정 로직 - 오직 '글완'만 완료로 인정, 작성중/요약은 미완료!]
     function isBookWritingCompleted(studentName, bookTitle) {
       if (!studentName || !bookTitle) return false;
       const cleanTitle = String(bookTitle).trim().replace(/\s+/g, '');
       if (!cleanTitle) return false;
       const cleanStudent = String(studentName).trim().replace(/\s+/g, '');
 
-      // 1. 현재 세션에서 '완료' 또는 '요약하기' 상태인지 확인
-      if (state.missions.noteStatus === "완료" || state.missions.noteStatus === "요약하기") {
+      // 1. 현재 세션에서 '완료' 상태인지 확인 (오직 '완료'만 완료! '요약하기'나 '작성중'은 미완료!)
+      if (state.missions.noteStatus === "완료") {
         if ((state.missions.noteBookTitle || '').replace(/\s+/g, '') === cleanTitle) {
+          return true;
+        }
+      }
+      if (Array.isArray(state.missions.writingList)) {
+        const item = state.missions.writingList.find(w => (w.title || '').replace(/\s+/g, '') === cleanTitle);
+        if (item && (item.status === "완료" || item.status === "글완" || item.status === true)) {
           return true;
         }
       }
@@ -1973,7 +1995,8 @@
         return true;
       }
 
-      // 3. 과거 dailyLogs 기록 확인 (해당 도서명 뒤에 '글완' 또는 '완료', '요약'이 기재되어 있는지 확인)
+      // 3. 과거 dailyLogs 기록 확인 (해당 도서명 뒤에 '글완' 또는 '완료', '작성완료'가 기재되어 있는지 확인)
+      // 주의: '작성중'이나 '요약'은 완료가 아니므로 절대로 true를 반환하면 안 됨!
       if (Array.isArray(state.dailyLogs)) {
         const studentLogs = state.dailyLogs.filter(l => 
           l && (l.name || '').replace(/\s+/g, '') === cleanStudent
@@ -1983,13 +2006,13 @@
           const noSpaceText = text.replace(/\s+/g, '');
           if (noSpaceText.includes(cleanTitle)) {
             const escaped = cleanTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            // cleanTitle 뒤에 바로 글완 또는 요약이 붙어 있는 패턴
-            const regex = new RegExp(escaped + '[^,\n|]{0,25}(?:글완|요약|글쓰기완료|작성완료)');
+            // cleanTitle 뒤에 바로 글완 또는 완료가 붙어 있는 패턴 (요약, 작성중은 제외!)
+            const regex = new RegExp(escaped + '[^,\n|]{0,25}(?:글완|글쓰기완료|작성완료)');
             if (regex.test(noSpaceText)) {
               return true;
             }
             // [독서노트] [cleanTitle] 글완 패턴
-            const noteRegex = new RegExp('(?:독서노트|단기작업)[^,\n|]{0,30}' + escaped + '[^,\n|]{0,20}(?:글완|요약)');
+            const noteRegex = new RegExp('(?:독서노트|단기작업)[^,\n|]{0,30}' + escaped + '[^,\n|]{0,20}(?:글완|글쓰기완료|작성완료)');
             if (noteRegex.test(noSpaceText)) {
               return true;
             }
@@ -2006,9 +2029,9 @@
       try {
         const studentName = student.name;
         const cleanStudent = studentName.replace(/\s+/g, '');
-        let uncompletedRecentBook = "";
+        let uncompletedRecentBook = null;
 
-        // 1. 과거 dailyLogs를 역순(최신순)으로 탐색하여 진단완료되었으나 글쓰기가 안 된 도서 탐색
+        // 1. 과거 dailyLogs를 역순(최신순)으로 탐색하여 진단완료되었으나 글완이 안 된 도서 탐색
         if (Array.isArray(state.dailyLogs)) {
           const studentPastLogs = state.dailyLogs.filter(l => 
             l && (l.name || '').replace(/\s+/g, '') === cleanStudent
@@ -2017,31 +2040,47 @@
             const sorted = [...studentPastLogs].reverse();
             for (let log of sorted) {
               const text = (log.grammarDone || "") + " " + (log.contents || "");
-              const match = text.match(/(?:\[진단\/독서\]|\[독서\]|\[자율\]|\[기초\]|기초(?:-[^\s]+)?|레벨|\d-\d)\s*([^0-9\(\[\|\,\n]{2,25})/);
-              if (match && match[1]) {
-                const candidate = match[1].replace(/글완|요약|작성중|진단완료|완독/g, '').trim();
-                if (candidate) {
-                  // 이미 글쓰기가 완료된 책인지 검증
-                  const isDone = isBookWritingCompleted(studentName, candidate);
-                  if (!isDone) {
-                    // 진단은 되었지만 글쓰기(글완)가 아직 안 된 도서 발견!
-                    uncompletedRecentBook = candidate;
-                    break;
-                  }
+              // 정규식으로 레벨-코스와 도서명 추출 (예: 3-3 신나는 열두달 명절 이야기)
+              const regex = /(?:(\d+)-(\d+)|\[자율\]|기초(?:-(\d+))?)\s*([^0-9\(\[\|\,\n]{2,25})/g;
+              let match;
+              while ((match = regex.exec(text)) !== null) {
+                let lvl = "";
+                let crs = "";
+                if (match[1] && match[2]) {
+                  lvl = match[1] + "레벨";
+                  crs = match[2] + "코스";
+                } else if (match[0].includes("[자율]")) {
+                  lvl = "[자율]";
+                  crs = "선택 안 함";
+                } else if (match[0].includes("기초")) {
+                  lvl = "기초";
+                  crs = (match[3] ? match[3] + "코스" : "1코스");
+                }
+                const candidate = match[4].replace(/글완|글쓰기완료|작성완료|요약|작성중|진단완료|완독|\d+점/g, '').trim();
+                if (candidate && !isBookWritingCompleted(studentName, candidate)) {
+                  uncompletedRecentBook = { title: candidate, level: lvl, course: crs };
+                  break;
                 }
               }
+              if (uncompletedRecentBook) break;
             }
           }
         }
 
-        // 2. localStorage 캐시 확인 (캐시된 책도 이미 글완이면 삭제)
+        // 2. localStorage 캐시 확인
         if (!uncompletedRecentBook) {
-          const cached = localStorage.getItem("recent_diagnosed_book_" + studentName) || "";
-          if (cached) {
-            if (!isBookWritingCompleted(studentName, cached)) {
-              uncompletedRecentBook = cached;
+          const cachedTitle = localStorage.getItem("recent_diagnosed_book_" + studentName) || "";
+          if (cachedTitle) {
+            if (!isBookWritingCompleted(studentName, cachedTitle)) {
+              uncompletedRecentBook = {
+                title: cachedTitle,
+                level: localStorage.getItem("recent_diagnosed_lvl_" + studentName) || "",
+                course: localStorage.getItem("recent_diagnosed_crs_" + studentName) || ""
+              };
             } else {
               localStorage.removeItem("recent_diagnosed_book_" + studentName);
+              localStorage.removeItem("recent_diagnosed_lvl_" + studentName);
+              localStorage.removeItem("recent_diagnosed_crs_" + studentName);
             }
           }
         }
@@ -2070,6 +2109,10 @@
         nextBookVocab: false,
         nextBookInfo: false,
         nextBookMemo: "",
+        step1Memo: "",
+        step2Memo: "",
+        step3Memo: "",
+        step4Memo: "",
         setEvents: [],
         soloEvents: [],
         grammarDone: false,
@@ -2078,7 +2121,6 @@
       renderBookList();
       renderNoteBookChips();
       renderWritingList();
-      updateCurrentNotePreview();
       renderTrainingTypeButtons();
       renderTrainingCards();
       renderSetEventItems();
@@ -2090,6 +2132,10 @@
 
       setTrainingUnderstanding("");
       if (document.getElementById("hwBookSelect")) document.getElementById("hwBookSelect").value = "";
+      if (document.getElementById("step1MemoInput")) document.getElementById("step1MemoInput").value = "";
+      if (document.getElementById("step2MemoInput")) document.getElementById("step2MemoInput").value = "";
+      if (document.getElementById("step3MemoInput")) document.getElementById("step3MemoInput").value = "";
+      if (document.getElementById("step4MemoInput")) document.getElementById("step4MemoInput").value = "";
       if (document.getElementById("nextBookMemoInput")) document.getElementById("nextBookMemoInput").value = "";
       if (document.getElementById("eventSetSelect")) document.getElementById("eventSetSelect").value = "";
       if (document.getElementById("eventNumberSelect")) document.getElementById("eventNumberSelect").value = "";
@@ -2193,10 +2239,12 @@
     function formatJColBookRecord(level, course, title, score, noteStatus = "") {
       let sc = score ? ` ${score}` : '';
       let noteTag = "";
-      if (noteStatus === "완료" || noteStatus === true) {
+      if (noteStatus === "완료" || noteStatus === "글완" || noteStatus === true) {
         noteTag = " 글완";
       } else if (noteStatus === "요약하기" || noteStatus === "요약") {
         noteTag = " 요약";
+      } else if (noteStatus === "작성중") {
+        noteTag = " 작성중";
       }
 
       if (level === "[자율]" || level === "자율 독서" || level === "자율") {
@@ -2209,6 +2257,10 @@
         }
         let crs = String(course).replace("코스", "").trim();
         return `기초-${crs} ${title}${sc}${noteTag}`.trim();
+      }
+
+      if (!level && !course) {
+        return `${title}${sc}${noteTag}`.trim();
       }
 
       if (!course || course === "선택 안 함" || course === "선택 안함") {
@@ -2265,7 +2317,9 @@
 
       if (title && state.currentStudent) {
         localStorage.setItem("recent_diagnosed_book_" + state.currentStudent.name, title);
-        state.missions.recentDiagnosedBook = title;
+        localStorage.setItem("recent_diagnosed_lvl_" + state.currentStudent.name, level || "");
+        localStorage.setItem("recent_diagnosed_crs_" + state.currentStudent.name, course || "");
+        state.missions.recentDiagnosedBook = { title: title, level: level, course: course };
       }
 
       state.missions.books.push(book);
@@ -2390,64 +2444,75 @@
       const addedTitles = new Set();
       const currentStudentName = state.currentStudent ? state.currentStudent.name : "";
 
-      // 1. 오늘 1단계에서 등록한 도서들
+      // 1. 오늘 2단계에서 등록한 도서들 (1권, 2권, 3권, 4권 태그 및 레벨/코스 보존)
       if (Array.isArray(state.missions.books)) {
-        state.missions.books.forEach(b => {
+        state.missions.books.forEach((b, idx) => {
           if (b && b.title && !addedTitles.has(b.title.trim())) {
             addedTitles.add(b.title.trim());
-            candidates.push({ title: b.title.trim(), tag: "오늘 독서" });
+            candidates.push({
+              title: b.title.trim(),
+              level: b.level || "",
+              course: b.course || "",
+              tag: `${idx + 1}권`,
+              isToday: true
+            });
           }
         });
       }
 
-      // 2. 최근 이전 수업 진단/완독 도서 (글쓰기 완료된 책은 제외하고, '미완료' 도서만 선별!)
+      // 2. 최근 이전 수업 진단/완독 도서 (글완 완료된 책은 제외하고, '미완료' 도서만 선별!)
       const recent = state.missions.recentDiagnosedBook;
-      if (recent && !addedTitles.has(recent.trim())) {
-        if (!isBookWritingCompleted(currentStudentName, recent)) {
-          addedTitles.add(recent.trim());
-          candidates.push({ title: recent.trim(), tag: "최근 진단" });
+      if (recent) {
+        const recTitle = (typeof recent === "object" && recent.title) ? recent.title.trim() : String(recent || "").trim();
+        const recLvl = (typeof recent === "object" && recent.level) ? recent.level : "";
+        const recCrs = (typeof recent === "object" && recent.course) ? recent.course : "";
+        if (recTitle && !addedTitles.has(recTitle)) {
+          if (!isBookWritingCompleted(currentStudentName, recTitle)) {
+            addedTitles.add(recTitle);
+            candidates.push({
+              title: recTitle,
+              level: recLvl,
+              course: recCrs,
+              tag: "이전 미완",
+              isToday: false
+            });
+          }
         }
       }
 
       // 3. 직접 입력/지정된 도서 (이미 완료된 도서가 아닐 때만 유지)
-      const currentSelected = state.missions.noteBookTitle;
-      if (currentSelected && !addedTitles.has(currentSelected.trim())) {
+      const currentSelected = (state.missions.noteBookTitle || "").trim();
+      if (currentSelected && !addedTitles.has(currentSelected)) {
         if (!isBookWritingCompleted(currentStudentName, currentSelected) || addedTitles.size === 0) {
-          addedTitles.add(currentSelected.trim());
-          candidates.push({ title: currentSelected.trim(), tag: "지정 도서" });
+          addedTitles.add(currentSelected);
+          candidates.push({
+            title: currentSelected,
+            level: "",
+            course: "",
+            tag: "직접 입력",
+            isToday: false
+          });
         }
       }
 
+      state.missions.currentCandidates = candidates;
+
       // 대상 도서가 이미 완료된 책이거나 후보 목록에 없다면 정리
       if (state.missions.noteBookTitle) {
-        const isCurrentDone = isBookWritingCompleted(currentStudentName, state.missions.noteBookTitle);
         const inCandidates = candidates.some(c => c.title === state.missions.noteBookTitle);
-        if (isCurrentDone && !state.missions.books.some(b => b.title === state.missions.noteBookTitle)) {
-          state.missions.noteBookTitle = candidates.length > 0 ? candidates[0].title : "";
-        } else if (!inCandidates && candidates.length > 0) {
-          state.missions.noteBookTitle = candidates.length > 0 ? candidates[0].title : "";
+        if (!inCandidates && candidates.length > 0) {
+          state.missions.noteBookTitle = candidates[0].title;
         }
       } else if (candidates.length > 0) {
         state.missions.noteBookTitle = candidates[0].title;
       }
 
-      // 상단 뱃지 갱신
-      const badge = document.getElementById("selectedNoteBookBadge");
-      const nameEl = document.getElementById("selectedNoteBookName");
-      if (state.missions.noteBookTitle && badge && nameEl) {
-        nameEl.innerText = state.missions.noteBookTitle;
-        badge.classList.remove("hidden");
-        badge.classList.add("inline-flex");
-      } else if (badge) {
-        badge.classList.add("hidden");
-        badge.classList.remove("inline-flex");
-      }
-
       // 칩 렌더링
       if (candidates.length === 0) {
         container.innerHTML = `
-          <div class="flex items-center gap-2 py-1 text-xs text-slate-400 italic">
-            <span>글쓰기 대기 중인 도서가 없습니다. (최근 진단 도서가 모두 글완 되었거나 새 도서가 없을 때 우측 [+ 직접 도서명 입력]으로 지정 가능합니다.)</span>
+          <div class="flex items-center gap-2 py-2 px-3 bg-white rounded-xl border border-dashed border-sky-300 text-xs text-slate-400 italic">
+            <span>ℹ️</span>
+            <span>글쓰기 대기 중인 도서가 없습니다. (2단계에서 오늘 읽은 책을 등록하거나 우측 [+ 직접 도서명 입력]으로 추가할 수 있습니다)</span>
           </div>
         `;
         return;
@@ -2456,16 +2521,36 @@
       container.innerHTML = "";
       candidates.forEach(cand => {
         const isSelected = (cand.title === state.missions.noteBookTitle);
+        const matched = (state.missions.writingList || []).find(w => (w.title || '').replace(/\s+/g, '') === cand.title.replace(/\s+/g, ''));
+        const activeStatus = matched ? matched.status : "";
+
         const btn = document.createElement("button");
         btn.type = "button";
         btn.onclick = () => selectNoteBook(cand.title);
 
+        let statusPill = "";
+        if (activeStatus === "완료") {
+          statusPill = `<span class="text-[10px] bg-emerald-500 text-white font-extrabold px-1.5 py-0.5 rounded shadow-xs">글완</span>`;
+        } else if (activeStatus === "요약하기") {
+          statusPill = `<span class="text-[10px] bg-indigo-500 text-white font-extrabold px-1.5 py-0.5 rounded shadow-xs">요약</span>`;
+        } else if (activeStatus === "작성중") {
+          statusPill = `<span class="text-[10px] bg-amber-500 text-white font-extrabold px-1.5 py-0.5 rounded shadow-xs">작성중</span>`;
+        }
+
         if (isSelected) {
-          btn.className = "px-3 py-1.5 rounded-xl text-xs font-black bg-blue-600 text-white shadow-sm ring-2 ring-blue-300 flex items-center gap-1.5 transition transform active:scale-95";
-          btn.innerHTML = `<span>✓</span><span>${cand.title}</span><span class="text-[10px] bg-blue-700/70 px-1.5 py-0.5 rounded-md font-normal">${cand.tag}</span>`;
+          btn.className = "px-3.5 py-2 rounded-xl text-xs font-black bg-sky-600 text-white shadow-md ring-2 ring-sky-300 flex items-center gap-2 transition transform active:scale-95";
+          btn.innerHTML = `
+            <span class="px-1.5 py-0.5 rounded bg-white/20 text-white text-[10px] font-bold">${cand.tag}</span>
+            <span class="text-xs sm:text-sm font-black truncate">${cand.title}</span>
+            ${statusPill}
+          `;
         } else {
-          btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 flex items-center gap-1.5 transition transform active:scale-95";
-          btn.innerHTML = `<span>${cand.title}</span><span class="text-[10px] text-slate-400 font-normal">(${cand.tag})</span>`;
+          btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold bg-white hover:bg-sky-50 text-slate-700 hover:text-sky-800 border-2 border-slate-200 hover:border-sky-300 flex items-center gap-2 transition transform active:scale-95 shadow-xs";
+          btn.innerHTML = `
+            <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">${cand.tag}</span>
+            <span class="text-xs sm:text-sm font-semibold truncate">${cand.title}</span>
+            ${statusPill}
+          `;
         }
         container.appendChild(btn);
       });
@@ -2474,9 +2559,22 @@
     function selectNoteBook(title) {
       if (!title) return;
       state.missions.noteBookTitle = title.trim();
+
+      // 현재 선택된 도서의 등록 상태에 맞춰 상단 라디오 버튼 UI 동기화
+      const matched = (state.missions.writingList || []).find(w => (w.title || '').replace(/\s+/g, '') === title.trim().replace(/\s+/g, ''));
+      const activeStatus = matched ? matched.status : "작성안함";
+      state.missions.noteStatus = activeStatus;
+
+      document.querySelectorAll(".note-status-btn").forEach(btn => {
+        if (btn.dataset.val === activeStatus) {
+          btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-sky-600 text-white shadow-sm ring-2 ring-sky-300";
+        } else {
+          btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        }
+      });
+
       renderNoteBookChips();
       renderBookList();
-      updateCurrentNotePreview();
       updateProgress();
     }
 
@@ -2488,98 +2586,103 @@
       }
     }
 
-    // 8. Step 2 & 4 State Handlers
+    // 8. Step 3 State Handlers (방안 1: 글쓰기 활동 클릭 시 즉시 자동 등록)
     function setNoteStatus(status) {
-      // 작성중, 완료, 요약하기를 누를 때 도서가 선택되어 있지 않다면 지정 또는 입력 유도
-      if (status !== "작성안함" && !state.missions.noteBookTitle) {
-        if (state.missions.books.length > 0) {
-          state.missions.noteBookTitle = state.missions.books[0].title;
-        } else if (state.missions.recentDiagnosedBook && !isBookWritingCompleted(state.currentStudent ? state.currentStudent.name : "", state.missions.recentDiagnosedBook)) {
-          state.missions.noteBookTitle = state.missions.recentDiagnosedBook;
-        } else {
-          const t = prompt("✍️ 어떤 도서에 대해 독서노트/글쓰기를 진행하시나요?\n책 제목을 입력해 주세요:");
-          if (t && t.trim()) {
-            state.missions.noteBookTitle = t.trim();
-          }
-        }
+      // 선택된 도서가 없다면 후보 도서 중 첫 번째 도서 자동 선택
+      if (!state.missions.noteBookTitle && state.missions.currentCandidates && state.missions.currentCandidates.length > 0) {
+        state.missions.noteBookTitle = state.missions.currentCandidates[0].title;
       }
-
-      state.missions.noteStatus = status;
-
-      // 글쓰기가 '완료' 또는 '요약하기'로 설정되면 해당 도서의 완료 상태 캐싱
-      if (state.currentStudent && state.missions.noteBookTitle && (status === "완료" || status === "요약하기")) {
-        const cleanS = (state.currentStudent.name || '').replace(/\s+/g, '');
-        const cleanT = state.missions.noteBookTitle.replace(/\s+/g, '');
-        localStorage.setItem("note_completed_" + cleanS + "_" + cleanT, "true");
-        localStorage.removeItem("recent_diagnosed_book_" + state.currentStudent.name);
-      }
-      document.querySelectorAll(".note-status-btn").forEach(btn => {
-        if (btn.dataset.val === status) {
-          btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-sm";
-        } else {
-          btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
-        }
-      });
-      renderNoteBookChips();
-      renderBookList();
-      updateCurrentNotePreview();
-      updateProgress();
-    }
-
-    // [2단계 핵심] 현재 선택 도서 및 상태 미리보기 갱신
-    function updateCurrentNotePreview() {
-      const el = document.getElementById("currentNotePreview");
-      if (!el) return;
-      const title = state.missions.noteBookTitle || "";
-      const status = state.missions.noteStatus || "작성안함";
-      if (title) {
-        el.className = "font-extrabold text-sky-950 bg-sky-100 border border-sky-300 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5 shadow-xs";
-        el.innerHTML = `<span>📖</span> <span>${title}</span> <span class="text-sky-700 font-bold text-[11px] bg-white/80 px-1.5 py-0.5 rounded">(${status})</span>`;
-      } else {
-        el.className = "font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5";
-        el.innerHTML = `<span>도서 미지정 (위에서 도서를 선택하거나 직접 입력하세요)</span>`;
-      }
-    }
-
-    // [2단계 핵심] '등록 후 추가' 기능: 복수 글쓰기 기록 리스트에 추가
-    function addWritingRecordFromCurrent() {
-      if (!state.missions.writingList) state.missions.writingList = [];
       const title = (state.missions.noteBookTitle || "").trim();
-      const status = state.missions.noteStatus || "완료";
-
-      if (!title) {
-        alert("✍️ 등록할 글쓰기 대상 도서를 먼저 선택하거나 직접 입력해 주세요.");
+      if (!title && status !== "작성안함") {
+        alert("✍️ 글쓰기할 도서를 먼저 선택하거나 직접 입력해 주세요.");
         promptCustomNoteBook();
         return;
       }
 
-      const existingIdx = state.missions.writingList.findIndex(w => w.title.replace(/\s+/g, '') === title.replace(/\s+/g, ''));
-      if (existingIdx >= 0) {
-        state.missions.writingList[existingIdx].status = status;
+      state.missions.noteStatus = status;
+
+      // 도서 레벨 및 코스 정보 연동 (미지정 시 안전 처리)
+      const cand = (state.missions.currentCandidates || []).find(c => (c.title || '').replace(/\s+/g, '') === title.replace(/\s+/g, '')) || {};
+      const level = cand.level || "";
+      const course = cand.course || "";
+
+      if (!state.missions.writingList) state.missions.writingList = [];
+      const cleanT = title.replace(/\s+/g, '');
+      const existingIdx = state.missions.writingList.findIndex(w => (w.title || '').replace(/\s+/g, '') === cleanT);
+
+      if (status === "작성안함") {
+        // '작성 안 함' 선택 시 등록 목록에서 해당 도서 삭제
+        if (existingIdx >= 0) {
+          state.missions.writingList.splice(existingIdx, 1);
+        }
       } else {
-        state.missions.writingList.push({
-          id: "wr_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
-          title: title,
-          status: status
-        });
+        // '작성중', '완료', '요약하기' 클릭 시 즉시 등록 목록에 추가/갱신 (원클릭 자동 등록)
+        if (existingIdx >= 0) {
+          state.missions.writingList[existingIdx].status = status;
+          if (level) state.missions.writingList[existingIdx].level = level;
+          if (course) state.missions.writingList[existingIdx].course = course;
+        } else {
+          state.missions.writingList.push({
+            id: "wr_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+            title: title,
+            level: level,
+            course: course,
+            status: status
+          });
+        }
       }
 
-      if (state.currentStudent && (status === "완료" || status === "요약하기")) {
+      // 글쓰기가 오직 '완료'일 때만 완료 처리 캐싱 (작성중, 요약하기는 미완료이므로 캐싱하지 않고 다음에도 노출!)
+      if (state.currentStudent && title) {
         const cleanS = (state.currentStudent.name || '').replace(/\s+/g, '');
-        const cleanT = title.replace(/\s+/g, '');
-        localStorage.setItem("note_completed_" + cleanS + "_" + cleanT, "true");
-        localStorage.removeItem("recent_diagnosed_book_" + state.currentStudent.name);
+        if (status === "완료") {
+          localStorage.setItem("note_completed_" + cleanS + "_" + cleanT, "true");
+          localStorage.removeItem("recent_diagnosed_book_" + state.currentStudent.name);
+          localStorage.removeItem("recent_diagnosed_lvl_" + state.currentStudent.name);
+          localStorage.removeItem("recent_diagnosed_crs_" + state.currentStudent.name);
+        } else {
+          // 작성중이나 요약하기 상태이면 완료 캐시를 해제하여 다음 로그인에서도 계속 떠오르도록 보장
+          localStorage.removeItem("note_completed_" + cleanS + "_" + cleanT);
+        }
       }
+
+      // 라디오 버튼 활성 스타일 업데이트
+      document.querySelectorAll(".note-status-btn").forEach(btn => {
+        if (btn.dataset.val === status) {
+          btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-sky-600 text-white shadow-sm ring-2 ring-sky-300";
+        } else {
+          btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        }
+      });
 
       renderWritingList();
-      updateCurrentNotePreview();
+      renderNoteBookChips();
+      renderBookList();
       updateProgress();
+    }
+
+    function updateCurrentNotePreview() {} // Stub for backward-compatibility
+
+    function addWritingRecordFromCurrent() {
+      // 방안 1 적용으로 setNoteStatus 호출로 연동
+      setNoteStatus(state.missions.noteStatus || "완료");
     }
 
     function removeWritingItem(idx) {
       if (!state.missions.writingList) return;
-      state.missions.writingList.splice(idx, 1);
+      const removed = state.missions.writingList.splice(idx, 1)[0];
+      if (removed && (state.missions.noteBookTitle || '').replace(/\s+/g, '') === (removed.title || '').replace(/\s+/g, '')) {
+        state.missions.noteStatus = "작성안함";
+        document.querySelectorAll(".note-status-btn").forEach(btn => {
+          if (btn.dataset.val === "작성안함") {
+            btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-sky-600 text-white shadow-sm";
+          } else {
+            btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+          }
+        });
+      }
       renderWritingList();
+      renderNoteBookChips();
       updateProgress();
     }
 
@@ -2592,7 +2695,7 @@
         container.innerHTML = `
           <div class="py-3 px-4 bg-sky-50/50 rounded-2xl border border-dashed border-sky-200 text-xs text-slate-400 text-center flex items-center justify-center gap-2">
             <span>ℹ️</span>
-            <span>등록된 추가 글쓰기 기록이 없습니다. (위에서 도서와 작성 상태를 선택 후 <strong>[등록 후 추가]</strong>를 눌러 복수로 기록할 수 있습니다)</span>
+            <span>등록된 글쓰기 기록이 없습니다. (위에서 도서를 선택하고 작성 상태를 누르면 자동 등록됩니다)</span>
           </div>
         `;
         return;
@@ -2604,7 +2707,7 @@
             <span class="flex items-center gap-1.5">
               <span>📋</span> <span>등록된 글쓰기 목록 (${list.length}건):</span>
             </span>
-            <span class="text-[11px] text-sky-600 font-normal">복수 기록 반영 완료</span>
+            <span class="text-[11px] text-sky-600 font-normal">시트 실시간 반영</span>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             ${list.map((w, idx) => {
@@ -2613,11 +2716,12 @@
                 : (w.status === "요약하기"
                   ? `<span class="bg-indigo-100 text-indigo-800 border border-indigo-300 px-2 py-0.5 rounded-md font-bold text-[11px]">요약하기</span>`
                   : `<span class="bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-md font-bold text-[11px]">${w.status}</span>`);
+              const lvlCrsText = (w.level && w.course) ? `${String(w.level).replace('레벨','')}-${String(w.course).replace('코스','')} ` : '';
               return `
                 <div class="p-2.5 bg-white border border-sky-200 rounded-xl flex items-center justify-between gap-2 shadow-xs">
                   <div class="min-w-0 flex-1">
                     <p class="text-xs font-extrabold text-slate-900 truncate flex items-center gap-1">
-                      <span>✍️</span> <span>${w.title}</span>
+                      <span>✍️</span> <span>${lvlCrsText}${w.title}</span>
                     </p>
                     <div class="mt-1">
                       ${statBadge}
@@ -3371,11 +3475,18 @@
       // 현재 선택된 도서가 writingList에 없고 상태가 '작성안함'이 아니면 함께 반영
       if (noteBook && noteStat !== "작성안함") {
         if (!writings.some(w => w.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''))) {
-          writings.push({ title: noteBook, status: noteStat });
+          const bMatch = state.missions.books.find(b => b.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''));
+          const cMatch = (state.missions.currentCandidates || []).find(c => c.title.replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''));
+          writings.push({
+            title: noteBook,
+            level: bMatch ? bMatch.level : (cMatch ? cMatch.level : ""),
+            course: bMatch ? bMatch.course : (cMatch ? cMatch.course : ""),
+            status: noteStat
+          });
         }
       }
 
-      // 2. 오늘 독서한 도서(1단계) 목록과 글쓰기 상태 매핑
+      // 2. 오늘 독서한 도서(2단계) 목록과 글쓰기 상태 매핑
       const jEntries = state.missions.books.map(b => {
         const cleanBTitle = b.title.replace(/\s+/g, '');
         const matchedWriting = writings.find(w => w.title.replace(/\s+/g, '') === cleanBTitle);
@@ -3383,12 +3494,11 @@
         return formatJColBookRecord(b.level, b.course, b.title, b.score, effectiveNoteStatus);
       });
 
-      // 3. 오늘 독서 외의 도서(이전 진단도서, 직접 입력 도서 등)의 글쓰기 기록 추가
+      // 3. 오늘 독서 외의 도서(이전 진단도서, 직접 입력 도서 등)의 글쓰기 기록 추가 (대괄호 제거 및 레벨-코스 포함)
       writings.forEach(w => {
         const isInToday = state.missions.books.some(b => b.title.replace(/\s+/g, '') === w.title.replace(/\s+/g, ''));
         if (!isInToday && w.status !== "작성안함") {
-          const noteLabel = (w.status === "완료" || w.status === true) ? "글완" : (w.status === "요약하기" ? "요약" : "작성중");
-          jEntries.push(`[${w.title}] ${noteLabel}`);
+          jEntries.push(formatJColBookRecord(w.level || "", w.course || "", w.title, "", w.status));
         }
       });
 
@@ -3465,6 +3575,10 @@
       const trSummary = buildTrainingSummaryString();
       const trUnder = state.missions.trainingUnderstanding || "";
       const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
+      const step1Memo = document.getElementById("step1MemoInput") ? document.getElementById("step1MemoInput").value.trim() : (state.missions.step1Memo || "");
+      const step2Memo = document.getElementById("step2MemoInput") ? document.getElementById("step2MemoInput").value.trim() : (state.missions.step2Memo || "");
+      const step3Memo = document.getElementById("step3MemoInput") ? document.getElementById("step3MemoInput").value.trim() : (state.missions.step3Memo || "");
+      const step4Memo = document.getElementById("step4MemoInput") ? document.getElementById("step4MemoInput").value.trim() : (state.missions.step4Memo || "");
       const nextBook = (state.missions.nextBookTitle || "").trim();
       const isReread = state.missions.nextBookReread ? "(재독예약)" : "";
       const nextMemo = document.getElementById("nextBookMemoInput") ? document.getElementById("nextBookMemoInput").value.trim() : "";
@@ -3477,18 +3591,37 @@
       const reflection = document.getElementById("studentReflectionInput") ? document.getElementById("studentReflectionInput").value.trim() : "";
 
       const contentParts = [];
+      // 4단계 트레이닝
       if (trSummary) {
         let trPart = trSummary;
         if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
+        if (step4Memo) trPart += ` (메모:${step4Memo})`;
         contentParts.push(trPart);
+      } else if (step4Memo) {
+        contentParts.push(`트레이닝메모: ${step4Memo}`);
       }
 
+      // 1단계 숙제 점검
       if (state.missions.hwStatus) {
         let hwPart = state.missions.hwStatus;
         if (hwBook) hwPart += ` ${hwBook}`;
+        if (step1Memo) hwPart += ` (메모:${step1Memo})`;
         contentParts.push(hwPart);
+      } else if (step1Memo) {
+        contentParts.push(`숙제메모: ${step1Memo}`);
       }
 
+      // 2단계 독서 코멘트
+      if (step2Memo) {
+        contentParts.push(`독서메모: ${step2Memo}`);
+      }
+
+      // 3단계 글쓰기 코멘트
+      if (step3Memo) {
+        contentParts.push(`글쓰기메모: ${step3Memo}`);
+      }
+
+      // 5단계 다음 책 & 메모
       if (nextBook) {
         contentParts.push(`다음책: ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`);
       } else if (actStr) {
@@ -3677,6 +3810,10 @@
       const trSummary = buildTrainingSummaryString();
       const trUnder = state.missions.trainingUnderstanding || "";
       const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
+      const step1Memo = document.getElementById("step1MemoInput") ? document.getElementById("step1MemoInput").value.trim() : (state.missions.step1Memo || "");
+      const step2Memo = document.getElementById("step2MemoInput") ? document.getElementById("step2MemoInput").value.trim() : (state.missions.step2Memo || "");
+      const step3Memo = document.getElementById("step3MemoInput") ? document.getElementById("step3MemoInput").value.trim() : (state.missions.step3Memo || "");
+      const step4Memo = document.getElementById("step4MemoInput") ? document.getElementById("step4MemoInput").value.trim() : (state.missions.step4Memo || "");
       const nextBook = (state.missions.nextBookTitle || "").trim();
       const isReread = state.missions.nextBookReread ? "(재독예약)" : "";
       const nextMemo = document.getElementById("nextBookMemoInput") ? document.getElementById("nextBookMemoInput").value.trim() : "";
@@ -3689,18 +3826,37 @@
       const reflection = document.getElementById("studentReflectionInput") ? document.getElementById("studentReflectionInput").value.trim() : "";
 
       const contentParts = [];
+      // 4단계 트레이닝
       if (trSummary) {
         let trPart = trSummary;
         if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
+        if (step4Memo) trPart += ` (메모:${step4Memo})`;
         contentParts.push(trPart);
+      } else if (step4Memo) {
+        contentParts.push(`트레이닝메모: ${step4Memo}`);
       }
 
+      // 1단계 숙제 점검
       if (state.missions.hwStatus) {
         let hwPart = state.missions.hwStatus;
         if (hwBook) hwPart += ` ${hwBook}`;
+        if (step1Memo) hwPart += ` (메모:${step1Memo})`;
         contentParts.push(hwPart);
+      } else if (step1Memo) {
+        contentParts.push(`숙제메모: ${step1Memo}`);
       }
 
+      // 2단계 독서 코멘트
+      if (step2Memo) {
+        contentParts.push(`독서메모: ${step2Memo}`);
+      }
+
+      // 3단계 글쓰기 코멘트
+      if (step3Memo) {
+        contentParts.push(`글쓰기메모: ${step3Memo}`);
+      }
+
+      // 5단계 다음 책 & 메모
       if (nextBook) {
         contentParts.push(`다음책: ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`);
       } else if (actStr) {
