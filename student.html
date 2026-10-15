@@ -901,7 +901,7 @@
       
       <div class="mt-6 p-4 bg-emerald-50/80 rounded-2xl border border-emerald-100 text-xs text-emerald-800 flex items-center justify-center gap-2">
         <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        <p id="celebrateSavingText" class="font-bold">학생의 성장 기록을 저장하고 있습니다...</p>
+        <p id="celebrateSavingText" class="font-bold">3초 후 로그인 화면으로 자동 이동합니다...</p>
       </div>
     </div>
   </div>
@@ -3663,7 +3663,6 @@
           contents: ""
         };
         state.dailyLogs.push(targetLog);
-        sendNewLog(targetLog);
       }
 
       state.currentDailyLog = targetLog;
@@ -3744,33 +3743,13 @@
 
       const finalContents = contentParts.join(" | ");
 
-      // Avoid unnecessary duplicate network calls
-      if (targetLog.number === finalColH &&
-          targetLog.event === finalColI &&
-          targetLog.grammarDone === finalColJ &&
-          targetLog.contents === finalContents) {
-        return;
-      }
-
       targetLog.number = finalColH;
       targetLog.event = finalColI;
       targetLog.grammarDone = finalColJ;
       targetLog.contents = finalContents;
-      if (targetLog.status !== "수업완료" && !state.teacherOverrideApproved) {
-        targetLog.status = "수업중";
-      }
 
-      const updates = [
-        { tab: "dailyLogs", row: targetLog.row, field: "number", value: finalColH || "", name: student.name, date: targetLog.date, time: targetLog.time },
-        { tab: "dailyLogs", row: targetLog.row, field: "event", value: finalColI || "", name: student.name, date: targetLog.date, time: targetLog.time },
-        { tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ || "", name: student.name, date: targetLog.date, time: targetLog.time },
-        { tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents || "", name: student.name, date: targetLog.date, time: targetLog.time }
-      ];
-      if (targetLog.status !== "수업완료" && !state.teacherOverrideApproved) {
-        updates.push({ tab: "dailyLogs", row: targetLog.row, field: "status", value: "수업중", name: student.name, date: targetLog.date, time: targetLog.time });
-      }
-
-      sendBatchUpdates(updates);
+      // [대표님 결정] 수업 중에는 구글 시트로 잦은 네트워크 통신을 하지 않고, 로컬에만 안전하게 실시간 보존!
+      saveActiveSession(student, targetLog);
       showLiveSyncStatus();
     }
 
@@ -3779,7 +3758,7 @@
       if (badge) {
         const now = new Date();
         const timeStr = now.toTimeString().slice(0, 8);
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>시트 실시간 저장 (${timeStr})`;
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>학습 내용 자동 보존됨 (${timeStr})`;
         badge.classList.remove("opacity-0");
         badge.classList.add("opacity-100");
       }
@@ -4014,25 +3993,9 @@
       localStorage.removeItem("recent_diagnosed_book_" + student.name);
       state.missions.recentDiagnosedBook = "";
 
-      // [핵심] 백그라운드 비동기 구글 시트 저장 및 상태 업데이트 Promise 정의
-      const savePromise = (async () => {
+      // [핵심] 백그라운드 비동기 구글 시트 저장 및 상태 업데이트 (지연 없이 즉시 발송)
+      (async () => {
         try {
-          // 1. 수업 중 선생님의 시트 행 추가/삭제(행 밀림)를 완벽히 반영하기 위해 최신 출석부 데이터 비동기 동기화
-          try {
-            await fetchFreshDataPromise();
-          } catch (freshErr) {
-            console.warn("[submitAllMissions] fresh fetch error:", freshErr);
-          }
-
-          // 2. 최신 state.dailyLogs에서 본인의 정확한 행을 학생 이름으로 재검색
-          let reFoundLog = findStudentTodayLog(student.name);
-          if (!reFoundLog && Array.isArray(state.dailyLogs)) {
-            reFoundLog = state.dailyLogs.find(l => l && l.name && (String(l.name).trim().replace(/\s+/g, '').toLowerCase() === cleanName.toLowerCase())) || null;
-          }
-          if (reFoundLog) {
-            targetLog = reFoundLog;
-          }
-
           const updates = [];
           if (targetLog && targetLog.row) {
             targetLog.status = "수업완료";
@@ -4078,19 +4041,19 @@
             dailyLogs: state.dailyLogs
           }));
         } catch (err) {
-          console.error("[submitAllMissions] Background save error:", err);
+          console.error("[submitAllMissions] Checkout save error:", err);
         }
       })();
 
-      // [즉각 반응!] 딜레이 없이 0초 만에 꽃다발 폭죽 및 축하 모달 실행!
-      showCelebration(student.name, savePromise);
+      // [즉각 반응!] 0초 만에 꽃다발 폭죽 터지고 정확히 3초 뒤 로그인 화면으로 자동 이동!
+      showCelebration(student.name);
     }
 
-    function showCelebration(name, savePromise) {
+    function showCelebration(name) {
       document.getElementById("celebrateStudentName").innerText = `${name} 학생`;
       const savingEl = document.getElementById("celebrateSavingText");
       if (savingEl) {
-        savingEl.innerText = "학생의 성장 기록을 저장하고 있습니다...";
+        savingEl.innerText = "3초 후 로그인 화면으로 자동 이동합니다...";
       }
       document.getElementById("celebrateModal").classList.remove("hidden");
 
@@ -4118,29 +4081,19 @@
         }, 350);
       }
 
-      const startTime = Date.now();
-      const minDisplayMs = 1500; // 최소 1.5초는 축하 및 저장 안내 표시
-      const maxTimeoutMs = 6000; // 최대 6초 안전 타임아웃 (구글 시트 지연/단절 시 무한 로딩 방어)
-
-      const timeoutPromise = new Promise(resolve => setTimeout(resolve, maxTimeoutMs));
-      const actualSave = savePromise ? Promise.race([savePromise, timeoutPromise]) : Promise.resolve();
-
-      actualSave.finally(() => {
-        const elapsed = Date.now() - startTime;
-        const remainingDelay = Math.max(0, minDisplayMs - elapsed);
-        setTimeout(() => {
-          try {
-            localStorage.removeItem("active_student_session");
-          } catch (e) {}
-          document.getElementById("celebrateModal").classList.add("hidden");
-          logoutStudent();
-        }, remainingDelay);
-      });
+      // [대표님 지시] 꽃다발 터지고 정확히 3초 뒤에 로그인 화면으로 자동 이동!
+      setTimeout(() => {
+        try {
+          localStorage.removeItem("active_student_session");
+        } catch (e) {}
+        document.getElementById("celebrateModal").classList.add("hidden");
+        logoutStudent();
+      }, 3000);
     }
 
     function confirmLogout() {
-      if (confirm("학습 화면을 종료하고 로그인 화면으로 돌아가시겠습니까?")) {
-        logoutStudent();
+      if (confirm("오늘 독서 학습을 완료하고 하원하시겠습니까?")) {
+        submitAllMissions();
       }
     }
 
