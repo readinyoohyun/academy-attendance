@@ -1119,6 +1119,17 @@ function doGet() {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function isSameStudentNameInGAS(name1, name2) {
+  if (!name1 || !name2) return false;
+  var c1 = String(name1).trim().replace(/\s+/g, "").toLowerCase();
+  var c2 = String(name2).trim().replace(/\s+/g, "").toLowerCase();
+  if (c1 === c2) return true;
+  var pure1 = c1.replace(/^[\d\.\-\_]+/, "");
+  var pure2 = c2.replace(/^[\d\.\-\_]+/, "");
+  if (pure1 && pure2 && pure1 === pure2) return true;
+  return false;
+}
+
 function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
   if (tab === "dailyLogs" || tab === "출결보강관리" || tab === "오늘 출석부" || tab === "오늘출석부") {
     var candidateDailySheets = ["오늘 출석부", "출결보강관리", "오늘출석부"];
@@ -1137,30 +1148,30 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
       ensureColumns(sheet, 11);
       
       var targetRow = row;
-      var cleanTargetName = String(name || "").trim().replace(/\s+/g, "").toLowerCase();
 
       // [핵심 매칭] 일일 출석부 시트에서 학생 이름으로 최우선 검색 (날짜/시간 서식 차이 및 행 추가/삭제와 무관하게 학생 행 100% 제자리 매칭!)
-      if (cleanTargetName && sheet.getLastRow() > 2) {
+      if (sheet.getLastRow() > 2) {
         var lastRow = sheet.getLastRow();
         var data = sheet.getRange(3, 1, lastRow - 2, 3).getDisplayValues(); // Col A (date), Col B (time), Col C (name)
         var matchedRow = -1;
         
-        for (var i = 0; i < data.length; i++) {
-          var rowName = String(data[i][2] || "").trim().replace(/\s+/g, "").toLowerCase();
-          if (rowName === cleanTargetName) {
-            matchedRow = 3 + i;
-            break;
+        if (name) {
+          for (var i = 0; i < data.length; i++) {
+            if (isSameStudentNameInGAS(data[i][2], name)) {
+              matchedRow = 3 + i;
+              break;
+            }
           }
         }
 
         if (matchedRow !== -1) {
           targetRow = matchedRow;
+        } else if (targetRow >= 3 && targetRow <= lastRow) {
+          // 이름으로 매칭되지 않았더라도 클라이언트가 넘겨준 row가 유효하면 해당 행 사용
+          // (업데이트 작업 시 절대 lastRow + 1로 새 행을 추가하지 않음!)
         } else {
-          // 이름으로 검색했으나 시트에 해당 학생이 없다면, 다른 학생의 행(targetRow)을 절대 덮어쓰지 않고 새 행 생성!
-          targetRow = lastRow + 1;
-          sheet.getRange(targetRow, 1).setValue(date || Utilities.formatDate(new Date(), "GMT+9", "M/d(E)"));
-          sheet.getRange(targetRow, 2).setValue(time || "시간 외");
-          sheet.getRange(targetRow, 3).setValue(name);
+          // 이름도 못 찾고 row도 유효하지 않으면 잘못된 업데이트이므로 중단
+          return;
         }
       }
 
@@ -1567,25 +1578,24 @@ function doPost(e) {
       
       var lastRow = sheet.getLastRow();
       var targetRow = -1;
-      var cleanTargetName = String(postData.name || "").trim().replace(/\s+/g, "").toLowerCase();
 
-      // 1. 이미 시트 위쪽 시간표에 동일한 학생이 배정되어 있는지 검색!
-      if (cleanTargetName && lastRow >= 3) {
+      // 1. 이미 시트 위쪽 시간표에 동일한 학생이 배정/등록되어 있는지 검색! (중복 생성 절대 방어)
+      if (postData.name && lastRow >= 3) {
         var existingNames = sheet.getRange(3, 3, lastRow - 2, 1).getDisplayValues();
         for (var nIdx = 0; nIdx < existingNames.length; nIdx++) {
-          if (String(existingNames[nIdx][0] || "").trim().replace(/\s+/g, "").toLowerCase() === cleanTargetName) {
+          if (isSameStudentNameInGAS(existingNames[nIdx][0], postData.name)) {
             targetRow = 3 + nIdx;
             break;
           }
         }
       }
 
-      // 2. 기존 시간표에 학생이 있다면 해당 행을 업데이트, 없으면 맨 아래(lastRow + 1)에 신규 추가!
+      // 2. 기존 시간표에 학생이 이미 있다면 무조건 해당 행을 업데이트, 없을 때만 맨 아래(lastRow + 1)에 단 1회 신규 추가!
       var isExisting = (targetRow !== -1);
       if (!isExisting) {
         targetRow = lastRow + 1;
-        sheet.getRange(targetRow, 1).setValue(postData.date); // 날짜요일
-        sheet.getRange(targetRow, 2).setValue(postData.time); // 시간
+        sheet.getRange(targetRow, 1).setValue(postData.date || Utilities.formatDate(new Date(), "GMT+9", "M/d(E)")); // 날짜요일
+        sheet.getRange(targetRow, 2).setValue(postData.time || "시간 외"); // 시간
         sheet.getRange(targetRow, 3).setValue(postData.name); // 이름
       }
       

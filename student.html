@@ -1516,6 +1516,28 @@
         }
       }
 
+      // [핵심 방어벽] 로그인 터치 즉시 최신 출석부 데이터를 실시간으로 동기화!
+      // (키오스크나 원장님이 방금 시트에 추가/수정한 행을 100% 최신 반영하여 중복 행 생성 원천 차단)
+      const btn = document.getElementById("btnLoginSubmit");
+      const origText = btn ? btn.innerHTML : "";
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerText = "로그인 확인 중...";
+        }
+        await Promise.race([
+          fetchFreshDataPromise(),
+          new Promise(r => setTimeout(r, 1200)) // 최대 1.2초 내로 완료 또는 타임아웃
+        ]);
+      } catch (err) {
+        console.warn("Login pre-sync timeout or error:", err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+      }
+
       // 2. Look for today's existing log strictly for this student
       let todayLog = findStudentTodayLog(student ? student.name : name);
 
