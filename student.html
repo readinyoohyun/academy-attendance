@@ -309,9 +309,9 @@
           </select>
         </div>
 
-        <!-- 1단계 선생님 전달 메모 / 비고 입력 -->
+        <!-- 1단계 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-amber-200">
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">기록 남기기 (선생님과 학생 모두 메모 남길 수 있어요)</label>
           <input type="text" id="step1MemoInput" placeholder="예: 숙제 미지참 사유, 다음 시간까지 10쪽 풀기 등" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-amber-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm" />
         </div>
@@ -355,9 +355,9 @@
           <!-- Rendered via JS -->
         </div>
 
-        <!-- 2단계 선생님 전달 메모 / 비고 입력 -->
+        <!-- 2단계 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-emerald-200">
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">기록 남기기 (선생님과 학생 모두 메모 남길 수 있어요)</label>
           <input type="text" id="step2MemoInput" placeholder="예: 집중도 우수, 정독 지도 완료 등" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-emerald-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" />
         </div>
@@ -377,7 +377,7 @@
                 <span>독서노트 & 글쓰기</span>
               </h3>
             </div>
-            <p class="text-xs text-sky-950 font-medium mt-0.5">글쓰기 대상 도서를 선택하고 작성 상태를 누르면 등록된 목록에 자동 반영됩니다.</p>
+            <p class="text-xs text-sky-950 font-medium mt-0.5">글쓰기 대상 도서를 확인하고 작성 상태를 누르세요.</p>
           </div>
         </div>
 
@@ -413,9 +413,9 @@
           <!-- Rendered via renderWritingList() -->
         </div>
 
-        <!-- 3단계 선생님 전달 메모 / 비고 입력 -->
+        <!-- 3단계 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-sky-200">
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">기록 남기기 (선생님과 학생 모두 메모 남길 수 있어요)</label>
           <input type="text" id="step3MemoInput" placeholder="예: 줄거리 요약 표현력 칭찬, 글쓰기 분량 지도 등" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-sky-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm" />
         </div>
@@ -469,9 +469,9 @@
           <!-- Rendered via renderTrainingCards() -->
         </div>
 
-        <!-- 4단계 선생님 전달 메모 / 비고 입력 -->
+        <!-- 4단계 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-indigo-200">
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">기록 남기기 (선생님과 학생 모두 메모 남길 수 있어요)</label>
           <input type="text" id="step4MemoInput" placeholder="예: 독해 트레이닝 시간 단축 지도 등" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-indigo-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" />
         </div>
@@ -490,10 +490,6 @@
               <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
                 <span>다음 책 선정 및 재독 예약</span>
               </h3>
-              <span id="selectedNextBookBadge" class="hidden px-2.5 py-0.5 bg-purple-200 text-purple-900 rounded-lg text-xs font-bold border border-purple-300 flex items-center gap-1">
-                <span>📖 다음/재독:</span>
-                <strong id="selectedNextBookName"></strong>
-              </span>
             </div>
             <p class="text-xs text-purple-950 font-medium mt-0.5">다음 시간에 읽을 책을 선정하거나 재독을 예약하세요.</p>
           </div>
@@ -537,7 +533,7 @@
 
         <!-- 3. 비고 / 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-purple-100">
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">선생님 전달 메모 / 비고 (선택)</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">기록 남기기 (선생님과 학생 모두 메모 남길 수 있어요)</label>
           <input type="text" id="nextBookMemoInput" placeholder="예: 2권부터 읽을 예정입니다" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-purple-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm" />
         </div>
@@ -871,7 +867,7 @@
 
         <!-- Row 3: 비고 (메모) -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">비고 (메모)</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">기록 남기기 (선생님과 학생 모두 메모 남길 수 있어요)</label>
           <input type="text" id="modalBookMemo" placeholder="특이사항이나 선생님 전달 메모 (선택)"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
         </div>
@@ -1917,6 +1913,24 @@
         updateRemainingTimeDisplay();
         state.remainingTimerInterval = setInterval(updateRemainingTimeDisplay, 1000);
 
+        // [당일 재로그인 대비] 복원 데이터가 아직 지정되지 않은 경우, 오늘 직전 저장/하원된 세션이 있는지 확인하여 자동 복원!
+        if (!isRestoring && !restoredMissions) {
+          const lastSessionKey = "last_completed_session_" + cleanName + "_" + state.todayDateStr;
+          const backupRaw = localStorage.getItem(lastSessionKey);
+          if (backupRaw) {
+            try {
+              const backupSession = JSON.parse(backupRaw);
+              if (backupSession && isSameDate(backupSession.date, state.todayDateStr) && backupSession.missions) {
+                isRestoring = true;
+                restoredMissions = backupSession.missions;
+                console.log(`[loginStudent] Restored previous completed/interrupted session for ${student.name}`);
+              }
+            } catch (e) {
+              console.warn("Error parsing backup session:", e);
+            }
+          }
+        }
+
         if (isRestoring && restoredMissions) {
           state.missions = restoredMissions;
           if (!Array.isArray(state.missions.books)) state.missions.books = [];
@@ -2725,6 +2739,10 @@
       }
 
       const currentLvl = document.getElementById("modalBookLevel") ? document.getElementById("modalBookLevel").value : "";
+      if (currentLvl === "[자율]" || currentLvl === "자율" || currentLvl.includes("자율")) {
+        closeAutocompleteList();
+        return;
+      }
       const currentCrs = document.getElementById("modalBookCourse") ? document.getElementById("modalBookCourse").value : "";
       const currentGenre = document.getElementById("modalBookGenre") ? document.getElementById("modalBookGenre").value : "";
       const currentDiff = document.getElementById("modalBookDifficulty") ? document.getElementById("modalBookDifficulty").value : "";
@@ -4200,29 +4218,22 @@
     // 11. Realtime Progress & Summary Box Calculation + Auto Sync to Google Sheets
     let realtimeSyncTimer = null;
 
-    // [J열 배제 항목 수집] 점수가 없고 글완도 아닌 독서 도서 및 진행 중인 글쓰기(작성대기, 작성중, 요약)는 K열에 기록
-    function buildNonJReadingWritingSummary() {
+    // [2단계 독서 J열 배제 도서 수집] 점수가 없고 글완도 아닌 독서 도서는 K열에 기록 (접두어 없이 '도서명 (상태)')
+    function buildNonJReadingSummary() {
       const noteBook = (state.missions.noteBookTitle || "").trim();
       const noteStat = state.missions.noteStatus || "작성안함";
       const writings = [...(state.missions.writingList || [])];
 
       if (noteBook && noteStat !== "작성안함") {
         if (!writings.some(w => (w.title || '').replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''))) {
-          const bMatch = (state.missions.books || []).find(b => (b.title || '').replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''));
-          const cMatch = (state.missions.currentCandidates || []).find(c => (c.title || '').replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''));
           writings.push({
             title: noteBook,
-            level: bMatch ? bMatch.level : (cMatch ? cMatch.level : ""),
-            course: bMatch ? bMatch.course : (cMatch ? cMatch.course : ""),
-            difficulty: bMatch ? bMatch.difficulty : (cMatch ? cMatch.difficulty : ""),
             status: noteStat
           });
         }
       }
 
       const parts = [];
-
-      // 1. 2단계 오늘 독서 도서 중 점수가 없고 글완도 아닌 도서 (J열 배제 -> K열 기록)
       (state.missions.books || []).forEach(b => {
         const cleanB = (b.title || '').replace(/\s+/g, '');
         const matchedW = writings.find(w => (w.title || '').replace(/\s+/g, '') === cleanB);
@@ -4230,18 +4241,38 @@
         const isDone = (effStat === "완료" || effStat === "글완" || effStat === true);
         const hasScore = (b.score !== undefined && b.score !== null && String(b.score).trim() !== "");
         if (!hasScore && !isDone) {
-          parts.push(`독서:${b.title} (${b.status || '완독'})`);
+          parts.push(`${b.title} (${b.status || '완독'})`);
         }
       });
+      return parts;
+    }
 
-      // 2. 글완이 아닌 글쓰기 진행 항목 (작성대기, 작성중, 요약하기 등)
+    // [3단계 글쓰기 미완료 도서 수집] 글완이 아닌 진행 항목(작성대기, 작성중, 요약하기 등)은 K열에 기록 (접두어 없이 '도서명 (상태)')
+    function buildNonJWritingSummary() {
+      const noteBook = (state.missions.noteBookTitle || "").trim();
+      const noteStat = state.missions.noteStatus || "작성안함";
+      const writings = [...(state.missions.writingList || [])];
+
+      if (noteBook && noteStat !== "작성안함") {
+        if (!writings.some(w => (w.title || '').replace(/\s+/g, '') === noteBook.replace(/\s+/g, ''))) {
+          writings.push({
+            title: noteBook,
+            status: noteStat
+          });
+        }
+      }
+
+      const parts = [];
       writings.forEach(w => {
         if (w.status && w.status !== "완료" && w.status !== "글완" && w.status !== true && w.status !== "작성안함") {
-          parts.push(`글쓰기:${w.title} (${w.status})`);
+          parts.push(`${w.title} (${w.status})`);
         }
       });
-
       return parts;
+    }
+
+    function buildNonJReadingWritingSummary() {
+      return [...buildNonJReadingSummary(), ...buildNonJWritingSummary()];
     }
 
     // [핵심 비즈니스 규칙] 독서 및 글쓰기에서 J열은 오직 진단 점수가 있거나 글완인 경우만 기록!
@@ -4382,51 +4413,67 @@
 
       const contentParts = [];
 
-      // [핵심 비즈니스 규칙] 독서 및 글쓰기 중 J열(점수 있음 or 글완)에 기록되지 않은 진행 항목(작성대기, 작성중, 요약, 점수 없는 완독 등)은 K열에 기록!
-      const nonJParts = buildNonJReadingWritingSummary();
-      if (nonJParts.length > 0) {
-        contentParts.push(nonJParts.join(", "));
-      }
-
-      // 4단계 트레이닝
-      if (trSummary) {
-        let trPart = trSummary;
-        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
-        if (step4Memo) trPart += ` (메모:${step4Memo})`;
-        contentParts.push(trPart);
-      } else if (step4Memo) {
-        contentParts.push(`트레이닝메모: ${step4Memo}`);
-      }
-
       // 1단계 숙제 점검
       if (state.missions.hwStatus) {
         let hwPart = state.missions.hwStatus;
-        if (hwBook) hwPart += ` ${hwBook}`;
-        if (step1Memo) hwPart += ` (메모:${step1Memo})`;
+        if (hwBook) hwPart += ` (${hwBook})`;
+        if (step1Memo) hwPart += ` (${step1Memo})`;
         contentParts.push(hwPart);
       } else if (step1Memo) {
-        contentParts.push(`숙제메모: ${step1Memo}`);
+        contentParts.push(step1Memo);
       }
 
-      // 2단계 독서 코멘트
-      if (step2Memo) {
-        contentParts.push(`독서메모: ${step2Memo}`);
+      // 2단계 오늘 독서 (J열 미반영 도서)
+      const nonJReading = buildNonJReadingSummary();
+      let readingPart = nonJReading.join(", ");
+      if (readingPart && step2Memo) {
+        readingPart += ` (${step2Memo})`;
+      } else if (!readingPart && step2Memo) {
+        readingPart = step2Memo;
+      }
+      if (readingPart) {
+        contentParts.push(readingPart);
       }
 
-      // 3단계 글쓰기 코멘트
-      if (step3Memo) {
-        contentParts.push(`글쓰기메모: ${step3Memo}`);
+      // 3단계 글쓰기 (작성완료 제외 진행 항목)
+      const nonJWriting = buildNonJWritingSummary();
+      let writingPart = nonJWriting.join(", ");
+      if (writingPart && step3Memo) {
+        writingPart += ` (${step3Memo})`;
+      } else if (!writingPart && step3Memo) {
+        writingPart = step3Memo;
+      }
+      if (writingPart) {
+        contentParts.push(writingPart);
+      }
+
+      // 4단계 집중 트레이닝
+      if (trSummary) {
+        let trPart = trSummary;
+        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
+        if (step4Memo) trPart += ` (${step4Memo})`;
+        contentParts.push(trPart);
+      } else if (step4Memo) {
+        contentParts.push(step4Memo);
       }
 
       // 5단계 다음 책 & 메모
+      let nextPart = "";
       if (nextBook) {
-        contentParts.push(`다음책: ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`);
+        nextPart = `다음책: ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`;
       } else if (actStr) {
-        contentParts.push(`사전학습: ${actStr}`);
+        nextPart = `다음책: ${actStr}`;
       }
-      if (nextMemo) {
-        contentParts.push(`메모: ${nextMemo}`);
+      if (nextPart && nextMemo) {
+        nextPart += ` (${nextMemo})`;
+      } else if (!nextPart && nextMemo) {
+        nextPart = nextMemo;
       }
+      if (nextPart) {
+        contentParts.push(nextPart);
+      }
+
+      // 6단계 학생 소감
       if (reflection) {
         contentParts.push(reflection);
       }
@@ -4604,51 +4651,67 @@
 
       const contentParts = [];
 
-      // [핵심 비즈니스 규칙] 독서 및 글쓰기 중 J열(점수 있음 or 글완)에 기록되지 않은 진행 항목(작성대기, 작성중, 요약, 점수 없는 완독 등)은 K열에 기록!
-      const nonJParts = buildNonJReadingWritingSummary();
-      if (nonJParts.length > 0) {
-        contentParts.push(nonJParts.join(", "));
-      }
-
-      // 4단계 트레이닝
-      if (trSummary) {
-        let trPart = trSummary;
-        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
-        if (step4Memo) trPart += ` (메모:${step4Memo})`;
-        contentParts.push(trPart);
-      } else if (step4Memo) {
-        contentParts.push(`트레이닝메모: ${step4Memo}`);
-      }
-
       // 1단계 숙제 점검
       if (state.missions.hwStatus) {
         let hwPart = state.missions.hwStatus;
-        if (hwBook) hwPart += ` ${hwBook}`;
-        if (step1Memo) hwPart += ` (메모:${step1Memo})`;
+        if (hwBook) hwPart += ` (${hwBook})`;
+        if (step1Memo) hwPart += ` (${step1Memo})`;
         contentParts.push(hwPart);
       } else if (step1Memo) {
-        contentParts.push(`숙제메모: ${step1Memo}`);
+        contentParts.push(step1Memo);
       }
 
-      // 2단계 독서 코멘트
-      if (step2Memo) {
-        contentParts.push(`독서메모: ${step2Memo}`);
+      // 2단계 오늘 독서 (J열 미반영 도서)
+      const nonJReading = buildNonJReadingSummary();
+      let readingPart = nonJReading.join(", ");
+      if (readingPart && step2Memo) {
+        readingPart += ` (${step2Memo})`;
+      } else if (!readingPart && step2Memo) {
+        readingPart = step2Memo;
+      }
+      if (readingPart) {
+        contentParts.push(readingPart);
       }
 
-      // 3단계 글쓰기 코멘트
-      if (step3Memo) {
-        contentParts.push(`글쓰기메모: ${step3Memo}`);
+      // 3단계 글쓰기 (작성완료 제외 진행 항목)
+      const nonJWriting = buildNonJWritingSummary();
+      let writingPart = nonJWriting.join(", ");
+      if (writingPart && step3Memo) {
+        writingPart += ` (${step3Memo})`;
+      } else if (!writingPart && step3Memo) {
+        writingPart = step3Memo;
+      }
+      if (writingPart) {
+        contentParts.push(writingPart);
+      }
+
+      // 4단계 집중 트레이닝
+      if (trSummary) {
+        let trPart = trSummary;
+        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
+        if (step4Memo) trPart += ` (${step4Memo})`;
+        contentParts.push(trPart);
+      } else if (step4Memo) {
+        contentParts.push(step4Memo);
       }
 
       // 5단계 다음 책 & 메모
+      let nextPart = "";
       if (nextBook) {
-        contentParts.push(`다음책: ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`);
+        nextPart = `다음책: ${nextBook}${isReread}${actStr ? ' ' + actStr : ''}`;
       } else if (actStr) {
-        contentParts.push(`사전학습: ${actStr}`);
+        nextPart = `다음책: ${actStr}`;
       }
-      if (nextMemo) {
-        contentParts.push(`메모: ${nextMemo}`);
+      if (nextPart && nextMemo) {
+        nextPart += ` (${nextMemo})`;
+      } else if (!nextPart && nextMemo) {
+        nextPart = nextMemo;
       }
+      if (nextPart) {
+        contentParts.push(nextPart);
+      }
+
+      // 6단계 학생 소감
       if (reflection) {
         contentParts.push(reflection);
       }
@@ -4670,6 +4733,21 @@
         }) || null;
       }
       const scheduledTime = (targetLog && targetLog.time) ? targetLog.time : getStudentScheduledTime(student);
+
+      // [당일 재로그인 대비] 하원 완료된 세션 백업 저장 (당일 재로그인 시 100% 자동 복원)
+      try {
+        const lastSessionKey = "last_completed_session_" + cleanName + "_" + state.todayDateStr;
+        localStorage.setItem(lastSessionKey, JSON.stringify({
+          date: state.todayDateStr,
+          student: student,
+          dailyLogRow: targetLog ? targetLog.row : (state.currentDailyLog ? state.currentDailyLog.row : null),
+          inTime: state.currentInTime,
+          missions: JSON.parse(JSON.stringify(state.missions || {})),
+          savedAt: Date.now()
+        }));
+      } catch (e) {
+        console.warn("Failed to backup completed session:", e);
+      }
 
       // Persist next book for next session
       if (nextBook) {
@@ -4803,6 +4881,22 @@
       if (state.remainingTimerInterval) {
         clearInterval(state.remainingTimerInterval);
         state.remainingTimerInterval = null;
+      }
+      if (state.currentStudent) {
+        const cName = (state.currentStudent.name || '').trim().replace(/\s+/g, '');
+        if (cName && state.missions) {
+          try {
+            const lastSessionKey = "last_completed_session_" + cName + "_" + state.todayDateStr;
+            localStorage.setItem(lastSessionKey, JSON.stringify({
+              date: state.todayDateStr,
+              student: state.currentStudent,
+              dailyLogRow: state.currentDailyLog ? state.currentDailyLog.row : null,
+              inTime: state.currentInTime,
+              missions: JSON.parse(JSON.stringify(state.missions || {})),
+              savedAt: Date.now()
+            }));
+          } catch (e) {}
+        }
       }
       state.currentStudent = null;
       state.currentDailyLog = null;
