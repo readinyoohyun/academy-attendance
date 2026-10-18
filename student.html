@@ -117,7 +117,7 @@
           </div>
           <span class="text-indigo-300 hidden md:inline">|</span>
           <span id="liveSyncStatusBadge" class="text-[10px] text-emerald-700 font-bold hidden md:inline-flex items-center gap-1 transition-opacity opacity-0 flex-shrink-0">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>시트 실시간 연동됨
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>학습 내용 자동 보존됨
           </span>
         </div>
 
@@ -3090,8 +3090,8 @@
         const effNoteStatus = matchedW ? matchedW.status : ((b.title || '').replace(/\s+/g, '') === (state.missions.noteBookTitle || '').replace(/\s+/g, '') ? (state.missions.noteStatus || "") : "");
         const jRecord = formatJColBookRecord(b.level, b.course, b.title, b.score, effNoteStatus, b.difficulty);
         let jBadge = jRecord
-          ? `<span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold text-[11px]">J열: ${jRecord}</span>`
-          : `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-medium text-[11px]" title="진단 점수가 없거나 글완이 아닌 도서는 K열(수업내용)에 기록됩니다">K열 반영</span>`;
+          ? `<span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold text-[11px]" title="하원 시 J열에 기록됩니다">하원 시 J열 반영 (${jRecord})</span>`
+          : `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-medium text-[11px]" title="진단 점수가 없거나 글완이 아닌 도서는 하원 시 K열에 기록됩니다">하원 시 K열 반영</span>`;
         let lvlCrsBadge = "";
         if (b.level === "[자율]" || b.level === "자율 독서" || b.level === "자율") {
           lvlCrsBadge = "[자율]";
@@ -3440,7 +3440,7 @@
             <span class="flex items-center gap-1.5">
               <span>📋</span> <span>등록된 글쓰기 목록 (${list.length}건):</span>
             </span>
-            <span class="text-[11px] text-sky-600 font-normal">시트 실시간 반영</span>
+            <span class="text-[11px] text-slate-500 font-medium">하원 시 시트 반영</span>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             ${list.map((w, idx) => {
@@ -4489,7 +4489,7 @@
       const noteStat = state.missions.noteStatus || "작성안함";
 
       const jColSummary = buildColJString();
-      document.getElementById("sumBooks").innerText = jColSummary || (state.missions.books.length > 0 ? "K열 반영 (진단/글완 대기)" : "등록된 도서 없음");
+      document.getElementById("sumBooks").innerText = jColSummary ? `${jColSummary} (하원 시 J열)` : (state.missions.books.length > 0 ? "하원 시 K열 반영 (진단/글완 대기)" : "등록된 도서 없음");
 
       let sumNotesText = "";
       if (state.missions.writingList && state.missions.writingList.length > 0) {
