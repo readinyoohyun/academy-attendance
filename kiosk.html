@@ -707,8 +707,23 @@
     let logoUrl = localStorage.getItem("logo_url") || "";
     if (logoUrl === "undefined" || logoUrl === "null") logoUrl = "";
     
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbygKb7Xmd_iXyKW8xAFWZwbZ_3yFxdKrQZixr8D0fokHsK00QmvQsSBM7l5zqFxI-U1Ww/exec";
+
+    function getNormalizedStatus(status) {
+      if (!status) return "대기";
+      const s = String(status).trim().replace(/\s+/g, "");
+      if (s === "출석" || s === "수업완료" || s === "출석완료" || s === "완료" || s === "하원" || s === "하원완료") return "수업완료";
+      if (s === "보강완료" || s === "보강 완료") return "보강완료";
+      if (s === "보강" || s === "보강대기" || s === "보강수업") return "보강";
+      if (s === "수업중" || s === "수업 중" || s === "등원" || s === "등원완료" || s === "중") return "수업중";
+      if (s === "결석") return "결석";
+      if (s === "휴강") return "휴강";
+      if (s === "대기") return "대기";
+      return s;
+    }
+
     let config = {
-      gasWebhookUrl: "",
+      gasWebhookUrl: DEFAULT_GAS_URL,
       smsMode: "local",
       smsLocalIp: "http://192.168.219.148:8080/send-sms",
       smsTemplateIn: `{name}학생이 ${academyName}에 {time}에 등원하여 수업중입니다.`,
@@ -891,8 +906,8 @@
         localStorage.setItem("sms_local_ip", decodeURIComponent(paramSmsLocalIp));
       }
 
-      // Load configurations from localStorage
-      config.gasWebhookUrl = localStorage.getItem("gas_webhook_url") || "";
+      // Load configurations from localStorage (fallback to DEFAULT_GAS_URL)
+      config.gasWebhookUrl = localStorage.getItem("gas_webhook_url") || DEFAULT_GAS_URL;
       config.smsMode = localStorage.getItem("sms_mode") || "local";
       config.smsLocalIp = localStorage.getItem("sms_local_ip") || "http://192.168.219.148:8080/send-sms";
       config.smsTemplateIn = localStorage.getItem("sms_template_in") || config.smsTemplateIn;
@@ -934,8 +949,21 @@
       // Live remaining time countdown timer (updates remaining time displays every 10 seconds)
       setInterval(renderStudentCards, 10000);
 
-      // Auto background sync from Google Sheets every 60 seconds (1 minute)
-      setInterval(fetchDataFromGoogleSheets, 60000);
+      // Auto background sync from Google Sheets every 20 seconds (improved responsiveness)
+      setInterval(fetchDataFromGoogleSheets, 20000);
+
+      // Instant refresh when tablet screen turns on or window regains focus
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          fetchDataFromGoogleSheets();
+        }
+      });
+      window.addEventListener("focus", () => {
+        fetchDataFromGoogleSheets();
+      });
+      window.addEventListener("pageshow", () => {
+        fetchDataFromGoogleSheets();
+      });
 
       // 4. Bind settings buttons (both gear and hidden title click)
       document.getElementById("btnOpenSettings").onclick = openSettingsPrompt;
@@ -1046,8 +1074,36 @@
         .then(res => res.json())
         .then(data => {
           if (data && typeof data === 'object') {
+            const incomingLogs = data.dailyLogs || [];
+            
+            // [낙관적 UI 락 보호] 방금 앱에서 등원/하원 처리한 학생의 상태를 25초간 보호하여 시트 지연 응답으로 인한 롤백 방지
+            const nowTs = Date.now();
+            if (state.attendanceLocks) {
+              for (const [lockName, lock] of Object.entries(state.attendanceLocks)) {
+                if (nowTs - lock.timestamp > 25000) {
+                  delete state.attendanceLocks[lockName];
+                }
+              }
+
+              incomingLogs.forEach(l => {
+                const cName = (l.name || '').trim().replace(/\s+/g, '');
+                const lock = state.attendanceLocks[cName];
+                if (lock && (nowTs - lock.timestamp <= 25000)) {
+                  const sNorm = getNormalizedStatus(l.status);
+                  const lNorm = getNormalizedStatus(lock.status);
+                  if (sNorm !== lNorm) {
+                    l.status = lock.status;
+                    if (lock.inTime) l.inTime = lock.inTime;
+                    if (lock.outTime) l.outTime = lock.outTime;
+                  } else {
+                    delete state.attendanceLocks[cName];
+                  }
+                }
+              });
+            }
+
             state.students = data.students || [];
-            state.dailyLogs = data.dailyLogs || [];
+            state.dailyLogs = incomingLogs;
             state.memberAnalysis = data.memberAnalysis || [];
             
             // Save to shared localStorage so the main app also gets it
@@ -1194,37 +1250,50 @@
         if (uniqueStudentTimeMap.has(uniqueKey)) {
           uniqueStudentTimeMap.get(uniqueKey).dailyLog = l;
         } else {
-          // If student has a roster record matching name and this time, prioritize that row!
-          const matchingRoster = state.students.find(s => {
-            if ((s.name || '').replace(/\s+/g, '') !== cleanName) return false;
-            const regTimeRaw = s.times && (s.times[todayDay] || s.times[todayDay.substring(0, 1)]);
-            if (regTimeRaw) {
-              const parts = regTimeRaw.split(/[,/; ]+/).map(t => normalizeTimeString(t)).filter(Boolean);
-              if (parts.includes(normLogTime)) return true;
+          // If exact uniqueKey is not found, check if there is an existing card for this student that doesn't have a dailyLog yet
+          let matchedItem = null;
+          for (const item of uniqueStudentTimeMap.values()) {
+            if ((item.name || '').replace(/\s+/g, '') === cleanName && !item.dailyLog) {
+              matchedItem = item;
+              break;
             }
-            return false;
-          }) || state.students.find(s => (s.name || '').replace(/\s+/g, '') === cleanName);
+          }
 
-          const studentObj = matchingRoster ? {
-            ...matchingRoster,
-            scheduledTime: normLogTime,
-            uniqueKey: uniqueKey,
-            dailyLog: l
-          } : {
-            id: 'temp_' + l.row,
-            row: -1,
-            name: l.name,
-            grade: '미등록',
-            classes: '임시 추가',
-            times: {},
-            notes: l.notes,
-            absentDates: '',
-            makeupDate: '',
-            scheduledTime: normLogTime,
-            uniqueKey: uniqueKey,
-            dailyLog: l
-          };
-          uniqueStudentTimeMap.set(uniqueKey, studentObj);
+          if (matchedItem) {
+            matchedItem.dailyLog = l;
+          } else {
+            // If student has a roster record matching name and this time, prioritize that row!
+            const matchingRoster = state.students.find(s => {
+              if ((s.name || '').replace(/\s+/g, '') !== cleanName) return false;
+              const regTimeRaw = s.times && (s.times[todayDay] || s.times[todayDay.substring(0, 1)]);
+              if (regTimeRaw) {
+                const parts = regTimeRaw.split(/[,/; ]+/).map(t => normalizeTimeString(t)).filter(Boolean);
+                if (parts.includes(normLogTime)) return true;
+              }
+              return false;
+            }) || state.students.find(s => (s.name || '').replace(/\s+/g, '') === cleanName);
+
+            const studentObj = matchingRoster ? {
+              ...matchingRoster,
+              scheduledTime: normLogTime,
+              uniqueKey: uniqueKey,
+              dailyLog: l
+            } : {
+              id: 'temp_' + l.row,
+              row: -1,
+              name: l.name,
+              grade: '미등록',
+              classes: '임시 추가',
+              times: {},
+              notes: l.notes,
+              absentDates: '',
+              makeupDate: '',
+              scheduledTime: normLogTime,
+              uniqueKey: uniqueKey,
+              dailyLog: l
+            };
+            uniqueStudentTimeMap.set(uniqueKey, studentObj);
+          }
         }
       });
 
@@ -1260,13 +1329,15 @@
         }
 
         if (log) {
-          const norm = log.status || "대기";
+          const norm = getNormalizedStatus(log.status);
           if (norm === "수업중") {
             status = "수업중";
           } else if (norm === "수업완료" || norm === "보강완료") {
             status = "수업완료";
           } else if (norm === "결석") {
             status = "결석";
+          } else if (norm === "보강") {
+            status = "보강";
           } else if (norm === "휴강") {
             status = "휴강";
           }
@@ -1391,7 +1462,7 @@
           }
 
           if (log) {
-            const norm = log.status || "대기";
+            const norm = getNormalizedStatus(log.status);
             if (norm === "수업중") {
               status = "수업중";
               statusClass = "수업중";
@@ -1420,6 +1491,9 @@
             } else if (norm === "결석") {
               status = "결석";
               statusClass = "결석";
+            } else if (norm === "보강") {
+              status = "보강";
+              statusClass = "보강";
             } else if (norm === "휴강") {
               status = "휴강";
               statusClass = "휴강";
@@ -1597,7 +1671,7 @@
             (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
             isSameDate(log.date, dailyLogDateStr) &&
             normalizeTimeString(log.time) === targetSlotTime &&
-            (log.status === "수업중" || log.status === "수업 중" || log.status === "보강 수업중")
+            getNormalizedStatus(log.status) === "수업중"
           );
         }
         
@@ -1605,7 +1679,7 @@
           dailyLog = [...state.dailyLogs].reverse().find(log => 
             (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
             isSameDate(log.date, dailyLogDateStr) &&
-            (log.status === "수업중" || log.status === "수업 중" || log.status === "보강 수업중")
+            getNormalizedStatus(log.status) === "수업중"
           );
         }
       }
@@ -1624,7 +1698,7 @@
         dailyLog = [...state.dailyLogs].reverse().find(log => 
           (log.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') && 
           isSameDate(log.date, dailyLogDateStr) &&
-          log.status !== "수업완료" && log.status !== "보강완료"
+          getNormalizedStatus(log.status) !== "수업완료" && getNormalizedStatus(log.status) !== "보강완료"
         );
       }
 
@@ -1780,6 +1854,16 @@
         student.attendanceStatus = '수업완료';
       }
 
+      // [낙관적 UI 락 등록] 구글 시트 쓰기 딜레이(1~3초) 중 이전 상태로 롤백되는 현상을 원천 방지 (25초간 상태 보호)
+      state.attendanceLocks = state.attendanceLocks || {};
+      const cleanStudentName = (student.name || '').trim().replace(/\s+/g, '');
+      state.attendanceLocks[cleanStudentName] = {
+        status: dailyStatus,
+        inTime: dailyLog ? dailyLog.inTime : (type === 'in' ? currentTime : ""),
+        outTime: dailyLog ? dailyLog.outTime : (type === 'out' ? currentTime : ""),
+        timestamp: Date.now()
+      };
+
       sendKioskSmsNotification(student, type, type === 'in' ? currentTime : currentTime);
       showSuccessOverlay(student.name, type);
     }
@@ -1861,6 +1945,8 @@
       const student = state.students.find(s => s.id === act.studentId);
       if (student) {
         student.attendanceStatus = act.previousStudentStatus;
+        const cleanName = (student.name || '').trim().replace(/\s+/g, '');
+        if (state.attendanceLocks) delete state.attendanceLocks[cleanName];
       }
 
       // 3. Revert the dailyLog in local state
