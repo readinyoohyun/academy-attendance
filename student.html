@@ -329,7 +329,7 @@
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
               <span>오늘 독서 & 진단 기록</span>
             </h3>
-            <p class="text-xs text-emerald-950 font-medium">순번, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요.</p>
+            <p class="text-xs text-emerald-950 font-medium">오늘 읽은 권수, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요.</p>
           </div>
         </div>
 
@@ -764,18 +764,18 @@
           📖
         </span>
         <h3 class="text-xl sm:text-2xl font-black text-slate-900">오늘 독서 도서 등록</h3>
-        <p class="text-xs sm:text-sm text-slate-500 mt-1">순번, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요.</p>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">오늘 읽은 권수, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요.</p>
       </div>
 
       <!-- Form Inputs -->
       <div class="space-y-4">
         
-        <!-- Row 1: 순번 & 독서 분야 -->
+        <!-- Row 1: 오늘 읽은 권수 & 독서 분야 -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">순번</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">오늘 읽은 권수</label>
             <select id="modalBookOrder" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="" selected>순번</option>
+              <option value="" selected>오늘 읽은 권수</option>
               <option value="1권째">1권째</option>
               <option value="2권째">2권째</option>
               <option value="3권째">3권째</option>
@@ -825,12 +825,7 @@
               <option value="2코스">2코스</option>
               <option value="3코스">3코스</option>
               <option value="4코스">4코스</option>
-              <option value="재미있는책읽기">재미있는책읽기</option>
-              <option value="새싹">새싹</option>
-              <option value="씨앗">씨앗</option>
-              <option value="꽃">꽃</option>
               <option value="재독">재독</option>
-              <option value="선택 안 함">선택 안 함</option>
             </select>
           </div>
           <div>
@@ -2325,7 +2320,8 @@
           { val: "", text: "선택 안 함" },
           { val: "씨앗", text: "🌱 씨앗" },
           { val: "새싹", text: "🌿 새싹" },
-          { val: "꽃", text: "🌸 꽃" }
+          { val: "꽃", text: "🌸 꽃" },
+          { val: "재미있는 책읽기", text: "📖 재미있는 책읽기" }
         ];
         diffSelect.disabled = false;
         diffSelect.classList.remove("bg-slate-100", "cursor-not-allowed");
@@ -2364,7 +2360,12 @@
       document.getElementById("modalBookOrder").value = "";
       document.getElementById("modalBookGenre").value = "";
       document.getElementById("modalBookLevel").value = "";
-      document.getElementById("modalBookCourse").value = "";
+      const crsSelect = document.getElementById("modalBookCourse");
+      if (crsSelect) {
+        crsSelect.value = "";
+        crsSelect.disabled = false;
+        crsSelect.classList.remove("bg-slate-100", "cursor-not-allowed");
+      }
       updateDifficultyOptions("");
       document.getElementById("modalBookScore").value = "";
       document.getElementById("modalBookStatus").value = "";
@@ -2376,8 +2377,8 @@
       const nextBookTyped = (state.missions.nextBookTitle || "").trim();
       if (nextBookTyped && !document.getElementById("modalBookTitle").value) {
         document.getElementById("modalBookTitle").value = nextBookTyped;
-        if (state.missions.nextBookReread) {
-          document.getElementById("modalBookCourse").value = "재독";
+        if (state.missions.nextBookReread && crsSelect) {
+          crsSelect.value = "재독";
         }
       }
 
@@ -2425,10 +2426,18 @@
     function handleModalLevelChange() {
       const lvl = document.getElementById("modalBookLevel").value;
       const crsSelect = document.getElementById("modalBookCourse");
-      if (lvl === "[자율]" || lvl === "자율 독서" || lvl === "자율") {
-        crsSelect.value = "선택 안 함";
-      } else if (crsSelect.value === "선택 안 함" || crsSelect.value === "선택 안함") {
-        crsSelect.value = "1코스";
+      if (crsSelect) {
+        if (lvl === "기초" || lvl === "[자율]" || lvl === "자율 독서" || lvl === "자율") {
+          crsSelect.value = "";
+          crsSelect.disabled = true;
+          crsSelect.classList.add("bg-slate-100", "cursor-not-allowed");
+        } else {
+          crsSelect.disabled = false;
+          crsSelect.classList.remove("bg-slate-100", "cursor-not-allowed");
+          if (!crsSelect.value) {
+            crsSelect.value = "1코스";
+          }
+        }
       }
       updateDifficultyOptions(lvl);
     }
@@ -2543,8 +2552,17 @@
         if (b.difficulty && document.getElementById("modalBookDifficulty")) {
           document.getElementById("modalBookDifficulty").value = b.difficulty;
         }
-        if (b.course && document.getElementById("modalBookCourse")) {
-          document.getElementById("modalBookCourse").value = b.course;
+        const crsSelect = document.getElementById("modalBookCourse");
+        if (crsSelect) {
+          if (b.level === "기초" || b.level === "[자율]" || b.level === "자율") {
+            crsSelect.value = "";
+            crsSelect.disabled = true;
+            crsSelect.classList.add("bg-slate-100", "cursor-not-allowed");
+          } else {
+            crsSelect.disabled = false;
+            crsSelect.classList.remove("bg-slate-100", "cursor-not-allowed");
+            crsSelect.value = b.course || "1코스";
+          }
         }
 
         closeAutocompleteList();
@@ -2572,11 +2590,7 @@
       }
 
       if (level === "기초") {
-        if (!course || course === "선택 안 함" || course === "선택 안함") {
-          return `기초 ${title}${sc}${noteTag}`.trim();
-        }
-        let crs = String(course).replace("코스", "").trim();
-        return `기초-${crs} ${title}${sc}${noteTag}`.trim();
+        return `기초 ${title}${sc}${noteTag}`.trim();
       }
 
       if (!level && !course) {
@@ -2620,7 +2634,7 @@
 
       let genre = document.getElementById("modalBookGenre").value || "문학";
       let level = document.getElementById("modalBookLevel").value || "3레벨";
-      let course = (level === "[자율]" || level.includes("자율")) ? "선택 안 함" : (document.getElementById("modalBookCourse").value || "1코스");
+      let course = (level === "기초" || level === "[자율]" || level.includes("자율")) ? "" : (document.getElementById("modalBookCourse").value || "1코스");
       let difficulty = document.getElementById("modalBookDifficulty") ? document.getElementById("modalBookDifficulty").value : "";
 
       const book = {
@@ -2666,7 +2680,12 @@
         document.getElementById("modalBookOrder").value = "";
         document.getElementById("modalBookGenre").value = "";
         document.getElementById("modalBookLevel").value = "";
-        document.getElementById("modalBookCourse").value = "";
+        const crsSelect = document.getElementById("modalBookCourse");
+        if (crsSelect) {
+          crsSelect.value = "";
+          crsSelect.disabled = false;
+          crsSelect.classList.remove("bg-slate-100", "cursor-not-allowed");
+        }
         updateDifficultyOptions("");
         document.getElementById("modalBookTitle").value = "";
         document.getElementById("modalBookScore").value = "";
@@ -2743,6 +2762,7 @@
           else if (b.difficulty.includes("검정")) colorClass = "bg-slate-800 text-white border-slate-700";
           else if (b.difficulty === "꽃") colorClass = "bg-pink-100 text-pink-900 border-pink-300";
           else if (b.difficulty === "씨앗") colorClass = "bg-lime-100 text-lime-900 border-lime-300";
+          else if (b.difficulty.includes("재미있는")) colorClass = "bg-orange-100 text-orange-900 border-orange-300";
 
           diffBadge = `<span class="px-2 py-0.5 rounded-md ${colorClass} border text-[10px] font-bold">${b.difficulty}</span>`;
         }
