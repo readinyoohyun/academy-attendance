@@ -17,6 +17,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Canvas Confetti for Celebration -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Reading Books Database for 2-Letter Autocomplete & Difficulty Selection -->
+  <script src="books_db.js"></script>
   <!-- Pretendard Web Font -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <script>
@@ -795,11 +797,11 @@
           </div>
         </div>
 
-        <!-- Row 1.5: 레벨(12개) & 코스 드롭다운 -->
-        <div class="grid grid-cols-2 gap-3">
+        <!-- Row 1.5: 레벨(12개), 코스, 난이도 드롭다운 (3열 나란히) -->
+        <div class="grid grid-cols-3 gap-2 sm:gap-3">
           <div>
-            <label class="block text-xs font-bold text-emerald-800 mb-1.5">레벨 (12개)</label>
-            <select id="modalBookLevel" onchange="handleModalLevelChange()" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <label class="block text-xs font-bold text-emerald-800 mb-1.5">레벨</label>
+            <select id="modalBookLevel" onchange="handleModalLevelChange()" class="w-full p-2.5 sm:p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
               <option value="" selected>레벨</option>
               <option value="기초">기초</option>
               <option value="1레벨">1레벨</option>
@@ -817,7 +819,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold text-emerald-800 mb-1.5">코스</label>
-            <select id="modalBookCourse" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <select id="modalBookCourse" class="w-full p-2.5 sm:p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
               <option value="" selected>코스</option>
               <option value="1코스">1코스</option>
               <option value="2코스">2코스</option>
@@ -831,15 +833,28 @@
               <option value="선택 안 함">선택 안 함</option>
             </select>
           </div>
+          <div>
+            <label class="block text-xs font-bold text-emerald-800 mb-1.5">난이도</label>
+            <select id="modalBookDifficulty" class="w-full p-2.5 sm:p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="" selected>선택 안 함</option>
+            </select>
+          </div>
         </div>
 
-        <!-- Row 2: 도서명, 점수(선택), 상태체크 -->
+        <!-- Row 2: 도서명(2글자 자동완성), 점수(선택), 상태체크 -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">도서 정보 및 상태 체크</label>
-          <div class="grid grid-cols-12 gap-2">
-            <div class="col-span-6">
-              <input type="text" id="modalBookTitle" placeholder="도서명 입력"
+          <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+            <span>도서명 및 점수·상태</span>
+            <span class="text-[11px] font-bold text-emerald-700">✨ 2글자 입력 시 자동완성</span>
+          </label>
+          <div class="grid grid-cols-12 gap-2 relative">
+            <div class="col-span-6 relative">
+              <input type="text" id="modalBookTitle" placeholder="도서명 (2글자 이상 입력)" autocomplete="off"
+                     oninput="handleBookTitleSearch(this.value)"
                      class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <!-- Autocomplete Suggestion Popup Container -->
+              <div id="bookAutocompleteList" class="hidden absolute left-0 right-0 top-full mt-1.5 max-h-56 overflow-y-auto bg-white border-2 border-emerald-500 rounded-2xl shadow-2xl z-50 divide-y divide-slate-100">
+              </div>
             </div>
             <div class="col-span-3">
               <input type="number" id="modalBookScore" placeholder="점수" min="0" max="100" oninput="handleModalScoreChange()"
@@ -2296,15 +2311,65 @@
       }
     }
 
-    // 7. Book Modal Logic (with Level, Course, and J-Col Code Formatter)
+    // 7. Book Modal & Smart 2-Letter Autocomplete Logic (with Level, Course, Difficulty)
+    function updateDifficultyOptions(level, selectedVal = "") {
+      const diffSelect = document.getElementById("modalBookDifficulty");
+      if (!diffSelect) return;
+      diffSelect.innerHTML = "";
+
+      let options = [];
+      const lvlStr = String(level || '').trim();
+
+      if (lvlStr === "기초") {
+        options = [
+          { val: "", text: "선택 안 함" },
+          { val: "씨앗", text: "🌱 씨앗" },
+          { val: "새싹", text: "🌿 새싹" },
+          { val: "꽃", text: "🌸 꽃" }
+        ];
+        diffSelect.disabled = false;
+        diffSelect.classList.remove("bg-slate-100", "cursor-not-allowed");
+      } else if (["1레벨", "2레벨", "3레벨", "4레벨", "5레벨"].includes(lvlStr) || ["1", "2", "3", "4", "5"].includes(lvlStr)) {
+        options = [
+          { val: "", text: "선택 안 함" },
+          { val: "노랑띠", text: "🟡 노랑띠 (가장 쉬움)" },
+          { val: "초록띠", text: "🟢 초록띠" },
+          { val: "파랑띠", text: "🔵 파랑띠" },
+          { val: "품띠", text: "🥋 품띠" },
+          { val: "검정띠", text: "⚫ 검정띠 (가장 어려움)" }
+        ];
+        diffSelect.disabled = false;
+        diffSelect.classList.remove("bg-slate-100", "cursor-not-allowed");
+      } else {
+        options = [
+          { val: "", text: "선택 안 함 (난이도 없음)" }
+        ];
+        diffSelect.disabled = true;
+        diffSelect.classList.add("bg-slate-100", "cursor-not-allowed");
+      }
+
+      options.forEach(opt => {
+        const el = document.createElement("option");
+        el.value = opt.val;
+        el.innerText = opt.text;
+        if (opt.val === selectedVal) el.selected = true;
+        diffSelect.appendChild(el);
+      });
+      if (selectedVal) {
+        diffSelect.value = selectedVal;
+      }
+    }
+
     function openBookModal() {
       document.getElementById("modalBookOrder").value = "";
       document.getElementById("modalBookGenre").value = "";
       document.getElementById("modalBookLevel").value = "";
       document.getElementById("modalBookCourse").value = "";
+      updateDifficultyOptions("");
       document.getElementById("modalBookScore").value = "";
       document.getElementById("modalBookStatus").value = "";
       document.getElementById("modalBookMemo").value = "";
+      closeAutocompleteList();
 
       handleModalScoreChange();
 
@@ -2365,10 +2430,130 @@
       } else if (crsSelect.value === "선택 안 함" || crsSelect.value === "선택 안함") {
         crsSelect.value = "1코스";
       }
+      updateDifficultyOptions(lvl);
     }
 
     function closeBookModal() {
+      closeAutocompleteList();
       document.getElementById("bookModal").classList.add("hidden");
+    }
+
+    function closeAutocompleteList() {
+      const listEl = document.getElementById("bookAutocompleteList");
+      if (listEl) {
+        listEl.classList.add("hidden");
+        listEl.innerHTML = "";
+      }
+    }
+
+    function normalizeBookSearch(str) {
+      return String(str || '').replace(/[\s\.\,\!\?\[\]\(\)\-\_\:\~\"\'\/\;]/g, '').toLowerCase();
+    }
+
+    function handleBookTitleSearch(query) {
+      const listEl = document.getElementById("bookAutocompleteList");
+      if (!listEl) return;
+
+      const rawQ = (query || "").trim();
+      const cleanQ = normalizeBookSearch(rawQ);
+
+      if (cleanQ.length < 2) {
+        closeAutocompleteList();
+        return;
+      }
+
+      const db = Array.isArray(window.READING_BOOKS_DB) ? window.READING_BOOKS_DB : [];
+      if (db.length === 0) {
+        closeAutocompleteList();
+        return;
+      }
+
+      const currentLvl = document.getElementById("modalBookLevel") ? document.getElementById("modalBookLevel").value : "";
+
+      const matches = [];
+      for (let i = 0; i < db.length; i++) {
+        const b = db[i];
+        const normTitle = normalizeBookSearch(b.title);
+        if (normTitle.includes(cleanQ)) {
+          let score = 0;
+          if (normTitle.startsWith(cleanQ)) score += 50;
+          if (currentLvl && b.level === currentLvl) score += 30;
+          matches.push({ book: b, normTitle: normTitle, score: score });
+        }
+      }
+
+      matches.sort((a, b) => b.score - a.score);
+      const topMatches = matches.slice(0, 15);
+
+      if (topMatches.length === 0) {
+        listEl.innerHTML = `
+          <div class="p-3 text-center text-xs text-slate-400">
+            🔍 검색된 등록 도서가 없습니다. (직접 입력 가능)
+          </div>
+        `;
+        listEl.classList.remove("hidden");
+        return;
+      }
+
+      listEl.innerHTML = topMatches.map(m => {
+        const b = m.book;
+        const bEncoded = encodeURIComponent(JSON.stringify(b));
+        let diffBadge = "";
+        if (b.difficulty) {
+          let colorClass = "bg-amber-100 text-amber-900 border-amber-200";
+          if (b.difficulty.includes("노랑")) colorClass = "bg-yellow-100 text-yellow-900 border-yellow-300";
+          else if (b.difficulty.includes("초록") || b.difficulty === "새싹") colorClass = "bg-emerald-100 text-emerald-900 border-emerald-300";
+          else if (b.difficulty.includes("파랑")) colorClass = "bg-blue-100 text-blue-900 border-blue-300";
+          else if (b.difficulty.includes("품띠")) colorClass = "bg-purple-100 text-purple-900 border-purple-300";
+          else if (b.difficulty.includes("검정")) colorClass = "bg-slate-800 text-white border-slate-700";
+          else if (b.difficulty === "꽃") colorClass = "bg-pink-100 text-pink-900 border-pink-300";
+          else if (b.difficulty === "씨앗") colorClass = "bg-lime-100 text-lime-900 border-lime-300";
+
+          diffBadge = `<span class="px-2 py-0.5 rounded-lg ${colorClass} border font-bold text-[10px] flex-shrink-0">${b.difficulty}</span>`;
+        }
+        return `
+          <div onclick="selectAutocompleteBook('${bEncoded}')"
+               class="p-2.5 sm:p-3 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between gap-2 text-xs transition border-b border-slate-100 last:border-b-0">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-extrabold text-[10px] flex-shrink-0 shadow-sm">${b.level}</span>
+              <span class="font-bold text-slate-800 truncate">${b.title}</span>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              ${diffBadge}
+              <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-semibold">${b.genre || '문학'}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      listEl.classList.remove("hidden");
+    }
+
+    function selectAutocompleteBook(bookJsonEncoded) {
+      try {
+        const b = JSON.parse(decodeURIComponent(bookJsonEncoded));
+        document.getElementById("modalBookTitle").value = b.title;
+        if (b.genre && document.getElementById("modalBookGenre")) {
+          document.getElementById("modalBookGenre").value = b.genre;
+        }
+        if (b.level && document.getElementById("modalBookLevel")) {
+          document.getElementById("modalBookLevel").value = b.level;
+          updateDifficultyOptions(b.level, b.difficulty || "");
+        }
+        if (b.difficulty && document.getElementById("modalBookDifficulty")) {
+          document.getElementById("modalBookDifficulty").value = b.difficulty;
+        }
+        if (b.course && document.getElementById("modalBookCourse")) {
+          document.getElementById("modalBookCourse").value = b.course;
+        }
+
+        closeAutocompleteList();
+
+        const scoreInput = document.getElementById("modalBookScore");
+        if (scoreInput) scoreInput.focus();
+      } catch (err) {
+        console.error("selectAutocompleteBook error:", err);
+      }
     }
 
     function formatJColBookRecord(level, course, title, score, noteStatus = "") {
@@ -2436,6 +2621,7 @@
       let genre = document.getElementById("modalBookGenre").value || "문학";
       let level = document.getElementById("modalBookLevel").value || "3레벨";
       let course = (level === "[자율]" || level.includes("자율")) ? "선택 안 함" : (document.getElementById("modalBookCourse").value || "1코스");
+      let difficulty = document.getElementById("modalBookDifficulty") ? document.getElementById("modalBookDifficulty").value : "";
 
       const book = {
         id: "book_" + Date.now(),
@@ -2443,6 +2629,7 @@
         genre: genre,
         level: level,
         course: course,
+        difficulty: difficulty,
         title: title,
         score: score,
         status: status,
@@ -2480,10 +2667,12 @@
         document.getElementById("modalBookGenre").value = "";
         document.getElementById("modalBookLevel").value = "";
         document.getElementById("modalBookCourse").value = "";
+        updateDifficultyOptions("");
         document.getElementById("modalBookTitle").value = "";
         document.getElementById("modalBookScore").value = "";
         document.getElementById("modalBookStatus").value = "";
         document.getElementById("modalBookMemo").value = "";
+        closeAutocompleteList();
         handleModalScoreChange();
         document.getElementById("modalBookTitle").focus();
       }
@@ -2544,6 +2733,20 @@
           lvlCrsBadge = `${b.level} · ${b.course}`;
         }
 
+        let diffBadge = "";
+        if (b.difficulty) {
+          let colorClass = "bg-amber-100 text-amber-900 border-amber-300";
+          if (b.difficulty.includes("노랑")) colorClass = "bg-yellow-100 text-yellow-900 border-yellow-300";
+          else if (b.difficulty.includes("초록") || b.difficulty === "새싹") colorClass = "bg-emerald-100 text-emerald-900 border-emerald-300";
+          else if (b.difficulty.includes("파랑")) colorClass = "bg-blue-100 text-blue-900 border-blue-300";
+          else if (b.difficulty.includes("품띠")) colorClass = "bg-purple-100 text-purple-900 border-purple-300";
+          else if (b.difficulty.includes("검정")) colorClass = "bg-slate-800 text-white border-slate-700";
+          else if (b.difficulty === "꽃") colorClass = "bg-pink-100 text-pink-900 border-pink-300";
+          else if (b.difficulty === "씨앗") colorClass = "bg-lime-100 text-lime-900 border-lime-300";
+
+          diffBadge = `<span class="px-2 py-0.5 rounded-md ${colorClass} border text-[10px] font-bold">${b.difficulty}</span>`;
+        }
+
         item.innerHTML = `
           <div class="flex items-center gap-3">
             <span class="w-7 h-7 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
@@ -2553,6 +2756,7 @@
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-[10px] font-bold">${b.genre}</span>
                 <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">${lvlCrsBadge}</span>
+                ${diffBadge}
                 <span class="font-extrabold text-slate-900 text-sm">${b.title}</span>
                 ${scoreBadge}
                 ${jBadge}
@@ -2569,6 +2773,16 @@
         container.appendChild(item);
       });
     }
+
+    document.addEventListener("click", function (e) {
+      const listEl = document.getElementById("bookAutocompleteList");
+      const titleInput = document.getElementById("modalBookTitle");
+      if (listEl && !listEl.classList.contains("hidden")) {
+        if (!listEl.contains(e.target) && e.target !== titleInput) {
+          closeAutocompleteList();
+        }
+      }
+    });
 
     // [6번] 글쓰기 대상 도서 선택 바 렌더링 (글쓰기 완료된 도서는 제외, 미완료 도서만 표출!)
     function renderNoteBookChips() {
