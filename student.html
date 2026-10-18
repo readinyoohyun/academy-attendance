@@ -2469,49 +2469,13 @@
     }
 
     function handleBookGenreChange() {
-      const genre = document.getElementById("modalBookGenre") ? document.getElementById("modalBookGenre").value : "";
-      const crsSelect = document.getElementById("modalBookCourse");
-      const lvlSelect = document.getElementById("modalBookLevel");
-      const lvl = lvlSelect ? lvlSelect.value : "";
-
-      if (crsSelect && lvl !== "기초" && lvl !== "[자율]" && !lvl.includes("자율")) {
-        // 코스와 분야 상호 추천 연동:
-        // 1코스: 문학, 인문
-        // 2코스: 사회, 과학, 예술
-        if (genre === "문학" || genre === "인문") {
-          if (crsSelect.value !== "1코스" && crsSelect.value !== "재독") {
-            crsSelect.value = "1코스";
-          }
-        } else if (genre === "사회" || genre === "과학" || genre === "예술") {
-          if (crsSelect.value !== "2코스" && crsSelect.value !== "재독") {
-            crsSelect.value = "2코스";
-          }
-        }
-      }
-
-      // 분야 변경 시 해당 분야 도서 목록을 즉시 팝업에 표시
+      // [대표님 결정] 3코스 및 재독 구간에서는 독서 분야를 넘나들므로 분야와 코스를 자동 매칭하지 않음!
+      // 드롭다운에서 선택한 분야에 해당하는 도서 목록만 도서명 목록에 즉시 노출
       handleBookTitleSearch(document.getElementById("modalBookTitle") ? document.getElementById("modalBookTitle").value : "");
     }
 
     function handleModalCourseChange() {
-      const crs = document.getElementById("modalBookCourse") ? document.getElementById("modalBookCourse").value : "";
-      const genreSelect = document.getElementById("modalBookGenre");
-
-      if (genreSelect) {
-        if (crs === "1코스") {
-          // 1코스는 문학, 인문
-          if (genreSelect.value !== "문학" && genreSelect.value !== "인문") {
-            genreSelect.value = "문학";
-          }
-        } else if (crs === "2코스") {
-          // 2코스는 사회, 과학, 예술
-          if (genreSelect.value !== "사회" && genreSelect.value !== "과학" && genreSelect.value !== "예술") {
-            genreSelect.value = "사회";
-          }
-        }
-      }
-
-      // 코스 변경 시 해당 코스/분야 도서 목록을 즉시 팝업에 표시
+      // [대표님 결정] 분야와 코스를 자동 매칭하지 않고, 선택한 코스에 해당하는 도서 목록만 즉시 노출
       handleBookTitleSearch(document.getElementById("modalBookTitle") ? document.getElementById("modalBookTitle").value : "");
     }
 
@@ -2652,7 +2616,10 @@
         const b = JSON.parse(decodeURIComponent(bookJsonEncoded));
         document.getElementById("modalBookTitle").value = b.title;
         if (b.genre && document.getElementById("modalBookGenre")) {
-          document.getElementById("modalBookGenre").value = b.genre;
+          // 사용자가 이미 분야를 선택해 두었다면 유지, 비어있는 경우에만 자동 채움
+          if (!document.getElementById("modalBookGenre").value) {
+            document.getElementById("modalBookGenre").value = b.genre;
+          }
         }
         if (b.level && document.getElementById("modalBookLevel")) {
           document.getElementById("modalBookLevel").value = b.level;
@@ -2670,7 +2637,10 @@
           } else {
             crsSelect.disabled = false;
             crsSelect.classList.remove("bg-slate-100", "cursor-not-allowed");
-            crsSelect.value = b.course || "1코스";
+            // [대표님 결정] 사용자가 이미 코스(예: 3코스, 재독 등)를 직접 지정한 상태라면 덮어쓰지 않고 유지!
+            if (!crsSelect.value) {
+              crsSelect.value = b.course || "1코스";
+            }
           }
         }
 
