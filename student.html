@@ -849,8 +849,8 @@
                      oninput="handleBookTitleSearch(this.value)"
                      onclick="handleBookTitleSearch(this.value)"
                      class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              <!-- Autocomplete Suggestion Popup Container -->
-              <div id="bookAutocompleteList" class="hidden absolute left-0 right-0 top-full mt-1.5 max-h-56 overflow-y-auto bg-white border-2 border-emerald-500 rounded-2xl shadow-2xl z-50 divide-y divide-slate-100">
+              <!-- Autocomplete Suggestion Popup Container (모달 전체 너비로 시원하게 확장) -->
+              <div id="bookAutocompleteList" class="hidden absolute left-0 top-full mt-1.5 w-[calc(200%+0.5rem)] sm:w-[calc(200%+1rem)] min-w-[320px] max-w-[560px] max-h-72 overflow-y-auto bg-white border-2 border-emerald-500 rounded-2xl shadow-2xl z-50 divide-y divide-slate-100">
               </div>
             </div>
             <div class="col-span-3">
@@ -2356,7 +2356,146 @@
       if (selectedVal) {
         diffSelect.value = selectedVal;
       }
+      syncCustomSelect("modalBookDifficulty");
     }
+
+    // ================================================================
+    // 모달 내 모든 드롭다운 즉시 펼침(커스텀 UI) 시스템
+    // ================================================================
+    function syncCustomSelect(selectId) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      const wrapper = select.parentElement && select.parentElement.classList.contains("custom-select-wrapper")
+        ? select.parentElement
+        : select.closest(`.custom-select-wrapper[data-for="${selectId}"]`);
+      if (!wrapper) {
+        initCustomSelect(selectId);
+        return;
+      }
+
+      const btn = wrapper.querySelector(".custom-select-btn");
+      const label = wrapper.querySelector(".custom-select-label");
+      const menu = wrapper.querySelector(".custom-select-menu");
+
+      const selectedOpt = select.options[select.selectedIndex] || select.options[0] || { text: "선택", value: "" };
+      if (label) label.innerText = selectedOpt.text;
+
+      // disabled 상태 동기화
+      if (btn) {
+        if (select.disabled) {
+          btn.className = "custom-select-btn w-full p-2.5 sm:p-3 bg-slate-100 border-2 border-slate-200 text-slate-400 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-between cursor-not-allowed shadow-none";
+        } else {
+          btn.className = "custom-select-btn w-full p-2.5 sm:p-3 bg-white border-2 border-emerald-400 hover:border-emerald-500 text-slate-800 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-between shadow-xs transition active:scale-[0.99]";
+        }
+      }
+
+      // 메뉴 항목 재구성
+      if (menu) {
+        menu.innerHTML = "";
+        Array.from(select.options).forEach(opt => {
+          const item = document.createElement("div");
+          const isSelected = opt.value === select.value;
+          const isOptDisabled = opt.disabled;
+          item.className = `p-2.5 sm:p-3 rounded-xl cursor-pointer text-xs sm:text-sm font-bold transition flex items-center justify-between ${
+            isOptDisabled ? 'opacity-40 cursor-not-allowed bg-slate-50 text-slate-400' :
+            (isSelected ? 'bg-emerald-100 text-emerald-950 font-black' : 'hover:bg-emerald-50 text-slate-700 active:bg-emerald-100')
+          }`;
+          item.innerHTML = `
+            <span class="truncate">${opt.text}</span>
+            ${isSelected ? '<span class="text-emerald-700 text-xs font-black">✓</span>' : ''}
+          `;
+          if (!isOptDisabled) {
+            item.onclick = (e) => {
+              e.stopPropagation();
+              select.value = opt.value;
+              if (label) label.innerText = opt.text;
+              menu.classList.add("hidden");
+              const arrow = btn ? btn.querySelector(".custom-select-arrow") : null;
+              if (arrow) arrow.classList.remove("rotate-180");
+              select.dispatchEvent(new Event("change"));
+              syncCustomSelect(selectId);
+            };
+          }
+          menu.appendChild(item);
+        });
+      }
+    }
+
+    function initCustomSelect(selectId) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+
+      let wrapper = select.parentElement && select.parentElement.classList.contains("custom-select-wrapper")
+        ? select.parentElement
+        : select.closest(`.custom-select-wrapper[data-for="${selectId}"]`);
+      if (!wrapper) {
+        wrapper = document.createElement("div");
+        wrapper.className = "custom-select-wrapper relative w-full";
+        wrapper.dataset.for = selectId;
+        select.parentNode.insertBefore(wrapper, select);
+        wrapper.appendChild(select);
+        select.classList.add("hidden"); // 브라우저 네이티브 셀렉트 숨김
+      }
+
+      // 기존 UI 정리
+      const oldBtn = wrapper.querySelector(".custom-select-btn");
+      if (oldBtn) oldBtn.remove();
+      const oldMenu = wrapper.querySelector(".custom-select-menu");
+      if (oldMenu) oldMenu.remove();
+
+      const selectedOpt = select.options[select.selectedIndex] || select.options[0] || { text: "선택", value: "" };
+
+      // 드롭다운 버튼 (모달 안에서 시원하게 누를 수 있는 버튼)
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `custom-select-btn w-full p-2.5 sm:p-3 bg-white border-2 ${select.disabled ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed' : 'border-emerald-400 hover:border-emerald-500 text-slate-800'} rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-between shadow-xs transition active:scale-[0.99]`;
+      btn.innerHTML = `
+        <span class="custom-select-label truncate">${selectedOpt.text}</span>
+        <span class="custom-select-arrow text-[10px] text-emerald-600 transition-transform font-black">▼</span>
+      `;
+
+      // 즉시 아래로 시원하게 펼쳐지는 드롭다운 메뉴 (스크롤 및 부드러운 호버)
+      const menu = document.createElement("div");
+      menu.className = "custom-select-menu hidden absolute left-0 right-0 top-full mt-1.5 max-h-60 overflow-y-auto bg-white border-2 border-emerald-400 rounded-2xl shadow-2xl z-50 p-1.5 space-y-1 divide-y divide-slate-100";
+
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        if (select.disabled) return;
+
+        // 다른 열려있는 모든 드롭다운 닫기
+        document.querySelectorAll(".custom-select-menu").forEach(m => {
+          if (m !== menu) m.classList.add("hidden");
+        });
+        document.querySelectorAll(".custom-select-arrow").forEach(a => {
+          if (a !== btn.querySelector(".custom-select-arrow")) a.classList.remove("rotate-180");
+        });
+        closeAutocompleteList();
+
+        const isOpening = menu.classList.contains("hidden");
+        menu.classList.toggle("hidden", !isOpening);
+        const arrow = btn.querySelector(".custom-select-arrow");
+        if (arrow) arrow.classList.toggle("rotate-180", isOpening);
+      };
+
+      wrapper.appendChild(btn);
+      wrapper.appendChild(menu);
+      syncCustomSelect(selectId);
+    }
+
+    function initAllModalCustomDropdowns() {
+      ["modalBookOrder", "modalBookGenre", "modalBookLevel", "modalBookCourse", "modalBookDifficulty", "modalBookStatus"].forEach(id => {
+        initCustomSelect(id);
+        syncCustomSelect(id);
+      });
+    }
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".custom-select-wrapper") && !e.target.closest("#modalBookTitle") && !e.target.closest("#bookAutocompleteList")) {
+        document.querySelectorAll(".custom-select-menu").forEach(m => m.classList.add("hidden"));
+        document.querySelectorAll(".custom-select-arrow").forEach(a => a.classList.remove("rotate-180"));
+        closeAutocompleteList();
+      }
+    });
 
     function openBookModal() {
       document.getElementById("modalBookOrder").value = "";
@@ -2383,6 +2522,8 @@
           crsSelect.value = "재독";
         }
       }
+
+      initAllModalCustomDropdowns();
 
       document.getElementById("bookModal").classList.remove("hidden");
       document.getElementById("modalBookTitle").focus();
@@ -2411,6 +2552,7 @@
           statusSelect.value = "완독";
         }
       }
+      syncCustomSelect("modalBookStatus");
     }
 
     function handleModalStatusChange() {
@@ -2423,6 +2565,7 @@
         statusSelect.value = "완독";
         if (scoreInput) scoreInput.focus();
       }
+      syncCustomSelect("modalBookStatus");
     }
 
     function handleModalLevelChange() {
@@ -2442,6 +2585,9 @@
         }
       }
       updateDifficultyOptions(lvl);
+      syncCustomSelect("modalBookLevel");
+      syncCustomSelect("modalBookCourse");
+      syncCustomSelect("modalBookDifficulty");
     }
 
     function closeBookModal() {
@@ -2593,10 +2739,10 @@
           const crsBadge = b.course ? `<span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-200">${b.course}</span>` : '';
           return `
             <div onclick="selectAutocompleteBook('${bEncoded}')"
-                 class="p-2.5 sm:p-3 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between gap-2 text-xs transition border-b border-slate-100 last:border-b-0">
-              <div class="flex items-center gap-2 min-w-0">
+                 class="p-2.5 sm:p-3 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between gap-3 text-xs transition border-b border-slate-100 last:border-b-0">
+              <div class="flex items-center gap-2 min-w-0 flex-1">
                 <span class="px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-extrabold text-[10px] flex-shrink-0 shadow-sm">${b.level}</span>
-                <span class="font-bold text-slate-800 truncate">${b.title}</span>
+                <span class="font-extrabold text-slate-800 break-keep text-xs sm:text-sm flex-1 leading-snug text-left">${b.title}</span>
               </div>
               <div class="flex items-center gap-1.5 flex-shrink-0">
                 ${crsBadge}
@@ -2645,6 +2791,7 @@
         }
 
         closeAutocompleteList();
+        initAllModalCustomDropdowns();
 
         const scoreInput = document.getElementById("modalBookScore");
         if (scoreInput) scoreInput.focus();
@@ -2787,6 +2934,7 @@
         document.getElementById("modalBookMemo").value = "";
         closeAutocompleteList();
         handleModalScoreChange();
+        initAllModalCustomDropdowns();
         document.getElementById("modalBookTitle").focus();
       }
     }
