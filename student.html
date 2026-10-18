@@ -1143,16 +1143,36 @@
       }
     }
 
-    // 학생 활성 세션 보존 (새로고침/화면 쓸어내림 시 복원용)
-    function saveActiveSession(student, dailyLog) {
+    // 학생 활성 세션 보존 (새로고침/화면 쓸어내림 시 100% 완전 복원용)
+    function saveActiveSession(student = state.currentStudent, dailyLog = state.currentDailyLog) {
       if (!student) return;
       try {
+        if (state.missions) {
+          const s1 = document.getElementById("step1MemoInput");
+          if (s1) state.missions.step1Memo = s1.value;
+          const s2 = document.getElementById("step2MemoInput");
+          if (s2) state.missions.step2Memo = s2.value;
+          const s3 = document.getElementById("step3MemoInput");
+          if (s3) state.missions.step3Memo = s3.value;
+          const s4 = document.getElementById("step4MemoInput");
+          if (s4) state.missions.step4Memo = s4.value;
+          const nbm = document.getElementById("nextBookMemoInput");
+          if (nbm) state.missions.nextBookMemo = nbm.value;
+          const ref = document.getElementById("studentReflectionInput");
+          if (ref) state.missions.studentReflection = ref.value;
+          const hwb = document.getElementById("hwBookSelect");
+          if (hwb) state.missions.hwBook = hwb.value;
+        }
+
         const today = state.todayDateStr;
         const sessionData = {
           date: today,
           student: student,
           dailyLogRow: dailyLog ? dailyLog.row : (state.currentDailyLog ? state.currentDailyLog.row : null),
           inTime: state.currentInTime,
+          missions: JSON.parse(JSON.stringify(state.missions || {})),
+          teacherVerifiedCheckout: !!(state.teacherVerifiedCheckout),
+          teacherOverrideApproved: !!(state.teacherOverrideApproved),
           savedAt: Date.now()
         };
         localStorage.setItem("active_student_session", JSON.stringify(sessionData));
@@ -1161,7 +1181,7 @@
       }
     }
 
-    // 활성 세션 자동 복원
+    // 활성 세션 자동 복원 (입력 데이터 및 진행 상태 100% 복원)
     function restoreActiveSession() {
       try {
         const raw = localStorage.getItem("active_student_session");
@@ -1190,9 +1210,15 @@
         if (session.inTime) {
           state.currentInTime = session.inTime;
         }
+        if (session.teacherVerifiedCheckout) {
+          state.teacherVerifiedCheckout = true;
+        }
+        if (session.teacherOverrideApproved) {
+          state.teacherOverrideApproved = true;
+        }
 
         console.log(`[restoreActiveSession] Restoring session for ${student.name} (inTime: ${state.currentInTime})`);
-        loginStudent(student, dailyLog, true);
+        loginStudent(student, dailyLog, true, session.missions);
         return true;
       } catch (e) {
         console.warn("restoreActiveSession error:", e);
@@ -1200,6 +1226,11 @@
         return false;
       }
     }
+
+    // 브라우저 새로고침/탭 닫힘 직전 실시간 동기화
+    window.addEventListener("beforeunload", () => {
+      saveActiveSession();
+    });
 
     // 로그인 폼 완전 초기화 (무조건 빈 창으로 시작)
     function resetLoginForm() {
@@ -1716,7 +1747,7 @@
     }
 
     // 6. Student Login Trigger & Persistent Next Book Memory Check
-    function loginStudent(student, existingLog) {
+    function loginStudent(student, existingLog, isRestoring = false, restoredMissions = null) {
       try {
         // [핵심] 로그인 처리 시작 즉시 실시간 날짜 재계산
         initClock();
@@ -1886,12 +1917,57 @@
         updateRemainingTimeDisplay();
         state.remainingTimerInterval = setInterval(updateRemainingTimeDisplay, 1000);
 
-        resetMissions();
-        checkPersistentNextBook(student);
-        checkRecentDiagnosedBook(student);
+        if (isRestoring && restoredMissions) {
+          state.missions = restoredMissions;
+          if (!Array.isArray(state.missions.books)) state.missions.books = [];
+          if (!Array.isArray(state.missions.writingList)) state.missions.writingList = [];
+          if (!Array.isArray(state.missions.trainingTypes)) state.missions.trainingTypes = [];
+          if (!state.missions.trainingDetails) state.missions.trainingDetails = {};
+          if (!Array.isArray(state.missions.setEvents)) state.missions.setEvents = [];
+          if (!Array.isArray(state.missions.soloEvents)) state.missions.soloEvents = [];
 
-        if (dailyLog) {
-          populateExistingMissions(dailyLog);
+          renderBookList();
+          renderNoteBookChips();
+          renderWritingList();
+          applyNoteStatusUI(state.missions.noteStatus || "작성안함");
+          renderTrainingTypeButtons();
+          renderTrainingCards();
+          applyTrainingUnderstandingUI(state.missions.trainingUnderstanding || "");
+          state.missions.hwDoneStatus = state.missions.hwStatus || state.missions.hwDoneStatus || "";
+          refreshHwCombinedStatus();
+          renderSetEventItems();
+          renderSoloEventItems();
+          renderNextBookChips();
+          renderNextBookActivityButtons();
+
+          if (document.getElementById("hwBookSelect")) document.getElementById("hwBookSelect").value = state.missions.hwBook || "";
+          if (document.getElementById("step1MemoInput")) document.getElementById("step1MemoInput").value = state.missions.step1Memo || "";
+          if (document.getElementById("step2MemoInput")) document.getElementById("step2MemoInput").value = state.missions.step2Memo || "";
+          if (document.getElementById("step3MemoInput")) document.getElementById("step3MemoInput").value = state.missions.step3Memo || "";
+          if (document.getElementById("step4MemoInput")) document.getElementById("step4MemoInput").value = state.missions.step4Memo || "";
+          if (document.getElementById("nextBookMemoInput")) document.getElementById("nextBookMemoInput").value = state.missions.nextBookMemo || "";
+          if (document.getElementById("studentReflectionInput")) document.getElementById("studentReflectionInput").value = state.missions.studentReflection || "";
+
+          // 다음 책 알림 배너 및 최근 진단 도서 동기화
+          checkPersistentNextBook(student);
+          checkRecentDiagnosedBook(student);
+
+          // 7단계 선생님 확인 버튼 상태 복원
+          if (state.teacherVerifiedCheckout || state.teacherOverrideApproved) {
+            const btnTeacher = document.getElementById("btnTeacherVerifyCheckout");
+            if (btnTeacher) {
+              btnTeacher.className = "w-full sm:w-auto px-5 py-3 bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 whitespace-nowrap";
+              btnTeacher.innerHTML = `<span>✅ 선생님 확인 완료됨</span>`;
+            }
+          }
+        } else {
+          resetMissions();
+          checkPersistentNextBook(student);
+          checkRecentDiagnosedBook(student);
+
+          if (dailyLog) {
+            populateExistingMissions(dailyLog);
+          }
         }
 
         const viewLogin = document.getElementById("viewLogin");
@@ -2960,19 +3036,24 @@
       }
     }
 
+    function applyTrainingUnderstandingUI(val) {
+      state.missions.trainingUnderstanding = val || "";
+      document.querySelectorAll(".training-under-btn").forEach(btn => {
+        if (btn.dataset.val === state.missions.trainingUnderstanding && state.missions.trainingUnderstanding !== "") {
+          btn.className = "training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow-sm";
+        } else {
+          btn.className = "training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        }
+      });
+    }
+
     function setTrainingUnderstanding(val) {
       if (state.missions.trainingUnderstanding === val) {
         state.missions.trainingUnderstanding = "";
       } else {
         state.missions.trainingUnderstanding = val;
       }
-      document.querySelectorAll(".training-under-btn").forEach(btn => {
-        if (btn.dataset.val === state.missions.trainingUnderstanding) {
-          btn.className = "training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow-sm";
-        } else {
-          btn.className = "training-under-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
-        }
-      });
+      applyTrainingUnderstandingUI(state.missions.trainingUnderstanding);
       updateProgress();
     }
 
@@ -3226,6 +3307,21 @@
       }
     }
 
+    function applyNoteStatusUI(status) {
+      state.missions.noteStatus = status || "작성안함";
+      document.querySelectorAll(".note-status-btn").forEach(btn => {
+        if (btn.dataset.val === status) {
+          if (status === "작성대기") {
+            btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-violet-600 text-white shadow-sm ring-2 ring-violet-300";
+          } else {
+            btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-sky-600 text-white shadow-sm ring-2 ring-sky-300";
+          }
+        } else {
+          btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        }
+      });
+    }
+
     // 8. Step 3 State Handlers (방안 1: 글쓰기 활동 클릭 시 즉시 자동 등록)
     function setNoteStatus(status) {
       // 선택된 도서가 없다면 후보 도서 중 첫 번째 도서 자동 선택
@@ -3290,17 +3386,7 @@
       }
 
       // 라디오 버튼 활성 스타일 업데이트
-      document.querySelectorAll(".note-status-btn").forEach(btn => {
-        if (btn.dataset.val === status) {
-          if (status === "작성대기") {
-            btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-violet-600 text-white shadow-sm ring-2 ring-violet-300";
-          } else {
-            btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-sky-600 text-white shadow-sm ring-2 ring-sky-300";
-          }
-        } else {
-          btn.className = "note-status-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
-        }
-      });
+      applyNoteStatusUI(status);
 
       renderWritingList();
       renderNoteBookChips();
