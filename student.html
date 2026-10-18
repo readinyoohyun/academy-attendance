@@ -831,7 +831,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold text-emerald-800 mb-1.5">난이도</label>
-            <select id="modalBookDifficulty" class="w-full p-2.5 sm:p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <select id="modalBookDifficulty" onchange="handleModalDifficultyChange()" class="w-full p-2.5 sm:p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
               <option value="" selected>선택 안 함</option>
             </select>
           </div>
@@ -2625,6 +2625,11 @@
       handleBookTitleSearch(document.getElementById("modalBookTitle") ? document.getElementById("modalBookTitle").value : "");
     }
 
+    function handleModalDifficultyChange() {
+      // [대표님 결정] 난이도 변경 시에도 해당 난이도에 맞는 도서 목록 즉시 갱신
+      handleBookTitleSearch(document.getElementById("modalBookTitle") ? document.getElementById("modalBookTitle").value : "");
+    }
+
     function normalizeBookSearch(str) {
       return String(str || '').replace(/[\s\.\,\!\?\[\]\(\)\-\_\:\~\"\'\/\;]/g, '').toLowerCase();
     }
@@ -2645,31 +2650,44 @@
       const currentLvl = document.getElementById("modalBookLevel") ? document.getElementById("modalBookLevel").value : "";
       const currentCrs = document.getElementById("modalBookCourse") ? document.getElementById("modalBookCourse").value : "";
       const currentGenre = document.getElementById("modalBookGenre") ? document.getElementById("modalBookGenre").value : "";
+      const currentDiff = document.getElementById("modalBookDifficulty") ? document.getElementById("modalBookDifficulty").value : "";
 
-      // 코스/분야 필터링 조건
-      // 1코스: 문학, 인문
-      // 2코스: 사회, 과학, 예술
-      // 4코스: 보라색 진로 도서 (구분 === '진로' or course === '4코스')
+      // [핵심 필터링 규칙]
+      // 1. 레벨: 선택된 레벨(1레벨~10레벨, 기초 등)에 일치하는 도서
+      // 2. 분야: '기타' 선택 시 해당 레벨의 모든 도서 노출! 특정 분야 선택 시 해당 분야만 노출!
+      // 3. 난이도: 난이도(노랑띠, 초록띠, 파랑띠, 검정띠, 품띠 / 씨앗, 새싹, 꽃 등) 선택 시 정확히 일치하는 도서만 노출!
       const filtered = db.filter(b => {
-        // 코스 조건
-        if (currentCrs === "1코스") {
-          if (b.course && b.course !== "1코스") return false;
-          if (!b.course && b.genre !== "문학" && b.genre !== "인문") return false;
-        } else if (currentCrs === "2코스") {
-          if (b.course && b.course !== "2코스") return false;
-          if (!b.course && b.genre !== "사회" && b.genre !== "과학" && b.genre !== "예술") return false;
-        } else if (currentCrs === "4코스") {
-          if (b.course !== "4코스") return false;
+        // 1. 레벨 조건
+        if (currentLvl && currentLvl !== "레벨" && currentLvl !== "[자율]") {
+          if (b.level !== currentLvl) return false;
+        } else if (currentLvl === "기초") {
+          if (b.level !== "기초") return false;
         }
 
-        // 분야 조건
-        if (currentGenre && currentGenre !== "기타") {
+        // 2. 분야 조건
+        // '기타'를 선택하면: 분야 제한을 두지 않고 해당 레벨의 모든 책을 노출!
+        if (currentGenre === "기타") {
+          // 모든 분야 허용
+        } else if (currentGenre && currentGenre !== "" && currentGenre !== "독서 분야") {
           if (b.genre !== currentGenre) return false;
         }
 
-        // 기초 레벨일 때 기초 도서만
-        if (currentLvl === "기초") {
-          if (b.level !== "기초") return false;
+        // 3. 난이도 조건
+        if (currentDiff && currentDiff !== "선택 안 함" && currentDiff !== "선택 안함" && currentDiff !== "" && currentDiff !== "난이도") {
+          if (b.difficulty !== currentDiff) return false;
+        }
+
+        // 4. 코스 조건
+        if (currentCrs === "4코스") {
+          if (b.course !== "4코스") return false;
+        } else if (!currentGenre || currentGenre === "독서 분야") {
+          if (currentCrs === "1코스") {
+            if (b.course && b.course !== "1코스") return false;
+            if (!b.course && b.genre !== "문학" && b.genre !== "인문") return false;
+          } else if (currentCrs === "2코스") {
+            if (b.course && b.course !== "2코스") return false;
+            if (!b.course && b.genre !== "사회" && b.genre !== "과학" && b.genre !== "예술") return false;
+          }
         }
 
         return true;
@@ -2684,25 +2702,22 @@
             let score = 0;
             if (normTitle.startsWith(cleanQ)) score += 50;
             if (currentLvl && b.level === currentLvl) score += 30;
+            if (currentDiff && b.difficulty === currentDiff) score += 20;
             results.push({ book: b, normTitle: normTitle, score: score });
           }
         }
         results.sort((a, b) => b.score - a.score);
       } else {
-        // 검색어가 없을 때 (분야나 코스를 선택했거나 검색창 클릭 시):
-        let pool = filtered;
-        if (currentLvl && currentLvl !== "기초") {
-          const lvlOnly = pool.filter(b => b.level === currentLvl);
-          if (lvlOnly.length > 0) pool = lvlOnly;
-        }
-        results = pool.slice(0, 30).map(b => ({ book: b, score: 0 }));
+        // 검색어가 없을 때 (분야, 난이도, 레벨을 선택했거나 검색창 클릭 시):
+        // 필터링된 조건에 해당하는 도서 목록 노출 (최대 100권)
+        results = filtered.slice(0, 100).map(b => ({ book: b, score: 0 }));
       }
 
       if (results.length === 0) {
         if (cleanQ.length >= 1) {
           listEl.innerHTML = `
             <div class="p-3 text-center text-xs text-slate-400">
-              🔍 선택된 조건(분야/코스)에 맞는 도서가 없습니다. (직접 입력 가능)
+              🔍 선택된 조건(분야/난이도/레벨)에 맞는 도서가 없습니다. (직접 입력 가능)
             </div>
           `;
           listEl.classList.remove("hidden");
@@ -2712,8 +2727,13 @@
         return;
       }
 
-      const topMatches = results.slice(0, 25);
-      const headerLabel = [currentGenre, currentCrs, currentLvl].filter(Boolean).join(" · ") || "전체";
+      const topMatches = results.slice(0, 40);
+      const headerParts = [];
+      if (currentLvl && currentLvl !== "레벨") headerParts.push(currentLvl);
+      if (currentGenre && currentGenre !== "독서 분야") headerParts.push(currentGenre);
+      if (currentDiff && currentDiff !== "선택 안 함" && currentDiff !== "선택 안함") headerParts.push(currentDiff);
+      if (currentCrs && currentCrs !== "코스") headerParts.push(currentCrs);
+      const headerLabel = headerParts.join(" · ") || "전체";
 
       listEl.innerHTML = `
         <div class="px-3 py-1.5 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 flex items-center justify-between">
