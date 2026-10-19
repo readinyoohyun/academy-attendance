@@ -935,7 +935,7 @@
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">선생님 승인 비밀번호 (조기 하원 PIN)</label>
-          <input type="password" id="configTeacherPin" placeholder="기본값: 2026" maxlength="10"
+          <input type="password" id="configTeacherPin" placeholder="기본값: 2580" maxlength="10"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono" />
           <p class="text-[11px] text-slate-400 mt-1">* 수업 시간 미달 시 조기 하원을 승인할 때 사용하는 비밀번호입니다.</p>
         </div>
@@ -963,9 +963,9 @@
       localStorage.setItem("gas_webhook_url", DEFAULT_GAS_URL);
     }
     let initialTeacherPin = localStorage.getItem("teacher_pin");
-    if (!initialTeacherPin || initialTeacherPin === "1234") {
-      initialTeacherPin = "2026";
-      localStorage.setItem("teacher_pin", "2026");
+    if (!initialTeacherPin || initialTeacherPin === "1234" || initialTeacherPin === "2026") {
+      initialTeacherPin = "2580";
+      localStorage.setItem("teacher_pin", "2580");
     }
 
     // App State
@@ -1640,7 +1640,7 @@
       const enteredPin = prompt("🔑 [선생님 확인] 기록장 검사 및 하원을 승인하려면 관리자 비밀번호(PIN)를 입력해 주세요:");
       if (enteredPin === null) return; // User cancelled
 
-      const expectedPin = state.config.teacherPin || "2026";
+      const expectedPin = state.config.teacherPin || "2580";
       if (enteredPin.trim() === expectedPin) {
         state.teacherVerifiedCheckout = true;
         state.teacherOverrideApproved = true;
@@ -4921,7 +4921,7 @@
 
     // 13. Config Modal Handlers (선생님 인증 필수)
     function openConfigModal() {
-      const expectedPin = state.config.teacherPin || "2026";
+      const expectedPin = state.config.teacherPin || "2580";
       const entered = prompt("🔒 [선생님 인증] 환경설정을 열려면 관리자 비밀번호(PIN)를 입력해 주세요:");
       if (entered === null) return;
       if (entered.trim() !== expectedPin) {
@@ -4931,7 +4931,7 @@
       document.getElementById("configAcademyName").value = state.config.academyName;
       document.getElementById("configGasUrl").value = state.config.gasWebhookUrl;
       const pinEl = document.getElementById("configTeacherPin");
-      if (pinEl) pinEl.value = state.config.teacherPin || "2026";
+      if (pinEl) pinEl.value = state.config.teacherPin || "2580";
       document.getElementById("configModal").classList.remove("hidden");
     }
 
@@ -4943,7 +4943,7 @@
       const name = document.getElementById("configAcademyName").value.trim();
       const url = document.getElementById("configGasUrl").value.trim();
       const pinEl = document.getElementById("configTeacherPin");
-      const pin = pinEl ? (pinEl.value.trim() || "2026") : (state.config.teacherPin || "2026");
+      const pin = pinEl ? (pinEl.value.trim() || "2580") : (state.config.teacherPin || "2580");
 
       state.config.academyName = name;
       state.config.gasWebhookUrl = url;
