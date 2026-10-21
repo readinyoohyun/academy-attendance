@@ -479,73 +479,11 @@
     </div>
 
 
-    <!-- ================= 5단계: 이어 읽기 등록 및 다음 책 예약 ================= -->
-    <div class="bg-purple-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-purple-400 transition hover:shadow-md">
-      <!-- 5단계 컬러 헤더 배너 -->
-      <div class="bg-purple-100/90 border-b-2 border-purple-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <span class="px-3 py-1.5 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">5단계</span>
-          <div>
-            <div class="flex items-center gap-2 flex-wrap">
-              <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
-                <span>이어 읽기 등록 및 다음 책 예약</span>
-              </h3>
-            </div>
-            <p class="text-xs text-purple-950 font-medium mt-0.5">오늘 읽던 도서를 이어 읽기 등록하거나 다음 도서를 선정하게 예약하세요.</p>
-          </div>
-        </div>
-
-        <button type="button" onclick="promptCustomNextBook()" class="px-3 py-2 bg-white hover:bg-purple-50 text-purple-700 font-bold rounded-xl text-xs border border-purple-300 transition shadow-sm flex items-center gap-1 active:scale-95 self-end sm:self-auto">
-          <span>➕</span><span>새 도서명 직접 입력</span>
-        </button>
-      </div>
-
-      <div class="p-5 sm:p-6">
-        <!-- 1. 원클릭 재독 및 다음 책 선택 칩 영역 -->
-        <div class="mb-4">
-          <label class="text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-            <span>📚 도서 선택 (클릭하여 예약)</span>
-          </label>
-          <div id="nextBookChipsContainer" class="flex flex-wrap items-center gap-2">
-            <!-- Rendered via renderNextBookChips() -->
-          </div>
-        </div>
-
-        <!-- 2. 시간 여유 시 사전 학습: 어휘지 / 도서정보지 듀얼 버튼 -->
-        <div class="pt-3 border-t border-purple-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <label class="text-xs font-bold text-slate-700 flex items-center gap-1">
-              <span>⏱️ 시간 여유 시 활동 선택 (다중 선택 가능)</span>
-            </label>
-            <p class="text-[11px] text-slate-500">새 도서 선정 후 시간이 남아 수행한 항목을 눌러주세요.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button type="button" id="btnNextBookVocab" onclick="toggleNextBookActivity('어휘지')" 
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition border border-purple-200 bg-white text-slate-700 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-1.5 active:scale-95 shadow-sm">
-              <span>📝</span><span>어휘지 완료</span>
-            </button>
-            <button type="button" id="btnNextBookInfo" onclick="toggleNextBookActivity('도서정보지')" 
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition border border-purple-200 bg-white text-slate-700 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-1.5 active:scale-95 shadow-sm">
-              <span>📄</span><span>도서정보지 완료</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 3. 비고 / 메모 입력 -->
-        <div class="mt-4 pt-3 border-t border-purple-100">
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">문해력 발자욱 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
-          <input type="text" id="nextBookMemoInput" placeholder="예: 2권부터 읽을 예정입니다" oninput="updateProgress(500)"
-                 class="w-full p-3 bg-white border border-purple-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm" />
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ================= 6단계: 성장 기록 & 목표 달성 (원장님 필수 요청) ================= -->
+    <!-- ================= 5단계: 성장 기록 & 목표 달성 (선생님 필수 확인) ================= -->
     <div class="bg-gradient-to-tr from-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-xl border-2 border-indigo-700/60">
       <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
         <div class="flex items-center gap-3">
-          <span class="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">6단계</span>
+          <span class="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">5단계</span>
           <div>
             <h3 class="text-lg sm:text-xl font-black text-white flex items-center gap-2">
               <span>성장 기록 & 목표 달성</span>
@@ -677,7 +615,7 @@
 
 
 
-      <!-- 6단계 특급 강조: 오늘 수업 돌아보기 & 선생님께 한마디 -->
+      <!-- 5단계 특급 강조: 오늘 수업 돌아보기 & 선생님께 한마디 -->
       <div class="mt-5 p-4 sm:p-5 bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-yellow-500/25 rounded-2xl border-2 border-amber-400 shadow-xl">
         <div class="flex items-center justify-between mb-2.5 flex-wrap gap-1.5">
           <label class="block text-sm sm:text-base font-black text-amber-200 flex items-center gap-2">
@@ -694,12 +632,12 @@
     </div>
 
 
-    <!-- ================= 7단계: 오늘의 수업 완료 및 기록장 검사 ================= -->
+    <!-- ================= 6단계: 오늘의 수업 완료 및 기록장 검사 ================= -->
     <div class="bg-rose-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-rose-400 transition hover:shadow-md">
-      <!-- 7단계 컬러 헤더 배너 -->
+      <!-- 6단계 컬러 헤더 배너 -->
       <div class="bg-rose-100/90 border-b-2 border-rose-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <span class="px-3 py-1.5 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">7단계</span>
+          <span class="px-3 py-1.5 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">6단계</span>
           <div>
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
               <span>오늘의 수업 완료 및 기록장 검사</span>
@@ -711,10 +649,10 @@
       <div class="p-5 sm:p-6">
         <!-- Live Summary Box -->
         <div id="missionSummaryBox" class="p-4 bg-white rounded-2xl border border-rose-200 text-xs sm:text-sm space-y-1.5 mb-5 text-slate-700 shadow-sm">
+          <p><strong>📚 숙제 점검:</strong> <span id="sumHomework">선택 안 함</span></p>
           <p><strong>📖 오늘 독서:</strong> <span id="sumBooks" class="font-bold text-rose-700">등록된 도서 없음</span></p>
           <p><strong>✍️ 독서노트:</strong> <span id="sumNotes">작성 안 함</span></p>
           <p><strong>🎯 집중 트레이닝:</strong> <span id="sumTraining">선택 안 함</span></p>
-          <p><strong>📚 숙제 점검:</strong> <span id="sumHomework">선택 안 함</span></p>
           <p><strong>🏆 목표 달성:</strong> <span id="sumEvent">선택 안 함</span></p>
         </div>
 
@@ -767,35 +705,8 @@
       <!-- Form Inputs -->
       <div class="space-y-4">
         
-        <!-- Row 1: 오늘 읽은 권수 & 독서 분야 -->
+        <!-- 1단 버튼: 레벨, 코스 (2열 그리드) -->
         <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">오늘 읽은 권수</label>
-            <select id="modalBookOrder" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="" selected>오늘 읽은 권수</option>
-              <option value="1권째">1권째</option>
-              <option value="2권째">2권째</option>
-              <option value="3권째">3권째</option>
-              <option value="4권째">4권째</option>
-              <option value="5권째">5권째</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">독서 분야</label>
-            <select id="modalBookGenre" onchange="handleBookGenreChange()" class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="" selected>독서 분야</option>
-              <option value="문학">문학</option>
-              <option value="인문">인문</option>
-              <option value="사회">사회</option>
-              <option value="과학">과학</option>
-              <option value="예술">예술</option>
-              <option value="기타">기타</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Row 1.5: 레벨(12개), 코스, 난이도 드롭다운 (3열 나란히) -->
-        <div class="grid grid-cols-3 gap-2 sm:gap-3">
           <div>
             <label class="block text-xs font-bold text-emerald-800 mb-1.5">레벨</label>
             <select id="modalBookLevel" onchange="handleModalLevelChange()" class="w-full p-2.5 sm:p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -825,6 +736,22 @@
               <option value="재독">재독</option>
             </select>
           </div>
+        </div>
+
+        <!-- 2단 버튼: 독서분야, 난이도 (2열 그리드) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">독서 분야</label>
+            <select id="modalBookGenre" onchange="handleBookGenreChange()" class="w-full p-2.5 sm:p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="" selected>독서 분야</option>
+              <option value="문학">문학</option>
+              <option value="인문">인문</option>
+              <option value="사회">사회</option>
+              <option value="과학">과학</option>
+              <option value="예술">예술</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
           <div>
             <label class="block text-xs font-bold text-emerald-800 mb-1.5">난이도</label>
             <select id="modalBookDifficulty" onchange="handleModalDifficultyChange()" class="w-full p-2.5 sm:p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -833,10 +760,10 @@
           </div>
         </div>
 
-        <!-- Row 2: 도서명(2글자 자동완성), 점수(선택), 상태체크 -->
+        <!-- 3단 버튼: 도서명 및 점수 상태, 점수>독서이해도, 독서상태 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-            <span>도서명 및 점수·상태</span>
+            <span>도서명 및 독서이해도·상태</span>
             <span class="text-[11px] font-bold text-emerald-700">✨ 분야/코스 선택 시 도서 자동 정렬</span>
           </label>
           <div class="grid grid-cols-12 gap-2 relative">
@@ -850,7 +777,7 @@
               </div>
             </div>
             <div class="col-span-3">
-              <input type="number" id="modalBookScore" placeholder="점수" min="0" max="100" oninput="handleModalScoreChange()"
+              <input type="number" id="modalBookScore" placeholder="독서이해도" min="0" max="100" oninput="handleModalScoreChange()"
                      class="w-full p-3 bg-white border-2 border-emerald-400 rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
             <div class="col-span-3">
@@ -860,12 +787,13 @@
                 <option value="완독" id="optStatusFinished">완독</option>
                 <option value="독서중" id="optStatusReading">독서중</option>
                 <option value="독서시작" id="optStatusStart">독서시작</option>
+                <option value="예약" id="optStatusReserved">예약</option>
               </select>
             </div>
           </div>
         </div>
 
-        <!-- Row 3: 비고 (메모) -->
+        <!-- 4단 버튼: 문해력 발자욱 남기기 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">문해력 발자욱 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
           <input type="text" id="modalBookMemo" placeholder="특이사항이나 선생님 전달 메모 (선택)"
@@ -2573,7 +2501,7 @@
     }
 
     function initAllModalCustomDropdowns() {
-      ["modalBookOrder", "modalBookGenre", "modalBookLevel", "modalBookCourse", "modalBookDifficulty", "modalBookStatus"].forEach(id => {
+      ["modalBookLevel", "modalBookCourse", "modalBookGenre", "modalBookDifficulty", "modalBookStatus"].forEach(id => {
         initCustomSelect(id);
         syncCustomSelect(id);
       });
@@ -2588,8 +2516,6 @@
     });
 
     function openBookModal() {
-      document.getElementById("modalBookOrder").value = "";
-      document.getElementById("modalBookGenre").value = "";
       document.getElementById("modalBookLevel").value = "";
       const crsSelect = document.getElementById("modalBookCourse");
       if (crsSelect) {
@@ -2597,7 +2523,9 @@
         crsSelect.disabled = false;
         crsSelect.classList.remove("bg-slate-100", "cursor-not-allowed");
       }
+      document.getElementById("modalBookGenre").value = "";
       updateDifficultyOptions("");
+      document.getElementById("modalBookTitle").value = "";
       document.getElementById("modalBookScore").value = "";
       document.getElementById("modalBookStatus").value = "";
       document.getElementById("modalBookMemo").value = "";
@@ -2772,16 +2700,20 @@
           if (b.difficulty !== currentDiff) return false;
         }
 
-        // 4. 코스 조건
-        if (currentCrs === "4코스") {
-          if (b.course !== "4코스") return false;
-        } else if (!currentGenre || currentGenre === "독서 분야") {
-          if (currentCrs === "1코스") {
+        // 4. 코스 조건 (엄격 필터링: 선택된 코스와 일치하는 도서만 노출)
+        if (currentCrs && currentCrs !== "코스" && currentCrs !== "선택 안 함" && currentCrs !== "선택 안함") {
+          if (currentCrs === "4코스") {
+            if (b.course !== "4코스") return false;
+          } else if (currentCrs === "1코스") {
             if (b.course && b.course !== "1코스") return false;
             if (!b.course && b.genre !== "문학" && b.genre !== "인문") return false;
           } else if (currentCrs === "2코스") {
             if (b.course && b.course !== "2코스") return false;
             if (!b.course && b.genre !== "사회" && b.genre !== "과학" && b.genre !== "예술") return false;
+          } else if (currentCrs === "3코스") {
+            if (b.course && b.course !== "3코스") return false;
+          } else if (b.course && b.course !== currentCrs) {
+            return false;
           }
         }
 
@@ -2841,17 +2773,18 @@
           let diffBadge = "";
           if (b.difficulty) {
             let colorClass = "bg-amber-100 text-amber-900 border-amber-200";
-            if (b.difficulty.includes("노랑")) colorClass = "bg-yellow-100 text-yellow-900 border-yellow-300";
-            else if (b.difficulty.includes("초록") || b.difficulty === "새싹") colorClass = "bg-emerald-100 text-emerald-900 border-emerald-300";
-            else if (b.difficulty.includes("파랑")) colorClass = "bg-blue-100 text-blue-900 border-blue-300";
-            else if (b.difficulty.includes("품띠")) colorClass = "bg-purple-100 text-purple-900 border-purple-300";
-            else if (b.difficulty.includes("검정")) colorClass = "bg-slate-800 text-white border-slate-700";
+            if (b.difficulty.includes("노랑")) colorClass = "bg-[#FEF7E0] text-[#B06000] border-[#FBBC04]";
+            else if (b.difficulty.includes("초록") || b.difficulty === "새싹") colorClass = "bg-[#E6F4EA] text-[#137333] border-[#34A853]";
+            else if (b.difficulty.includes("파랑")) colorClass = "bg-[#E8F0FE] text-[#1967D2] border-[#4285F4]";
+            else if (b.difficulty.includes("검정")) colorClass = "bg-[#202124] text-white border-[#202124]";
+            else if (b.difficulty.includes("품띠")) colorClass = "bg-gradient-to-r from-red-600 to-black text-white border-red-700";
             else if (b.difficulty === "꽃") colorClass = "bg-pink-100 text-pink-900 border-pink-300";
             else if (b.difficulty === "씨앗") colorClass = "bg-lime-100 text-lime-900 border-lime-300";
 
             diffBadge = `<span class="px-2 py-0.5 rounded-lg ${colorClass} border font-bold text-[10px] flex-shrink-0">${b.difficulty}</span>`;
           }
           const crsBadge = b.course ? `<span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-200">${b.course}</span>` : '';
+          const genreBadge = `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-semibold">${b.genre || '문학'}</span>`;
           return `
             <div onclick="selectAutocompleteBook('${bEncoded}')"
                  class="p-2.5 sm:p-3 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between gap-3 text-xs transition border-b border-slate-100 last:border-b-0">
@@ -2861,8 +2794,8 @@
               </div>
               <div class="flex items-center gap-1.5 flex-shrink-0">
                 ${crsBadge}
+                ${genreBadge}
                 ${diffBadge}
-                <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-semibold">${b.genre || '문학'}</span>
               </div>
             </div>
           `;
@@ -2978,15 +2911,12 @@
       }
 
       if (status === "진단완료" && !score) {
-        alert("진단완료를 선택하려면 점수를 입력해 주세요 💯");
+        alert("진단완료를 선택하려면 독서이해도 점수를 입력해 주세요 💯");
         document.getElementById("modalBookScore").focus();
         return false;
       }
 
-      let order = document.getElementById("modalBookOrder").value;
-      if (!order) {
-        order = (state.missions.books.length + 1) + "권째";
-      }
+      const order = (state.missions.books.length + 1) + "권째";
 
       let genre = document.getElementById("modalBookGenre").value || "문학";
       let level = document.getElementById("modalBookLevel").value || "3레벨";
@@ -3003,19 +2933,25 @@
         title: title,
         score: score,
         status: status,
+        vocabDone: false,
+        infoDone: false,
         memo: document.getElementById("modalBookMemo").value.trim(),
         jFormatted: formatJColBookRecord(level, course, title, score, state.missions.noteStatus, difficulty)
       };
 
       if (title && state.currentStudent) {
-        localStorage.setItem("recent_diagnosed_book_" + state.currentStudent.name, title);
-        localStorage.setItem("recent_diagnosed_lvl_" + state.currentStudent.name, level || "");
-        localStorage.setItem("recent_diagnosed_crs_" + state.currentStudent.name, course || "");
-        state.missions.recentDiagnosedBook = { title: title, level: level, course: course };
+        if (status === "예약") {
+          localStorage.setItem("next_book_" + state.currentStudent.name, title);
+        } else {
+          localStorage.setItem("recent_diagnosed_book_" + state.currentStudent.name, title);
+          localStorage.setItem("recent_diagnosed_lvl_" + state.currentStudent.name, level || "");
+          localStorage.setItem("recent_diagnosed_crs_" + state.currentStudent.name, course || "");
+          state.missions.recentDiagnosedBook = { title: title, level: level, course: course };
+        }
       }
 
       state.missions.books.push(book);
-      if (!state.missions.noteBookTitle) {
+      if (!state.missions.noteBookTitle && status !== "예약") {
         state.missions.noteBookTitle = title;
       }
       renderBookList();
@@ -3033,7 +2969,6 @@
 
     function saveBookAndAddNext() {
       if (saveCurrentBookFromModal()) {
-        document.getElementById("modalBookOrder").value = "";
         document.getElementById("modalBookGenre").value = "";
         document.getElementById("modalBookLevel").value = "";
         const crsSelect = document.getElementById("modalBookCourse");
@@ -3104,12 +3039,6 @@
         item.className = "flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200 gap-3";
 
         let scoreBadge = b.score ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-xs">${b.score}점</span>` : '';
-        const matchedW = (state.missions.writingList || []).find(w => (w.title || '').replace(/\s+/g, '') === (b.title || '').replace(/\s+/g, ''));
-        const effNoteStatus = matchedW ? matchedW.status : ((b.title || '').replace(/\s+/g, '') === (state.missions.noteBookTitle || '').replace(/\s+/g, '') ? (state.missions.noteStatus || "") : "");
-        const jRecord = formatJColBookRecord(b.level, b.course, b.title, b.score, effNoteStatus, b.difficulty);
-        let jBadge = jRecord
-          ? `<span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold text-[11px]" title="하원 시 J열에 기록됩니다">하원 시 J열 반영 (${jRecord})</span>`
-          : `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-medium text-[11px]" title="진단 점수가 없거나 글완이 아닌 도서는 하원 시 K열에 기록됩니다">하원 시 K열 반영</span>`;
         let lvlCrsBadge = "";
         if (b.level === "[자율]" || b.level === "자율 독서" || b.level === "자율") {
           lvlCrsBadge = "[자율]";
@@ -3122,16 +3051,52 @@
         let diffBadge = "";
         if (b.difficulty) {
           let colorClass = "bg-amber-100 text-amber-900 border-amber-300";
-          if (b.difficulty.includes("노랑")) colorClass = "bg-yellow-100 text-yellow-900 border-yellow-300";
-          else if (b.difficulty.includes("초록") || b.difficulty === "새싹") colorClass = "bg-emerald-100 text-emerald-900 border-emerald-300";
-          else if (b.difficulty.includes("파랑")) colorClass = "bg-blue-100 text-blue-900 border-blue-300";
-          else if (b.difficulty.includes("품띠")) colorClass = "bg-purple-100 text-purple-900 border-purple-300";
-          else if (b.difficulty.includes("검정")) colorClass = "bg-slate-800 text-white border-slate-700";
+          if (b.difficulty.includes("노랑")) colorClass = "bg-[#FEF7E0] text-[#B06000] border-[#FBBC04]";
+          else if (b.difficulty.includes("초록") || b.difficulty === "새싹") colorClass = "bg-[#E6F4EA] text-[#137333] border-[#34A853]";
+          else if (b.difficulty.includes("파랑")) colorClass = "bg-[#E8F0FE] text-[#1967D2] border-[#4285F4]";
+          else if (b.difficulty.includes("품띠")) colorClass = "bg-gradient-to-r from-red-600 to-black text-white border-red-700";
+          else if (b.difficulty.includes("검정")) colorClass = "bg-[#202124] text-white border-[#202124]";
           else if (b.difficulty === "꽃") colorClass = "bg-pink-100 text-pink-900 border-pink-300";
           else if (b.difficulty === "씨앗") colorClass = "bg-lime-100 text-lime-900 border-lime-300";
           else if (b.difficulty.includes("재미있는")) colorClass = "bg-orange-100 text-orange-900 border-orange-300";
 
           diffBadge = `<span class="px-2 py-0.5 rounded-md ${colorClass} border text-[10px] font-bold">${b.difficulty}</span>`;
+        }
+
+        // 도서별 활동 버튼: '어휘 완료', '책 정보 읽기 완료'
+        // 진단 완료했을 때까지 계속 활성 버튼으로 띄워둠
+        const isDiagDone = (b.status === "진단완료");
+        let activityButtons = "";
+        if (!isDiagDone) {
+          const vocabActive = !!b.vocabDone;
+          const infoActive = !!b.infoDone;
+
+          const vocabClass = vocabActive
+            ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+            : "bg-white text-purple-700 border-purple-300 hover:bg-purple-50";
+          const infoClass = infoActive
+            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+            : "bg-white text-indigo-700 border-indigo-300 hover:bg-indigo-50";
+
+          activityButtons = `
+            <div class="inline-flex items-center gap-1.5 flex-wrap">
+              <button type="button" onclick="toggleBookActivity('${b.id}', 'vocabDone')"
+                      class="px-2 py-0.5 rounded-lg border text-[11px] font-extrabold transition active:scale-95 flex items-center gap-1 ${vocabClass}">
+                <span>${vocabActive ? '✓ ' : '📝 '}어휘 완료</span>
+              </button>
+              <button type="button" onclick="toggleBookActivity('${b.id}', 'infoDone')"
+                      class="px-2 py-0.5 rounded-lg border text-[11px] font-extrabold transition active:scale-95 flex items-center gap-1 ${infoClass}">
+                <span>${infoActive ? '✓ ' : '📄 '}책 정보 읽기 완료</span>
+              </button>
+            </div>
+          `;
+        } else {
+          const tags = [];
+          if (b.vocabDone) tags.push("어휘 완료");
+          if (b.infoDone) tags.push("책 정보 읽기 완료");
+          if (tags.length > 0) {
+            activityButtons = `<span class="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 text-[10px] font-bold border border-purple-200">✓ ${tags.join(" · ")}</span>`;
+          }
         }
 
         item.innerHTML = `
@@ -3146,7 +3111,7 @@
                 ${diffBadge}
                 <span class="font-extrabold text-slate-900 text-sm">${b.title}</span>
                 ${scoreBadge}
-                ${jBadge}
+                ${activityButtons}
               </div>
               <p class="text-[11px] text-slate-500 mt-1 font-medium">
                 상태: <span class="text-emerald-700 font-bold">${b.status}</span> ${b.memo ? `• 메모: ${b.memo}` : ''}
@@ -3159,6 +3124,16 @@
         `;
         container.appendChild(item);
       });
+    }
+
+    function toggleBookActivity(bookId, field) {
+      const book = (state.missions.books || []).find(b => b.id === bookId);
+      if (!book) return;
+      book[field] = !book[field];
+      renderBookList();
+      updateProgress();
+      saveActiveSession();
+      triggerRealtimeSync(500);
     }
 
     document.addEventListener("click", function (e) {
@@ -4240,8 +4215,16 @@
         const effStat = matchedW ? matchedW.status : (cleanB === noteBook.replace(/\s+/g, '') ? noteStat : "");
         const isDone = (effStat === "완료" || effStat === "글완" || effStat === true);
         const hasScore = (b.score !== undefined && b.score !== null && String(b.score).trim() !== "");
+
+        const acts = [];
+        if (b.vocabDone) acts.push("어휘완료");
+        if (b.infoDone) acts.push("책정보완료");
+        const actSuffix = acts.length > 0 ? ` [${acts.join(",")}]` : "";
+
         if (!hasScore && !isDone) {
-          parts.push(`${b.title} (${b.status || '완독'})`);
+          parts.push(`${b.title} (${b.status || '독서중'})${actSuffix}`);
+        } else if (acts.length > 0) {
+          parts.push(`${b.title}${actSuffix}`);
         }
       });
       return parts;
@@ -4504,25 +4487,22 @@
     function updateProgress(syncDelay = 0) {
       let score = 0;
 
-      // 1. Books registered (30%)
-      if (state.missions.books.length > 0) score += 30;
-
-      // 2. Note status (15% - 복수 글쓰기 포함)
-      const hasWritingList = state.missions.writingList && state.missions.writingList.length > 0;
-      if (hasWritingList || state.missions.noteStatus === "완료" || state.missions.noteStatus === "요약하기") score += 15;
-      else if (state.missions.noteStatus === "작성중") score += 8;
-
-      // 3. Focused Training (15%)
-      const hasTraining = (state.missions.trainingTypes && state.missions.trainingTypes.length > 0);
-      if (hasTraining) score += 15;
-
-      // 4. Homework check (15%)
+      // 1. 숙제 점검 (15%)
       if (state.missions.hwStatus) score += 15;
 
-      // 5. Next Book or Activity (10%)
-      if (state.missions.nextBookTitle || state.missions.nextBookVocab || state.missions.nextBookInfo) score += 10;
+      // 2. 도서 등록 및 독서/어휘/책정보 활동 (30%)
+      if (state.missions.books.length > 0) score += 30;
 
-      // 6. Growth Event / Reflection (15%)
+      // 3. 독서노트 / 글쓰기 (20% - 복수 글쓰기 포함)
+      const hasWritingList = state.missions.writingList && state.missions.writingList.length > 0;
+      if (hasWritingList || state.missions.noteStatus === "완료" || state.missions.noteStatus === "요약하기") score += 20;
+      else if (state.missions.noteStatus === "작성중") score += 10;
+
+      // 4. 집중 트레이닝 (20%)
+      const hasTraining = (state.missions.trainingTypes && state.missions.trainingTypes.length > 0);
+      if (hasTraining) score += 20;
+
+      // 5. 성장 기록 / 소감 작성 (15%)
       const hasReflection = document.getElementById("studentReflectionInput") ? document.getElementById("studentReflectionInput").value.trim().length > 0 : false;
       if (state.missions.setEvents.length > 0 || state.missions.soloEvents.length > 0 || hasReflection) score += 15;
 
