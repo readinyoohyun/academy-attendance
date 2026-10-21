@@ -312,7 +312,7 @@
         <!-- 1단계 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-amber-200">
           <label class="block text-xs sm:text-sm font-black text-slate-800 mb-1.5">문해력 발자욱 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
-          <input type="text" id="step1MemoInput" placeholder="예: 숙제 미지참 사유, 다음 시간까지 10쪽 풀기 등" oninput="updateProgress(500)"
+          <input type="text" id="step1MemoInput" placeholder="예: 3단원 어휘 문제를 꼼꼼하게 다 풀어왔어요!" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-amber-300 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm" />
         </div>
       </div>
@@ -327,7 +327,7 @@
           <span class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">2단계</span>
           <div>
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
-              <span>오늘 독서 & 진단 기록</span>
+              <span>오늘 독서 & 진단 & 글쓰기</span>
             </h3>
             <p class="text-xs sm:text-sm text-emerald-950 font-bold">도서 등록 후 어휘·책정보 활동 및 진단/글쓰기(요약/글완)를 진행하세요.</p>
           </div>
@@ -358,7 +358,7 @@
         <!-- 2단계 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-emerald-200">
           <label class="block text-xs sm:text-sm font-black text-slate-800 mb-1.5">문해력 발자욱 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
-          <input type="text" id="step2MemoInput" placeholder="예: 집중도 우수, 정독 지도 완료 등" oninput="updateProgress(500)"
+          <input type="text" id="step2MemoInput" placeholder="예: 주인공이 위기를 극복하는 장면이 인상 깊었고 재미있었어요!" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-emerald-300 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" />
         </div>
       </div>
@@ -414,7 +414,7 @@
         <!-- 4단계 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-indigo-200">
           <label class="block text-xs font-bold text-slate-700 mb-1.5">문해력 발자욱 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
-          <input type="text" id="step4MemoInput" placeholder="예: 독해 트레이닝 시간 단축 지도 등" oninput="updateProgress(500)"
+          <input type="text" id="step4MemoInput" placeholder="예: 틀린 문제를 다시 읽고 지문에서 근거를 찾아 오답 수정했어요!" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-indigo-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" />
         </div>
       </div>
@@ -462,18 +462,6 @@
             <select id="eventNumberSelect"
                     class="w-36 p-2.5 bg-slate-800 border border-amber-400/50 rounded-xl text-xs font-bold text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400">
               <option value="">권 번호</option>
-              <optgroup label="숫자 (단일)">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
-              </optgroup>
               <optgroup label="레벨/코스 세분화">
                 <option value="1-1">1-1</option>
                 <option value="1-2">1-2</option>
@@ -504,11 +492,17 @@
                 <option value="3단계">3단계</option>
                 <option value="4단계">4단계</option>
                 <option value="5단계">5단계</option>
+                <option value="6단계">6단계</option>
                 <option value="1권">1권</option>
                 <option value="2권">2권</option>
                 <option value="3권">3권</option>
                 <option value="4권">4권</option>
                 <option value="5권">5권</option>
+                <option value="6권">6권</option>
+                <option value="7권">7권</option>
+                <option value="8권">8권</option>
+                <option value="9권">9권</option>
+                <option value="10권">10권</option>
               </optgroup>
             </select>
 
@@ -593,7 +587,7 @@
         <!-- Live Summary Box -->
         <div id="missionSummaryBox" class="p-4 bg-white rounded-2xl border border-rose-200 text-xs sm:text-sm space-y-2 mb-5 text-slate-800 shadow-sm font-bold">
           <p><strong>📚 숙제 점검:</strong> <span id="sumHomework" class="font-black text-slate-900">선택 안 함</span></p>
-          <p><strong>📖 오늘 독서 & 진단:</strong> <span id="sumBooks" class="font-black text-rose-700">등록된 도서 없음</span></p>
+          <p><strong>📖 오늘 독서 & 진단 & 글쓰기:</strong> <span id="sumBooks" class="font-black text-rose-700">등록된 도서 없음</span></p>
           <p><strong>✍️ 글쓰기/요약:</strong> <span id="sumNotes" class="font-black text-indigo-700">작성 안 함</span></p>
           <p><strong>🎯 집중 트레이닝:</strong> <span id="sumTraining" class="font-black text-slate-900">선택 안 함</span></p>
           <p><strong>🏆 목표 달성:</strong> <span id="sumEvent" class="font-black text-slate-900">선택 안 함</span></p>
@@ -739,7 +733,7 @@
         <!-- 4단 버튼: 문해력 발자욱 남기기 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5">문해력 발자욱 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
-          <input type="text" id="modalBookMemo" placeholder="특이사항이나 선생님 전달 메모 (선택)"
+          <input type="text" id="modalBookMemo" placeholder="예: 기억에 남는 장면이나 선생님께 물어보고 싶은 내용을 적어보세요"
                  class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
         </div>
 
@@ -3126,7 +3120,7 @@
           diffBadge = `<span class="px-2.5 py-1 rounded-lg ${colorClass} border text-xs font-black shadow-xs">${b.difficulty}</span>`;
         }
 
-        // 사전활동 버튼: '어휘 완료', '책 정보 읽기 완료'
+        // 책문 열기 버튼: '어휘학습', '책소개'
         const vocabActive = !!b.vocabDone;
         const infoActive = !!b.infoDone;
 
@@ -3139,14 +3133,14 @@
 
         const preReadingButtons = `
           <div class="inline-flex items-center gap-1.5 flex-wrap">
-            <span class="text-xs font-black text-slate-600 mr-0.5">사전활동:</span>
+            <span class="text-xs font-black text-slate-600 mr-0.5">책문 열기:</span>
             <button type="button" onclick="toggleBookActivity('${b.id}', 'vocabDone')"
                     class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ${vocabClass}">
-              <span>${vocabActive ? '✓ ' : '📝 '}어휘 완료</span>
+              <span>어휘학습</span>
             </button>
             <button type="button" onclick="toggleBookActivity('${b.id}', 'infoDone')"
                     class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ${infoClass}">
-              <span>${infoActive ? '✓ ' : '📄 '}책 정보 완료</span>
+              <span>책소개</span>
             </button>
           </div>
         `;
@@ -4333,8 +4327,8 @@
         const hasScore = (b.score !== undefined && b.score !== null && String(b.score).trim() !== "");
 
         const acts = [];
-        if (b.vocabDone) acts.push("어휘완료");
-        if (b.infoDone) acts.push("책정보완료");
+        if (b.vocabDone) acts.push("어휘학습");
+        if (b.infoDone) acts.push("책소개");
         const actSuffix = acts.length > 0 ? ` [${acts.join(",")}]` : "";
 
         if (!hasScore && !isDone) {
