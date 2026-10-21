@@ -591,6 +591,7 @@
           <p><strong>✍️ 글쓰기/요약:</strong> <span id="sumNotes" class="font-black text-indigo-700">작성 안 함</span></p>
           <p><strong>🎯 집중 트레이닝:</strong> <span id="sumTraining" class="font-black text-slate-900">선택 안 함</span></p>
           <p><strong>🏆 목표 달성:</strong> <span id="sumEvent" class="font-black text-slate-900">선택 안 함</span></p>
+          <p id="sumMemoRow" class="hidden"><strong>🐾 문해력 발자욱:</strong> <span id="sumMemos" class="font-black text-amber-800"></span></p>
         </div>
 
         <!-- Timer Notice Banner -->
@@ -4332,7 +4333,7 @@
         const actSuffix = acts.length > 0 ? ` [${acts.join(",")}]` : "";
 
         if (!hasScore && !isDone) {
-          parts.push(`${b.title} (${b.status || '독서중'})${actSuffix}`);
+          parts.push(`${b.title}: ${b.status || '독서중'}${actSuffix}`);
         } else if (acts.length > 0) {
           parts.push(`${b.title}${actSuffix}`);
         }
@@ -4372,7 +4373,7 @@
       const parts = [];
       writings.forEach(w => {
         if (w.status && w.status !== "완료" && w.status !== "글완" && w.status !== true && w.status !== "작성안함") {
-          parts.push(`${w.title} (${w.status})`);
+          parts.push(`${w.title}: ${w.status}`);
         }
       });
       return parts;
@@ -4542,19 +4543,24 @@
       if (state.missions.hwStatus) {
         let hwPart = state.missions.hwStatus;
         if (hwBook) hwPart += ` (${hwBook})`;
-        if (step1Memo) hwPart += ` (${step1Memo})`;
+        if (step1Memo) hwPart += ` [메모: ${step1Memo}]`;
         contentParts.push(hwPart);
       } else if (step1Memo) {
-        contentParts.push(step1Memo);
+        contentParts.push(`[메모: ${step1Memo}]`);
       }
 
       // 2단계 오늘 독서 (J열 미반영 도서)
       const nonJReading = buildNonJReadingSummary();
       let readingPart = nonJReading.join(", ");
-      if (readingPart && step2Memo) {
-        readingPart += ` (${step2Memo})`;
-      } else if (!readingPart && step2Memo) {
-        readingPart = step2Memo;
+      const bMemos = (state.missions.books || []).filter(b => b && b.memo && b.memo.trim()).map(b => `${b.title}: ${b.memo.trim()}`);
+      let allStep2Memo = step2Memo;
+      if (bMemos.length > 0) {
+        allStep2Memo = allStep2Memo ? `${allStep2Memo} / ${bMemos.join(", ")}` : bMemos.join(", ");
+      }
+      if (readingPart && allStep2Memo) {
+        readingPart += ` [메모: ${allStep2Memo}]`;
+      } else if (!readingPart && allStep2Memo) {
+        readingPart = `[메모: ${allStep2Memo}]`;
       }
       if (readingPart) {
         contentParts.push(readingPart);
@@ -4564,9 +4570,9 @@
       const nonJWriting = buildNonJWritingSummary();
       let writingPart = nonJWriting.join(", ");
       if (writingPart && step3Memo) {
-        writingPart += ` (${step3Memo})`;
+        writingPart += ` [메모: ${step3Memo}]`;
       } else if (!writingPart && step3Memo) {
-        writingPart = step3Memo;
+        writingPart = `[메모: ${step3Memo}]`;
       }
       if (writingPart) {
         contentParts.push(writingPart);
@@ -4576,10 +4582,10 @@
       if (trSummary) {
         let trPart = trSummary;
         if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
-        if (step4Memo) trPart += ` (${step4Memo})`;
+        if (step4Memo) trPart += ` [메모: ${step4Memo}]`;
         contentParts.push(trPart);
       } else if (step4Memo) {
-        contentParts.push(step4Memo);
+        contentParts.push(`[메모: ${step4Memo}]`);
       }
 
       // 5단계 다음 책 & 메모
@@ -4590,9 +4596,9 @@
         nextPart = `다음책: ${actStr}`;
       }
       if (nextPart && nextMemo) {
-        nextPart += ` (${nextMemo})`;
+        nextPart += ` [메모: ${nextMemo}]`;
       } else if (!nextPart && nextMemo) {
-        nextPart = nextMemo;
+        nextPart = `[메모: ${nextMemo}]`;
       }
       if (nextPart) {
         contentParts.push(nextPart);
@@ -4600,7 +4606,7 @@
 
       // 6단계 학생 소감
       if (reflection) {
-        contentParts.push(reflection);
+        contentParts.push(`[소감] ${reflection}`);
       }
 
       const finalContents = contentParts.join(" | ");
@@ -4685,6 +4691,30 @@
       const allEvents = [...allSetSummary, ...state.missions.soloEvents];
       let eventDisplayText = allEvents.join(" / ");
       document.getElementById("sumEvent").innerText = eventDisplayText || "선택 안 함";
+
+      // [5단계 요약 박스] 문해력 발자욱 실시간 노출 (작성된 메모가 있을 때만 노출, 없으면 숨김)
+      const memoItems = [];
+      const s1 = (document.getElementById("step1MemoInput") ? document.getElementById("step1MemoInput").value : (state.missions.step1Memo || "")).trim();
+      const s2 = (document.getElementById("step2MemoInput") ? document.getElementById("step2MemoInput").value : (state.missions.step2Memo || "")).trim();
+      const s4 = (document.getElementById("step4MemoInput") ? document.getElementById("step4MemoInput").value : (state.missions.step4Memo || "")).trim();
+      const bMemos = (state.missions.books || []).filter(b => b && b.memo && b.memo.trim()).map(b => `${b.title}: ${b.memo.trim()}`);
+
+      if (s1) memoItems.push(`[1단계] ${s1}`);
+      if (s2) memoItems.push(`[2단계] ${s2}`);
+      if (bMemos.length > 0) memoItems.push(...bMemos.map(m => `[도서] ${m}`));
+      if (s4) memoItems.push(`[3단계] ${s4}`);
+
+      const sumMemoRow = document.getElementById("sumMemoRow");
+      const sumMemos = document.getElementById("sumMemos");
+      if (sumMemoRow && sumMemos) {
+        if (memoItems.length > 0) {
+          sumMemos.innerText = memoItems.join(" | ");
+          sumMemoRow.classList.remove("hidden");
+        } else {
+          sumMemos.innerText = "";
+          sumMemoRow.classList.add("hidden");
+        }
+      }
 
       // 실시간 구글 시트 자동 동기화 트리거
       triggerRealtimeSync(syncDelay);
@@ -4779,19 +4809,24 @@
       if (state.missions.hwStatus) {
         let hwPart = state.missions.hwStatus;
         if (hwBook) hwPart += ` (${hwBook})`;
-        if (step1Memo) hwPart += ` (${step1Memo})`;
+        if (step1Memo) hwPart += ` [메모: ${step1Memo}]`;
         contentParts.push(hwPart);
       } else if (step1Memo) {
-        contentParts.push(step1Memo);
+        contentParts.push(`[메모: ${step1Memo}]`);
       }
 
       // 2단계 오늘 독서 (J열 미반영 도서)
       const nonJReading = buildNonJReadingSummary();
       let readingPart = nonJReading.join(", ");
-      if (readingPart && step2Memo) {
-        readingPart += ` (${step2Memo})`;
-      } else if (!readingPart && step2Memo) {
-        readingPart = step2Memo;
+      const bMemos = (state.missions.books || []).filter(b => b && b.memo && b.memo.trim()).map(b => `${b.title}: ${b.memo.trim()}`);
+      let allStep2Memo = step2Memo;
+      if (bMemos.length > 0) {
+        allStep2Memo = allStep2Memo ? `${allStep2Memo} / ${bMemos.join(", ")}` : bMemos.join(", ");
+      }
+      if (readingPart && allStep2Memo) {
+        readingPart += ` [메모: ${allStep2Memo}]`;
+      } else if (!readingPart && allStep2Memo) {
+        readingPart = `[메모: ${allStep2Memo}]`;
       }
       if (readingPart) {
         contentParts.push(readingPart);
@@ -4801,9 +4836,9 @@
       const nonJWriting = buildNonJWritingSummary();
       let writingPart = nonJWriting.join(", ");
       if (writingPart && step3Memo) {
-        writingPart += ` (${step3Memo})`;
+        writingPart += ` [메모: ${step3Memo}]`;
       } else if (!writingPart && step3Memo) {
-        writingPart = step3Memo;
+        writingPart = `[메모: ${step3Memo}]`;
       }
       if (writingPart) {
         contentParts.push(writingPart);
@@ -4813,10 +4848,10 @@
       if (trSummary) {
         let trPart = trSummary;
         if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
-        if (step4Memo) trPart += ` (${step4Memo})`;
+        if (step4Memo) trPart += ` [메모: ${step4Memo}]`;
         contentParts.push(trPart);
       } else if (step4Memo) {
-        contentParts.push(step4Memo);
+        contentParts.push(`[메모: ${step4Memo}]`);
       }
 
       // 5단계 다음 책 & 메모
@@ -4827,9 +4862,9 @@
         nextPart = `다음책: ${actStr}`;
       }
       if (nextPart && nextMemo) {
-        nextPart += ` (${nextMemo})`;
+        nextPart += ` [메모: ${nextMemo}]`;
       } else if (!nextPart && nextMemo) {
-        nextPart = nextMemo;
+        nextPart = `[메모: ${nextMemo}]`;
       }
       if (nextPart) {
         contentParts.push(nextPart);
@@ -4837,7 +4872,7 @@
 
       // 6단계 학생 소감
       if (reflection) {
-        contentParts.push(reflection);
+        contentParts.push(`[소감] ${reflection}`);
       }
 
       const finalContents = contentParts.join(" | ");
