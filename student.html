@@ -3808,10 +3808,10 @@
       container.innerHTML = "";
       types.forEach(type => {
         const conf = TRAINING_CONFIG[type] || { icon: "🎯", label: "교재/단계", options: ["1권", "2권", "3권", "4권", "5권"] };
-        const detail = (state.missions.trainingDetails && state.missions.trainingDetails[type]) || { vol: "", session: "", errors: "", fixed: "", understanding: "" };
+        const detail = (state.missions.trainingDetails && state.missions.trainingDetails[type]) || { vol: "", session: "", errors: "", fixed: "", charCount: "", understanding: "" };
 
         const card = document.createElement("div");
-        card.className = "p-4 bg-slate-50/90 rounded-2xl border border-indigo-100 shadow-sm transition space-y-3";
+        card.className = "p-4 bg-slate-50/90 rounded-2xl border-2 border-indigo-300 shadow-sm transition space-y-3";
 
         let contentHtml = "";
 
@@ -3931,8 +3931,72 @@
               </button>
             </div>
           `;
+        } else if (type === "읽기트레이닝" || type === "독해트레이닝") {
+          // [대표님 요청] 읽기트레이닝, 독해트레이닝: 가로 4칸 1열 (grid-cols-4)
+          const optHtml = [`<option value="">${conf.label || '교재 권 수'}</option>`]
+            .concat(conf.options.map(opt => `<option value="${opt}" ${detail.vol === opt ? 'selected' : ''}>${opt}</option>`))
+            .join("");
+
+          contentHtml = `
+            <div class="grid grid-cols-4 gap-1.5 sm:gap-2.5">
+              <div>
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">${conf.label}</label>
+                <select onchange="updateTrainingDetail('${type}', 'vol', this.value)"
+                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
+                  ${optHtml}
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">차시 (수기 입력)</label>
+                <input type="text" value="${detail.session || ''}" placeholder="예: 3"
+                       oninput="updateTrainingDetail('${type}', 'session', this.value.trim(), 500)"
+                       class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+              </div>
+              <div>
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">문항수 / 오답개수</label>
+                <input type="text" value="${detail.errors || ''}" placeholder="예: 10/2 또는 2개"
+                       oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
+                       class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+              </div>
+              <div>
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">글자수</label>
+                <input type="text" value="${detail.charCount || ''}" placeholder="예: 539"
+                       oninput="updateTrainingDetail('${type}', 'charCount', this.value.trim(), 500)"
+                       class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+              </div>
+            </div>
+          `;
+        } else if (type === "듣기트레이닝") {
+          // [대표님 요청] 듣기트레이닝: 가로 3칸 1열 (grid-cols-3)
+          const optHtml = [`<option value="">${conf.label || '분야 선택'}</option>`]
+            .concat(conf.options.map(opt => `<option value="${opt}" ${detail.vol === opt ? 'selected' : ''}>${opt}</option>`))
+            .join("");
+
+          contentHtml = `
+            <div class="grid grid-cols-3 gap-1.5 sm:gap-2.5">
+              <div>
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">${conf.label}</label>
+                <select onchange="updateTrainingDetail('${type}', 'vol', this.value)"
+                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
+                  ${optHtml}
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">차시 (수기 입력)</label>
+                <input type="text" value="${detail.session || ''}" placeholder="예: 3"
+                       oninput="updateTrainingDetail('${type}', 'session', this.value.trim(), 500)"
+                       class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+              </div>
+              <div>
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">문항수 / 오답개수</label>
+                <input type="text" value="${detail.errors || ''}" placeholder="예: 10/2 또는 2개"
+                       oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
+                       class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+              </div>
+            </div>
+          `;
         } else {
-          // 읽기, 독해, 듣기 트레이닝
+          // 기타 트레이닝 기본
           const optHtml = [`<option value="">${conf.label || '단계'}</option>`]
             .concat(conf.options.map(opt => `<option value="${opt}" ${detail.vol === opt ? 'selected' : ''}>${opt}</option>`))
             .join("");
@@ -4070,6 +4134,24 @@
           if (d.understanding) {
             res += ` [이해도:${d.understanding}]`;
           }
+          return res;
+        } else if (t === "읽기트레이닝" || t === "독해트레이닝") {
+          // [대표님 지정 포맷] '읽트1권 3차시 (10/2) 539자' / '독트1권 3차시 (10/2) 539자'
+          const prefix = (t === "읽기트레이닝") ? "읽트" : "독트";
+          const volPart = d.vol ? `${d.vol}` : "";
+          const sub = [];
+          if (d.session) sub.push(`${d.session}차시`);
+          if (d.errors) {
+            const cleanErr = (String(d.errors).startsWith("(") && String(d.errors).endsWith(")")) ? d.errors : `(${d.errors})`;
+            sub.push(cleanErr);
+          }
+          if (d.charCount) {
+            const cleanChar = String(d.charCount).includes("자") ? d.charCount : `${d.charCount}자`;
+            sub.push(cleanChar);
+          }
+          const restStr = sub.length > 0 ? ` ${sub.join(" ")}` : "";
+          let res = `${prefix}${volPart}${restStr}`;
+          if (d.understanding) res += ` [이해도:${d.understanding}]`;
           return res;
         } else {
           const sub = [];
@@ -4720,7 +4802,7 @@
 
       // Update Summary Box
       const jColSummary = buildColJString();
-      document.getElementById("sumBooks").innerText = jColSummary ? `${jColSummary} (하원 시 J열)` : (state.missions.books.length > 0 ? "하원 시 K열 반영 (진단/글완 대기)" : "등록된 도서 없음");
+      document.getElementById("sumBooks").innerText = jColSummary || (state.missions.books.length > 0 ? "진단/글완 대기" : "등록된 도서 없음");
 
       let sumNotesText = "";
       if (state.missions.writingList && state.missions.writingList.length > 0) {
@@ -4780,7 +4862,7 @@
           const vList = (state.missions && state.missions.vocabResults) || [];
           if (sumVocabRow && sumVocab) {
             if (vList.length > 0 && VocabBridge.formatResult) {
-              sumVocab.innerText = vList.map(r => `${VocabBridge.formatResult(r)} (『${r.title}』)`).join(" , ");
+              sumVocab.innerText = vList.map(r => `${VocabBridge.formatResult(r)}『${r.title}』`).join(" , ");
               sumVocabRow.classList.remove("hidden");
             } else {
               sumVocab.innerText = "";
