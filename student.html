@@ -427,7 +427,7 @@
             <!-- Event Dropdown -->
             <select id="eventSetSelect"
                     class="flex-1 min-w-0 p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
-              <option value="">이벤트</option>
+              <option value="">터치해서 목록보기</option>
               <option value="코스업">코스업</option>
               <option value="레벨업">레벨업</option>
               <option value="읽트완료">읽트완료</option>
@@ -452,9 +452,7 @@
           </div>
 
           <!-- Selected Set Events Tag List -->
-          <div id="setEventListContainer" class="space-y-1.5 min-h-[40px]">
-            <p class="text-xs text-slate-500 italic py-1">선택된 항목이 없습니다.</p>
-          </div>
+          <div id="setEventListContainer" class="space-y-1.5"></div>
         </div>
 
         <!-- Dropdown 2: Sticker Board Complete (스티커판 완성) -->
@@ -466,7 +464,7 @@
           <div class="mb-3">
             <select id="eventSoloSelect" onchange="handleSoloSelectChange(this.value)"
                     class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
-              <option value="">타이틀 (선택 시 즉시 등록)</option>
+              <option value="">터치해서 목록보기</option>
               <option value="친구완성">친구완성</option>
               <option value="탐험가완성">탐험가완성</option>
               <option value="고수완성">고수완성</option>
@@ -477,9 +475,7 @@
           </div>
 
           <!-- Selected Solo Events Tag List -->
-          <div id="soloEventListContainer" class="space-y-1.5 min-h-[40px]">
-            <p class="text-xs text-slate-500 italic py-1">선택된 스티커판 완성이 없습니다.</p>
-          </div>
+          <div id="soloEventListContainer" class="space-y-1.5"></div>
         </div>
 
       </div>
@@ -4288,7 +4284,7 @@
       if (!container) return;
 
       if (state.missions.setEvents.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 italic py-1">선택된 항목이 없습니다.</p>`;
+        container.innerHTML = "";
         return;
       }
       container.innerHTML = "";
@@ -4330,7 +4326,7 @@
       if (!container) return;
 
       if (state.missions.soloEvents.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 italic py-1">선택된 단독 타이틀이 없습니다.</p>`;
+        container.innerHTML = "";
         return;
       }
       container.innerHTML = "";
