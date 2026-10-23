@@ -50,7 +50,14 @@
     });
   }
 
-  function levelLabel(lv) { return (lv === 0 || lv === '0' || lv === '기초') ? '기초' : (typeof lv === 'number' ? lv + '레벨' : String(lv)); }
+  function levelLabel(lv) {
+    if (lv === 0 || lv === '0' || /^기초/.test(String(lv || ''))) return '기초';
+    if (typeof lv === 'number') return lv + '레벨';
+    var s = String(lv || '').trim();
+    var m = s.match(/^(\d+)(?:-\d+|\s*레벨)?$/);
+    if (m) return m[1] + '레벨';
+    return s;
+  }
   function localIndexItems() {
     if (!root.VOCAB_DB || !Array.isArray(root.VOCAB_DB.books)) return null;
     return root.VOCAB_DB.books.map(function (b) { return { t: b.title, l: levelLabel(b.level), n: (b.words || []).length }; });
@@ -112,10 +119,17 @@
 
   B.formatResult = function (r) {
     if (!r) return '';
-    var gradeBand = r.gradeBand || ((/^(초|중)/.test(String(r.level || ''))) ? r.level : defaultGradeBand());
+    var isGradeSession = /^grade_(초|중)/.test(String(r.bookId || '')) || /^(초|중)/.test(String(r.level || '')) || /^(초|중).*필수\s*어휘/.test(String(r.title || ''));
+    var label = '';
+    if (isGradeSession) {
+      label = r.gradeBand || r.level || defaultGradeBand();
+    } else {
+      var entry = findEntry({ title: r.title, level: r.level });
+      label = (entry && entry.l) ? entry.l : (r.level ? levelLabel(r.level) : (r.gradeBand || defaultBookLevel()));
+    }
     var wrongCnt = r.wrongCount != null ? r.wrongCount : Math.max(0, (r.total || 0) - (r.firstCorrect || 0));
     var retryCnt = r.retryCount != null ? r.retryCount : wrongCnt;
-    return gradeBand + '/학습' + r.total + '개/오답' + wrongCnt + '개/재학습' + retryCnt + '개/';
+    return label + '/학습' + r.total + '개/오답' + wrongCnt + '개/재학습' + retryCnt + '개/';
   };
 
   B.renderBanner = function () {
@@ -165,7 +179,7 @@
     var badge = res ? ' <span class="text-emerald-700">✔ ' + B.formatResult(res) + '</span>' : '';
     return '<button type="button" onclick="VocabBridge.start(\'' + b.id + '\')" ' +
       'class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ' +
-      'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm"><span>어휘 퀴즈 ▶</span>' + badge + '</button>';
+      'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm"><span>어휘 확인 학습 ▶</span>' + badge + '</button>';
   };
 
   // ---------- 퀴즈 열기 (내장 DB 즉시 반환 → 0초 로딩, 시트 연결 시 백그라운드 갱신) ----------
@@ -228,10 +242,10 @@
       if (!target) throw new Error('book not in sheet');
       root.VocabUI.mount(box, {
         book: target, db: { books: books, map: {} },
-        gradeBand: defaultGradeBand(),
+        gradeBand: targetLv,
         onFinish: function (r) {
           b.vocabDone = true;
-          onFinish(b, target, r, defaultGradeBand());
+          onFinish(b, target, r, targetLv);
         },
         onExit: function () { closeOverlay(); },
         onRestart: function () { B.start(bookId); }
@@ -343,7 +357,7 @@
       // 만약 오늘 등록된 도서 중 같은 제목의 책이 있으면 그 도서 카드와도 자동 연동!
       var matchedBook = ((state && state.missions && state.missions.books) || []).filter(function (b) { return norm(b.title) === norm(target.title); })[0];
       var pseudoBook = matchedBook || { id: 'grade_' + grade + '_' + (idx + 1), level: grade, title: target.title };
-      var gb = isGrade ? grade : defaultGradeBand();
+      var gb = grade || (matchedBook ? levelLabel(matchedBook.level) : defaultBookLevel());
       root.VocabUI.mount(box, {
         book: target, db: { books: books, map: {} },
         gradeBand: gb,
@@ -364,7 +378,7 @@
     if (!state.missions.vocabResults) state.missions.vocabResults = [];
     var wrongCnt = r.wrongCount != null ? r.wrongCount : Math.max(0, (r.total || 0) - (r.firstCorrect || 0));
     var retryCnt = r.retryCount != null ? r.retryCount : wrongCnt;
-    var gb = gradeBand || ((/^(초|중)/.test(String(b.level || ''))) ? b.level : defaultGradeBand());
+    var gb = gradeBand || ((/^(초|중)/.test(String(b.level || ''))) ? b.level : levelLabel(b.level));
     var entry = {
       bookId: b.id, title: target.title, level: b.level, gradeBand: gb,
       total: r.total, firstCorrect: r.firstCorrect, wrongCount: wrongCnt, retryCount: retryCnt,
