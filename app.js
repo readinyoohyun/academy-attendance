@@ -512,8 +512,8 @@ class AttendanceApp {
 
   loadState() {
     let storedUrl = localStorage.getItem("gas_webhook_url");
-    if (!storedUrl || !storedUrl.startsWith("https://script.google.com") || storedUrl.includes("AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ")) {
-      storedUrl = "https://script.google.com/macros/s/AKfycbygKb7Xmd_iXyKW8xAFWZwbZ_3yFxdKrQZixr8D0fokHsK00QmvQsSBM7l5zqFxI-U1Ww/exec";
+    if (!storedUrl || !storedUrl.startsWith("https://script.google.com") || storedUrl.includes("AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ") || storedUrl.includes("AKfycbygKb7Xmd_iXyKW8xAFWZwbZ_3yFxdKrQZixr8D0fokHsK00QmvQsSBM7l5zqFxI-U1Ww")) {
+      storedUrl = "https://script.google.com/macros/s/AKfycbzAFUkDcPye9R4sZM8LpdSIYZzA-z6fMUgKX_GwdjwgtIQYdny-DmPCT4hJuQrVcOqpmg/exec";
       localStorage.setItem("gas_webhook_url", storedUrl);
     }
     this.gasWebhookUrl = storedUrl;
@@ -978,7 +978,7 @@ class AttendanceApp {
     };
 
     document.getElementById("btnResetGasUrl").onclick = () => {
-      const defaultUrl = "https://script.google.com/macros/s/AKfycbygKb7Xmd_iXyKW8xAFWZwbZ_3yFxdKrQZixr8D0fokHsK00QmvQsSBM7l5zqFxI-U1Ww/exec";
+      const defaultUrl = "https://script.google.com/macros/s/AKfycbzAFUkDcPye9R4sZM8LpdSIYZzA-z6fMUgKX_GwdjwgtIQYdny-DmPCT4hJuQrVcOqpmg/exec";
       document.getElementById("inputGasUrl").value = defaultUrl;
       this.gasWebhookUrl = defaultUrl;
       localStorage.setItem("gas_webhook_url", defaultUrl);

@@ -707,7 +707,7 @@
     let logoUrl = localStorage.getItem("logo_url") || "";
     if (logoUrl === "undefined" || logoUrl === "null") logoUrl = "";
     
-    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbygKb7Xmd_iXyKW8xAFWZwbZ_3yFxdKrQZixr8D0fokHsK00QmvQsSBM7l5zqFxI-U1Ww/exec";
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbzAFUkDcPye9R4sZM8LpdSIYZzA-z6fMUgKX_GwdjwgtIQYdny-DmPCT4hJuQrVcOqpmg/exec";
 
     function getNormalizedStatus(status) {
       if (!status) return "대기";
@@ -907,7 +907,12 @@
       }
 
       // Load configurations from localStorage (fallback to DEFAULT_GAS_URL)
-      config.gasWebhookUrl = localStorage.getItem("gas_webhook_url") || DEFAULT_GAS_URL;
+      let storedKioskGasUrl = localStorage.getItem("gas_webhook_url");
+      if (!storedKioskGasUrl || storedKioskGasUrl.includes("AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ") || storedKioskGasUrl.includes("AKfycbygKb7Xmd_iXyKW8xAFWZwbZ_3yFxdKrQZixr8D0fokHsK00QmvQsSBM7l5zqFxI-U1Ww")) {
+        storedKioskGasUrl = DEFAULT_GAS_URL;
+        localStorage.setItem("gas_webhook_url", DEFAULT_GAS_URL);
+      }
+      config.gasWebhookUrl = storedKioskGasUrl;
       config.smsMode = localStorage.getItem("sms_mode") || "local";
       config.smsLocalIp = localStorage.getItem("sms_local_ip") || "http://192.168.219.148:8080/send-sms";
       config.smsTemplateIn = localStorage.getItem("sms_template_in") || config.smsTemplateIn;

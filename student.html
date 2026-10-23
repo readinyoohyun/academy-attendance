@@ -753,12 +753,15 @@
   <script>
     // Global Constants
     const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-    const OLD_GAS_URL = "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec";
-    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbygKb7Xmd_iXyKW8xAFWZwbZ_3yFxdKrQZixr8D0fokHsK00QmvQsSBM7l5zqFxI-U1Ww/exec";
+    const LEGACY_GAS_URLS = [
+      "https://script.google.com/macros/s/AKfycbwKwMUSSvGPoTxAUTj6mOAWczrvOVLHCKymSxtpNa1YU6avxwR7jJH__iuOJlJ9bagXZQ/exec",
+      "https://script.google.com/macros/s/AKfycbygKb7Xmd_iXyKW8xAFWZwbZ_3yFxdKrQZixr8D0fokHsK00QmvQsSBM7l5zqFxI-U1Ww/exec"
+    ];
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbzAFUkDcPye9R4sZM8LpdSIYZzA-z6fMUgKX_GwdjwgtIQYdny-DmPCT4hJuQrVcOqpmg/exec";
 
     // Auto-migrate legacy default GAS URL and PIN
     let initialGasUrl = localStorage.getItem("gas_webhook_url");
-    if (!initialGasUrl || initialGasUrl === OLD_GAS_URL) {
+    if (!initialGasUrl || LEGACY_GAS_URLS.includes(initialGasUrl)) {
       initialGasUrl = DEFAULT_GAS_URL;
       localStorage.setItem("gas_webhook_url", DEFAULT_GAS_URL);
     }
