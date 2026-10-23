@@ -346,6 +346,7 @@
         <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
           <button type="button" onclick="if(window.VocabBridge&&VocabBridge.openGradePicker)VocabBridge.openGradePicker()" class="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-rose-500 shadow-rose-600/20 transition-all active:scale-95 flex items-center gap-1.5">
             <span>🎓 학년별 필수어휘 퀴즈</span>
+            <span id="gradeVocabBtnBadge" class="hidden ml-1 px-2 py-0.5 bg-white text-rose-700 rounded-lg text-[11px] font-black"></span>
           </button>
           <button onclick="openBookModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-emerald-500 shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1.5">
             <span>📖 도서 정보 등록</span>
@@ -354,6 +355,9 @@
       </div>
 
       <div class="p-5 sm:p-6">
+        <!-- 완료된 어휘 학습 실시간 표시 배너 ('학년군/학습n개/오답n개/재학습n개/') -->
+        <div id="vocabCompletedBanner" class="hidden mb-4 p-3.5 bg-rose-50 border-2 border-rose-300 rounded-2xl text-xs sm:text-sm text-rose-900 shadow-sm font-bold"></div>
+
         <!-- Persistent Next Book Memory Notice -->
         <div id="persistentNextBookAlert" class="hidden mb-4 p-3.5 bg-white border border-emerald-300 rounded-2xl flex items-center justify-between text-xs sm:text-sm text-emerald-900 shadow-sm font-bold">
           <div class="flex items-center gap-2">
@@ -603,6 +607,7 @@
         <div id="missionSummaryBox" class="p-4 bg-white rounded-2xl border border-rose-200 text-xs sm:text-sm space-y-2 mb-5 text-slate-800 shadow-sm font-bold">
           <p><strong>📚 숙제 점검:</strong> <span id="sumHomework" class="font-black text-slate-900">선택 안 함</span></p>
           <p><strong>📖 오늘 독서 & 진단 & 글쓰기:</strong> <span id="sumBooks" class="font-black text-rose-700">등록된 도서 없음</span></p>
+          <p id="sumVocabRow" class="hidden"><strong>🔤 어휘 학습:</strong> <span id="sumVocab" class="font-black text-rose-700"></span></p>
           <p><strong>✍️ 글쓰기/요약:</strong> <span id="sumNotes" class="font-black text-indigo-700">작성 안 함</span></p>
           <p><strong>🎯 집중 트레이닝:</strong> <span id="sumTraining" class="font-black text-slate-900">선택 안 함</span></p>
           <p><strong>🏆 목표 달성:</strong> <span id="sumEvent" class="font-black text-slate-900">선택 안 함</span></p>
@@ -4630,6 +4635,14 @@
         contentParts.push(`[소감] ${reflection}`);
       }
 
+      // [어휘] 어휘 학습 완료 요약 ('학년군/학습n개/오답n개/재학습n개/')
+      try {
+        if (window.VocabBridge && VocabBridge.summaryText) {
+          const vocabLine = VocabBridge.summaryText();
+          if (vocabLine) contentParts.push(vocabLine);
+        }
+      } catch (e) {}
+
       const finalContents = contentParts.join(" | ");
 
       targetLog.number = finalColH;
@@ -4736,6 +4749,25 @@
           sumMemoRow.classList.add("hidden");
         }
       }
+
+      // [어휘 학습] 2단계 완료 배너 및 5단계 요약 박스 실시간 표시 ('학년군/학습n개/오답n개/재학습n개/')
+      try {
+        if (window.VocabBridge) {
+          if (VocabBridge.renderBanner) VocabBridge.renderBanner();
+          const sumVocabRow = document.getElementById("sumVocabRow");
+          const sumVocab = document.getElementById("sumVocab");
+          const vList = (state.missions && state.missions.vocabResults) || [];
+          if (sumVocabRow && sumVocab) {
+            if (vList.length > 0 && VocabBridge.formatResult) {
+              sumVocab.innerText = vList.map(r => `${VocabBridge.formatResult(r)} (『${r.title}』)`).join(" , ");
+              sumVocabRow.classList.remove("hidden");
+            } else {
+              sumVocab.innerText = "";
+              sumVocabRow.classList.add("hidden");
+            }
+          }
+        }
+      } catch (e) {}
 
       // 실시간 구글 시트 자동 동기화 트리거
       triggerRealtimeSync(syncDelay);

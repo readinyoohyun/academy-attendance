@@ -179,9 +179,12 @@
       if (sp.type === 'match') wrongWords.push('짝짓기');
       else wrongWords.push(s.book.words[sp.wordIndex].w);
     });
+    const wrongCount = s.wrongFirst.size;
+    const retryCount = Math.max(0, s.answers - s.attempted.size);
     return {
       bookId: s.book.id, title: s.book.title, level: s.book.level,
       total, firstCorrect: s.firstCorrect,
+      wrongCount, retryCount,
       rate: total ? Math.round(s.firstCorrect / total * 100) : 0,
       wrongWords, retryRounds: s.retryRound, answers: s.answers,
       wrongRecords: Object.keys(s.wrongDetail).map(k => s.wrongDetail[k]),

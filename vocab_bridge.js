@@ -99,6 +99,51 @@
   }
   B.hasVocab = function (b) { return !!(b && findEntry(b)); };
 
+  B.formatResult = function (r) {
+    if (!r) return '';
+    var gradeBand = r.gradeBand || ((/^(초|중)/.test(String(r.level || ''))) ? r.level : defaultGradeBand());
+    var wrongCnt = r.wrongCount != null ? r.wrongCount : Math.max(0, (r.total || 0) - (r.firstCorrect || 0));
+    var retryCnt = r.retryCount != null ? r.retryCount : wrongCnt;
+    return gradeBand + '/학습' + r.total + '개/오답' + wrongCnt + '개/재학습' + retryCnt + '개/';
+  };
+
+  B.renderBanner = function () {
+    try {
+      var list = (state && state.missions && state.missions.vocabResults) || [];
+      var banner = document.getElementById('vocabCompletedBanner');
+      if (banner) {
+        if (list.length) {
+          banner.innerHTML = '<div class="flex flex-col gap-1.5">' +
+            '<div class="text-xs font-extrabold text-rose-800 flex items-center gap-1.5"><span>✅</span><span>오늘 완료한 어휘 학습</span></div>' +
+            list.map(function (r) {
+              var fmt = B.formatResult(r);
+              return '<div class="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-rose-200">' +
+                '<span class="font-black text-rose-700 text-xs sm:text-sm">' + fmt + '</span>' +
+                '<span class="text-xs font-bold text-slate-600">『' + r.title + '』 (' + r.rate + '%)</span>' +
+              '</div>';
+            }).join('') +
+            '</div>';
+          banner.classList.remove('hidden');
+        } else {
+          banner.innerHTML = '';
+          banner.classList.add('hidden');
+        }
+      }
+      var gradeBtnBadge = document.getElementById('gradeVocabBtnBadge');
+      if (gradeBtnBadge) {
+        var gradeDone = list.filter(function (r) { return String(r.bookId || '').indexOf('grade_') === 0; });
+        if (gradeDone.length) {
+          var lastG = gradeDone[gradeDone.length - 1];
+          gradeBtnBadge.textContent = '✔ ' + B.formatResult(lastG);
+          gradeBtnBadge.classList.remove('hidden');
+        } else {
+          gradeBtnBadge.textContent = '';
+          gradeBtnBadge.classList.add('hidden');
+        }
+      }
+    } catch (e) { /* 무시 */ }
+  };
+
   B.buttonHtml = function (b) {
     if (!B.hasVocab(b)) return '';
     var res = null;
@@ -106,7 +151,7 @@
       var list = (state.missions.vocabResults || []).filter(function (r) { return r.bookId === b.id; });
       if (list.length) res = list[list.length - 1];
     } catch (e) { /* 무시 */ }
-    var badge = res ? ' <span class="text-emerald-700">✔ ' + res.rate + '%</span>' : '';
+    var badge = res ? ' <span class="text-emerald-700">✔ ' + B.formatResult(res) + '</span>' : '';
     return '<button type="button" onclick="VocabBridge.start(\'' + b.id + '\')" ' +
       'class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ' +
       'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm"><span>어휘 퀴즈 ▶</span>' + badge + '</button>';
@@ -150,7 +195,11 @@
     var o = document.getElementById('vocabOverlay');
     if (o) o.parentNode.removeChild(o);
     document.body.style.overflow = '';
-    if (!silent) { try { if (typeof renderBookList === 'function') renderBookList(); } catch (e) { /* 무시 */ } }
+    if (!silent) {
+      try { if (typeof renderBookList === 'function') renderBookList(); } catch (e) { /* 무시 */ }
+      try { B.renderBanner(); } catch (e) { /* 무시 */ }
+      try { if (typeof updateProgress === 'function') updateProgress(500); } catch (e) { /* 무시 */ }
+    }
   }
 
   B.start = function (bookId) {
@@ -164,7 +213,8 @@
       if (!target) throw new Error('book not in sheet');
       root.VocabUI.mount(box, {
         book: target, db: { books: books, map: {} },
-        onFinish: function (r) { onFinish(b, target, r); },
+        gradeBand: defaultGradeBand(),
+        onFinish: function (r) { onFinish(b, target, r, defaultGradeBand()); },
         onExit: function () { closeOverlay(); },
         onRestart: function () { B.start(bookId); }
       });
@@ -199,10 +249,10 @@
         var sid = 'grade_' + grade + '_' + (idx + 1);
         var doneList = results.filter(function (r) { return r.bookId === sid || r.title === s.title; });
         var last = doneList.length ? doneList[doneList.length - 1] : null;
-        var badge = last ? '<span style="color:#15803d;font-weight:800;font-size:12px">✔ ' + last.rate + '%</span>' : '<span style="color:#6366f1;font-weight:700;font-size:12px">' + (s.words || []).length + '어휘 ▶</span>';
+        var badge = last ? '<span style="color:#be123c;font-weight:800;font-size:11px">✔ ' + B.formatResult(last) + '</span>' : '<span style="color:#6366f1;font-weight:700;font-size:12px">' + (s.words || []).length + '어휘 ▶</span>';
         var sampleWords = (s.words || []).slice(0, 4).map(function (w) { return w.w; }).join(', ');
-        return '<button type="button" onclick="VocabBridge.startGrade(\'' + grade + '\',' + idx + ')" style="text-align:left;padding:12px 14px;border-radius:14px;border:1px solid ' + (last ? '#86efac' : '#e2e8f0') + ';background:' + (last ? '#f0fdf4' : '#fff') + ';cursor:pointer;display:flex;flex-direction:column;gap:4px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:800;font-size:14px;color:#0f172a">' + (idx + 1) + '회차</span>' + badge + '</div>' +
+        return '<button type="button" onclick="VocabBridge.startGrade(\'' + grade + '\',' + idx + ')" style="text-align:left;padding:12px 14px;border-radius:14px;border:1px solid ' + (last ? '#fda4af' : '#e2e8f0') + ';background:' + (last ? '#fff1f2' : '#fff') + ';cursor:pointer;display:flex;flex-direction:column;gap:4px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-weight:800;font-size:14px;color:#0f172a">' + (idx + 1) + '회차</span>' + badge + '</div>' +
           '<div style="font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + sampleWords + ' 등</div></button>';
       }).join('');
       box.innerHTML = '<div style="max-width:560px;margin:0 auto;padding:20px 16px 90px;font-family:Pretendard,system-ui,sans-serif">' +
@@ -230,7 +280,8 @@
       var pseudoBook = { id: 'grade_' + grade + '_' + (idx + 1), level: grade, title: target.title };
       root.VocabUI.mount(box, {
         book: target, db: { books: books, map: {} },
-        onFinish: function (r) { onFinish(pseudoBook, target, r); },
+        gradeBand: grade,
+        onFinish: function (r) { onFinish(pseudoBook, target, r, grade); },
         onExit: function () { B.openGradePicker(grade); },
         onRestart: function () { B.startGrade(grade, idx); }
       });
@@ -238,18 +289,28 @@
   };
 
   // ---------- 결과 저장 ----------
-  function onFinish(b, target, r) {
+  function onFinish(b, target, r, gradeBand) {
     var name = cleanName(state.currentStudent);
     var date = today();
     if (!state.missions.vocabResults) state.missions.vocabResults = [];
-    state.missions.vocabResults.push({ bookId: b.id, title: target.title, level: b.level, total: r.total, firstCorrect: r.firstCorrect, rate: r.rate, wrongWords: r.wrongWords });
-    try { if (typeof saveActiveSession === 'function') saveActiveSession(); } catch (e) { /* 무시 */ }
+    var wrongCnt = r.wrongCount != null ? r.wrongCount : Math.max(0, (r.total || 0) - (r.firstCorrect || 0));
+    var retryCnt = r.retryCount != null ? r.retryCount : wrongCnt;
+    var gb = gradeBand || ((/^(초|중)/.test(String(b.level || ''))) ? b.level : defaultGradeBand());
+    var entry = {
+      bookId: b.id, title: target.title, level: b.level, gradeBand: gb,
+      total: r.total, firstCorrect: r.firstCorrect, wrongCount: wrongCnt, retryCount: retryCnt,
+      rate: r.rate, wrongWords: r.wrongWords
+    };
+    state.missions.vocabResults = state.missions.vocabResults.filter(function (x) { return x.bookId !== b.id; });
+    state.missions.vocabResults.push(entry);
+    try { B.renderBanner(); } catch (e) { /* 무시 */ }
+    try { if (typeof updateProgress === 'function') updateProgress(500); else if (typeof saveActiveSession === 'function') saveActiveSession(); } catch (e) { /* 무시 */ }
     var quizId = name + '|' + date + '|quiz|' + b.id + '|' + r.at;
     var records = [{
       id: quizId, date: date, type: '어휘퀴즈', level: b.level, book: target.title,
       total: r.total, firstCorrect: r.firstCorrect, rate: r.rate,
       wrongWords: (r.wrongWords || []).join(', '),
-      json: JSON.stringify({ retryRounds: r.retryRounds, answers: r.answers })
+      json: JSON.stringify({ gradeBand: gb, wrongCount: wrongCnt, retryCount: retryCnt, retryRounds: r.retryRounds, answers: r.answers })
     }];
     (r.wrongRecords || []).forEach(function (w) {
       records.push({
@@ -265,7 +326,7 @@
     var list = (state.missions && state.missions.vocabResults) || [];
     if (!list.length) return '';
     return list.map(function (r) {
-      var s = '[어휘] 『' + r.title + '』 ' + r.firstCorrect + '/' + r.total + '(' + r.rate + '%)';
+      var s = '[어휘] ' + B.formatResult(r) + ' 『' + r.title + '』';
       if (r.wrongWords && r.wrongWords.length) s += ' 오답:' + r.wrongWords.slice(0, 3).join(', ') + (r.wrongWords.length > 3 ? ' 외 ' + (r.wrongWords.length - 3) : '');
       return s;
     }).join(' / ');
@@ -341,6 +402,8 @@
     B.flushPending();
     B.ensureIndex().then(function () {
       try { if (typeof renderBookList === 'function' && state.currentStudent) renderBookList(); } catch (e) { /* 무시 */ }
+      try { B.renderBanner(); } catch (e) { /* 무시 */ }
+      try { if (typeof updateProgress === 'function' && state.currentStudent) updateProgress(0); } catch (e) { /* 무시 */ }
     });
   };
   B._test = { norm: norm, today: today };

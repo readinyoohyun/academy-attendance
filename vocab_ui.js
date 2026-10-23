@@ -128,13 +128,17 @@ const newMp = () => ({ sel: null, pairs: {}, bad: null, mistakes: 0 });
 
     function drawResult() {
       const r = E.result(s);
+      const wrongCnt = r.wrongCount != null ? r.wrongCount : (r.total - r.firstCorrect);
+      const retryCnt = r.retryCount != null ? r.retryCount : wrongCnt;
+      const gradeBand = opt.gradeBand || lvName(book.level);
+      const summaryLine = `${gradeBand}/학습${r.total}개/오답${wrongCnt}개/재학습${retryCnt}개/`;
       let h = `<div class="vq"><div class="vq-top"><span>${esc(book.title)} · ${lvName(book.level)}</span><span>결과</span></div>
-        <div class="vq-card"><div class="vq-ask" style="text-align:center">처음 맞힌 문제</div>
+        <div class="vq-card"><div class="vq-ask" style="text-align:center">어휘 학습 결과</div>
         <div class="vq-rate">${r.rate}%</div>
-        <div style="text-align:center;font-size:15px">${r.total}문제 중 <b>${r.firstCorrect}</b>개</div></div>`;
+        <div style="text-align:center;font-size:15px;font-weight:800;color:#be123c;background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;padding:8px 10px;margin-top:8px">${esc(summaryLine)}</div></div>`;
       if (r.wrongWords.length) h += `<div class="vq-card"><div class="vq-ask"><b>처음에 틀린 어휘</b> (다시 풀어서 모두 맞혔어요)</div><div class="vq-chips">${r.wrongWords.map(w => `<span>${esc(w)}</span>`).join('')}</div></div>`;
       else h += '<div class="vq-note"><b>모두 한 번에 맞혔어요! 🎉</b></div>';
-      h += '<button class="vq-btn" data-act="again">처음부터 다시 풀기</button><button class="vq-btn sub" data-act="exit">닫기</button></div>';
+      h += '<button class="vq-btn" data-act="again">처음부터 다시 풀기</button><button class="vq-btn sub" data-act="exit">닫기</button>' + creditHtml(book) + '</div>';
       el.innerHTML = h;
       if (!reported) { reported = true; if (opt.onFinish) opt.onFinish(r); }
     }
