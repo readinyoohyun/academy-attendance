@@ -133,10 +133,6 @@
           <span class="inline">새로고침</span>
         </button>
 
-        <button id="btnLogout" onclick="confirmLogout()" class="hidden px-2.5 sm:px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition break-keep flex-shrink-0">
-          로그아웃
-        </button>
-
         <!-- Kiosk / Settings Cog -->
         <button onclick="openConfigModal()" title="연동 설정" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -310,21 +306,21 @@
           <select id="hwBookSelect" onchange="updateProgress()"
                   class="w-full p-3 bg-white border-2 border-amber-300 rounded-xl text-xs sm:text-sm font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
             <option value="" selected>교재명</option>
-            <option value="교과서 어휘의 힘">교과서 어휘의 힘</option>
-            <option value="속담 따라 쓰기">속담 따라 쓰기</option>
-            <option value="복합">복합</option>
-            <option value="어휘">어휘</option>
             <option value="훈민정음">훈민정음</option>
             <option value="빠작 어휘">빠작 어휘</option>
+            <option value="교과서 어휘의 힘">교과서 어휘의 힘</option>
             <option value="똑똑한 하루 어휘">똑똑한 하루 어휘</option>
+            <option value="속담 따라 쓰기">속담 따라 쓰기</option>
             <option value="문학">문학</option>
             <option value="비문학">비문학</option>
+            <option value="복합">복합</option>
+            <option value="어휘">어휘</option>
           </select>
         </div>
 
         <!-- 1단계 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-amber-200">
-          <label class="block text-xs sm:text-sm font-black text-slate-800 mb-1.5">성실 발자욱 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
+          <label class="block text-xs sm:text-sm font-black text-slate-800 mb-1.5">성실 발자국 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
           <input type="text" id="step1MemoInput" placeholder="예: 3단원 어휘 문제를 꼼꼼하게 다 풀어왔어요!" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-amber-300 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm" />
         </div>
@@ -347,15 +343,12 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
-          <button type="button" onclick="if(window.VocabBridge&&VocabBridge.openLevelPicker)VocabBridge.openLevelPicker()" class="px-3.5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-teal-500 shadow-teal-600/20 transition-all active:scale-95 flex items-center gap-1.5">
-            <span>📚 레벨별 도서어휘 퀴즈</span>
-          </button>
           <button type="button" onclick="if(window.VocabBridge&&VocabBridge.openGradePicker)VocabBridge.openGradePicker()" class="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-rose-500 shadow-rose-600/20 transition-all active:scale-95 flex items-center gap-1.5">
             <span>🎓 학년별 필수어휘 퀴즈</span>
             <span id="gradeVocabBtnBadge" class="hidden ml-1 px-2 py-0.5 bg-white text-rose-700 rounded-lg text-[11px] font-black"></span>
           </button>
           <button onclick="openBookModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-emerald-500 shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1.5">
-            <span>📖 도서 정보 등록</span>
+            <span>📖 도서 등록</span>
           </button>
         </div>
       </div>
@@ -382,7 +375,7 @@
 
         <!-- 2단계 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-emerald-200">
-          <label class="block text-xs sm:text-sm font-black text-slate-800 mb-1.5">독서 발자욱 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
+          <label class="block text-xs sm:text-sm font-black text-slate-800 mb-1.5">독서 발자국 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
           <input type="text" id="step2MemoInput" placeholder="예: 주인공이 위기를 극복하는 장면이 인상 깊었고 재미있었어요!" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-emerald-300 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" />
         </div>
@@ -438,7 +431,7 @@
 
         <!-- 4단계 메모 입력 -->
         <div class="mt-4 pt-3 border-t border-indigo-200">
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">문해력 발자욱 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">문해력 발자국 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
           <input type="text" id="step4MemoInput" placeholder="예: 틀린 문제를 다시 읽고 지문에서 근거를 찾아 오답 수정했어요!" oninput="updateProgress(500)"
                  class="w-full p-3 bg-white border border-indigo-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" />
         </div>
@@ -573,23 +566,6 @@
         </div>
 
       </div>
-
-
-
-      <!-- 5단계 특급 강조: 오늘 수업 돌아보기 & 선생님께 한마디 -->
-      <div class="mt-5 p-4 sm:p-5 bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-yellow-500/25 rounded-2xl border-2 border-amber-400 shadow-xl">
-        <div class="flex items-center justify-between mb-2.5 flex-wrap gap-1.5">
-          <label class="block text-sm sm:text-base font-black text-amber-200 flex items-center gap-2">
-            <span>✍️ 오늘 수업 돌아보기 & 선생님께 한마디</span>
-            <span class="px-2.5 py-0.5 bg-amber-400 text-slate-950 text-[11px] font-black rounded-lg shadow-sm">필수 작성 🌟</span>
-          </label>
-          <span class="text-xs text-amber-300 font-bold">아이들의 소중한 배움과 생각을 적어주세요!</span>
-        </div>
-        <textarea id="studentReflectionInput" rows="2"
-               placeholder="오늘 배운 것 중 내가 설명할 수 있는 것은 무엇인지, 아직 헷갈리는 것은 무엇인지 한 줄로 적어 보세요. 선생님께 하고 싶은 말도 함께 남겨 주세요 😊"
-               oninput="updateProgress(500)"
-               class="w-full p-3.5 bg-white border-2 border-amber-300 rounded-xl text-xs sm:text-sm text-slate-900 font-bold focus:outline-none focus:ring-4 focus:ring-amber-300/50 placeholder:text-slate-400 shadow-inner resize-none"></textarea>
-      </div>
     </div>
 
 
@@ -609,6 +585,21 @@
       </div>
 
       <div class="p-5 sm:p-6">
+        <!-- 5단계 필수 작성: 오늘 수업 돌아보기 & 선생님께 한마디 -->
+        <div class="mb-5 p-4 sm:p-5 bg-amber-50/80 rounded-2xl border-2 border-amber-400 shadow-sm">
+          <div class="flex items-center justify-between mb-2.5 flex-wrap gap-1.5">
+            <label class="block text-xs sm:text-sm font-black text-slate-900 flex items-center gap-2">
+              <span>✍️ 오늘 수업 돌아보기 & 선생님께 한마디</span>
+              <span class="px-2 py-0.5 bg-amber-400 text-slate-950 text-[11px] font-black rounded-md shadow-xs">필수 작성 🌟</span>
+            </label>
+            <span class="text-xs text-amber-900 font-bold">아이들의 소중한 배움과 생각을 적어주세요!</span>
+          </div>
+          <textarea id="studentReflectionInput" rows="2"
+                 placeholder="오늘 배운 것 중 내가 설명할 수 있는 것은 무엇인지, 아직 헷갈리는 것은 무엇인지 한 줄로 적어 보세요. 선생님께 하고 싶은 말도 함께 남겨 주세요 😊"
+                 oninput="updateProgress(500)"
+                 class="w-full p-3.5 bg-white border-2 border-amber-300 rounded-xl text-xs sm:text-sm text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-400 shadow-inner resize-none"></textarea>
+        </div>
+
         <!-- Live Summary Box -->
         <div id="missionSummaryBox" class="p-4 bg-white rounded-2xl border border-rose-200 text-xs sm:text-sm space-y-2 mb-5 text-slate-800 shadow-sm font-bold">
           <p><strong>📚 숙제 점검:</strong> <span id="sumHomework" class="font-black text-slate-900">선택 안 함</span></p>
@@ -617,7 +608,7 @@
           <p><strong>✍️ 글쓰기/요약:</strong> <span id="sumNotes" class="font-black text-indigo-700">작성 안 함</span></p>
           <p><strong>🎯 집중 트레이닝:</strong> <span id="sumTraining" class="font-black text-slate-900">선택 안 함</span></p>
           <p><strong>🏆 목표 달성:</strong> <span id="sumEvent" class="font-black text-slate-900">선택 안 함</span></p>
-          <p id="sumMemoRow" class="hidden"><strong>🐾 발자욱 기록:</strong> <span id="sumMemos" class="font-black text-amber-800"></span></p>
+          <p id="sumMemoRow" class="hidden"><strong>🐾 발자국 기록:</strong> <span id="sumMemos" class="font-black text-amber-800"></span></p>
         </div>
 
         <!-- Timer Notice Banner -->
@@ -629,23 +620,9 @@
           <span id="btnRemainingNotice" class="font-black text-amber-800 text-xs sm:text-sm flex-shrink-0">남은 수업 시간: 계산 중...</span>
         </div>
 
-        <!-- Teacher Verification Action Box (선생님 확인 기능) -->
-        <div class="p-4 bg-gradient-to-r from-rose-500/10 to-indigo-500/10 border-2 border-rose-300 rounded-2xl mb-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
-          <div class="text-center sm:text-left">
-            <h4 class="text-xs sm:text-sm font-black text-slate-900 flex items-center justify-center sm:justify-start gap-1.5">
-              <span>📋</span><span>선생님 기록장 검사 확인</span>
-            </h4>
-            <p class="text-[11px] text-slate-600 mt-0.5">기록장을 선생님께 제출하고 [선생님 확인]을 받아야 하원이 완료됩니다.</p>
-          </div>
-          <button type="button" id="btnTeacherVerifyCheckout" onclick="promptTeacherVerifyCheckout()" 
-                  class="w-full sm:w-auto px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95 whitespace-nowrap">
-            <span>🔒 선생님 확인 및 하원 승인</span>
-          </button>
-        </div>
-
-        <button id="btnSubmitMissions" onclick="submitAllMissions()" 
-                class="w-full py-3.5 sm:py-4 px-3 sm:px-4 bg-slate-600/90 hover:bg-slate-700 text-slate-200 font-extrabold text-xs sm:text-sm md:text-base rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-not-allowed border-2 border-slate-500 break-keep text-center leading-snug">
-          <span id="btnSubmitText">🔒 선생님 확인 대기 중 (선생님 승인 후 하원 가능)</span>
+        <button id="btnSubmitMissions" onclick="promptTeacherVerifyCheckout()" 
+                class="w-full py-4 px-4 bg-gradient-to-r from-indigo-600 to-rose-600 hover:from-indigo-700 hover:to-rose-700 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-2 border-indigo-400/50 break-keep text-center leading-snug">
+          <span id="btnSubmitText">📋 수업 시간 완료! 선생님 확인 후 하원하기 (클릭하여 승인)</span>
         </button>
       </div>
     </div>
@@ -662,7 +639,7 @@
         <span class="inline-block p-3 rounded-2xl bg-blue-50 text-blue-600 text-3xl mb-2 shadow-inner">
           📖
         </span>
-        <h3 class="text-xl sm:text-2xl font-black text-slate-900">오늘 독서 도서 등록</h3>
+        <h3 class="text-xl sm:text-2xl font-black text-slate-900">도서 등록</h3>
         <p class="text-xs sm:text-sm text-slate-500 mt-1">오늘 읽은 권수, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요.</p>
       </div>
 
@@ -757,13 +734,6 @@
           </div>
         </div>
 
-        <!-- 4단 버튼: 독서 발자욱 남기기 -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">독서 발자욱 남기기 (선생님, 학생 모두 메모 남길 수 있어요)</label>
-          <input type="text" id="modalBookMemo" placeholder="예: 기억에 남는 장면이나 선생님께 물어보고 싶은 내용을 적어보세요"
-                 class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-        </div>
-
       </div>
 
       <!-- Modal Footer Buttons (Replica of Screenshot) -->
@@ -837,6 +807,33 @@
         <button onclick="closeConfigModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">닫기</button>
         <button onclick="saveConfigModal()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition">저장하기</button>
       </div>
+    </div>
+  </div>
+
+
+  <!-- ================= TEACHER PIN MODAL (MASKED ****) ================= -->
+  <div id="teacherPinModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-center animate-in fade-in duration-150">
+      <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-indigo-100 shadow-xs">
+        🔒
+      </div>
+      <h3 class="text-lg font-black text-slate-900 mb-1">선생님 확인</h3>
+      <p id="teacherPinModalDesc" class="text-xs text-slate-500 mb-5 font-semibold">기록장 검사 및 하원을 승인하려면<br>선생님 비밀번호(PIN)를 입력해 주세요.</p>
+      
+      <form onsubmit="handleTeacherPinSubmit(event)">
+        <input type="password" id="teacherPinInput" maxlength="10" placeholder="••••" autofocus autocomplete="off"
+               class="w-full text-center text-3xl tracking-[0.3em] font-mono p-3 bg-slate-50 border-2 border-indigo-200 focus:border-indigo-600 rounded-2xl focus:outline-none focus:bg-white mb-5 transition font-black text-slate-800" />
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="closeTeacherPinModal()"
+                  class="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm rounded-xl transition">
+            취소
+          </button>
+          <button type="submit"
+                  class="py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition active:scale-95">
+            확인
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1550,29 +1547,55 @@
       return highestRow + 1;
     }
 
-    // Helper: Teacher PIN prompt for Record Book Inspection & Checkout Authorization
-    function promptTeacherVerifyCheckout() {
-      const enteredPin = prompt("🔑 [선생님 확인] 기록장 검사 및 하원을 승인하려면 관리자 비밀번호(PIN)를 입력해 주세요:");
-      if (enteredPin === null) return; // User cancelled
+    // Helper: Teacher PIN modal for Record Book Inspection & Checkout Authorization
+    let teacherPinSuccessCallback = null;
 
+    function openTeacherPinModal(descHtml, onSuccess) {
+      teacherPinSuccessCallback = onSuccess;
+      const descEl = document.getElementById("teacherPinModalDesc");
+      if (descEl && descHtml) descEl.innerHTML = descHtml;
+      const inputEl = document.getElementById("teacherPinInput");
+      if (inputEl) inputEl.value = "";
+      const modal = document.getElementById("teacherPinModal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        setTimeout(() => { if (inputEl) inputEl.focus(); }, 100);
+      }
+    }
+
+    function closeTeacherPinModal() {
+      const modal = document.getElementById("teacherPinModal");
+      if (modal) modal.classList.add("hidden");
+      teacherPinSuccessCallback = null;
+    }
+
+    function handleTeacherPinSubmit(e) {
+      if (e) e.preventDefault();
+      const inputEl = document.getElementById("teacherPinInput");
+      const enteredPin = (inputEl ? inputEl.value : "").trim();
       const expectedPin = state.config.teacherPin || "2580";
-      if (enteredPin.trim() === expectedPin) {
+
+      if (enteredPin === expectedPin) {
+        const cb = teacherPinSuccessCallback;
+        closeTeacherPinModal();
+        if (typeof cb === "function") cb();
+      } else {
+        alert("❌ 비밀번호가 올바르지 않습니다. 다시 확인해 주세요.");
+        if (inputEl) {
+          inputEl.value = "";
+          inputEl.focus();
+        }
+      }
+    }
+
+    function promptTeacherVerifyCheckout() {
+      openTeacherPinModal("기록장 검사 및 하원을 승인하려면<br>선생님 비밀번호(PIN)를 입력해 주세요.", () => {
         state.teacherVerifiedCheckout = true;
         state.teacherOverrideApproved = true;
         saveActiveSession();
         updateRemainingTimeDisplay();
-        
-        // 7단계 선생님 확인 버튼 상태 업데이트
-        const btnTeacher = document.getElementById("btnTeacherVerifyCheckout");
-        if (btnTeacher) {
-          btnTeacher.className = "w-full sm:w-auto px-5 py-3 bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 whitespace-nowrap";
-          btnTeacher.innerHTML = `<span>✅ 선생님 확인 완료됨</span>`;
-        }
-
         submitAllMissions();
-      } else {
-        alert("❌ 비밀번호가 올바르지 않습니다. 다시 확인해 주세요.");
-      }
+      });
     }
 
     function promptTeacherOverrideCheckout() {
@@ -1891,6 +1914,7 @@
           // 다음 책 알림 배너 및 최근 진단 도서 동기화
           checkPersistentNextBook(student);
           checkRecentDiagnosedBook(student);
+          checkInProgressBookFromPreviousSession(student);
 
           // 7단계 선생님 확인 버튼 상태 복원
           if (state.teacherVerifiedCheckout || state.teacherOverrideApproved) {
@@ -1908,6 +1932,7 @@
           if (dailyLog) {
             populateExistingMissions(dailyLog);
           }
+          checkInProgressBookFromPreviousSession(student);
         }
 
         const viewLogin = document.getElementById("viewLogin");
@@ -2159,6 +2184,71 @@
 
     function applyPersistentNextBook() {
       openBookModal();
+    }
+
+    // [독서중 / 예약 도서 자동 복원] 지난 수업에서 '독서중' 또는 '예약'으로 기록한 도서가 있으면 자동 복원
+    function checkInProgressBookFromPreviousSession(student) {
+      if (!student) return;
+      if (Array.isArray(state.missions.books) && state.missions.books.length > 0) return;
+
+      try {
+        let bookObj = null;
+        const saved = localStorage.getItem("in_progress_book_" + student.name);
+        if (saved) {
+          try {
+            bookObj = JSON.parse(saved);
+          } catch (e) {}
+        }
+
+        if (!bookObj && Array.isArray(state.dailyLogs)) {
+          const pastLogs = state.dailyLogs.filter(l => 
+            l && (l.name || '').replace(/\s+/g, '') === (student.name || '').replace(/\s+/g, '') &&
+            !isSameDate(l.date, state.todayDateStr)
+          );
+          if (pastLogs.length > 0) {
+            const sorted = [...pastLogs].reverse();
+            for (let log of sorted) {
+              const contents = log.contents || "";
+              const match = contents.match(/(?:\[도서\]\s*|📖\s*|,\s*|^|\s)([^\s:|\[\(,]+(?:\s+[^\s:|\[\(,]+)*)\s*:\s*(독서중|예약)/);
+              if (match && match[1] && match[2]) {
+                const title = match[1].trim();
+                const status = match[2].trim();
+                bookObj = {
+                  id: "book_prev_" + Date.now(),
+                  order: "1권째",
+                  genre: "문학",
+                  level: "3레벨",
+                  course: "1코스",
+                  difficulty: "",
+                  title: title,
+                  score: "",
+                  status: status,
+                  vocabDone: false,
+                  infoDone: false,
+                  writingStatus: "작성 안 함",
+                  memo: "",
+                  jFormatted: formatJColBookRecord("3레벨", "1코스", title, "", "", "")
+                };
+                break;
+              }
+            }
+          }
+        }
+
+        if (bookObj && bookObj.title) {
+          state.missions.books = [bookObj];
+          if (!state.missions.noteBookTitle && bookObj.status !== "예약") {
+            state.missions.noteBookTitle = bookObj.title;
+          }
+          renderBookList();
+          renderNoteBookChips();
+          renderNextBookChips();
+          updateProgress();
+          console.log(`[checkInProgressBook] Restored past in-progress book '${bookObj.title}' (${bookObj.status}) for ${student.name}`);
+        }
+      } catch (err) {
+        console.warn("checkInProgressBookFromPreviousSession error:", err);
+      }
     }
 
     // [독서노트 글쓰기 완료 여부 정밀 판정 로직 - 오직 '글완'만 완료로 인정, 작성중/요약은 미완료!]
@@ -2555,7 +2645,8 @@
       document.getElementById("modalBookTitle").value = "";
       document.getElementById("modalBookScore").value = "";
       document.getElementById("modalBookStatus").value = "";
-      document.getElementById("modalBookMemo").value = "";
+      const mMemo = document.getElementById("modalBookMemo");
+      if (mMemo) mMemo.value = "";
       closeAutocompleteList();
 
       handleModalScoreChange();
@@ -2963,7 +3054,7 @@
         vocabDone: false,
         infoDone: false,
         writingStatus: "작성 안 함",
-        memo: document.getElementById("modalBookMemo").value.trim(),
+        memo: (document.getElementById("modalBookMemo") ? document.getElementById("modalBookMemo").value.trim() : ""),
         jFormatted: formatJColBookRecord(level, course, title, score, "", difficulty)
       };
 
@@ -3009,7 +3100,8 @@
         document.getElementById("modalBookTitle").value = "";
         document.getElementById("modalBookScore").value = "";
         document.getElementById("modalBookStatus").value = "";
-        document.getElementById("modalBookMemo").value = "";
+        const mMemo2 = document.getElementById("modalBookMemo");
+        if (mMemo2) mMemo2.value = "";
         closeAutocompleteList();
         handleModalScoreChange();
         initAllModalCustomDropdowns();
@@ -4579,10 +4671,10 @@
       if (state.missions.hwStatus) {
         let hwPart = state.missions.hwStatus;
         if (hwBook) hwPart += ` (${hwBook})`;
-        if (step1Memo) hwPart += ` [성실발자욱: ${step1Memo}]`;
+        if (step1Memo) hwPart += ` [성실발자국: ${step1Memo}]`;
         contentParts.push(hwPart);
       } else if (step1Memo) {
-        contentParts.push(`[성실발자욱: ${step1Memo}]`);
+        contentParts.push(`[성실발자국: ${step1Memo}]`);
       }
 
       // 2단계 오늘 독서 (J열 미반영 도서)
@@ -4594,9 +4686,9 @@
         allStep2Memo = allStep2Memo ? `${allStep2Memo} / ${bMemos.join(", ")}` : bMemos.join(", ");
       }
       if (readingPart && allStep2Memo) {
-        readingPart += ` [독서발자욱: ${allStep2Memo}]`;
+        readingPart += ` [독서발자국: ${allStep2Memo}]`;
       } else if (!readingPart && allStep2Memo) {
-        readingPart = `[독서발자욱: ${allStep2Memo}]`;
+        readingPart = `[독서발자국: ${allStep2Memo}]`;
       }
       if (readingPart) {
         contentParts.push(readingPart);
@@ -4611,7 +4703,7 @@
         writingPart = `[메모: ${step3Memo}]`;
       }
       if (readingPart && !writingPart && allStep2Memo && !nonJReading.length) {
-        // 이미 독서발자욱에 반영됨
+        // 이미 독서발자국에 반영됨
       }
       if (writingPart) {
         contentParts.push(writingPart);
@@ -4621,10 +4713,10 @@
       if (trSummary) {
         let trPart = trSummary;
         if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
-        if (step4Memo) trPart += ` [문해력발자욱: ${step4Memo}]`;
+        if (step4Memo) trPart += ` [문해력발자국: ${step4Memo}]`;
         contentParts.push(trPart);
       } else if (step4Memo) {
-        contentParts.push(`[문해력발자욱: ${step4Memo}]`);
+        contentParts.push(`[문해력발자국: ${step4Memo}]`);
       }
 
       // 5단계 다음 책 & 메모
@@ -4739,17 +4831,17 @@
       let eventDisplayText = allEvents.join(" / ");
       document.getElementById("sumEvent").innerText = eventDisplayText || "선택 안 함";
 
-      // [5단계 요약 박스] 발자욱 기록 실시간 노출 (각 단계별 고유 발자욱 이름 표기, 작성된 것만 노출)
+      // [5단계 요약 박스] 발자국 기록 실시간 노출 (각 단계별 고유 발자국 이름 표기, 작성된 것만 노출)
       const memoItems = [];
       const s1 = (document.getElementById("step1MemoInput") ? document.getElementById("step1MemoInput").value : (state.missions.step1Memo || "")).trim();
       const s2 = (document.getElementById("step2MemoInput") ? document.getElementById("step2MemoInput").value : (state.missions.step2Memo || "")).trim();
       const s4 = (document.getElementById("step4MemoInput") ? document.getElementById("step4MemoInput").value : (state.missions.step4Memo || "")).trim();
       const bMemos = (state.missions.books || []).filter(b => b && b.memo && b.memo.trim()).map(b => `${b.title}: ${b.memo.trim()}`);
 
-      if (s1) memoItems.push(`성실발자욱: ${s1}`);
-      if (s2) memoItems.push(`독서발자욱: ${s2}`);
-      if (bMemos.length > 0) memoItems.push(...bMemos.map(m => `독서발자욱(${m})`));
-      if (s4) memoItems.push(`문해력발자욱: ${s4}`);
+      if (s1) memoItems.push(`성실발자국: ${s1}`);
+      if (s2) memoItems.push(`독서발자국: ${s2}`);
+      if (bMemos.length > 0) memoItems.push(...bMemos.map(m => `독서발자국(${m})`));
+      if (s4) memoItems.push(`문해력발자국: ${s4}`);
 
       const sumMemoRow = document.getElementById("sumMemoRow");
       const sumMemos = document.getElementById("sumMemos");
@@ -4875,10 +4967,10 @@
       if (state.missions.hwStatus) {
         let hwPart = state.missions.hwStatus;
         if (hwBook) hwPart += ` (${hwBook})`;
-        if (step1Memo) hwPart += ` [성실발자욱: ${step1Memo}]`;
+        if (step1Memo) hwPart += ` [성실발자국: ${step1Memo}]`;
         contentParts.push(hwPart);
       } else if (step1Memo) {
-        contentParts.push(`[성실발자욱: ${step1Memo}]`);
+        contentParts.push(`[성실발자국: ${step1Memo}]`);
       }
 
       // 2단계 오늘 독서 (J열 미반영 도서)
@@ -4890,9 +4982,9 @@
         allStep2Memo = allStep2Memo ? `${allStep2Memo} / ${bMemos.join(", ")}` : bMemos.join(", ");
       }
       if (readingPart && allStep2Memo) {
-        readingPart += ` [독서발자욱: ${allStep2Memo}]`;
+        readingPart += ` [독서발자국: ${allStep2Memo}]`;
       } else if (!readingPart && allStep2Memo) {
-        readingPart = `[독서발자욱: ${allStep2Memo}]`;
+        readingPart = `[독서발자국: ${allStep2Memo}]`;
       }
       if (readingPart) {
         contentParts.push(readingPart);
@@ -4907,7 +4999,7 @@
         writingPart = `[메모: ${step3Memo}]`;
       }
       if (readingPart && !writingPart && allStep2Memo && !nonJReading.length) {
-        // 이미 독서발자욱에 반영됨
+        // 이미 독서발자국에 반영됨
       }
       if (writingPart) {
         contentParts.push(writingPart);
@@ -4917,10 +5009,10 @@
       if (trSummary) {
         let trPart = trSummary;
         if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
-        if (step4Memo) trPart += ` [문해력발자욱: ${step4Memo}]`;
+        if (step4Memo) trPart += ` [문해력발자국: ${step4Memo}]`;
         contentParts.push(trPart);
       } else if (step4Memo) {
-        contentParts.push(`[문해력발자욱: ${step4Memo}]`);
+        contentParts.push(`[문해력발자국: ${step4Memo}]`);
       }
 
       // 5단계 다음 책 & 메모
@@ -4991,6 +5083,16 @@
       } else {
         localStorage.removeItem("next_book_" + student.name);
       }
+
+      // Persist in-progress or reserved book for next session (지난 수업 독서중/예약 자동 연동)
+      try {
+        const inProgress = (state.missions.books || []).find(b => b && (b.status === "독서중" || b.status === "예약"));
+        if (inProgress && student) {
+          localStorage.setItem("in_progress_book_" + student.name, JSON.stringify(inProgress));
+        } else if (student) {
+          localStorage.removeItem("in_progress_book_" + student.name);
+        }
+      } catch (e) {}
 
       // 독서노트 완료 상태 영구 기록 및 최근 진단 임시 캐시 해제 (복수 글쓰기 목록 전체 반영)
       const allDoneWritings = [...(state.missions.writingList || [])];
