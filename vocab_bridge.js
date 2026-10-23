@@ -227,10 +227,10 @@
   // ---------- 국립국어원 학년별 필수 어휘 선택 및 학습 ----------
   function defaultGradeBand() {
     var g = String((state && state.currentStudent && state.currentStudent.grade) || '');
-    if (/초.*(1|2)/.test(g)) return '초1~2';
+    if (/유치|초.*(1|2)/.test(g)) return '초1~2';
     if (/초.*(3|4)/.test(g)) return '초3~4';
     if (/초.*(5|6)/.test(g)) return '초5~6';
-    if (/중/.test(g)) return '중1~3';
+    if (/중|고/.test(g)) return '중1~3';
     return '초3~4';
   }
 
