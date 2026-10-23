@@ -62,6 +62,7 @@
     return { type: 'vocabLevel', version: 'local', level: level, books: books.map(function (b) { return { level: level, title: b.title, words: b.words }; }) };
   }
   var byTitleMap = null;
+  var sheetVocabReady = false;
   function populateIndex(items) {
     if (!items || !items.length) return null;
     indexMap = indexMap || {};
@@ -84,6 +85,7 @@
     if (!url) return Promise.resolve(indexMap);
     var done = function (data) {
       if (!data || data.type !== 'vocabIndex' || !data.items || !data.items.length) return indexMap;
+      sheetVocabReady = true;
       indexMap = {};
       byTitleMap = {};
       if (localItems) populateIndex(localItems);
@@ -166,27 +168,29 @@
       'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm"><span>어휘 퀴즈 ▶</span>' + badge + '</button>';
   };
 
-  // ---------- 퀴즈 열기 ----------
+  // ---------- 퀴즈 열기 (내장 DB 즉시 반환 → 0초 로딩, 시트 연결 시 백그라운드 갱신) ----------
   function loadLevel(level) {
     var cached = readCache(LEVEL_KEY + level);
     if (cached) return Promise.resolve(cached);
+    var loc = localLevelData(level);
     var url = gasUrl();
-    if (!url) {
-      var loc0 = localLevelData(level);
-      return loc0 ? Promise.resolve(loc0) : Promise.reject(new Error('no vocab source'));
+    if (loc) {
+      if (url && sheetVocabReady) {
+        fetchJson(withParams(url, 'action=getVocab&level=' + encodeURIComponent(level))).then(function (data) {
+          if (data && data.type === 'vocabLevel' && Array.isArray(data.books) && data.books.length) {
+            writeCache(LEVEL_KEY + level, data);
+          }
+        }).catch(function () {});
+      }
+      return Promise.resolve(loc);
     }
+    if (!url) return Promise.reject(new Error('no vocab source'));
     return fetchJson(withParams(url, 'action=getVocab&level=' + encodeURIComponent(level))).then(function (data) {
       if (data && data.type === 'vocabLevel' && Array.isArray(data.books) && data.books.length) {
         writeCache(LEVEL_KEY + level, data);
         return data;
       }
-      var loc = localLevelData(level);
-      if (loc) return loc;
       throw new Error('bad vocab response');
-    }).catch(function (err) {
-      var loc = localLevelData(level);
-      if (loc) return loc;
-      throw err;
     });
   }
 
