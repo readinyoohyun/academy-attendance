@@ -305,12 +305,12 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
-          <button type="button" onclick="if(window.VocabBridge&&VocabBridge.openGradePicker)VocabBridge.openGradePicker()" class="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-rose-500 shadow-rose-600/20 transition-all active:scale-95 flex items-center gap-1.5">
-            <span>🎓 학년별 필수어휘 퀴즈</span>
-            <span id="gradeVocabBtnBadge" class="hidden ml-1 px-2 py-0.5 bg-white text-rose-700 rounded-lg text-[11px] font-black"></span>
-          </button>
           <button onclick="openBookModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-emerald-500 shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1.5">
             <span>📖 도서 등록</span>
+          </button>
+          <button type="button" onclick="if(window.VocabBridge&&VocabBridge.openGradePicker)VocabBridge.openGradePicker()" class="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-rose-500 shadow-rose-600/20 transition-all active:scale-95 flex items-center gap-1.5">
+            <span>🎓 학년별 필수 어휘 학습</span>
+            <span id="gradeVocabBtnBadge" class="hidden ml-1 px-2 py-0.5 bg-white text-rose-700 rounded-lg text-[11px] font-black"></span>
           </button>
         </div>
       </div>
@@ -415,10 +415,10 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
         
         <!-- Dropdown 1: Level Up / Course Up / Workbook (레벨업, 코스업, 교재완료) -->
-        <div class="bg-white/5 border border-white/10 rounded-2xl p-4.5">
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-4.5">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-bold text-amber-300">1. 레벨업, 코스업, 교재완료</span>
           </div>
@@ -426,68 +426,27 @@
           <div class="flex items-center gap-2 mb-3">
             <!-- Event Dropdown -->
             <select id="eventSetSelect"
-                    class="flex-1 p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    class="flex-1 min-w-0 p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
               <option value="">이벤트</option>
               <option value="코스업">코스업</option>
               <option value="레벨업">레벨업</option>
-              <option value="훈민정음/숙제교재 완료">훈민정음/숙제교재 완료</option>
-              <option value="문해력교재완성">문해력교재완성</option>
               <option value="읽트완료">읽트완료</option>
-              <option value="듣트완료">듣트완료</option>
+              <option value="독트완료">독트완료</option>
+              <option value="훈민정음완료">훈민정음완료</option>
+              <option value="빠작어휘완료">빠작어휘완료</option>
               <option value="한자교재완료">한자교재완료</option>
-              <option value="정독완">정독완</option>
+              <option value="교과서어휘의힘완료">교과서어휘의힘완료</option>
+              <option value="똑똑한하루어휘완료">똑똑한하루어휘완료</option>
+              <option value="속담따라쓰기완료">속담따라쓰기완료</option>
+              <option value="정독완료">정독완료</option>
             </select>
 
-            <!-- Number Dropdown (신설/복원!) -->
-            <select id="eventNumberSelect"
-                    class="w-36 p-2.5 bg-slate-800 border border-amber-400/50 rounded-xl text-xs font-bold text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400">
-              <option value="">권 번호</option>
-              <optgroup label="레벨/코스 세분화">
-                <option value="1-1">1-1</option>
-                <option value="1-2">1-2</option>
-                <option value="2-1">2-1</option>
-                <option value="2-2">2-2</option>
-                <option value="3-1">3-1</option>
-                <option value="3-2">3-2</option>
-                <option value="4-1">4-1</option>
-                <option value="4-2">4-2</option>
-                <option value="5-1">5-1</option>
-                <option value="5-2">5-2</option>
-                <option value="6-1">6-1</option>
-                <option value="6-2">6-2</option>
-                <option value="7-1">7-1</option>
-                <option value="7-2">7-2</option>
-                <option value="8-1">8-1</option>
-                <option value="8-2">8-2</option>
-                <option value="9-1">9-1</option>
-                <option value="9-2">9-2</option>
-                <option value="10-1">10-1</option>
-                <option value="10-2">10-2</option>
-                <option value="10-3">10-3</option>
-                <option value="10-4">10-4</option>
-              </optgroup>
-              <optgroup label="단계 / 권수">
-                <option value="1단계">1단계</option>
-                <option value="2단계">2단계</option>
-                <option value="3단계">3단계</option>
-                <option value="4단계">4단계</option>
-                <option value="5단계">5단계</option>
-                <option value="6단계">6단계</option>
-                <option value="1권">1권</option>
-                <option value="2권">2권</option>
-                <option value="3권">3권</option>
-                <option value="4권">4권</option>
-                <option value="5권">5권</option>
-                <option value="6권">6권</option>
-                <option value="7권">7권</option>
-                <option value="8권">8권</option>
-                <option value="9권">9권</option>
-                <option value="10권">10권</option>
-              </optgroup>
-            </select>
+            <!-- Number Input (숫자 입력) -->
+            <input type="text" id="eventNumberInput" placeholder="숫자 입력"
+                   class="w-24 sm:w-28 p-2.5 bg-slate-800 border border-amber-400/50 rounded-xl text-xs font-bold text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-slate-500 shadow-inner" />
 
             <button type="button" onclick="addSetEventItem()" 
-                    class="px-3 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-extrabold rounded-xl transition whitespace-nowrap shadow-sm">
+                    class="px-3 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-extrabold rounded-xl transition whitespace-nowrap shadow-sm active:scale-95">
               ➕ 추가
             </button>
           </div>
@@ -499,15 +458,15 @@
         </div>
 
         <!-- Dropdown 2: Sticker Board Complete (스티커판 완성) -->
-        <div class="bg-white/5 border border-white/10 rounded-2xl p-4.5">
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-4.5">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-bold text-indigo-300">2. 스티커판 완성</span>
           </div>
 
-          <div class="flex items-center gap-2 mb-3">
-            <select id="eventSoloSelect"
-                    class="flex-1 p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
-              <option value="">타이틀</option>
+          <div class="mb-3">
+            <select id="eventSoloSelect" onchange="handleSoloSelectChange(this.value)"
+                    class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="">타이틀 (선택 시 즉시 등록)</option>
               <option value="친구완성">친구완성</option>
               <option value="탐험가완성">탐험가완성</option>
               <option value="고수완성">고수완성</option>
@@ -515,10 +474,6 @@
               <option value="마스터완성">마스터완성</option>
               <option value="그랜드마스터완성">그랜드마스터완성</option>
             </select>
-            <button type="button" onclick="addSoloEventItem()" 
-                    class="px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition whitespace-nowrap shadow-sm">
-              ➕ 추가
-            </button>
           </div>
 
           <!-- Selected Solo Events Tag List -->
@@ -536,10 +491,10 @@
       <!-- 5단계 컬러 헤더 배너 -->
       <div class="bg-rose-100/90 border-b-2 border-rose-300 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <span class="px-3 py-1.5 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">5단계</span>
+          <span class="px-3 py-1.5 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-sm shadow-sm whitespace-nowrap">나의 시간, 나의 기록</span>
           <div>
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
-              <span>오늘의 수업 완료 및 기록장 검사</span>
+              <span>오늘 수업을 돌아보기</span>
             </h3>
             <p class="text-xs sm:text-sm text-rose-950 font-bold">학습 요약 확인 후 선생님께 기록장 검사를 받고 하원하세요.</p>
           </div>
@@ -547,14 +502,14 @@
       </div>
 
       <div class="p-5 sm:p-6">
-        <!-- 5단계 필수 작성: 오늘 수업 돌아보기 & 선생님께 한마디 -->
+        <!-- 5단계 필수 작성: 확실하게 쌓여가는 독서의 힘, 문해력의 힘 -->
         <div class="mb-5 p-4 sm:p-5 bg-amber-50/80 rounded-2xl border-2 border-amber-400 shadow-sm">
           <div class="flex items-center justify-between mb-2.5 flex-wrap gap-1.5">
             <label class="block text-xs sm:text-sm font-black text-slate-900 flex items-center gap-2">
-              <span>✍️ 오늘 수업 돌아보기 & 선생님께 한마디</span>
+              <span>✍️ 확실하게 쌓여가는 독서의 힘, 문해력의 힘</span>
               <span class="px-2 py-0.5 bg-amber-400 text-slate-950 text-[11px] font-black rounded-md shadow-xs">필수 작성 🌟</span>
             </label>
-            <span class="text-xs text-amber-900 font-bold">아이들의 소중한 배움과 생각을 적어주세요!</span>
+            <span class="text-xs text-amber-900 font-bold">소중한 배움과 생각을 적어주세요!</span>
           </div>
           <textarea id="studentReflectionInput" rows="2"
                  placeholder="오늘 배운 것 중 내가 설명할 수 있는 것은 무엇인지, 아직 헷갈리는 것은 무엇인지 한 줄로 적어 보세요. 선생님께 하고 싶은 말도 함께 남겨 주세요 😊"
@@ -2777,9 +2732,11 @@
           if (b.difficulty !== currentDiff) return false;
         }
 
-        // 4. 코스 조건 (엄격 필터링: 선택된 코스와 일치하는 도서만 노출)
+        // 4. 코스 조건 (3코스 및 재독은 전 분야 융합 코스이므로 모든 도서 노출!)
         if (currentCrs && currentCrs !== "코스" && currentCrs !== "선택 안 함" && currentCrs !== "선택 안함") {
-          if (currentCrs === "4코스") {
+          if (currentCrs === "3코스" || currentCrs === "재독") {
+            // 3코스와 재독은 모든 분야의 도서를 자유롭게 읽으므로 코스 필터링 없이 전체 도서 허용
+          } else if (currentCrs === "4코스") {
             if (b.course !== "4코스") return false;
           } else if (currentCrs === "1코스") {
             if (b.course && b.course !== "1코스") return false;
@@ -2787,8 +2744,6 @@
           } else if (currentCrs === "2코스") {
             if (b.course && b.course !== "2코스") return false;
             if (!b.course && b.genre !== "사회" && b.genre !== "과학" && b.genre !== "예술") return false;
-          } else if (currentCrs === "3코스") {
-            if (b.course && b.course !== "3코스") return false;
           } else if (b.course && b.course !== currentCrs) {
             return false;
           }
@@ -3689,7 +3644,7 @@
         isLiteracy: true,
         fieldLabel: "분야",
         fields: ["복합", "문학", "비문학", "어휘", "문법"],
-        label: "권 수/단계",
+        label: "단계/권",
         options: ["1단계", "2단계", "3단계", "4단계", "5단계", "6단계", "1권", "2권", "3권", "4권", "5권", "6권"]
       },
       "오답수정+선지분석": {
@@ -3867,7 +3822,7 @@
         if (conf.isLiteracy) {
           // 문해력 트레이닝 전용 (원장님 요청 4개 항목 + 다중 추가 지원)
           const fieldOpts = ['<option value=""' + (!detail.field ? ' selected' : '') + '>분야</option>'].concat(conf.fields.map(f => `<option value="${f}" ${detail.field === f ? 'selected' : ''}>${f}</option>`)).join("");
-          const volOpts = ['<option value=""' + (!detail.vol ? ' selected' : '') + '>권 수/단계</option>'].concat(conf.options.map(v => `<option value="${v}" ${detail.vol === v ? 'selected' : ''}>${v}</option>`)).join("");
+          const volOpts = ['<option value=""' + (!detail.vol ? ' selected' : '') + '>단계/권</option>'].concat(conf.options.map(v => `<option value="${v}" ${detail.vol === v ? 'selected' : ''}>${v}</option>`)).join("");
 
           let registeredHtml = "";
           if (detail.items && detail.items.length > 0) {
@@ -3900,7 +3855,7 @@
                 </select>
               </div>
               <div>
-                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">2. 권 수/단계</label>
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">2. 단계/권</label>
                 <select id="literacyVolSelect" onchange="updateTrainingDetail('${type}', 'vol', this.value)"
                         class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
                   ${volOpts}
@@ -4306,17 +4261,18 @@
       }
     }
 
-    // 10. Step 6 Multiple Set Events & Solo Events Handlers
+    // 10. Step 4 Multiple Set Events & Solo Events Handlers
     function addSetEventItem() {
       const ev = document.getElementById("eventSetSelect").value;
-      const num = document.getElementById("eventNumberSelect").value;
+      const numInput = document.getElementById("eventNumberInput");
+      const num = numInput ? numInput.value.trim() : (document.getElementById("eventNumberSelect") ? document.getElementById("eventNumberSelect").value : "");
       if (!ev) {
         alert("이벤트를 선택해 주세요.");
         return;
       }
       state.missions.setEvents.push({ event: ev, number: num });
       document.getElementById("eventSetSelect").value = "";
-      document.getElementById("eventNumberSelect").value = "";
+      if (numInput) numInput.value = "";
       renderSetEventItems();
       updateProgress();
     }
@@ -4332,7 +4288,7 @@
       if (!container) return;
 
       if (state.missions.setEvents.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 italic py-1">선택된 세트 이벤트가 없습니다.</p>`;
+        container.innerHTML = `<p class="text-xs text-slate-500 italic py-1">선택된 항목이 없습니다.</p>`;
         return;
       }
       container.innerHTML = "";
@@ -4348,18 +4304,19 @@
       });
     }
 
-    function addSoloEventItem() {
-      const title = document.getElementById("eventSoloSelect").value;
-      if (!title) {
-        alert("타이틀을 선택해 주세요.");
-        return;
-      }
+    function handleSoloSelectChange(title) {
+      if (!title) return;
       if (!state.missions.soloEvents.includes(title)) {
         state.missions.soloEvents.push(title);
       }
       document.getElementById("eventSoloSelect").value = "";
       renderSoloEventItems();
       updateProgress();
+    }
+
+    function addSoloEventItem() {
+      const title = document.getElementById("eventSoloSelect").value;
+      handleSoloSelectChange(title);
     }
 
     function removeSoloEventItem(index) {
