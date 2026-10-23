@@ -855,6 +855,7 @@
       // Active Student Missions
       missions: {
         books: [], // { order, genre, level, course, title, score, status, memo }
+        vocabResults: [], // [어휘] 오늘 푼 어휘 퀴즈 결과 { bookId, title, level, total, firstCorrect, rate, wrongWords }
         noteBookTitle: "", // [6번] 글쓰기 대상 도서명
         recentDiagnosedBook: "", // [6번] 최근 이전 진단 도서명
         noteStatus: "작성안함",
@@ -2252,6 +2253,7 @@
     function resetMissions() {
       state.missions = {
         books: [],
+        vocabResults: [],
         noteBookTitle: "",
         recentDiagnosedBook: "",
         noteStatus: "작성안함",
@@ -3143,6 +3145,7 @@
                     class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ${infoClass}">
               <span>책소개</span>
             </button>
+            ${(window.VocabBridge && VocabBridge.buttonHtml) ? VocabBridge.buttonHtml(b) : ''}
           </div>
         `;
 
@@ -4881,6 +4884,14 @@
         contentParts.push(`[소감] ${reflection}`);
       }
 
+      // [어휘] 어휘 확인 학습 결과 요약 → K열 → 회원분석 학생 특이사항
+      try {
+        if (window.VocabBridge) {
+          const vocabLine = VocabBridge.summaryText();
+          if (vocabLine) contentParts.push(vocabLine);
+        }
+      } catch (e) { console.warn("[vocab] summary error:", e); }
+
       const finalContents = contentParts.join(" | ");
 
       // Find or build Daily Log with strict student matching
@@ -4989,6 +5000,9 @@
           console.error("[submitAllMissions] Checkout save error:", err);
         }
       })();
+
+      // [어휘] 진단 점수 + 4단계 트레이닝 기록을 [학습기록] 시트로 전송 (실패해도 하원 처리에는 영향 없음)
+      try { if (window.VocabBridge) VocabBridge.checkout(student, state.missions); } catch (e) { console.warn("[vocab] checkout error:", e); }
 
       // [즉각 반응!] 0초 만에 꽃다발 폭죽 터지고 정확히 3초 뒤 로그인 화면으로 자동 이동!
       showCelebration(student.name);
@@ -5228,6 +5242,11 @@
       return m1 === m2 && d1 === d2;
     }
   </script>
+
+  <!-- 어휘 확인 학습 (구글 시트 [어휘] 연동) -->
+  <script src="vocab_engine.js" defer></script>
+  <script src="vocab_ui.js" defer></script>
+  <script src="vocab_bridge.js" defer></script>
 
 </body>
 </html>

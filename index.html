@@ -829,7 +829,10 @@ function ensureColumns(sheet, requiredCols) {
   }
 }
 
-function doGet() {
+function doGet(e) {
+  // [어휘] 요청(?action=getVocab / getVocabIndex)이면 바로 응답, 아니면 기존 동작 그대로
+  var vocabResp = handleVocabGet(e);
+  if (vocabResp) return vocabResp;
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
   // 1. 전체시간표 (students)
@@ -1372,6 +1375,9 @@ function doPost(e) {
       generateDailyAttendance();
       return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
         .setMimeType(ContentService.MimeType.JSON);
+    }
+    else if (postData.action === "addLearningRecord") {
+      return handleAddLearningRecord(postData);
     }
     else if (postData.action === "uploadLidinAnalysis") {
       var sheet = ss.getSheetByName("전체시간표") || ss.getSheetByName("전체 시간표");
@@ -3439,6 +3445,9 @@ function onOpen() {
     .addItem("5. 매일 밤 9시 30분 자동 생성 설정", "createDailyAttendanceTrigger")
     .addItem("6. 오늘 출석부 보강 은행 미차감 정산", "runMakeupBankRecovery")
     .addItem("7. 오늘 출석부 ➔ 회원 분석 수동 전체 누적 동기화", "syncTodayDailyEventsToMemberAnalysis")
+    .addItem("8. 어휘 시트 초기 셋업 (학습기록·학생분석표)", "vocabSetupSheets")
+    .addItem("9. 오답 복습지 PDF 만들기 (학생분석표 기준)", "vocabMakeReviewPdf")
+    .addItem("10. 어휘 갱신 (학생앱에 반영)", "vocabBumpVersion")
     .addToUi();
 }
 
@@ -3645,7 +3654,541 @@ function runMakeupBankRecovery() {
   
   SpreadsheetApp.getUi().alert("보강 은행 일괄 정산 완료!\n- 전체시간표 결석 누적분(AG열) 갱신: " + updatedStudentsCount + "명\n- 오늘 출석부 보강 차감 완료: " + count + "건 🍀");
 }
-            </pre>
+
+// ============================================================
+// 어휘 학습 연동 (구글 시트 3장: 어휘 / 학습기록 / 학생분석표)
+//  - 학생앱 ➔ doPost(action: "addLearningRecord") ➔ [학습기록] 시트에 한 줄씩 저장
+//  - 학생앱 ➔ doGet(?action=getVocabIndex | getVocab&amp;level=1레벨) ➔ [어휘] 시트 내용을 JSON으로 제공
+//  - 시트 메뉴 ➔ 어휘 시트 셋업 / 오답 복습지 PDF 만들기 / 어휘 갱신
+//  (기존 코드는 ES5(var/function) 방식이라 같은 방식으로 작성함)
+// ============================================================
+var VOCAB_SHEET = "어휘";
+var RECORD_SHEET = "학습기록";
+var ANALYSIS_SHEET = "학생분석표";
+var VOCAB_HEADERS = ["어휘ID", "구분", "책", "도서ID", "어휘", "활용형", "뜻", "예문", "출처", "사용"];
+var RECORD_HEADERS = ["일시", "날짜", "이름", "종류", "구분", "책", "문제수", "처음정답수", "정답률(%)", "진단점수", "트레이닝", "권수·차시", "오답개수", "이해도", "틀린어휘", "상세(JSON)", "기록ID"];
+var VOCAB_LEVELS = ["기초", "1레벨", "2레벨", "3레벨", "4레벨", "5레벨", "6레벨"];
+
+function vocabJson_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function vocabNum_(v) {
+  if (v === "" || v === null || v === undefined) return "";
+  var n = Number(v);
+  return isFinite(n) ? n : "";
+}
+
+function vocabParseDate_(s) {
+  var str = String(s || "");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return Utilities.parseDate(str, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  }
+  return new Date();
+}
+
+// ---------- 어휘 읽기 (학생앱이 요청) ----------
+function vocabVersion_() {
+  return PropertiesService.getScriptProperties().getProperty("vocabVersion") || "1";
+}
+
+// 메뉴 [어휘 갱신]: 시트에서 어휘를 고친 뒤 실행하면 학생앱이 새 내용을 받아 감
+function vocabBumpVersion() {
+  PropertiesService.getScriptProperties().setProperty("vocabVersion", String(new Date().getTime()));
+  SpreadsheetApp.getUi().alert("어휘 갱신 완료!\n학생앱은 다음 접속부터 [어휘] 시트의 최신 내용을 받아 갑니다.");
+}
+
+function vocabReadRows_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(VOCAB_SHEET);
+  if (!sheet || sheet.getLastRow() &lt; 2) return [];
+  var values = sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getValues();
+  var rows = [];
+  for (var i = 0; i &lt; values.length; i++) {
+    var v = values[i];
+    var use = String(v[9] === "" ? "O" : v[9]).trim().toUpperCase();
+    if (use === "X") continue;                       // 사용 = X 는 문제에서 제외
+    var word = String(v[4] || "").trim();
+    var meaning = String(v[6] || "").trim();
+    if (!word || !meaning) continue;
+    rows.push({ level: String(v[1] || "").trim(), title: String(v[2] || "").trim(), w: word, f: String(v[5] || "").trim() || word, m: meaning, e: String(v[7] || "").trim() });
+  }
+  return rows;
+}
+
+function vocabGroupBooks_(rows) {
+  var order = [], map = {};
+  for (var i = 0; i &lt; rows.length; i++) {
+    var r = rows[i];
+    var key = r.level + "|" + r.title;
+    if (!map[key]) { map[key] = { level: r.level, title: r.title, words: [] }; order.push(key); }
+    map[key].words.push({ w: r.w, f: r.f, m: r.m, e: r.e });
+  }
+  var books = [];
+  for (var k = 0; k &lt; order.length; k++) books.push(map[order[k]]);
+  return books;
+}
+
+// CacheService 는 값 하나당 100KB 제한이라 조각내어 저장
+function vocabCachePut_(key, obj) {
+  try {
+    var json = JSON.stringify(obj);
+    var size = 20000, parts = {}, n = 0;
+    for (var p = 0; p &lt; json.length; p += size) { parts[key + "#" + n] = json.substring(p, p + size); n++; }
+    parts[key + "#n"] = String(n);
+    CacheService.getScriptCache().putAll(parts, 21600);
+  } catch (err) { /* 캐시 실패는 무시 (시트를 직접 읽으면 됨) */ }
+}
+
+function vocabCacheGet_(key) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var n = cache.get(key + "#n");
+    if (!n) return null;
+    var names = [];
+    for (var i = 0; i &lt; Number(n); i++) names.push(key + "#" + i);
+    var got = cache.getAll(names);
+    var json = "";
+    for (var j = 0; j &lt; names.length; j++) {
+      if (got[names[j]] === undefined) return null;
+      json += got[names[j]];
+    }
+    return JSON.parse(json);
+  } catch (err) { return null; }
+}
+
+function vocabGetIndex_() {
+  var key = "vocabIdx_" + vocabVersion_();
+  var cached = vocabCacheGet_(key);
+  if (cached) return cached;
+  var books = vocabGroupBooks_(vocabReadRows_());
+  var items = [];
+  for (var i = 0; i &lt; books.length; i++) items.push({ t: books[i].title, l: books[i].level, n: books[i].words.length });
+  var out = { type: "vocabIndex", version: vocabVersion_(), items: items };
+  vocabCachePut_(key, out);
+  return out;
+}
+
+function vocabGetLevel_(level) {
+  if (VOCAB_LEVELS.indexOf(level) === -1) return { type: "vocabError", error: "unknown level: " + level };
+  var key = "vocabLv_" + vocabVersion_() + "_" + level;
+  var cached = vocabCacheGet_(key);
+  if (cached) return cached;
+  var rows = vocabReadRows_().filter(function (r) { return r.level === level; });
+  var out = { type: "vocabLevel", version: vocabVersion_(), level: level, books: vocabGroupBooks_(rows) };
+  vocabCachePut_(key, out);
+  return out;
+}
+
+// doGet(e) 맨 앞에서 호출: 어휘 요청이면 응답을 돌려주고, 아니면 null(기존 동작 그대로)
+function handleVocabGet(e) {
+  var action = e &amp;&amp; e.parameter &amp;&amp; e.parameter.action;
+  if (action !== "getVocab" &amp;&amp; action !== "getVocabIndex") return null;
+  var out;
+  try {
+    out = (action === "getVocabIndex") ? vocabGetIndex_() : vocabGetLevel_(String(e.parameter.level || ""));
+  } catch (err) {
+    out = { type: "vocabError", error: String(err) };
+  }
+  return vocabJson_(out);
+}
+
+// ---------- 학습기록 저장 (학생앱이 전송) ----------
+function vocabEnsureRecordSheet_(ss) {
+  var sheet = ss.getSheetByName(RECORD_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(RECORD_SHEET);
+    sheet.getRange(1, 1, 1, RECORD_HEADERS.length).setValues([RECORD_HEADERS]).setFontWeight("bold").setBackground("#e8f0fe");
+    sheet.setFrozenRows(1);
+    sheet.getRange("A:A").setNumberFormat("yyyy-mm-dd hh:mm");
+    sheet.getRange("B:B").setNumberFormat("yyyy-mm-dd");
+  }
+  return sheet;
+}
+
+// 전송 데이터 키 ↔ 시트 열 1:1 매핑
+//  r.date→B, name→C, r.type→D, r.level→E, r.book→F, r.total→G, r.firstCorrect→H, r.rate→I, r.score→J,
+//  r.training→K, r.detail→L, r.errors→M, r.understanding→N, r.wrongWords→O, r.json→P, r.id→Q  (A열은 서버 시각)
+function vocabBuildRows_(postData, existingIds, now) {
+  var name = String(postData.name || "").replace(/\s+/g, "");
+  var recs = postData.records || [];
+  var rows = [], skipped = 0;
+  for (var i = 0; i &lt; recs.length &amp;&amp; i &lt; 400; i++) {
+    var r = recs[i] || {};
+    var id = String(r.id || "");
+    if (id &amp;&amp; existingIds[id]) { skipped++; continue; }
+    if (id) existingIds[id] = true;
+    rows.push([
+      now, vocabParseDate_(r.date), name, String(r.type || ""), String(r.level || ""), String(r.book || ""),
+      vocabNum_(r.total), vocabNum_(r.firstCorrect), vocabNum_(r.rate), vocabNum_(r.score),
+      String(r.training || ""), String(r.detail || ""), vocabNum_(r.errors), String(r.understanding || ""),
+      String(r.wrongWords || ""), String(r.json || "").substring(0, 45000), id
+    ]);
+  }
+  return { name: name, rows: rows, skipped: skipped };
+}
+
+function handleAddLearningRecord(postData) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = vocabEnsureRecordSheet_(ss);
+    var name = String(postData.name || "").replace(/\s+/g, "");
+    if (!name || !postData.records || !postData.records.length) {
+      return vocabJson_({ status: "error", message: "name/records required" });
+    }
+    // 같은 기록을 다시 보내도 중복되지 않게: 최근 3000행의 기록ID 확인
+    var last = sheet.getLastRow();
+    var existing = {};
+    if (last &gt;= 2) {
+      var from = Math.max(2, last - 2999);
+      var ids = sheet.getRange(from, 17, last - from + 1, 1).getValues();
+      for (var i = 0; i &lt; ids.length; i++) if (ids[i][0]) existing[ids[i][0]] = true;
+    }
+    var built = vocabBuildRows_(postData, existing, new Date());
+    if (built.rows.length) {
+      sheet.getRange(last + 1, 1, built.rows.length, RECORD_HEADERS.length).setValues(built.rows);
+    }
+    return vocabJson_({ status: "success", added: built.rows.length, skipped: built.skipped });
+  } catch (err) {
+    return vocabJson_({ status: "error", message: String(err) });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------- 시트 셋업 (메뉴) ----------
+function vocabSetupSheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ui = SpreadsheetApp.getUi();
+  var msgs = [];
+
+  var vs = ss.getSheetByName(VOCAB_SHEET);
+  if (!vs) {
+    vs = ss.insertSheet(VOCAB_SHEET);
+    vs.getRange(1, 1, 1, VOCAB_HEADERS.length).setValues([VOCAB_HEADERS]).setFontWeight("bold").setBackground("#e6f4ea");
+    vs.setFrozenRows(1);
+    msgs.push("[어휘] 시트를 만들었어요. vocab_sheet_import.csv 를 [파일 &gt; 가져오기]로 이 시트에 넣어 주세요.");
+  } else {
+    msgs.push("[어휘] 시트: " + Math.max(0, vs.getLastRow() - 1) + "개 어휘");
+  }
+
+  vocabEnsureRecordSheet_(ss);
+  msgs.push("[학습기록] 시트 준비 완료");
+
+  var as = ss.getSheetByName(ANALYSIS_SHEET);
+  var build = true;
+  if (as) {
+    var resp = ui.alert("[학생분석표]가 이미 있어요. 다시 만들까요?\n(선택한 학생·기간 입력값이 초기화됩니다)", ui.ButtonSet.YES_NO);
+    build = (resp === ui.Button.YES);
+    if (build) ss.deleteSheet(as);
+  }
+  if (build) {
+    vocabBuildAnalysisSheet_(ss);
+    msgs.push("[학생분석표] 시트를 만들었어요. B2에서 학생을 고르세요.");
+  }
+  ui.alert(msgs.join("\n"));
+}
+
+// 학생분석표: 학생·년·월 선택 + 시작일/종료일(선택) 입력 → 어휘/독서이해도(진단)/트레이닝 분석
+function vocabBuildAnalysisSheet_(ss) {
+  var sh = ss.insertSheet(ANALYSIS_SHEET);
+  var R = "'" + RECORD_SHEET + "'!";
+  var all = R + "$A$1:$Q";
+  var range = function (col) { return R + "$" + col + ":$" + col; };
+  var dateCond = range("B") + ',"&gt;="&amp;$E$2,' + range("B") + ',"&lt;="&amp;$E$3';
+  var who = range("C") + ",$B$2";
+  var qWhere = function (type) {
+    return "where C = '\"&amp;$B$2&amp;\"' and D = '" + type + "' and B &gt;= date '\"&amp;TEXT($E$2,\"yyyy-mm-dd\")&amp;\"' and B &lt;= date '\"&amp;TEXT($E$3,\"yyyy-mm-dd\")&amp;\"'";
+  };
+
+  sh.getRange("A1").setValue("학생 학습 분석표 (어휘 학습 · 독서이해도 · 4단계 트레이닝)").setFontSize(14).setFontWeight("bold");
+  sh.getRange("A2:A6").setValues([["학생"], ["년도"], ["월"], ["시작일 (선택)"], ["종료일 (선택)"]]).setFontWeight("bold");
+  sh.getRange("B3").setFormula("=YEAR(TODAY())");
+  sh.getRange("B4").setFormula("=MONTH(TODAY())");
+  sh.getRange("D2:D3").setValues([["적용 시작일"], ["적용 종료일"]]).setFontWeight("bold");
+  sh.getRange("E2").setFormula('=IF($B$5&lt;&gt;"",$B$5,DATE($B$3,$B$4,1))');
+  sh.getRange("E3").setFormula('=IF($B$6&lt;&gt;"",$B$6,EOMONTH(DATE($B$3,$B$4,1),0))');
+  sh.getRange("E2:E3").setNumberFormat("yyyy-mm-dd");
+  sh.getRange("B5:B6").setNumberFormat("yyyy-mm-dd");
+  sh.getRange("G2").setValue("※ 월만 고르면 그 달 전체, 시작일·종료일을 입력하면 그 기간이 우선 적용됩니다.").setFontColor("#6b7280");
+  sh.getRange("B2:B6").setBackground("#e8f0fe");
+
+  // 학생 목록(숨김 Z열) + 드롭다운
+  sh.getRange("Z1").setValue("학생목록");
+  sh.getRange("Z2").setFormula('=IFERROR(SORT(UNIQUE(FILTER(' + R + '$C$2:$C,' + R + '$C$2:$C&lt;&gt;""))),"")');
+  sh.hideColumns(26);
+  sh.getRange("B2").setDataValidation(SpreadsheetApp.newDataValidation().requireValueInRange(sh.getRange("Z2:Z"), true).setAllowInvalid(true).build());
+
+  // 1) 어휘 요약
+  sh.getRange("A8").setValue("■ 어휘 학습 요약").setFontWeight("bold").setBackground("#e6f4ea");
+  var base = range("D") + ',"어휘퀴즈",' + who + "," + dateCond;
+  sh.getRange("A9:A13").setValues([["퀴즈 횟수"], ["평균 첫 정답률(%)"], ["최고 정답률(%)"], ["최저 정답률(%)"], ["처음 틀린 문제 수"]]);
+  sh.getRange("B9").setFormula("=COUNTIFS(" + base + ")");
+  sh.getRange("B10").setFormula('=IFERROR(ROUND(AVERAGEIFS(' + range("I") + "," + base + '),1),"-")');
+  sh.getRange("B11").setFormula('=IF($B$9=0,"-",MAXIFS(' + range("I") + "," + base + "))");
+  sh.getRange("B12").setFormula('=IF($B$9=0,"-",MINIFS(' + range("I") + "," + base + "))");
+  sh.getRange("B13").setFormula("=COUNTIFS(" + range("D") + ',"어휘오답",' + who + "," + dateCond + ")");
+
+  // 2) 책별 결과
+  sh.getRange("A15").setValue("■ 책별 어휘 결과 (최대 20권)").setFontWeight("bold").setBackground("#e6f4ea");
+  sh.getRange("A16").setFormula('=IFERROR(QUERY(' + all + ',"select F, count(F), avg(I) ' + qWhere("어휘퀴즈") + ' group by F order by count(F) desc limit 20 label F \'책\', count(F) \'횟수\', avg(I) \'평균 첫 정답률(%)\'",1),"기록이 없어요")');
+
+  // 3) 많이 틀린 어휘 TOP10
+  sh.getRange("A38").setValue("■ 많이 틀린 어휘 TOP10").setFontWeight("bold").setBackground("#e6f4ea");
+  sh.getRange("A39").setFormula('=IFERROR(QUERY(' + all + ',"select O, count(O) ' + qWhere("어휘오답") + " and O &lt;&gt; '(짝짓기)' group by O order by count(O) desc limit 10 label O '어휘', count(O) '틀린 횟수'\",1),\"기록이 없어요\")");
+
+  // 4) 독서이해도(진단 점수)
+  sh.getRange("A51").setValue("■ 독서이해도 (진단 점수)").setFontWeight("bold").setBackground("#fef7e0");
+  var diag = range("D") + ',"진단",' + who + "," + dateCond;
+  sh.getRange("A52:A54").setValues([["진단 횟수"], ["평균 점수"], ["최고 점수"]]);
+  sh.getRange("B52").setFormula("=COUNTIFS(" + diag + ")");
+  sh.getRange("B53").setFormula('=IFERROR(ROUND(AVERAGEIFS(' + range("J") + "," + diag + '),1),"-")');
+  sh.getRange("B54").setFormula('=IF($B$52=0,"-",MAXIFS(' + range("J") + "," + diag + "))");
+  sh.getRange("A55").setFormula('=IFERROR(QUERY(' + all + ',"select B, E, F, J ' + qWhere("진단") + " order by B limit 20 label B '날짜', E '구분', F '책', J '진단점수'\",1),\"기록이 없어요\")");
+
+  // 5) 4단계 트레이닝 (분석지 작성 참고)
+  sh.getRange("A77").setValue("■ 4단계 트레이닝 (이해도 · 오답 개수 / 분석지 참고)").setFontWeight("bold").setBackground("#fce8e6");
+  sh.getRange("A78").setFormula('=IFERROR(QUERY(' + all + ',"select K, count(K), avg(M) ' + qWhere("트레이닝") + " group by K label K '종류', count(K) '횟수', avg(M) '평균 오답 개수'\",1),\"기록이 없어요\")");
+  sh.getRange("A85:C85").setValues([["이해도", "횟수", "비율(%)"]]).setFontWeight("bold");
+  var levels = ["잘 이해했어요", "보통이에요", "아직 헷갈려요"];
+  var tr = range("D") + ',"트레이닝",' + who + "," + dateCond;
+  for (var i = 0; i &lt; levels.length; i++) {
+    var row = 86 + i;
+    sh.getRange(row, 1).setValue(levels[i]);
+    sh.getRange(row, 2).setFormula("=COUNTIFS(" + tr + "," + range("N") + ",$A" + row + ")");
+    sh.getRange(row, 3).setFormula('=IFERROR(ROUND(B' + row + "/SUM($B$86:$B$88)*100,1),\"-\")");
+  }
+
+  // 6) 월별 추이 (선택한 학생 전체 기간)
+  sh.getRange("A90").setValue("■ 월별 추이 (선택한 학생의 전체 기간)").setFontWeight("bold").setBackground("#e8f0fe");
+  sh.getRange("A91").setFormula('=IFERROR(QUERY(' + all + ',"select year(B), month(B)+1, avg(I), count(I) where C = \'"&amp;$B$2&amp;"\' and D = \'어휘퀴즈\' group by year(B), month(B)+1 order by year(B), month(B)+1 label year(B) \'년\', month(B)+1 \'월\', avg(I) \'평균 첫 정답률(%)\', count(I) \'퀴즈 횟수\'",1),"기록이 없어요")');
+  sh.getRange("F91").setFormula('=IFERROR(QUERY(' + all + ',"select year(B), month(B)+1, avg(J), count(J) where C = \'"&amp;$B$2&amp;"\' and D = \'진단\' group by year(B), month(B)+1 order by year(B), month(B)+1 label year(B) \'년\', month(B)+1 \'월\', avg(J) \'평균 진단점수\', count(J) \'진단 횟수\'",1),"기록이 없어요")');
+
+  sh.setColumnWidth(1, 150);
+  sh.setColumnWidth(2, 220);
+  sh.setColumnWidth(3, 110);
+  sh.setColumnWidth(4, 110);
+  sh.getRange("A16:C36").setNumberFormat("General");
+  sh.setFrozenRows(6);
+  sh.activate();
+}
+
+// ---------- 오답 복습지 PDF (메뉴) ----------
+var VOCAB_NUM = ["①", "②", "③", "④", "⑤"];
+var VOCAB_MARK = ["㉠", "㉡", "㉢", "㉣", "㉤"];
+
+function vocabShuffle_(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i &gt; 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function vocabEsc_(s) {
+  return String(s === undefined || s === null ? "" : s).replace(/&amp;/g, "&amp;amp;").replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;").replace(/"/g, "&amp;quot;");
+}
+
+// 같은 문제(key)를 하나로 합치고 많이 틀린 순 → 최근순
+function vocabConsolidate_(items) {
+  var map = {}, order = [];
+  for (var i = 0; i &lt; items.length; i++) {
+    var it = items[i];
+    var k = it.rec.key;
+    if (!map[k]) { map[k] = { key: k, rec: it.rec, count: 0, dates: [], last: 0 }; order.push(k); }
+    var g = map[k];
+    g.count++;
+    g.dates.push(it.at);
+    if (it.at &gt;= g.last) { g.last = it.at; g.rec = it.rec; }
+  }
+  var out = [];
+  for (var j = 0; j &lt; order.length; j++) out.push(map[order[j]]);
+  out.sort(function (a, b) { return (b.count - a.count) || (b.last - a.last); });
+  return out;
+}
+
+function vocabLines_(txt, per) { return Math.max(1, Math.ceil(String(txt || "").length / per)); }
+
+// 출력용 한 문제 구성(보기 순서 섞기) + 대략의 줄 수(쪽 나누기 용)
+function vocabPrepare_(g) {
+  var r = g.rec, lines;
+  if (r.type === "match") {
+    var pairs = r.pairs || [];
+    var right = vocabShuffle_(pairs.map(function (p) { return p.meaning; }));
+    var ans = [];
+    lines = 2 + pairs.length;
+    for (var i = 0; i &lt; right.length; i++) lines += vocabLines_(right[i], 24);
+    for (var a = 0; a &lt; pairs.length; a++) ans.push(right.indexOf(pairs[a].meaning));
+    return { g: g, type: "match", left: pairs.map(function (p) { return p.word; }), right: right, pairs: pairs, matchAns: ans, lines: lines };
+  }
+  var opts = vocabShuffle_(r.options || []);
+  var shortOpts = opts.every(function (o) { return String(o).length &lt;= 8; });
+  lines = 1 + (r.type === "mean" ? 0 : vocabLines_(r.type === "blank" ? r.sentence : r.big, 24));
+  if (shortOpts) lines += 1; else for (var k = 0; k &lt; opts.length; k++) lines += vocabLines_(opts[k], 24);
+  return { g: g, type: r.type, options: opts, ansIndex: opts.indexOf(r.answer), short: shortOpts, lines: lines + 1 };
+}
+
+// 한 장에 최대 20문제, 두 단. 줄 수 추정으로 한 장에 안 들어가면 다음 장으로
+function vocabPaginate_(prepared, maxPerSheet, colCap) {
+  var sheets = [], cur = null;
+  function fresh() { cur = { cols: [[], []], used: [0, 0], count: 0 }; sheets.push(cur); }
+  for (var i = 0; i &lt; prepared.length; i++) {
+    var p = prepared[i];
+    if (!cur) fresh();
+    var placed = false;
+    if (cur.count &lt; maxPerSheet) {
+      for (var c = 0; c &lt; 2 &amp;&amp; !placed; c++) {
+        if (cur.used[c] + p.lines &lt;= colCap || (cur.count === 0 &amp;&amp; c === 0)) {
+          cur.cols[c].push(p); cur.used[c] += p.lines; cur.count++; placed = true;
+        }
+      }
+    }
+    if (!placed) { fresh(); cur.cols[0].push(p); cur.used[0] += p.lines; cur.count++; }
+  }
+  return sheets;
+}
+
+function vocabQuestionHtml_(p, n) {
+  var r = p.g.rec;
+  var src = '&lt;span class="src"&gt;' + vocabEsc_(r.label) + "&lt;/span&gt;";
+  var h = '&lt;div class="q"&gt;&lt;b&gt;' + n + ".&lt;/b&gt; ";
+  if (p.type === "match") {
+    h += "어휘에 알맞은 뜻의 번호를 쓰세요." + src;
+    for (var i = 0; i &lt; p.left.length; i++) h += '&lt;div class="o"&gt;' + VOCAB_MARK[i] + " &lt;b&gt;" + vocabEsc_(p.left[i]) + "&lt;/b&gt; ( &amp;nbsp;&amp;nbsp;&amp;nbsp; )&lt;/div&gt;";
+    for (var j = 0; j &lt; p.right.length; j++) h += '&lt;div class="o"&gt;' + VOCAB_NUM[j] + " " + vocabEsc_(p.right[j]) + "&lt;/div&gt;";
+    return h + "&lt;/div&gt;";
+  }
+  if (p.type === "blank") h += "빈칸에 알맞은 말은?" + src + '&lt;div class="o"&gt;' + vocabEsc_(r.sentence).replace("( )", '&lt;span class="blank"&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt;') + "&lt;/div&gt;";
+  else if (p.type === "word") h += vocabEsc_(r.prompt) + src + '&lt;div class="o"&gt;「' + vocabEsc_(r.big) + "」&lt;/div&gt;";
+  else h += vocabEsc_(r.prompt) + " &lt;b&gt;" + vocabEsc_(r.big) + "&lt;/b&gt;" + src;
+  if (p.short) {
+    var parts = [];
+    for (var a = 0; a &lt; p.options.length; a++) parts.push(VOCAB_NUM[a] + " " + vocabEsc_(p.options[a]));
+    h += '&lt;div class="o"&gt;' + parts.join(" &amp;nbsp; ") + "&lt;/div&gt;";
+  } else {
+    for (var b = 0; b &lt; p.options.length; b++) h += '&lt;div class="o"&gt;' + VOCAB_NUM[b] + " " + vocabEsc_(p.options[b]) + "&lt;/div&gt;";
+  }
+  return h + "&lt;/div&gt;";
+}
+
+function vocabAnswerHtml_(p, n) {
+  var r = p.g.rec;
+  var tag = '&lt;span class="tag"&gt;' + p.g.count + "회 틀림 · " + vocabDateLabel_(p.g.dates) + "&lt;/span&gt;";
+  if (p.type === "match") {
+    var s = '&lt;div class="a"&gt;&lt;b&gt;' + n + '.&lt;/b&gt; &lt;span class="ans"&gt;짝짓기&lt;/span&gt;' + tag + "&lt;br&gt;";
+    for (var i = 0; i &lt; p.pairs.length; i++) s += VOCAB_MARK[i] + "-" + VOCAB_NUM[p.matchAns[i]] + " " + vocabEsc_(p.pairs[i].word) + (i &lt; p.pairs.length - 1 ? " &amp;nbsp; " : "");
+    return s + "&lt;/div&gt;";
+  }
+  return '&lt;div class="a"&gt;&lt;b&gt;' + n + '.&lt;/b&gt; &lt;span class="ans"&gt;' + VOCAB_NUM[p.ansIndex] + " " + vocabEsc_(r.answer) + "&lt;/span&gt;" + tag + "&lt;br&gt;&lt;b&gt;" + vocabEsc_(r.word) + "&lt;/b&gt;: " + vocabEsc_(r.meaning) + "&lt;/div&gt;";
+}
+
+function vocabDateLabel_(times) {
+  var seen = {}, out = [];
+  for (var i = 0; i &lt; times.length; i++) {
+    var d = new Date(times[i]);
+    var s = (d.getMonth() + 1) + "/" + d.getDate();
+    if (!seen[s]) { seen[s] = true; out.push(s); }
+  }
+  return out.join(", ");
+}
+
+var VOCAB_PDF_CSS =
+  "body{font-family:'Malgun Gothic','Nanum Gothic',sans-serif;color:#111;margin:0}" +
+  ".page{page-break-after:always}.page.last{page-break-after:auto}" +
+  ".hd{border-bottom:2px solid #111;padding-bottom:4px;margin-bottom:6px}.hd .t{font-size:18pt;font-weight:bold}.hd .s{font-size:8pt;color:#555}" +
+  ".nm{font-size:10pt;margin:4px 0 8px 0}.cols{width:100%;table-layout:fixed}.cols td.c{vertical-align:top;width:50%;padding-right:10px}" +
+  ".q{font-size:9.5pt;line-height:1.4;margin-bottom:9px}.o{margin-left:14px}.src{font-size:7.5pt;color:#6b7280;margin-left:5px}" +
+  ".blank{border-bottom:1px solid #111}.mt{font-size:9pt;margin-left:12px;width:92%}.mt td{vertical-align:top}" +
+  ".a{font-size:9.5pt;line-height:1.4;margin-bottom:7px}.ans{color:#b91c1c;font-weight:bold}.tag{font-size:7.5pt;border:1px solid #9ca3af;padding:0 4px;margin-left:5px;color:#4b5563}" +
+  ".ft{font-size:7.5pt;color:#6b7280;border-top:1px dashed #9ca3af;padding-top:3px;margin-top:6px}";
+
+function vocabRenderHtml_(groups, opts) {
+  var prepared = [];
+  for (var i = 0; i &lt; groups.length; i++) prepared.push(vocabPrepare_(groups[i]));
+  var sheets = vocabPaginate_(prepared, 20, 52);
+  var total = sheets.length;
+  var credit = opts.credit ? "출처: 국립국어원 「국어 기초 어휘 선정 및 어휘 등급화 목록」(공공누리 제1유형)" : "";
+  var html = "&lt;html&gt;&lt;head&gt;&lt;meta charset='utf-8'&gt;&lt;style&gt;" + VOCAB_PDF_CSS + "&lt;/style&gt;&lt;/head&gt;&lt;body&gt;";
+  var s, c, k;
+  for (s = 0; s &lt; sheets.length; s++) {
+    html += '&lt;div class="page"&gt;&lt;div class="hd"&gt;&lt;div class="s"&gt;독서 문해력 성장 기록&lt;/div&gt;&lt;div class="t"&gt;' + vocabEsc_(opts.title) + "&lt;/div&gt;" +
+      '&lt;div class="s"&gt;기간 ' + vocabEsc_(opts.period) + " · 문제지 " + (s + 1) + " / " + total + " · " + sheets[s].count + "문제&lt;/div&gt;&lt;/div&gt;" +
+      '&lt;div class="nm"&gt;이름 &lt;u&gt;&amp;nbsp;' + vocabEsc_(opts.name) + '&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/u&gt; &amp;nbsp;&amp;nbsp; 날짜 &lt;u&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/u&gt; &amp;nbsp;&amp;nbsp; 점수 &lt;u&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/u&gt; / ' + sheets[s].count + "&lt;/div&gt;" +
+      '&lt;table class="cols"&gt;&lt;tr&gt;';
+    var n = 0;
+    for (c = 0; c &lt; 2; c++) {
+      html += '&lt;td class="c"&gt;';
+      for (k = 0; k &lt; sheets[s].cols[c].length; k++) { n++; html += vocabQuestionHtml_(sheets[s].cols[c][k], n); }
+      html += "&lt;/td&gt;";
+    }
+    html += "&lt;/tr&gt;&lt;/table&gt;&lt;div class=\"ft\"&gt;" + vocabEsc_(credit) + " " + vocabEsc_(opts.name) + "&lt;/div&gt;&lt;/div&gt;";
+  }
+  for (s = 0; s &lt; sheets.length; s++) {
+    html += '&lt;div class="page' + (s === sheets.length - 1 ? " last" : "") + '"&gt;&lt;div class="hd"&gt;&lt;div class="s"&gt;독서 문해력 성장 기록&lt;/div&gt;&lt;div class="t"&gt;정답 및 해설&lt;/div&gt;' +
+      '&lt;div class="s"&gt;' + vocabEsc_(opts.title) + " · 문제지 " + (s + 1) + " / " + total + "&lt;/div&gt;&lt;/div&gt;" +
+      '&lt;div class="nm"&gt;이름 &lt;u&gt;&amp;nbsp;' + vocabEsc_(opts.name) + "&amp;nbsp;&lt;/u&gt;&lt;/div&gt;";
+    var m = 0;
+    for (c = 0; c &lt; 2; c++) for (k = 0; k &lt; sheets[s].cols[c].length; k++) { m++; html += vocabAnswerHtml_(sheets[s].cols[c][k], m); }
+    html += "&lt;div class=\"ft\"&gt;" + vocabEsc_(credit) + "&lt;/div&gt;&lt;/div&gt;";
+  }
+  return { html: html + "&lt;/body&gt;&lt;/html&gt;", sheets: total, questions: prepared.length };
+}
+
+function vocabFmtDate_(d) { return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd"); }
+
+// 메뉴 [오답 복습지 PDF 만들기]: [학생분석표]에서 고른 학생·기간의 '어휘오답'으로 만든다
+function vocabMakeReviewPdf() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ui = SpreadsheetApp.getUi();
+  var as = ss.getSheetByName(ANALYSIS_SHEET);
+  var rs = ss.getSheetByName(RECORD_SHEET);
+  if (!as || !rs) { ui.alert("먼저 메뉴의 [어휘 시트 초기 셋업]을 실행해 주세요."); return; }
+  var name = String(as.getRange("B2").getValue() || "").replace(/\s+/g, "");
+  var start = as.getRange("E2").getValue();
+  var end = as.getRange("E3").getValue();
+  if (!name) { ui.alert("[학생분석표]의 B2에서 학생을 선택해 주세요."); return; }
+  if (!(start instanceof Date) || !(end instanceof Date)) { ui.alert("[학생분석표]의 기간(적용 시작일/종료일)을 확인해 주세요."); return; }
+
+  var endMs = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1).getTime(); // 종료일 당일 포함
+  var startMs = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+  var last = rs.getLastRow();
+  var items = [];
+  if (last &gt;= 2) {
+    var values = rs.getRange(2, 1, last - 1, 17).getValues();
+    for (var i = 0; i &lt; values.length; i++) {
+      var v = values[i];
+      if (String(v[3]) !== "어휘오답" || String(v[2]).replace(/\s+/g, "") !== name) continue;
+      var d = v[1] instanceof Date ? v[1] : new Date(v[1]);
+      var t = d.getTime();
+      if (!(t &gt;= startMs &amp;&amp; t &lt; endMs)) continue;
+      try { items.push({ rec: JSON.parse(String(v[15])), at: t }); } catch (err) { /* 깨진 JSON 행은 건너뜀 */ }
+    }
+  }
+  if (!items.length) { ui.alert(name + " 학생의 " + vocabFmtDate_(start) + " ~ " + vocabFmtDate_(end) + " 기간에 처음 틀린 문제가 없어요."); return; }
+
+  var groups = vocabConsolidate_(items);
+  var mm = start.getMonth() + 1;
+  var sameMonth = (start.getFullYear() === end.getFullYear() &amp;&amp; start.getMonth() === end.getMonth() &amp;&amp; start.getDate() === 1);
+  var out = vocabRenderHtml_(groups, {
+    name: name, title: (sameMonth ? mm + "월 " : "") + "어휘 오답 복습지",
+    period: vocabFmtDate_(start) + " ~ " + vocabFmtDate_(end), credit: false
+  });
+  var fileName = name + "_" + vocabFmtDate_(start) + "~" + vocabFmtDate_(end) + "_어휘오답복습지.pdf";
+  var pdf = Utilities.newBlob(out.html, "text/html", "review.html").getAs("application/pdf").setName(fileName);
+  var folders = DriveApp.getFoldersByName("어휘 오답 복습지");
+  var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder("어휘 오답 복습지");
+  var file = folder.createFile(pdf);
+  var html = HtmlService.createHtmlOutput(
+    "&lt;div style='font-family:sans-serif;line-height:1.7'&gt;&lt;b&gt;" + vocabEsc_(name) + "&lt;/b&gt; 오답 복습지를 만들었어요.&lt;br&gt;문제 " + out.questions + "개 · 문제지 " + out.sheets + "장 + 정답지 " + out.sheets + "쪽&lt;br&gt;&lt;br&gt;" +
+    "&lt;a href='" + file.getUrl() + "' target='_blank'&gt;▶ PDF 열기 (드라이브 '어휘 오답 복습지' 폴더)&lt;/a&gt;&lt;/div&gt;").setWidth(420).setHeight(190);
+  ui.showModalDialog(html, "오답 복습지");
+}
+
+
+</pre>
           </div>
         </div>
 
