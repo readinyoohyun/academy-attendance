@@ -121,6 +121,15 @@
           </span>
         </div>
 
+        <!-- App Refresh Button -->
+        <button type="button" id="btnHeaderRefresh" onclick="refreshApp()" title="최신 상태로 새로고침" 
+                class="px-2.5 sm:px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-900 border border-indigo-200 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-xs flex-shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span class="inline">새로고침</span>
+        </button>
+
         <button id="btnLogout" onclick="confirmLogout()" class="hidden px-2.5 sm:px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition break-keep flex-shrink-0">
           로그아웃
         </button>
@@ -5048,6 +5057,23 @@
         document.getElementById("celebrateModal").classList.add("hidden");
         logoutStudent();
       }, 3000);
+    }
+
+    function refreshApp() {
+      const btn = document.getElementById("btnHeaderRefresh");
+      if (btn) {
+        btn.classList.add("opacity-60", "pointer-events-none");
+        const icon = btn.querySelector("svg");
+        if (icon) icon.classList.add("animate-spin");
+      }
+      try {
+        saveActiveSession();
+      } catch (e) {}
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('_v', Date.now().toString());
+        window.location.replace(url.toString());
+      }, 150);
     }
 
     function confirmLogout() {
