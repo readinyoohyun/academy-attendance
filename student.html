@@ -86,7 +86,7 @@
           <div>
             <h1 id="academyTitle" class="text-xs sm:text-sm font-black text-slate-900 leading-tight">
               <span class="block text-indigo-950 font-black">유현리드인</span>
-              <span class="block text-slate-700 font-extrabold text-[11px] sm:text-xs">한그루역사</span>
+              <span class="block text-slate-800 font-black">한그루역사</span>
             </h1>
             <p id="liveDateText" class="text-[10px] sm:text-xs text-slate-500 font-medium tracking-tight mt-0.5">2026. 10. 08. (목)</p>
           </div>
@@ -94,33 +94,38 @@
       </div>
 
       <!-- Center: 리드인 바로가기 ↗ Button -->
-      <div class="hidden sm:flex items-center">
+      <div class="hidden sm:flex items-center flex-shrink-0">
         <a href="https://www.readin.co.kr" target="_blank" rel="noopener noreferrer" 
-           class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition transform hover:-translate-y-0.5 active:translate-y-0">
-          <span>리드인 바로가기</span>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-sm transition transform hover:-translate-y-0.5 active:translate-y-0 leading-tight">
+          <div class="text-left font-black leading-tight">
+            <span class="block text-xs sm:text-sm">리드인</span>
+            <span class="block text-[11px] sm:text-xs text-blue-100 flex items-center gap-0.5">
+              <span>바로가기</span>
+              <svg class="w-3 h-3 inline-block" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </span>
+          </div>
         </a>
       </div>
 
       <!-- Right: User Status & Logout -->
       <div class="flex items-center gap-3">
-        <div id="userHeaderPill" class="hidden items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-indigo-50 border border-indigo-200 rounded-full text-[11px] sm:text-xs font-semibold text-indigo-700 flex-wrap break-keep">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
-          <span id="headerStudentStatusBadge" class="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold flex-shrink-0">수업중</span>
-          <span id="headerStudentName" class="font-bold">홍길동</span>
-          <span class="text-indigo-300">|</span>
-          <span id="headerStudentGrade">중1</span>
-          <span class="text-indigo-300">|</span>
-          <span id="headerStudentDuration">90분</span>
-          <span class="text-indigo-300">|</span>
-          <div id="headerTimerBadge" class="px-2 py-0.5 rounded-lg bg-indigo-100 text-indigo-900 border border-indigo-300 font-black text-[11px] sm:text-xs flex items-center gap-1 shadow-sm break-keep">
+        <div id="userHeaderPill" class="hidden items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-indigo-950 via-indigo-900 to-indigo-950 border border-indigo-700/60 shadow-md rounded-2xl sm:rounded-full text-white flex-wrap break-keep">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+          <span id="headerStudentStatusBadge" class="px-2 py-0.5 rounded-md bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 text-[10px] sm:text-xs font-black flex-shrink-0">수업중</span>
+          <span id="headerStudentName" class="font-black text-white text-xs sm:text-sm">홍길동</span>
+          <span class="text-indigo-400/60">|</span>
+          <span id="headerStudentGrade" class="text-indigo-200 font-extrabold text-xs">중1</span>
+          <span class="text-indigo-400/60">|</span>
+          <span id="headerStudentDuration" class="text-indigo-200 font-extrabold text-xs">90분</span>
+          <span class="text-indigo-400/60">|</span>
+          <div id="headerTimerBadge" class="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-black text-[11px] sm:text-xs flex items-center gap-1 shadow-sm break-keep">
             ⏳ <span id="headerRemainingTime">--분 --초</span>
           </div>
-          <span class="text-indigo-300 hidden md:inline">|</span>
-          <span id="liveSyncStatusBadge" class="text-[10px] text-emerald-700 font-bold hidden md:inline-flex items-center gap-1 transition-opacity opacity-0 flex-shrink-0">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>학습 내용 자동 보존됨
+          <span class="text-indigo-400/60 hidden lg:inline">|</span>
+          <span id="liveSyncStatusBadge" class="text-[11px] text-emerald-300 font-extrabold hidden lg:inline-flex items-center gap-1 transition-opacity opacity-0 flex-shrink-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>학습 내용 자동 보존됨
           </span>
         </div>
 
@@ -239,42 +244,6 @@
 
   <!-- ================= VIEW 2: 7-STEP MISSION DASHBOARD ================= -->
   <main id="viewDashboard" class="hidden flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
-
-    <!-- Progress Card -->
-    <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-950 rounded-3xl p-6 text-white shadow-xl shadow-indigo-950/20">
-      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold flex items-center gap-1.5 shadow-sm">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              수업중
-            </span>
-            <span id="dashInTimeBadge" class="text-xs text-indigo-200 bg-white/10 px-2.5 py-1 rounded-lg font-bold">등원: 15:30</span>
-            <div id="dashRemainingTimeBadge" class="px-3 py-1 rounded-xl bg-indigo-500/30 border border-indigo-400/40 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-sm">
-              ⏳ 남은 수업 시간: <span class="text-amber-300 font-black">--분</span>
-            </div>
-          </div>
-          <h2 class="text-2xl sm:text-3xl font-extrabold mt-1 tracking-tight">
-            <span id="dashStudentName">홍길동</span> 학생, 오늘의 학습을 시작해요! ✨
-          </h2>
-          <p class="text-xs sm:text-sm text-indigo-200 mt-1">
-            배정 시간: <span id="dashDuration" class="font-bold text-white">90분 수업</span> | 성실하게 미션을 완수하면 실력이 쑥쑥 자라납니다.
-          </p>
-        </div>
-
-        <!-- Radial / Percentage Progress -->
-        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 w-full md:w-auto justify-between md:justify-start border border-white/10">
-          <div>
-            <p class="text-xs text-indigo-200 font-medium">전체 미션 완료율</p>
-            <p id="dashPercentText" class="text-2xl sm:text-3xl font-black text-white">0%</p>
-          </div>
-          <div class="w-32 bg-white/20 rounded-full h-3.5 overflow-hidden">
-            <div id="dashProgressBar" class="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
 
     <!-- ================= 1단계: 숙제 점검 ================= -->
     <div class="bg-amber-50/40 rounded-3xl overflow-hidden shadow-sm border-2 border-amber-400 transition hover:shadow-md">
@@ -1042,9 +1011,9 @@
       if (titleEl) {
         const rawName = state.config.academyName || "유현리드인 한그루역사";
         if (rawName === "유현리드인 한그루역사" || (rawName.includes("유현리드인") && rawName.includes("한그루역사"))) {
-          titleEl.innerHTML = `<span class="block text-indigo-950 font-black">유현리드인</span><span class="block text-slate-700 font-extrabold text-[11px] sm:text-xs">한그루역사</span>`;
+          titleEl.innerHTML = `<span class="block text-indigo-950 font-black text-xs sm:text-sm">유현리드인</span><span class="block text-slate-800 font-black text-xs sm:text-sm">한그루역사</span>`;
         } else if (rawName.includes("\n")) {
-          titleEl.innerHTML = rawName.split("\n").map((line, idx) => `<span class="block ${idx === 0 ? 'text-indigo-950 font-black' : 'text-slate-700 font-extrabold text-[11px] sm:text-xs'}">${line}</span>`).join("");
+          titleEl.innerHTML = rawName.split("\n").map(line => `<span class="block text-slate-900 font-black text-xs sm:text-sm">${line}</span>`).join("");
         } else {
           titleEl.innerText = rawName;
         }
@@ -4799,8 +4768,10 @@
 
       score = Math.min(100, Math.max(0, score));
 
-      document.getElementById("dashProgressBar").style.width = `${score}%`;
-      document.getElementById("dashPercentText").innerText = `${score}%`;
+      const pBar = document.getElementById("dashProgressBar");
+      if (pBar) pBar.style.width = `${score}%`;
+      const pTxt = document.getElementById("dashPercentText");
+      if (pTxt) pTxt.innerText = `${score}%`;
 
       // Update Summary Box
       const jColSummary = buildColJString();
