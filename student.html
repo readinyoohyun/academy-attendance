@@ -5123,7 +5123,8 @@
         try {
           localStorage.removeItem("active_student_session");
         } catch (e) {}
-        document.getElementById("celebrateModal").classList.add("hidden");
+        const celModal = document.getElementById("celebrateModal");
+        if (celModal) celModal.classList.add("hidden");
         logoutStudent();
       }, 3000);
     }
@@ -5152,45 +5153,64 @@
     }
 
     function logoutStudent() {
-      if (state.remainingTimerInterval) {
-        clearInterval(state.remainingTimerInterval);
-        state.remainingTimerInterval = null;
-      }
-      if (state.currentStudent) {
-        const cName = (state.currentStudent.name || '').trim().replace(/\s+/g, '');
-        if (cName && state.missions) {
-          try {
-            const lastSessionKey = "last_completed_session_" + cName + "_" + state.todayDateStr;
-            localStorage.setItem(lastSessionKey, JSON.stringify({
-              date: state.todayDateStr,
-              student: state.currentStudent,
-              dailyLogRow: state.currentDailyLog ? state.currentDailyLog.row : null,
-              inTime: state.currentInTime,
-              missions: JSON.parse(JSON.stringify(state.missions || {})),
-              savedAt: Date.now()
-            }));
-          } catch (e) {}
-        }
-      }
-      state.currentStudent = null;
-      state.currentDailyLog = null;
-      state.currentInTime = "";
-      state.teacherOverrideApproved = false;
-      state.teacherVerifiedCheckout = false;
-      state.isCheckingOut = false;
       try {
-        localStorage.removeItem("active_student_session");
-      } catch (e) {}
-      document.getElementById("userHeaderPill").classList.add("hidden");
-      document.getElementById("userHeaderPill").classList.remove("flex");
-      document.getElementById("btnLogout").classList.add("hidden");
+        if (state.remainingTimerInterval) {
+          clearInterval(state.remainingTimerInterval);
+          state.remainingTimerInterval = null;
+        }
+        if (state.currentStudent) {
+          const cName = (state.currentStudent.name || '').trim().replace(/\s+/g, '');
+          if (cName && state.missions) {
+            try {
+              const lastSessionKey = "last_completed_session_" + cName + "_" + state.todayDateStr;
+              localStorage.setItem(lastSessionKey, JSON.stringify({
+                date: state.todayDateStr,
+                student: state.currentStudent,
+                dailyLogRow: state.currentDailyLog ? state.currentDailyLog.row : null,
+                inTime: state.currentInTime,
+                missions: JSON.parse(JSON.stringify(state.missions || {})),
+                savedAt: Date.now()
+              }));
+            } catch (e) {}
+          }
+        }
+        state.currentStudent = null;
+        state.currentDailyLog = null;
+        state.currentInTime = "";
+        state.teacherOverrideApproved = false;
+        state.teacherVerifiedCheckout = false;
+        state.isCheckingOut = false;
+        try {
+          localStorage.removeItem("active_student_session");
+        } catch (e) {}
 
-      document.getElementById("viewDashboard").classList.add("hidden");
-      document.getElementById("viewLogin").classList.remove("hidden");
-      
-      resetLoginForm();
+        const celModal = document.getElementById("celebrateModal");
+        if (celModal) celModal.classList.add("hidden");
 
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+        const pill = document.getElementById("userHeaderPill");
+        if (pill) {
+          pill.classList.add("hidden");
+          pill.classList.remove("flex");
+        }
+        const btnLogout = document.getElementById("btnLogout");
+        if (btnLogout) {
+          btnLogout.classList.add("hidden");
+        }
+      } catch (err) {
+        console.error("[logoutStudent] Error during logout cleanup:", err);
+      } finally {
+        const viewDash = document.getElementById("viewDashboard");
+        if (viewDash) viewDash.classList.add("hidden");
+
+        const viewLogin = document.getElementById("viewLogin");
+        if (viewLogin) viewLogin.classList.remove("hidden");
+
+        try {
+          resetLoginForm();
+        } catch (e) {}
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
 
     // 13. Config Modal Handlers (선생님 인증 필수)
