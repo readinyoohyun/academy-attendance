@@ -519,8 +519,8 @@
           <p><strong>📖 오늘 독서 & 진단 & 글쓰기:</strong> <span id="sumBooks" class="font-black text-rose-700">등록된 도서 없음</span></p>
           <p id="sumVocabRow" class="hidden"><strong>🔤 어휘 학습:</strong> <span id="sumVocab" class="font-black text-rose-700"></span></p>
           <p><strong>✍️ 글쓰기/요약:</strong> <span id="sumNotes" class="font-black text-indigo-700">작성 안 함</span></p>
-          <p><strong>🎯 집중 트레이닝:</strong> <span id="sumTraining" class="font-black text-slate-900">선택 안 함</span></p>
-          <p><strong>🏆 목표 달성:</strong> <span id="sumEvent" class="font-black text-slate-900">선택 안 함</span></p>
+          <p><strong>🎯 집중 트레이닝:</strong> <span id="sumTraining" class="font-black text-blue-600">선택 안 함</span></p>
+          <p><strong>🏆 목표 달성:</strong> <span id="sumEvent" class="font-black text-emerald-600">선택 안 함</span></p>
           <p id="sumMemoRow" class="hidden"><strong>🐾 발자국 기록:</strong> <span id="sumMemos" class="font-black text-amber-800"></span></p>
         </div>
 
@@ -4110,7 +4110,7 @@
             res += `[${itemStrs.join(", ")}]`;
           }
           if (d.understanding) {
-            res += ` [이해도:${d.understanding}]`;
+            res += ` [${d.understanding}]`;
           }
           return res;
         } else if (t === "오답수정+선지분석") {
@@ -4132,7 +4132,7 @@
             res += `[${itemStrs.join(", ")}]`;
           }
           if (d.understanding) {
-            res += ` [이해도:${d.understanding}]`;
+            res += ` [${d.understanding}]`;
           }
           return res;
         } else if (t === "읽기트레이닝" || t === "독해트레이닝") {
@@ -4151,7 +4151,7 @@
           }
           const restStr = sub.length > 0 ? ` ${sub.join(" ")}` : "";
           let res = `${prefix}${volPart}${restStr}`;
-          if (d.understanding) res += ` [이해도:${d.understanding}]`;
+          if (d.understanding) res += ` [${d.understanding}]`;
           return res;
         } else {
           const sub = [];
@@ -4159,7 +4159,7 @@
           if (d.session) sub.push(`${d.session}차시`);
           if (d.errors) sub.push(`(${d.errors})`);
           let res = sub.length > 0 ? `${shortName}(${sub.join(" ")})` : shortName;
-          if (d.understanding) res += ` [이해도:${d.understanding}]`;
+          if (d.understanding) res += ` [${d.understanding}]`;
           return res;
         }
       });
@@ -4708,7 +4708,7 @@
       // 4단계 집중 트레이닝
       if (trSummary) {
         let trPart = trSummary;
-        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
+        if (trUnder && !trSummary.includes(`[${trUnder}]`)) trPart += ` [${trUnder}]`;
         if (step4Memo) trPart += ` [문해력발자국: ${step4Memo}]`;
         contentParts.push(trPart);
       } else if (step4Memo) {
@@ -4816,7 +4816,7 @@
       const trSummary = buildTrainingSummaryString();
       const trUnder = state.missions.trainingUnderstanding || "";
       let sumTrDisplay = trSummary || "선택 안 함";
-      if (trSummary && trUnder && !trSummary.includes("[이해도:")) sumTrDisplay += ` [이해도: ${trUnder}]`;
+      if (trSummary && trUnder && !trSummary.includes(`[${trUnder}]`)) sumTrDisplay += ` [${trUnder}]`;
       document.getElementById("sumTraining").innerText = sumTrDisplay;
 
       const hwBook = document.getElementById("hwBookSelect") ? document.getElementById("hwBookSelect").value : "";
@@ -5006,7 +5006,7 @@
       // 4단계 집중 트레이닝
       if (trSummary) {
         let trPart = trSummary;
-        if (trUnder && !trSummary.includes("[이해도:")) trPart += ` [이해도:${trUnder}]`;
+        if (trUnder && !trSummary.includes(`[${trUnder}]`)) trPart += ` [${trUnder}]`;
         if (step4Memo) trPart += ` [문해력발자국: ${step4Memo}]`;
         contentParts.push(trPart);
       } else if (step4Memo) {
