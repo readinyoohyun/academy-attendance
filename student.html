@@ -84,8 +84,11 @@
             📖
           </span>
           <div>
-            <h1 id="academyTitle" class="text-lg font-bold text-slate-900 leading-tight">유현리드인 한그루역사</h1>
-            <p id="liveDateText" class="text-xs text-slate-500 font-medium tracking-tight">2026. 10. 08. (목)</p>
+            <h1 id="academyTitle" class="text-xs sm:text-sm font-black text-slate-900 leading-tight">
+              <span class="block text-indigo-950 font-black">유현리드인</span>
+              <span class="block text-slate-700 font-extrabold text-[11px] sm:text-xs">한그루역사</span>
+            </h1>
+            <p id="liveDateText" class="text-[10px] sm:text-xs text-slate-500 font-medium tracking-tight mt-0.5">2026. 10. 08. (목)</p>
           </div>
         </div>
       </div>
@@ -1040,7 +1043,14 @@
     function applyBranding() {
       const titleEl = document.getElementById("academyTitle");
       if (titleEl) {
-        titleEl.innerText = state.config.academyName || "유현리드인 한그루역사";
+        const rawName = state.config.academyName || "유현리드인 한그루역사";
+        if (rawName === "유현리드인 한그루역사" || (rawName.includes("유현리드인") && rawName.includes("한그루역사"))) {
+          titleEl.innerHTML = `<span class="block text-indigo-950 font-black">유현리드인</span><span class="block text-slate-700 font-extrabold text-[11px] sm:text-xs">한그루역사</span>`;
+        } else if (rawName.includes("\n")) {
+          titleEl.innerHTML = rawName.split("\n").map((line, idx) => `<span class="block ${idx === 0 ? 'text-indigo-950 font-black' : 'text-slate-700 font-extrabold text-[11px] sm:text-xs'}">${line}</span>`).join("");
+        } else {
+          titleEl.innerText = rawName;
+        }
       }
     }
 
