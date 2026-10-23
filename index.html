@@ -3800,8 +3800,8 @@ function vocabEnsureRecordSheet_(ss) {
     sheet = ss.insertSheet(RECORD_SHEET);
     sheet.getRange(1, 1, 1, RECORD_HEADERS.length).setValues([RECORD_HEADERS]).setFontWeight("bold").setBackground("#e8f0fe");
     sheet.setFrozenRows(1);
-    sheet.getRange("A:A").setNumberFormat("yyyy-mm-dd hh:mm");
-    sheet.getRange("B:B").setNumberFormat("yyyy-mm-dd");
+    sheet.getRange("A:A").setNumberFormat("hh:mm");
+    sheet.getRange("B:B").setNumberFormat("mm-dd");
   }
   return sheet;
 }
@@ -3842,13 +3842,22 @@ function handleAddLearningRecord(postData) {
     var last = sheet.getLastRow();
     var existing = {};
     if (last &gt;= 2) {
-      var from = Math.max(2, last - 2999);
-      var ids = sheet.getRange(from, 17, last - from + 1, 1).getValues();
+      var checkCount = Math.min(3000, last - 1);
+      var ids = sheet.getRange(2, 17, checkCount, 1).getValues();
       for (var i = 0; i &lt; ids.length; i++) if (ids[i][0]) existing[ids[i][0]] = true;
     }
     var built = vocabBuildRows_(postData, existing, new Date());
     if (built.rows.length) {
-      sheet.getRange(last + 1, 1, built.rows.length, RECORD_HEADERS.length).setValues(built.rows);
+      sheet.insertRowsBefore(2, built.rows.length);
+      var targetRange = sheet.getRange(2, 1, built.rows.length, RECORD_HEADERS.length);
+      targetRange.setValues(built.rows);
+      targetRange.setFontWeight("normal").setBackground(null);
+      sheet.getRange(2, 1, built.rows.length, 1).setNumberFormat("hh:mm");
+      sheet.getRange(2, 2, built.rows.length, 1).setNumberFormat("mm-dd");
+      var as = ss.getSheetByName(ANALYSIS_SHEET);
+      if (as) {
+        as.getRange("Z2").setFormula('=IFERROR(SORT(UNIQUE(QUERY(\'' + RECORD_SHEET + '\'!$A$1:$Q,"select C where C is not null",1))),"")');
+      }
     }
     return vocabJson_({ status: "success", added: built.rows.length, skipped: built.skipped });
   } catch (err) {
@@ -3917,7 +3926,7 @@ function vocabBuildAnalysisSheet_(ss) {
 
   // 학생 목록(숨김 Z열) + 드롭다운
   sh.getRange("Z1").setValue("학생목록");
-  sh.getRange("Z2").setFormula('=IFERROR(SORT(UNIQUE(FILTER(' + R + '$C$2:$C,' + R + '$C$2:$C&lt;&gt;""))),"")');
+  sh.getRange("Z2").setFormula('=IFERROR(SORT(UNIQUE(QUERY(' + all + ',"select C where C is not null",1))),"")');
   sh.hideColumns(26);
   sh.getRange("B2").setDataValidation(SpreadsheetApp.newDataValidation().requireValueInRange(sh.getRange("Z2:Z"), true).setAllowInvalid(true).build());
 
