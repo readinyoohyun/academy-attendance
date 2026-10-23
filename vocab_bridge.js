@@ -6,8 +6,8 @@
  */
 (function (root) {
   'use strict';
-  var INDEX_KEY = 'vocab_index_v1';
-  var LEVEL_KEY = 'vocab_level_v1_';
+  var INDEX_KEY = 'vocab_index_v3';
+  var LEVEL_KEY = 'vocab_level_v3_';
   var PENDING_KEY = 'vocab_pending_v1';
   var TTL = 12 * 60 * 60 * 1000;   // 어휘 사본을 기기에 저장해 두는 시간 (시트 수정은 '어휘 갱신' 후 최대 12시간 내 반영)
   var B = {};
@@ -182,17 +182,40 @@
       'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm"><span>어휘 확인 학습 ▶</span>' + badge + '</button>';
   };
 
-  // ---------- 퀴즈 열기 (내장 DB 즉시 반환 → 0초 로딩, 시트 연결 시 백그라운드 갱신) ----------
+  // ---------- 퀴즈 열기 (내장 DB 즉시 반환 → 0초 로딩, 시트 연결 시 백그라운드 갱신 + 내장 예문/유의어 자동 보강) ----------
+  function mergeWithLocal(sheetData, locData) {
+    if (!sheetData || !Array.isArray(sheetData.books)) return locData || sheetData;
+    if (!locData || !Array.isArray(locData.books)) return sheetData;
+    var locBookMap = {};
+    locData.books.forEach(function (lb) {
+      locBookMap[norm(lb.title)] = lb;
+    });
+    sheetData.books.forEach(function (sb) {
+      var lb = locBookMap[norm(sb.title)];
+      if (!lb || !Array.isArray(lb.words) || !Array.isArray(sb.words)) return;
+      var locWordMap = {};
+      lb.words.forEach(function (lw) { locWordMap[lw.w] = lw; });
+      sb.words.forEach(function (sw) {
+        var lw = locWordMap[sw.w];
+        if (!lw) return;
+        if (!sw.e && lw.e) sw.e = lw.e;
+        if (!sw.f && lw.f) sw.f = lw.f;
+        if (!sw.s && lw.s) sw.s = lw.s;
+      });
+    });
+    return sheetData;
+  }
+
   function loadLevel(level) {
-    var cached = readCache(LEVEL_KEY + level);
-    if (cached) return Promise.resolve(cached);
     var loc = localLevelData(level);
+    var cached = readCache(LEVEL_KEY + level);
+    if (cached) return Promise.resolve(mergeWithLocal(cached, loc));
     var url = gasUrl();
     if (loc) {
       if (url && sheetVocabReady) {
         fetchJson(withParams(url, 'action=getVocab&level=' + encodeURIComponent(level))).then(function (data) {
           if (data && data.type === 'vocabLevel' && Array.isArray(data.books) && data.books.length) {
-            writeCache(LEVEL_KEY + level, data);
+            writeCache(LEVEL_KEY + level, mergeWithLocal(data, loc));
           }
         }).catch(function () {});
       }
@@ -201,8 +224,9 @@
     if (!url) return Promise.reject(new Error('no vocab source'));
     return fetchJson(withParams(url, 'action=getVocab&level=' + encodeURIComponent(level))).then(function (data) {
       if (data && data.type === 'vocabLevel' && Array.isArray(data.books) && data.books.length) {
-        writeCache(LEVEL_KEY + level, data);
-        return data;
+        var merged = mergeWithLocal(data, loc);
+        writeCache(LEVEL_KEY + level, merged);
+        return merged;
       }
       throw new Error('bad vocab response');
     });
