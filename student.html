@@ -344,6 +344,9 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
+          <button type="button" onclick="if(window.VocabBridge&&VocabBridge.openLevelPicker)VocabBridge.openLevelPicker()" class="px-3.5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-teal-500 shadow-teal-600/20 transition-all active:scale-95 flex items-center gap-1.5">
+            <span>📚 레벨별 도서어휘 퀴즈</span>
+          </button>
           <button type="button" onclick="if(window.VocabBridge&&VocabBridge.openGradePicker)VocabBridge.openGradePicker()" class="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-rose-500 shadow-rose-600/20 transition-all active:scale-95 flex items-center gap-1.5">
             <span>🎓 학년별 필수어휘 퀴즈</span>
             <span id="gradeVocabBtnBadge" class="hidden ml-1 px-2 py-0.5 bg-white text-rose-700 rounded-lg text-[11px] font-black"></span>
@@ -5308,10 +5311,10 @@
   </script>
 
   <!-- 어휘 확인 학습 (내장 9,250개 어휘 DB + 구글 시트 [어휘] 연동) -->
-  <script src="vocab_db.js" defer></script>
-  <script src="vocab_engine.js" defer></script>
-  <script src="vocab_ui.js" defer></script>
-  <script src="vocab_bridge.js" defer></script>
+  <script src="vocab_db.js?v=2"></script>
+  <script src="vocab_engine.js?v=2"></script>
+  <script src="vocab_ui.js?v=2"></script>
+  <script src="vocab_bridge.js?v=2"></script>
 
 </body>
 </html>

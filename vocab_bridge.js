@@ -61,10 +61,16 @@
     if (!books.length) return null;
     return { type: 'vocabLevel', version: 'local', level: level, books: books.map(function (b) { return { level: level, title: b.title, words: b.words }; }) };
   }
+  var byTitleMap = null;
   function populateIndex(items) {
     if (!items || !items.length) return null;
     indexMap = indexMap || {};
-    items.forEach(function (it) { indexMap[it.l + '|' + norm(it.t)] = it; });
+    byTitleMap = byTitleMap || {};
+    items.forEach(function (it) {
+      var nt = norm(it.t);
+      indexMap[it.l + '|' + nt] = it;
+      if (!byTitleMap[nt]) byTitleMap[nt] = it;
+    });
     return indexMap;
   }
 
@@ -79,6 +85,7 @@
     var done = function (data) {
       if (!data || data.type !== 'vocabIndex' || !data.items || !data.items.length) return indexMap;
       indexMap = {};
+      byTitleMap = {};
       if (localItems) populateIndex(localItems);
       return populateIndex(data.items);
     };
@@ -95,7 +102,9 @@
       var localItems = localIndexItems();
       if (localItems) populateIndex(localItems);
     }
-    return indexMap ? indexMap[b.level + '|' + norm(b.title)] : null;
+    if (!b || !indexMap) return null;
+    var nt = norm(b.title);
+    return indexMap[levelLabel(b.level) + '|' + nt] || (byTitleMap ? byTitleMap[nt] : null);
   }
   B.hasVocab = function (b) { return !!(b && findEntry(b)); };
 
@@ -205,16 +214,21 @@
   B.start = function (bookId) {
     var b = (state.missions.books || []).filter(function (x) { return x.id === bookId; })[0];
     if (!b) return;
+    var entry = findEntry(b);
+    var targetLv = (entry && entry.l) ? entry.l : levelLabel(b.level);
     var box = openOverlay();
-    loadLevel(b.level).then(function (data) {
-      var lv = levelNum(b.level);
-      var books = data.books.map(function (x, i) { return { id: 'V' + i, level: isNaN(lv) ? b.level : lv, title: x.title, source: x.source, words: x.words }; });
+    loadLevel(targetLv).then(function (data) {
+      var lv = levelNum(targetLv);
+      var books = data.books.map(function (x, i) { return { id: 'V' + i, level: isNaN(lv) ? targetLv : lv, title: x.title, source: x.source, words: x.words }; });
       var target = books.filter(function (x) { return norm(x.title) === norm(b.title); })[0];
       if (!target) throw new Error('book not in sheet');
       root.VocabUI.mount(box, {
         book: target, db: { books: books, map: {} },
         gradeBand: defaultGradeBand(),
-        onFinish: function (r) { onFinish(b, target, r, defaultGradeBand()); },
+        onFinish: function (r) {
+          b.vocabDone = true;
+          onFinish(b, target, r, defaultGradeBand());
+        },
         onExit: function () { closeOverlay(); },
         onRestart: function () { B.start(bookId); }
       });
@@ -224,7 +238,7 @@
     });
   };
 
-  // ---------- 국립국어원 학년별 필수 어휘 선택 및 학습 ----------
+  // ---------- 레벨별 도서 어휘 + 국립국어원 학년별 필수 어휘 통합 선택 및 학습 ----------
   function defaultGradeBand() {
     var g = String((state && state.currentStudent && state.currentStudent.grade) || '');
     if (/유치|초.*(1|2)/.test(g)) return '초1~2';
@@ -234,38 +248,82 @@
     return '초3~4';
   }
 
-  B.openGradePicker = function (selectedGrade) {
-    var grade = selectedGrade || defaultGradeBand();
+  function defaultBookLevel() {
+    try {
+      var books = (state && state.missions && state.missions.books) || [];
+      for (var i = 0; i < books.length; i++) {
+        var e = findEntry(books[i]);
+        if (e && e.l) return e.l;
+      }
+    } catch (e) {}
+    return '1레벨';
+  }
+
+  B.openLevelPicker = function (lv) {
+    B.openGradePicker(lv || defaultBookLevel());
+  };
+
+  B.filterPickerCards = function (q) {
+    var kw = norm(q || '');
+    var cards = document.querySelectorAll('#vocabPickerGrid > button');
+    for (var i = 0; i < cards.length; i++) {
+      var t = cards[i].getAttribute('data-norm') || '';
+      cards[i].style.display = (!kw || t.indexOf(kw) >= 0) ? 'flex' : 'none';
+    }
+  };
+
+  B.openGradePicker = function (selectedTab) {
+    var tab = selectedTab || defaultGradeBand();
+    var bookLevels = ['기초', '1레벨', '2레벨', '3레벨', '4레벨', '5레벨', '6레벨'];
     var grades = ['초1~2', '초3~4', '초5~6', '중1~3'];
+    var isGradeTab = grades.indexOf(tab) >= 0;
     var box = openOverlay();
-    loadLevel(grade).then(function (data) {
+    loadLevel(tab).then(function (data) {
       var sessions = (data && data.books) || [];
       var results = (state && state.missions && state.missions.vocabResults) || [];
-      var tabsHtml = grades.map(function (g) {
-        var on = g === grade;
-        return '<button type="button" onclick="VocabBridge.openGradePicker(\'' + g + '\')" style="padding:10px 14px;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;border:1px solid ' + (on ? '#4f46e5' : '#cbd5e1') + ';background:' + (on ? '#4f46e5' : '#fff') + ';color:' + (on ? '#fff' : '#334155') + '">' + g + '</button>';
+      var levelTabsHtml = bookLevels.map(function (lv) {
+        var on = lv === tab;
+        return '<button type="button" onclick="VocabBridge.openGradePicker(\'' + lv + '\')" style="padding:8px 12px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid ' + (on ? '#059669' : '#cbd5e1') + ';background:' + (on ? '#059669' : '#fff') + ';color:' + (on ? '#fff' : '#334155') + '">' + lv + '</button>';
       }).join(' ');
+      var gradeTabsHtml = grades.map(function (g) {
+        var on = g === tab;
+        return '<button type="button" onclick="VocabBridge.openGradePicker(\'' + g + '\')" style="padding:8px 12px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid ' + (on ? '#4f46e5' : '#cbd5e1') + ';background:' + (on ? '#4f46e5' : '#fff') + ';color:' + (on ? '#fff' : '#334155') + '">' + g + '</button>';
+      }).join(' ');
+
+      var searchHtml = isGradeTab ? '' :
+        '<div style="margin-bottom:12px"><input type="text" placeholder="🔍 ' + tab + ' 도서 제목 검색 (예: 만점짜리 도시락)" oninput="VocabBridge.filterPickerCards(this.value)" style="width:100%;padding:10px 14px;border-radius:12px;border:2px solid #10b981;font-size:14px;font-weight:700;outline:none" /></div>';
+
       var cardsHtml = sessions.map(function (s, idx) {
-        var sid = 'grade_' + grade + '_' + (idx + 1);
-        var doneList = results.filter(function (r) { return r.bookId === sid || r.title === s.title; });
+        var sid = 'grade_' + tab + '_' + (idx + 1);
+        var doneList = results.filter(function (r) { return r.bookId === sid || norm(r.title) === norm(s.title); });
         var last = doneList.length ? doneList[doneList.length - 1] : null;
-        var badge = last ? '<span style="color:#be123c;font-weight:800;font-size:11px">✔ ' + B.formatResult(last) + '</span>' : '<span style="color:#6366f1;font-weight:700;font-size:12px">' + (s.words || []).length + '어휘 ▶</span>';
+        var badge = last ? '<span style="color:#be123c;font-weight:800;font-size:11px">✔ ' + B.formatResult(last) + '</span>' : '<span style="color:' + (isGradeTab ? '#6366f1' : '#059669') + ';font-weight:700;font-size:12px">' + (s.words || []).length + '어휘 ▶</span>';
         var sampleWords = (s.words || []).slice(0, 4).map(function (w) { return w.w; }).join(', ');
-        return '<button type="button" onclick="VocabBridge.startGrade(\'' + grade + '\',' + idx + ')" style="text-align:left;padding:12px 14px;border-radius:14px;border:1px solid ' + (last ? '#fda4af' : '#e2e8f0') + ';background:' + (last ? '#fff1f2' : '#fff') + ';cursor:pointer;display:flex;flex-direction:column;gap:4px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-weight:800;font-size:14px;color:#0f172a">' + (idx + 1) + '회차</span>' + badge + '</div>' +
+        var cardTitle = isGradeTab ? ((idx + 1) + '회차') : s.title;
+        return '<button type="button" data-norm="' + norm(s.title) + '" onclick="VocabBridge.startGrade(\'' + tab + '\',' + idx + ')" style="text-align:left;padding:12px 14px;border-radius:14px;border:1px solid ' + (last ? '#fda4af' : '#e2e8f0') + ';background:' + (last ? '#fff1f2' : '#fff') + ';cursor:pointer;display:flex;flex-direction:column;gap:4px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-weight:800;font-size:14px;color:#0f172a">' + cardTitle + '</span>' + badge + '</div>' +
           '<div style="font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + sampleWords + ' 등</div></button>';
       }).join('');
-      box.innerHTML = '<div style="max-width:560px;margin:0 auto;padding:20px 16px 90px;font-family:Pretendard,system-ui,sans-serif">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-        '<div><div style="font-size:18px;font-weight:900;color:#0f172a">🎓 학년별 필수 어휘 퀴즈</div>' +
-        '<div style="font-size:12px;color:#64748b">국립국어원 학령별 기초 어휘 (초1~중3, 회차당 10어휘)</div></div>' +
+      box.innerHTML = '<div style="max-width:600px;margin:0 auto;padding:20px 16px 90px;font-family:Pretendard,system-ui,sans-serif">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<div><div style="font-size:18px;font-weight:900;color:#0f172a">📚 레벨별 도서 어휘 & 🎓 학년별 필수 어휘</div>' +
+        '<div style="font-size:12px;color:#64748b">구글 시트 + 앱 내장 어휘 총 9,250개 (도서 8,250개 · 국립국어원 1,000개)</div></div>' +
         '<button type="button" onclick="VocabBridge.close()" style="padding:8px 14px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer">닫기 ✕</button></div>' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">' + tabsHtml + '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">' + cardsHtml + '</div>' +
-        '<div style="margin-top:16px;font-size:11px;color:#94a3b8;text-align:center">출처: 국립국어원 「국어 기초 어휘 선정 및 어휘 등급화 목록」(공공누리 제1유형)</div></div>';
+        '<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:14px;padding:10px 12px;margin-bottom:10px">' +
+          '<div style="font-size:12px;font-weight:900;color:#065f46;margin-bottom:6px">📖 레벨별 도서 어휘 (기초 ~ 6레벨 · 879권)</div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' + levelTabsHtml + '</div>' +
+        '</div>' +
+        '<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:14px;padding:10px 12px;margin-bottom:14px">' +
+          '<div style="font-size:12px;font-weight:900;color:#3730a3;margin-bottom:6px">🎓 국립국어원 학년별 필수 어휘 (초1 ~ 중3 · 100회차)</div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' + gradeTabsHtml + '</div>' +
+        '</div>' +
+        searchHtml +
+        '<div id="vocabPickerGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">' + cardsHtml + '</div>' +
+        (isGradeTab ? '<div style="margin-top:16px;font-size:11px;color:#94a3b8;text-align:center">출처: 국립국어원 「국어 기초 어휘 선정 및 어휘 등급화 목록」(공공누리 제1유형)</div>' : '') +
+        '</div>';
     }).catch(function () {
       closeOverlay();
-      alert('학년별 어휘 자료를 불러오지 못했어요.');
+      alert('어휘 자료를 불러오지 못했어요.');
     });
   };
 
@@ -273,15 +331,22 @@
 
   B.startGrade = function (grade, idx) {
     var box = openOverlay();
+    var isGrade = /^(초|중)/.test(String(grade || ''));
     loadLevel(grade).then(function (data) {
-      var books = (data.books || []).map(function (x, i) { return { id: 'G' + i, level: grade, title: x.title, source: '국립국어원', words: x.words }; });
+      var books = (data.books || []).map(function (x, i) { return { id: 'G' + i, level: grade, title: x.title, source: isGrade ? '국립국어원' : '어휘지', words: x.words }; });
       var target = books[idx];
       if (!target) throw new Error('no grade session');
-      var pseudoBook = { id: 'grade_' + grade + '_' + (idx + 1), level: grade, title: target.title };
+      // 만약 오늘 등록된 도서 중 같은 제목의 책이 있으면 그 도서 카드와도 자동 연동!
+      var matchedBook = ((state && state.missions && state.missions.books) || []).filter(function (b) { return norm(b.title) === norm(target.title); })[0];
+      var pseudoBook = matchedBook || { id: 'grade_' + grade + '_' + (idx + 1), level: grade, title: target.title };
+      var gb = isGrade ? grade : defaultGradeBand();
       root.VocabUI.mount(box, {
         book: target, db: { books: books, map: {} },
-        gradeBand: grade,
-        onFinish: function (r) { onFinish(pseudoBook, target, r, grade); },
+        gradeBand: gb,
+        onFinish: function (r) {
+          if (matchedBook) matchedBook.vocabDone = true;
+          onFinish(pseudoBook, target, r, gb);
+        },
         onExit: function () { B.openGradePicker(grade); },
         onRestart: function () { B.startGrade(grade, idx); }
       });
@@ -400,6 +465,10 @@
 
   B.init = function () {
     B.flushPending();
+    var localItems = localIndexItems();
+    if (localItems) populateIndex(localItems);
+    try { if (typeof renderBookList === 'function' && state.currentStudent) renderBookList(); } catch (e) { /* 무시 */ }
+    try { B.renderBanner(); } catch (e) { /* 무시 */ }
     B.ensureIndex().then(function () {
       try { if (typeof renderBookList === 'function' && state.currentStudent) renderBookList(); } catch (e) { /* 무시 */ }
       try { B.renderBanner(); } catch (e) { /* 무시 */ }
