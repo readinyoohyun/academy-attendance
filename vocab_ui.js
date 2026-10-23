@@ -1,4 +1,4 @@
-﻿/* 어휘 확인 학습 화면 (순수 JS, 의존성 없음 – 기존 앱 어디에나 붙일 수 있음)
+/* 어휘 확인 학습 화면 (순수 JS, 의존성 없음 – 기존 앱 어디에나 붙일 수 있음)
  * 사용: VocabUI.mount(containerEl, { book, db, onFinish(result), onExit(), onRestart() })
  * 문제 유형: 뜻 고르기 / 어휘 고르기 / 빈칸 채우기 / 짝짓기 + 오답 재도전, 정답률은 처음 정답 기준
  */
@@ -41,7 +41,8 @@
   }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const TYPE = { mean: '뜻 고르기', word: '어휘 고르기', blank: '빈칸 채우기', match: '짝짓기' };
-  const lvName = l => (l === 0 ? '기초' : l + '레벨');
+  const lvName = l => (l === 0 ? '기초' : (typeof l === 'number' ? l + '레벨' : String(l)));
+  const creditHtml = b => (b && b.source === '국립국어원') ? '<div style="margin-top:14px;font-size:11px;color:#6b7280;text-align:center">출처: 국립국어원 「국어 기초 어휘 선정 및 어휘 등급화 목록」(공공누리 제1유형)</div>' : '';
 const newMp = () => ({ sel: null, pairs: {}, bad: null, mistakes: 0 });
 
   function mount(el, opt) {
@@ -79,7 +80,7 @@ const newMp = () => ({ sel: null, pairs: {}, bad: null, mistakes: 0 });
       }
       if (cur.phase === 'retry') h += `<div class="vq-banner">다시 풀기 · ${s.queue.length}개 남음</div>`;
       h += cur.question.type === 'match' ? matchHtml(cur.question) : choiceHtml(cur.question);
-      h += exitBtn + '</div>';
+      h += exitBtn + creditHtml(book) + '</div>';
       el.innerHTML = h;
     }
 

@@ -342,9 +342,14 @@
           </div>
         </div>
 
-        <button onclick="openBookModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-emerald-500 shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1.5 self-end sm:self-auto">
-          <span>📖 도서 정보 등록</span>
-        </button>
+        <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
+          <button type="button" onclick="if(window.VocabBridge&&VocabBridge.openGradePicker)VocabBridge.openGradePicker()" class="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-rose-500 shadow-rose-600/20 transition-all active:scale-95 flex items-center gap-1.5">
+            <span>🎓 학년별 필수어휘 퀴즈</span>
+          </button>
+          <button onclick="openBookModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md border border-emerald-500 shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1.5">
+            <span>📖 도서 정보 등록</span>
+          </button>
+        </div>
       </div>
 
       <div class="p-5 sm:p-6">
@@ -5269,7 +5274,8 @@
     }
   </script>
 
-  <!-- 어휘 확인 학습 (구글 시트 [어휘] 연동) -->
+  <!-- 어휘 확인 학습 (내장 9,250개 어휘 DB + 구글 시트 [어휘] 연동) -->
+  <script src="vocab_db.js" defer></script>
   <script src="vocab_engine.js" defer></script>
   <script src="vocab_ui.js" defer></script>
   <script src="vocab_bridge.js" defer></script>

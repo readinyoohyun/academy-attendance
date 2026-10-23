@@ -3667,7 +3667,7 @@ var RECORD_SHEET = "학습기록";
 var ANALYSIS_SHEET = "학생분석표";
 var VOCAB_HEADERS = ["어휘ID", "구분", "책", "도서ID", "어휘", "활용형", "뜻", "예문", "출처", "사용"];
 var RECORD_HEADERS = ["일시", "날짜", "이름", "종류", "구분", "책", "문제수", "처음정답수", "정답률(%)", "진단점수", "트레이닝", "권수·차시", "오답개수", "이해도", "틀린어휘", "상세(JSON)", "기록ID"];
-var VOCAB_LEVELS = ["기초", "1레벨", "2레벨", "3레벨", "4레벨", "5레벨", "6레벨"];
+var VOCAB_LEVELS = ["기초", "1레벨", "2레벨", "3레벨", "4레벨", "5레벨", "6레벨", "초1~2", "초3~4", "초5~6", "중1~3"];
 
 function vocabJson_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);

@@ -50,25 +50,53 @@
     });
   }
 
+  function levelLabel(lv) { return (lv === 0 || lv === '0' || lv === '기초') ? '기초' : (typeof lv === 'number' ? lv + '레벨' : String(lv)); }
+  function localIndexItems() {
+    if (!root.VOCAB_DB || !Array.isArray(root.VOCAB_DB.books)) return null;
+    return root.VOCAB_DB.books.map(function (b) { return { t: b.title, l: levelLabel(b.level), n: (b.words || []).length }; });
+  }
+  function localLevelData(level) {
+    if (!root.VOCAB_DB || !Array.isArray(root.VOCAB_DB.books)) return null;
+    var books = root.VOCAB_DB.books.filter(function (b) { return levelLabel(b.level) === level; });
+    if (!books.length) return null;
+    return { type: 'vocabLevel', version: 'local', level: level, books: books.map(function (b) { return { level: level, title: b.title, words: b.words }; }) };
+  }
+  function populateIndex(items) {
+    if (!items || !items.length) return null;
+    indexMap = indexMap || {};
+    items.forEach(function (it) { indexMap[it.l + '|' + norm(it.t)] = it; });
+    return indexMap;
+  }
+
   // ---------- 어휘 목록(색인) ----------
   B.ensureIndex = function () {
+    // 1) 내장 어휘 DB(vocab_db.js)가 있으면 즉시 색인을 먼저 구성하여 Apps Script 미배포 상태에서도 버튼이 바로 노출되도록 보장
+    var localItems = localIndexItems();
+    if (localItems) populateIndex(localItems);
+
     var url = gasUrl();
-    if (!url) return Promise.resolve(null);
+    if (!url) return Promise.resolve(indexMap);
     var done = function (data) {
-      if (!data || data.type !== 'vocabIndex' || !data.items) return null;   // 아직 Apps Script 를 갱신하지 않은 경우 등 → 기능 숨김
+      if (!data || data.type !== 'vocabIndex' || !data.items || !data.items.length) return indexMap;
       indexMap = {};
-      data.items.forEach(function (it) { indexMap[it.l + '|' + norm(it.t)] = it; });
-      return indexMap;
+      if (localItems) populateIndex(localItems);
+      return populateIndex(data.items);
     };
     var cached = readCache(INDEX_KEY);
     if (cached) return Promise.resolve(done(cached));
     return fetchJson(withParams(url, 'action=getVocabIndex')).then(function (data) {
-      if (data && data.type === 'vocabIndex') writeCache(INDEX_KEY, data);
+      if (data && data.type === 'vocabIndex' && data.items && data.items.length) writeCache(INDEX_KEY, data);
       return done(data);
-    }).catch(function () { return null; });
+    }).catch(function () { return indexMap; });
   };
 
-  function findEntry(b) { return indexMap ? indexMap[b.level + '|' + norm(b.title)] : null; }
+  function findEntry(b) {
+    if (!indexMap) {
+      var localItems = localIndexItems();
+      if (localItems) populateIndex(localItems);
+    }
+    return indexMap ? indexMap[b.level + '|' + norm(b.title)] : null;
+  }
   B.hasVocab = function (b) { return !!(b && findEntry(b)); };
 
   B.buttonHtml = function (b) {
@@ -88,10 +116,23 @@
   function loadLevel(level) {
     var cached = readCache(LEVEL_KEY + level);
     if (cached) return Promise.resolve(cached);
-    return fetchJson(withParams(gasUrl(), 'action=getVocab&level=' + encodeURIComponent(level))).then(function (data) {
-      if (!data || data.type !== 'vocabLevel') throw new Error('bad vocab response');
-      writeCache(LEVEL_KEY + level, data);
-      return data;
+    var url = gasUrl();
+    if (!url) {
+      var loc0 = localLevelData(level);
+      return loc0 ? Promise.resolve(loc0) : Promise.reject(new Error('no vocab source'));
+    }
+    return fetchJson(withParams(url, 'action=getVocab&level=' + encodeURIComponent(level))).then(function (data) {
+      if (data && data.type === 'vocabLevel' && Array.isArray(data.books) && data.books.length) {
+        writeCache(LEVEL_KEY + level, data);
+        return data;
+      }
+      var loc = localLevelData(level);
+      if (loc) return loc;
+      throw new Error('bad vocab response');
+    }).catch(function (err) {
+      var loc = localLevelData(level);
+      if (loc) return loc;
+      throw err;
     });
   }
 
@@ -118,7 +159,7 @@
     var box = openOverlay();
     loadLevel(b.level).then(function (data) {
       var lv = levelNum(b.level);
-      var books = data.books.map(function (x, i) { return { id: 'V' + i, level: lv, title: x.title, words: x.words }; });
+      var books = data.books.map(function (x, i) { return { id: 'V' + i, level: isNaN(lv) ? b.level : lv, title: x.title, source: x.source, words: x.words }; });
       var target = books.filter(function (x) { return norm(x.title) === norm(b.title); })[0];
       if (!target) throw new Error('book not in sheet');
       root.VocabUI.mount(box, {
@@ -130,6 +171,69 @@
     }).catch(function () {
       closeOverlay();
       alert('어휘 자료를 불러오지 못했어요 😢\n인터넷 연결을 확인하고 다시 눌러 주세요.');
+    });
+  };
+
+  // ---------- 국립국어원 학년별 필수 어휘 선택 및 학습 ----------
+  function defaultGradeBand() {
+    var g = String((state && state.currentStudent && state.currentStudent.grade) || '');
+    if (/초.*(1|2)/.test(g)) return '초1~2';
+    if (/초.*(3|4)/.test(g)) return '초3~4';
+    if (/초.*(5|6)/.test(g)) return '초5~6';
+    if (/중/.test(g)) return '중1~3';
+    return '초3~4';
+  }
+
+  B.openGradePicker = function (selectedGrade) {
+    var grade = selectedGrade || defaultGradeBand();
+    var grades = ['초1~2', '초3~4', '초5~6', '중1~3'];
+    var box = openOverlay();
+    loadLevel(grade).then(function (data) {
+      var sessions = (data && data.books) || [];
+      var results = (state && state.missions && state.missions.vocabResults) || [];
+      var tabsHtml = grades.map(function (g) {
+        var on = g === grade;
+        return '<button type="button" onclick="VocabBridge.openGradePicker(\'' + g + '\')" style="padding:10px 14px;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;border:1px solid ' + (on ? '#4f46e5' : '#cbd5e1') + ';background:' + (on ? '#4f46e5' : '#fff') + ';color:' + (on ? '#fff' : '#334155') + '">' + g + '</button>';
+      }).join(' ');
+      var cardsHtml = sessions.map(function (s, idx) {
+        var sid = 'grade_' + grade + '_' + (idx + 1);
+        var doneList = results.filter(function (r) { return r.bookId === sid || r.title === s.title; });
+        var last = doneList.length ? doneList[doneList.length - 1] : null;
+        var badge = last ? '<span style="color:#15803d;font-weight:800;font-size:12px">✔ ' + last.rate + '%</span>' : '<span style="color:#6366f1;font-weight:700;font-size:12px">' + (s.words || []).length + '어휘 ▶</span>';
+        var sampleWords = (s.words || []).slice(0, 4).map(function (w) { return w.w; }).join(', ');
+        return '<button type="button" onclick="VocabBridge.startGrade(\'' + grade + '\',' + idx + ')" style="text-align:left;padding:12px 14px;border-radius:14px;border:1px solid ' + (last ? '#86efac' : '#e2e8f0') + ';background:' + (last ? '#f0fdf4' : '#fff') + ';cursor:pointer;display:flex;flex-direction:column;gap:4px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:800;font-size:14px;color:#0f172a">' + (idx + 1) + '회차</span>' + badge + '</div>' +
+          '<div style="font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + sampleWords + ' 등</div></button>';
+      }).join('');
+      box.innerHTML = '<div style="max-width:560px;margin:0 auto;padding:20px 16px 90px;font-family:Pretendard,system-ui,sans-serif">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+        '<div><div style="font-size:18px;font-weight:900;color:#0f172a">🎓 학년별 필수 어휘 퀴즈</div>' +
+        '<div style="font-size:12px;color:#64748b">국립국어원 학령별 기초 어휘 (초1~중3, 회차당 10어휘)</div></div>' +
+        '<button type="button" onclick="VocabBridge.close()" style="padding:8px 14px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer">닫기 ✕</button></div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">' + tabsHtml + '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">' + cardsHtml + '</div>' +
+        '<div style="margin-top:16px;font-size:11px;color:#94a3b8;text-align:center">출처: 국립국어원 「국어 기초 어휘 선정 및 어휘 등급화 목록」(공공누리 제1유형)</div></div>';
+    }).catch(function () {
+      closeOverlay();
+      alert('학년별 어휘 자료를 불러오지 못했어요.');
+    });
+  };
+
+  B.close = function () { closeOverlay(); };
+
+  B.startGrade = function (grade, idx) {
+    var box = openOverlay();
+    loadLevel(grade).then(function (data) {
+      var books = (data.books || []).map(function (x, i) { return { id: 'G' + i, level: grade, title: x.title, source: '국립국어원', words: x.words }; });
+      var target = books[idx];
+      if (!target) throw new Error('no grade session');
+      var pseudoBook = { id: 'grade_' + grade + '_' + (idx + 1), level: grade, title: target.title };
+      root.VocabUI.mount(box, {
+        book: target, db: { books: books, map: {} },
+        onFinish: function (r) { onFinish(pseudoBook, target, r); },
+        onExit: function () { B.openGradePicker(grade); },
+        onRestart: function () { B.startGrade(grade, idx); }
+      });
     });
   };
 

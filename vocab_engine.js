@@ -1,4 +1,4 @@
-﻿/* 어휘 확인 학습 엔진 (UI 없음, 순수 로직)
+/* 어휘 확인 학습 엔진 (UI 없음, 순수 로직)
  * 문제 구성(A안): 어휘 1개당 1문제(뜻 고르기 / 어휘 고르기 / 빈칸 채우기 순환) + 마지막 짝짓기 1문제
  * 정답률: '처음 푼 정답 개수'만 반영. 틀린 문제는 모두 맞힐 때까지 다시 풀지만 정답률에는 영향 없음.
  */
@@ -154,7 +154,8 @@
   E.snapshot = function (s, si, q) {
     const sp = s.specs[si];
     const b = s.book;
-    const label = b.label || ((b.level === 0 ? '기초' : b.level + '레벨') + ' 『' + b.title + '』');
+    const lvStr = b.level === 0 ? '기초' : (typeof b.level === 'number' ? b.level + '레벨' : String(b.level));
+    const label = b.label || (lvStr + ' 『' + b.title + '』');
     const base = { source: b.source || 'book', bookId: b.id, bookTitle: b.title, level: b.level, label, type: sp.type, at: Date.now() };
     if (sp.type === 'match') {
       const pairs = q.left.map(l => ({ word: l.text, meaning: q.right.find(r => r.id === l.id).text }));
