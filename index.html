@@ -3043,7 +3043,34 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
   };
 
   // [핵심 개편] F열(6열: 코칭 방향 &amp; 주력 목표)에는 더 이상 일일 수업내용(K열)을 누적하지 않습니다.
-  // 일일 수업 활동은 18열 [학습기록] 시트에 정밀 기록되며, F열은 영구 코칭 방향·성향 메모 전용으로 보존합니다.
+  // 일일 수업 활동(숙제현황·성실발자국·독서발자국·문해력발자국·나의기록)은 18열 [학습기록] 시트에 즉시 동기화합니다!
+  if (contentsVal) {
+    try {
+      var fpNow = parseDailyContentsFootprints_(contentsVal);
+      if (fpNow) {
+        var sheetRecNow = vocabEnsureRecordSheet_(ss);
+        var dParts = dateFormatted.split("/");
+        var isoDateNow = vocabFmtDate_(new Date());
+        if (dParts.length === 2) {
+          var mmNow = parseInt(dParts[0], 10);
+          var ddNow = parseInt(dParts[1], 10);
+          var yyyyNow = new Date().getFullYear();
+          if (!isNaN(mmNow) &amp;&amp; !isNaN(ddNow)) {
+            isoDateNow = yyyyNow + "-" + (mmNow &lt; 10 ? "0" + mmNow : mmNow) + "-" + (ddNow &lt; 10 ? "0" + ddNow : ddNow);
+          }
+        }
+        vocabUpsertStudentDayRecords_(sheetRecNow, targetCleanName, [{
+          date: isoDateNow,
+          type: "일일요약",
+          hwStatus: fpNow.hwStatus,
+          step1Memo: fpNow.step1Memo,
+          step2Memo: fpNow.step2Memo,
+          literacyMemo: fpNow.literacyMemo,
+          reflection: fpNow.reflection
+        }]);
+      }
+    } catch (fpErr) {}
+  }
 
   for (var idx = 0; idx &lt; maxLen; idx++) {
     var num = numLines[idx] || "";
@@ -4116,6 +4143,171 @@ function vocabMigrate17To18Cols_(ss, sheet) {
   return true;
 }
 
+// 출결보강관리(오늘 출석부)·학생수업관리·회원분석의 수업내용(K열/F열) 문자열에서 숙제현황 및 발자국 4종 추출
+function parseDailyContentsFootprints_(contentsStr) {
+  var s = String(contentsStr || "").trim();
+  if (!s) return null;
+  var hwStatus = "";
+  if (s.indexOf("숙제완료") !== -1) hwStatus = "숙제완료";
+  else if (s.indexOf("숙제미완") !== -1) hwStatus = "숙제미완";
+  else if (s.indexOf("미지참") !== -1) hwStatus = "미지참";
+  else if (s.indexOf("학원에서 풀기") !== -1 || s.indexOf("학원에서풀기") !== -1) hwStatus = "학원에서풀기";
+
+  var hwBookMatch = s.match(/(?:숙제완료|숙제미완|미지참|학원에서\s*풀기)\s*\(([^)]+)\)/);
+  var hwBook = hwBookMatch ? String(hwBookMatch[1] || "").trim() : "";
+
+  var step1Match = s.match(/\[성실발자국:\s*([^\]]+)\]/);
+  var rawStep1 = step1Match ? String(step1Match[1] || "").trim() : "";
+  var step1Memo = hwBook ? (rawStep1 ? "[" + hwBook + "] " + rawStep1 : "[" + hwBook + "]") : rawStep1;
+
+  var step2Match = s.match(/\[독서발자국:\s*([^\]]+)\]/);
+  var step2Memo = step2Match ? String(step2Match[1] || "").trim() : "";
+
+  var litParts = [];
+  var step3Match = s.match(/\[메모:\s*([^\]]+)\]/);
+  if (step3Match &amp;&amp; String(step3Match[1] || "").trim()) litParts.push(String(step3Match[1]).trim());
+  var step4Match = s.match(/\[문해력발자국:\s*([^\]]+)\]/);
+  if (step4Match &amp;&amp; String(step4Match[1] || "").trim()) litParts.push(String(step4Match[1]).trim());
+  var literacyMemo = litParts.join(" / ");
+
+  var reflMatch = s.match(/\[소감\]\s*([^|\r\n]+)/);
+  var reflection = reflMatch ? String(reflMatch[1] || "").trim() : "";
+
+  if (!hwStatus &amp;&amp; !step1Memo &amp;&amp; !step2Memo &amp;&amp; !literacyMemo &amp;&amp; !reflection) return null;
+  return {
+    hwStatus: hwStatus,
+    step1Memo: step1Memo,
+    step2Memo: step2Memo,
+    literacyMemo: literacyMemo,
+    reflection: reflection
+  };
+}
+
+// 출결보강관리(오늘 출석부)·학생수업관리·회원분석에 저장된 발자국 기록을 [학습기록] 18열 시트의 빈 발자국 칸에 자동 복원/동기화
+function syncFootprintsFromDailySheetsToLearningRecords_(ss, sheetRec) {
+  try {
+    if (!sheetRec || sheetRec.getLastRow() &lt; 2) return;
+    var recLastRow = sheetRec.getLastRow();
+    var recData = sheetRec.getRange(2, 1, recLastRow - 1, 18).getValues();
+    var dirty = false;
+
+    function applyFootprintToStudentRows(studentName, dateStrHint, fp) {
+      if (!studentName || !fp) return;
+      var cleanSt = String(studentName).replace(/\s+/g, "");
+      if (!cleanSt) return;
+
+      // 1순위: 날짜+이름 일치 행 찾기, 없으면 해당 학생의 가장 최근 행 찾기
+      var targetIdx = -1;
+      if (dateStrHint) {
+        for (var i = recData.length - 1; i &gt;= 0; i--) {
+          var rName = String(recData[i][1] || "").replace(/\s+/g, "");
+          var rDate = vocabFmtDate_(recData[i][0]);
+          if (rName === cleanSt &amp;&amp; rDate === dateStrHint) {
+            targetIdx = i; // 첫 줄 우선(역순 탐색이므로 계속 갱신하여 해당 날짜 첫 줄 선택)
+          }
+        }
+      }
+      if (targetIdx === -1) {
+        for (var j = recData.length - 1; j &gt;= 0; j--) {
+          var rName2 = String(recData[j][1] || "").replace(/\s+/g, "");
+          if (rName2 === cleanSt) {
+            var latestDate = vocabFmtDate_(recData[j][0]);
+            for (var k = 0; k &lt; recData.length; k++) {
+              if (String(recData[k][1] || "").replace(/\s+/g, "") === cleanSt &amp;&amp; vocabFmtDate_(recData[k][0]) === latestDate) {
+                targetIdx = k;
+                break;
+              }
+            }
+            break;
+          }
+        }
+      }
+      if (targetIdx === -1) return;
+
+      var row = recData[targetIdx];
+      if (fp.hwStatus &amp;&amp; !String(row[2] || "").trim()) { row[2] = fp.hwStatus; dirty = true; }
+      if (fp.step1Memo &amp;&amp; !String(row[3] || "").trim()) { row[3] = fp.step1Memo; dirty = true; }
+      if (fp.step2Memo &amp;&amp; !String(row[10] || "").trim()) { row[10] = fp.step2Memo; dirty = true; }
+      if (fp.literacyMemo &amp;&amp; !String(row[15] || "").trim()) { row[15] = fp.literacyMemo; dirty = true; }
+      if (fp.reflection &amp;&amp; !String(row[16] || "").trim()) { row[16] = fp.reflection; dirty = true; }
+    }
+
+    var curYear = new Date().getFullYear();
+    function parseSlashDateHint(rawD) {
+      if (rawD instanceof Date &amp;&amp; !isNaN(rawD.getTime())) return vocabFmtDate_(rawD);
+      var s = String(rawD || "").trim();
+      var m = s.match(/(?:(\d{2,4})[\.\-\/])?(\d{1,2})[\.\-\/](\d{1,2})/);
+      if (m) {
+        var y = m[1] ? (m[1].length === 2 ? 2000 + parseInt(m[1], 10) : parseInt(m[1], 10)) : curYear;
+        var mo = parseInt(m[2], 10);
+        var da = parseInt(m[3], 10);
+        return y + "-" + (mo &lt; 10 ? "0" + mo : mo) + "-" + (da &lt; 10 ? "0" + da : da);
+      }
+      return "";
+    }
+
+    // 1) 출결보강관리 / 오늘 출석부 스캔
+    var dailyNames = ["출결보강관리", "오늘 출석부", "오늘출석부"];
+    for (var d = 0; d &lt; dailyNames.length; d++) {
+      var shD = ss.getSheetByName(dailyNames[d]);
+      if (shD &amp;&amp; shD.getLastRow() &gt;= 3) {
+        var dRows = shD.getRange(3, 1, shD.getLastRow() - 2, Math.min(shD.getLastColumn(), 11)).getValues();
+        for (var r1 = 0; r1 &lt; dRows.length; r1++) {
+          var nm1 = String(dRows[r1][2] || "").replace(/\s+/g, "");
+          var cont1 = String(dRows[r1][10] || "").trim();
+          var fp1 = parseDailyContentsFootprints_(cont1);
+          if (nm1 &amp;&amp; fp1) {
+            applyFootprintToStudentRows(nm1, parseSlashDateHint(dRows[r1][0]), fp1);
+          }
+        }
+      }
+    }
+
+    // 2) 학생수업관리 / 누적일일수업관리 최근 300행 스캔
+    var accumNames = ["학생수업관리", "누적일일수업관리"];
+    for (var a = 0; a &lt; accumNames.length; a++) {
+      var shA = ss.getSheetByName(accumNames[a]);
+      if (shA &amp;&amp; shA.getLastRow() &gt;= 2) {
+        var stRow = Math.max(2, shA.getLastRow() - 300);
+        var aRows = shA.getRange(stRow, 1, shA.getLastRow() - stRow + 1, Math.min(shA.getLastColumn(), 11)).getValues();
+        for (var r2 = 0; r2 &lt; aRows.length; r2++) {
+          var nm2 = String(aRows[r2][2] || "").replace(/\s+/g, "");
+          var cont2 = String(aRows[r2][10] || "").trim();
+          var fp2 = parseDailyContentsFootprints_(cont2);
+          if (nm2 &amp;&amp; fp2) {
+            applyFootprintToStudentRows(nm2, parseSlashDateHint(aRows[r2][0]), fp2);
+          }
+        }
+      }
+    }
+
+    // 3) 회원 분석 / 회원 분석_백업 F열 스캔
+    var memNames = ["회원 분석_백업", "회원 분석", "회원분석", "월별상담내역"];
+    for (var mIdx = 0; mIdx &lt; memNames.length; mIdx++) {
+      var shM = ss.getSheetByName(memNames[mIdx]);
+      if (shM &amp;&amp; shM.getLastRow() &gt;= 2) {
+        var mRows = shM.getRange(2, 1, shM.getLastRow() - 1, Math.min(shM.getLastColumn(), 7)).getValues();
+        for (var r3 = 0; r3 &lt; mRows.length; r3++) {
+          var nm3 = String(mRows[r3][1] || "").replace(/\s+/g, "");
+          var fText = String(mRows[r3][5] || "").trim();
+          if (!nm3 || !fText) continue;
+          var fLines = fText.split(/\r?\n/);
+          for (var l = 0; l &lt; fLines.length; l++) {
+            var fp3 = parseDailyContentsFootprints_(fLines[l]);
+            if (fp3) {
+              applyFootprintToStudentRows(nm3, parseSlashDateHint(fLines[l]), fp3);
+            }
+          }
+        }
+      }
+    }
+
+    if (dirty) {
+      sheetRec.getRange(2, 1, recData.length, 18).setValues(recData);
+    }
+  } catch (e) {}
+}
+
 function vocabEnsureRecordSheet_(ss) {
   var sheet = ss.getSheetByName(RECORD_SHEET);
   if (!sheet) {
@@ -4130,6 +4322,7 @@ function vocabEnsureRecordSheet_(ss) {
         vocabStyleRecordSheet_(sheet);
       }
     }
+    syncFootprintsFromDailySheetsToLearningRecords_(ss, sheet);
   }
   return sheet;
 }
@@ -4177,6 +4370,40 @@ function vocabUpsertStudentDayRecords_(sheet, name, records) {
       var rName = String(allData[rowIdx][1] || "").replace(/\s+/g, "");
       if (rDate === dKey &amp;&amp; rName === name) {
         matchIndices.push(rowIdx);
+      }
+    }
+
+    // 자정(00시~08시) 이후 테스트 또는 일일요약(발자국)만 전송된 경우: 해당 학생의 직전 수업일 행(도서명 일치 또는 최근 행)에 자동 병합
+    if (matchIndices.length === 0 &amp;&amp; allData.length &gt; 0) {
+      var incomingBooks = {};
+      var hasOnlySummaryOrMatchingBook = true;
+      for (var ib = 0; ib &lt; items.length; ib++) {
+        var bNorm = vocabNormBook_(items[ib].book);
+        if (bNorm) incomingBooks[bNorm] = true;
+      }
+      var latestStudentDate = "";
+      for (var fb = allData.length - 1; fb &gt;= 0; fb--) {
+        var fbName = String(allData[fb][1] || "").replace(/\s+/g, "");
+        if (fbName !== name) continue;
+        var fbDate = allData[fb][0] ? vocabFmtDate_(allData[fb][0]) : "";
+        var fbBook = vocabNormBook_(allData[fb][5]);
+        if (fbBook &amp;&amp; incomingBooks[fbBook]) {
+          latestStudentDate = fbDate;
+          break;
+        }
+        if (!latestStudentDate &amp;&amp; (items.length === 1 &amp;&amp; items[0].type === "일일요약" || (new Date()).getHours() &lt; 8)) {
+          latestStudentDate = fbDate;
+        }
+      }
+      if (latestStudentDate) {
+        for (var rowIdx2 = 0; rowIdx2 &lt; allData.length; rowIdx2++) {
+          var rDate2 = allData[rowIdx2][0] ? vocabFmtDate_(allData[rowIdx2][0]) : "";
+          var rName2 = String(allData[rowIdx2][1] || "").replace(/\s+/g, "");
+          if (rDate2 === latestStudentDate &amp;&amp; rName2 === name) {
+            matchIndices.push(rowIdx2);
+            dObj = vocabParseDate_(latestStudentDate);
+          }
+        }
       }
     }
 

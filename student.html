@@ -4754,9 +4754,17 @@
       targetLog.grammarDone = finalColJ;
       targetLog.contents = finalContents;
 
-      // [대표님 결정] 수업 중에는 구글 시트로 잦은 네트워크 통신을 하지 않고, 로컬에만 안전하게 실시간 보존!
+      // 로컬에 즉시 보존 + 입력 멈춘 뒤 1.5초 후 [학습기록] 18열 시트에도 자동 동기화!
       saveActiveSession(student, targetLog);
       showLiveSyncStatus();
+      if (window._learningRecordLiveSyncTimer) clearTimeout(window._learningRecordLiveSyncTimer);
+      window._learningRecordLiveSyncTimer = setTimeout(() => {
+        try {
+          if (state.currentStudent && state.missions && window.VocabBridge) {
+            VocabBridge.checkout(state.currentStudent, state.missions);
+          }
+        } catch (e) {}
+      }, 1500);
     }
 
     function showLiveSyncStatus() {
@@ -5452,10 +5460,10 @@
   </script>
 
   <!-- 어휘 확인 학습 (내장 9,250개 어휘 DB + 구글 시트 [어휘] 연동) -->
-  <script src="vocab_db.js?v=6"></script>
-  <script src="vocab_engine.js?v=6"></script>
-  <script src="vocab_ui.js?v=6"></script>
-  <script src="vocab_bridge.js?v=6"></script>
+  <script src="vocab_db.js?v=7"></script>
+  <script src="vocab_engine.js?v=7"></script>
+  <script src="vocab_ui.js?v=7"></script>
+  <script src="vocab_bridge.js?v=7"></script>
 
 </body>
 </html>

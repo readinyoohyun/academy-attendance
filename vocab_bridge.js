@@ -637,8 +637,29 @@
     return Promise.all(p.map(function (x) { return send(x.name, x.records); }));
   };
 
+  function flushSavedBrowserSessions() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k) continue;
+        if (k === 'active_student_session' || k.indexOf('last_completed_session_') === 0) {
+          var raw = localStorage.getItem(k);
+          if (!raw) continue;
+          var parsed = JSON.parse(raw);
+          if (parsed && parsed.student && parsed.missions) {
+            var recs = B.buildCheckoutRecords(parsed.student, parsed.missions, today());
+            if (recs.length) {
+              send(cleanName(parsed.student), recs);
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
   B.init = function () {
     B.flushPending();
+    setTimeout(flushSavedBrowserSessions, 800);
     var localItems = localIndexItems();
     if (localItems) populateIndex(localItems);
     try { if (typeof renderBookList === 'function' && state.currentStudent) renderBookList(); } catch (e) { /* 무시 */ }
