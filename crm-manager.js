@@ -229,6 +229,18 @@ class CRMManager {
       };
     }
 
+    // Daily Briefing Popup (문자 발송 / 카톡 복사)
+    ["btnCrmDailyBriefing", "btnCrmDailyBriefingTop"].forEach(btnId => {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.onclick = () => {
+          const name = this.currentCrmStudentName;
+          if (!name) return;
+          this.app.smsManager.showDailyBriefingModal(name);
+        };
+      }
+    });
+
     // Save Member Analysis
     const saveBtn = document.getElementById("btnCrmSaveMemberAnalysis");
     if (saveBtn) {
@@ -1554,9 +1566,11 @@ class CRMManager {
     const container = document.getElementById("crmTimelineContainer");
     if (!container) return;
 
-    // 1. Gather logs from dailyLogs and accumulatedLogs
-    const dailyLogs = this.app.state.dailyLogs.filter(log => log.name === name);
-    const accumulatedLogs = this.app.state.accumulatedLogs.filter(log => log.name === name);
+    // 1. Gather logs from dailyLogs, accumulatedLogs, and 18-column learningRecords
+    const cleanTargetName = (name || "").replace(/\s+/g, "");
+    const dailyLogs = (this.app.state.dailyLogs || []).filter(log => (log.name || "").replace(/\s+/g, "") === cleanTargetName);
+    const accumulatedLogs = (this.app.state.accumulatedLogs || []).filter(log => (log.name || "").replace(/\s+/g, "") === cleanTargetName);
+    const learningRecs = (this.app.state.learningRecords || []).filter(r => (r.name || "").replace(/\s+/g, "") === cleanTargetName);
 
     const allLogs = [];
     
@@ -1594,6 +1608,56 @@ class CRMManager {
         grammarDone: log.grammarDone || log.specialClass || "",
         contents: log.contents || "",
         notes: log.notes || ""
+      });
+    });
+
+    // Group 18-column learningRecords by date and add to timeline
+    const recByDate = {};
+    learningRecs.forEach(r => {
+      const d = (r.date || "").slice(0, 10);
+      if (!d) return;
+      if (!recByDate[d]) recByDate[d] = [];
+      recByDate[d].push(r);
+    });
+    Object.keys(recByDate).forEach(dKey => {
+      const rows = recByDate[dKey];
+      const parts = [];
+      let hwTag = "";
+      let bookTag = "";
+      rows.forEach(r => {
+        if (r.hwStatus && !hwTag) hwTag = r.hwStatus;
+        if (r.book || r.vocabTotal || r.diagScore) {
+          const bName = r.book || "어휘학습";
+          if (!bookTag) bookTag = `${bName}${r.diagScore ? ` (${r.diagScore}점)` : ""}`;
+          let line = `📚 [${r.level || "독서"}] ${bName}`;
+          if (r.diagScore) line += ` · 진단 ${r.diagScore}점`;
+          if (r.vocabTotal) line += ` · 어휘 ${r.vocabCorrect || 0}/${r.vocabTotal}(${r.vocabRate || 0}%)`;
+          if (r.wrongWords) line += ` [오답: ${r.wrongWords}]`;
+          if (r.step2Memo) line += `\n  └ 독서발자국: ${r.step2Memo}`;
+          parts.push(line);
+        }
+        if (r.training) {
+          let tLine = `✏️ [${r.training}] ${r.detail || ""}`;
+          if (r.errors !== "" && r.errors !== undefined) tLine += ` (오답 ${r.errors}개)`;
+          if (r.understanding) tLine += ` · ${r.understanding}`;
+          if (r.literacyMemo) tLine += `\n  └ 문해력발자국: ${r.literacyMemo}`;
+          parts.push(tLine);
+        }
+        if (r.step1Memo) parts.push(`🌱 성실발자국: ${r.step1Memo}`);
+        if (r.reflection) parts.push(`💬 나의 기록: ${r.reflection}`);
+      });
+      allLogs.push({
+        isToday: false,
+        date: dKey,
+        time: "학습기록",
+        status: "수업완료",
+        inTime: "",
+        reason: "",
+        number: hwTag,
+        event: "",
+        grammarDone: bookTag,
+        contents: parts.join("\n"),
+        notes: ""
       });
     });
 

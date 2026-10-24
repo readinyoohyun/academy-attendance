@@ -427,7 +427,10 @@ class DashboardManager {
                     ${student.makeupMinsRemaining > 0 ? `<span style="background:rgba(16, 185, 129, 0.08); color:#047857; border:1px solid rgba(16, 185, 129, 0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">⏳ 잔여: ${student.makeupMinsRemaining}분</span>` : ''}
                     ${displayExtensionMins > 0 ? `<span style="background:rgba(13, 148, 136, 0.08); color:#0f766e; border:1px solid rgba(13, 148, 136, 0.2); padding:0.02rem 0.25rem; border-radius:3px; font-size:0.65rem; font-weight:700;">➕ 연장: ${displayExtensionMins}분</span>` : ''}
                   </div>
-                  ${typeClass === "in-class" ? `<button class="btn-complete-quick" style="background:#10b981; border:1px solid #059669; color:#ffffff; padding:0.2rem 0.4rem; border-radius:4px; font-size:0.75rem; font-weight:700; cursor:pointer; flex-shrink:0; z-index:10; transition:background 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">수업 완료</button>` : ''}
+                  <div style="display:flex; align-items:center; gap:0.3rem; flex-shrink:0; z-index:10;">
+                    ${typeClass === "in-class" ? `<button class="btn-complete-quick" style="background:#10b981; border:1px solid #059669; color:#ffffff; padding:0.2rem 0.4rem; border-radius:4px; font-size:0.75rem; font-weight:700; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">수업 완료</button>` : ''}
+                    ${(typeClass === "completed" || typeClass === "in-class") ? `<button class="btn-briefing-quick" style="background:rgba(37,99,235,0.12); border:1px solid rgba(37,99,235,0.3); color:#1d4ed8; padding:0.2rem 0.45rem; border-radius:4px; font-size:0.73rem; font-weight:700; cursor:pointer; transition:background 0.2s;" title="오늘 수업 브리핑 문자/카톡">📨 브리핑</button>` : ''}
+                  </div>
                 </div>
                 ${timerHtml}
               </div>
@@ -442,6 +445,11 @@ class DashboardManager {
             `;
           }
           card.addEventListener("click", (e) => {
+            if (e.target.classList.contains("btn-briefing-quick")) {
+              e.stopPropagation();
+              this.app.smsManager.showDailyBriefingModal(student.name);
+              return;
+            }
             if (e.target.classList.contains("btn-complete-quick")) {
               e.stopPropagation();
               this.handleCompleteQuickClick(student.id, isMakeup, targetDates.slashFormat, timeStr);

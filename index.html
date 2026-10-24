@@ -285,7 +285,8 @@
               </div>
               
               <!-- Quick Stats Summary -->
-              <div style="display: flex; gap: 1.5rem;">
+              <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+                <button id="btnCrmDailyBriefingTop" class="btn-primary" style="padding: 0.6rem 1.1rem; font-size: 0.9rem; font-weight: 700; background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); border-color: #60a5fa; color: #ffffff; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);">📨 오늘 수업 브리핑 발송</button>
                 <div style="text-align: center;">
                   <span style="display: block; font-size: 0.8rem; color: var(--text-muted);">이번 달 출석률</span>
                   <strong id="crmAttendanceRateText" style="font-size: 1.5rem; color: var(--color-regular);">92%</strong>
@@ -312,7 +313,8 @@
               <div class="glass-panel" style="padding: 1.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem;">
                   <h3 style="font-family: var(--font-title); font-size: 1.1rem; color: var(--accent); font-weight: 600;">📅 출결 현황 & 누적 기록</h3>
-                  <div style="display: flex; gap: 0.5rem;">
+                  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button id="btnCrmDailyBriefing" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(37, 99, 235, 0.2); border-color: rgba(59, 130, 246, 0.45); color: #93c5fd;">📨 오늘 수업 브리핑</button>
                     <button id="btnCrmMarkCheckIn" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: #34d399;">오늘 등원</button>
                     <button id="btnCrmAddMakeup" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(236, 72, 153, 0.15); border-color: rgba(236, 72, 153, 0.3); color: #f472b6;">보강 등록</button>
                     <button id="btnCrmMarkAbsent" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #f87171;">결석 등록</button>
@@ -540,34 +542,34 @@
                     </div>
                   </div>
 
-                  <!-- 11. 학생 특이사항 / 리드인 코칭 방향 / 글쓰기 방향 -->
+                  <!-- 11. 코칭 방향 & 주력 목표 (F열) -->
                   <div class="crm-accordion-item" id="accordion-crmMemberNotes">
                     <button type="button" class="crm-accordion-header">
-                      <span class="crm-accordion-label">🔍 학생 특이사항 & 코칭 방향</span>
+                      <span class="crm-accordion-label">🎯 코칭 방향 & 주력 목표 (F열)</span>
                       <span class="crm-accordion-preview" id="preview-crmMemberNotes">비어 있음</span>
                       <span class="crm-accordion-arrow">▼</span>
                     </button>
                     <div class="crm-accordion-content">
                       <div class="crm-accordion-display-box" id="display-box-crmMemberNotes" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 200px; overflow-y: auto;"></div>
                       <div class="form-group">
-                        <label for="crmMemberNotes" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
-                        <textarea id="crmMemberNotes" class="input-custom" rows="4" style="resize:vertical; padding:0.4rem;" placeholder="학생 세부 코칭 가이드 기입..."></textarea>
+                        <label for="crmMemberNotes" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기 (학생 영구 성향 · 코칭 방향 · 주력 목표)</label>
+                        <textarea id="crmMemberNotes" class="input-custom" rows="4" style="resize:vertical; padding:0.4rem;" placeholder="학생 고유 성향, 리드인/문해력 코칭 방향, 주력 목표 기입..."></textarea>
                       </div>
                     </div>
                   </div>
 
-                  <!-- 12. 진도 관리 -->
+                  <!-- 12. 이달의 학습 요약 전광판 & 최근 도서 (G열) -->
                   <div class="crm-accordion-item" id="accordion-crmMemberProgress">
                     <button type="button" class="crm-accordion-header">
-                      <span class="crm-accordion-label">📊 진도 관리</span>
+                      <span class="crm-accordion-label">📊 이달의 학습 요약 전광판 & 최근 도서 (G열)</span>
                       <span class="crm-accordion-preview" id="preview-crmMemberProgress">비어 있음</span>
                       <span class="crm-accordion-arrow">▼</span>
                     </button>
                     <div class="crm-accordion-content">
                       <div class="crm-accordion-display-box" id="display-box-crmMemberProgress" style="background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; margin-bottom: 0.8rem; padding: 0.5rem; max-height: 200px; overflow-y: auto;"></div>
                       <div class="form-group">
-                        <label for="crmMemberProgress" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기</label>
-                        <textarea id="crmMemberProgress" class="input-custom" rows="4" style="resize:vertical; padding:0.4rem;" placeholder="예: 25.1/8 3-1사랑으로세계인류치료한 50"></textarea>
+                        <label for="crmMemberProgress" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">✍️ 수정하기 (이달 요약 전광판 + 최근 도서 5권)</label>
+                        <textarea id="crmMemberProgress" class="input-custom" rows="4" style="resize:vertical; padding:0.4rem;" placeholder="예: 📊 [4월 요약] 도서 4권(진단 90점) · 어휘 92% · 트레이닝 6회"></textarea>
                       </div>
                     </div>
                   </div>
@@ -821,10 +823,11 @@
               </button>
             </div>
             <pre class="code-content" id="gasCodeBlock">
+
 function ensureColumns(sheet, requiredCols) {
   if (!sheet) return;
   var maxCols = sheet.getMaxColumns();
-  if (maxCols < requiredCols) {
+  if (maxCols &lt; requiredCols) {
     sheet.insertColumnsAfter(maxCols, requiredCols - maxCols);
   }
 }
@@ -840,7 +843,7 @@ function doGet(e) {
   var studentsData = [];
   if (sheetStudents) {
     var lastRow = sheetStudents.getLastRow();
-    if (lastRow > 1) {
+    if (lastRow &gt; 1) {
       ensureColumns(sheetStudents, 42);
       // Ensure makeup cols
       if (sheetStudents.getRange("AE1").getValue() !== "보강일시") sheetStudents.getRange("AE1").setValue("보강일시");
@@ -861,20 +864,20 @@ function doGet(e) {
       var studentMap = {};
       var keywords = ["국어", "세계사", "한국사", "독서", "문해력", "내신", "초등", "중등", "특강"];
       
-      for (var i = 0; i < data.length; i++) {
+      for (var i = 0; i &lt; data.length; i++) {
         var rowNum = 2 + i;
         var name = String(data[i][2] || "").trim();
         if (!name) continue;
         
         var lowerName = name.toLowerCase();
         var isGroupClass = false;
-        for (var k = 0; k < keywords.length; k++) {
+        for (var k = 0; k &lt; keywords.length; k++) {
           if (lowerName.indexOf(keywords[k]) !== -1) {
             isGroupClass = true;
             break;
           }
         }
-        if (isGroupClass || name.length > 8) continue;
+        if (isGroupClass || name.length &gt; 8) continue;
         
         var grade = String(data[i][1] || "").trim();
         var classes = String(data[i][3] || "").trim();
@@ -932,15 +935,15 @@ function doGet(e) {
   // 2. 출결보강관리 / 오늘 출석부 (dailyLogs)
   var candidateDailySheets = ["오늘 출석부", "출결보강관리", "오늘출석부"];
   var sheetDaily = null;
-  for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+  for (var cIdx = 0; cIdx &lt; candidateDailySheets.length; cIdx++) {
     var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
-    if (candidate && candidate.getLastRow() > 2) {
+    if (candidate &amp;&amp; candidate.getLastRow() &gt; 2) {
       sheetDaily = candidate;
       break;
     }
   }
   if (!sheetDaily) {
-    for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+    for (var cIdx = 0; cIdx &lt; candidateDailySheets.length; cIdx++) {
       var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
       if (candidate) { sheetDaily = candidate; break; }
     }
@@ -948,11 +951,11 @@ function doGet(e) {
   var dailyLogsData = [];
   if (sheetDaily) {
     var lastRow = sheetDaily.getLastRow();
-    if (lastRow > 2) {
+    if (lastRow &gt; 2) {
       ensureColumns(sheetDaily, 11);
       var range = sheetDaily.getRange(3, 1, lastRow - 2, 11); // 3행부터 읽기 (2행 템플릿 건너뜀)
       var data = range.getDisplayValues();
-      for (var i = 0; i < data.length; i++) {
+      for (var i = 0; i &lt; data.length; i++) {
         var name = String(data[i][2] || "").trim();
         if (!name) continue;
         dailyLogsData.push({
@@ -979,11 +982,11 @@ function doGet(e) {
   var textbooksData = [];
   if (sheetTextbooks) {
     var lastRow = sheetTextbooks.getLastRow();
-    if (lastRow > 1) {
+    if (lastRow &gt; 1) {
       ensureColumns(sheetTextbooks, 22);
       var range = sheetTextbooks.getRange(2, 1, lastRow - 1, 22);
       var data = range.getDisplayValues();
-      for (var i = 0; i < data.length; i++) {
+      for (var i = 0; i &lt; data.length; i++) {
         var name = String(data[i][1] || "").trim();
         if (!name) continue;
         textbooksData.push({
@@ -1021,11 +1024,11 @@ function doGet(e) {
   var consultationsData = [];
   if (sheetConsult) {
     var lastRow = sheetConsult.getLastRow();
-    if (lastRow > 1) {
+    if (lastRow &gt; 1) {
       ensureColumns(sheetConsult, 6);
       var range = sheetConsult.getRange(2, 1, lastRow - 1, 6); // Read 6 columns
       var data = range.getDisplayValues();
-      for (var i = 0; i < data.length; i++) {
+      for (var i = 0; i &lt; data.length; i++) {
         var name = String(data[i][1] || "").trim(); // Col B is name now
         if (!name) continue;
         consultationsData.push({
@@ -1042,16 +1045,16 @@ function doGet(e) {
     }
   }
 
-  // 5. 월별상담내역 (memberAnalysis)
-  var sheetMember = ss.getSheetByName("월별상담내역") || ss.getSheetByName("회원 분석/레벨변동/전화상담");
+  // 5. 월별상담내역 / 회원 분석 (memberAnalysis)
+  var sheetMember = getMemberAnalysisSheet(ss);
   var memberAnalysisData = [];
   if (sheetMember) {
     var lastRow = sheetMember.getLastRow();
-    if (lastRow > 1) {
+    if (lastRow &gt; 1) {
       ensureColumns(sheetMember, 16);
       var range = sheetMember.getRange(2, 1, lastRow - 1, 16);
       var data = range.getDisplayValues();
-      for (var i = 0; i < data.length; i++) {
+      for (var i = 0; i &lt; data.length; i++) {
         var name = String(data[i][1] || "").trim();
         if (!name) continue;
         memberAnalysisData.push({
@@ -1089,19 +1092,57 @@ function doGet(e) {
   var briefingsData = [];
   if (sheetBriefing) {
     var lastRow = sheetBriefing.getLastRow();
-    if (lastRow > 1) {
+    if (lastRow &gt; 1) {
       var lastCol = sheetBriefing.getLastColumn();
       var range = sheetBriefing.getRange(2, 1, lastRow - 1, lastCol);
       var data = range.getDisplayValues();
       
-      for (var i = 0; i < data.length; i++) {
+      for (var i = 0; i &lt; data.length; i++) {
         var rowValues = [];
-        for (var j = 0; j < lastCol; j++) {
+        for (var j = 0; j &lt; lastCol; j++) {
           rowValues.push(String(data[i][j] || "").trim());
         }
         briefingsData.push({
           row: 2 + i,
           values: rowValues
+        });
+      }
+    }
+  }
+
+  // 9. 학습기록 18열 (learningRecords - 최근 500행 원장앱 연동 및 수업 브리핑용)
+  var sheetRec = ss.getSheetByName(RECORD_SHEET);
+  var learningRecordsData = [];
+  if (sheetRec &amp;&amp; sheetRec.getLastRow() &gt;= 2) {
+    var h1Check = String(sheetRec.getRange(1, 1).getValue() || "").trim();
+    if (h1Check === "날짜") {
+      var lastRecRow = sheetRec.getLastRow();
+      var startRecRow = Math.max(2, lastRecRow - 499);
+      var recVals = sheetRec.getRange(startRecRow, 1, lastRecRow - startRecRow + 1, 18).getDisplayValues();
+      for (var rIdx = 0; rIdx &lt; recVals.length; rIdx++) {
+        var rv = recVals[rIdx];
+        var rName = String(rv[1] || "").trim();
+        if (!rName) continue;
+        learningRecordsData.push({
+          row: startRecRow + rIdx,
+          date: String(rv[0] || "").trim(),
+          name: rName,
+          hwStatus: String(rv[2] || "").trim(),
+          step1Memo: String(rv[3] || "").trim(),
+          level: String(rv[4] || "").trim(),
+          book: String(rv[5] || "").trim(),
+          vocabTotal: String(rv[6] || "").trim(),
+          vocabCorrect: String(rv[7] || "").trim(),
+          vocabRate: String(rv[8] || "").trim(),
+          diagScore: String(rv[9] || "").trim(),
+          step2Memo: String(rv[10] || "").trim(),
+          training: String(rv[11] || "").trim(),
+          detail: String(rv[12] || "").trim(),
+          errors: String(rv[13] || "").trim(),
+          understanding: String(rv[14] || "").trim(),
+          literacyMemo: String(rv[15] || "").trim(),
+          reflection: String(rv[16] || "").trim(),
+          wrongWords: String(rv[17] || "").trim()
         });
       }
     }
@@ -1115,7 +1156,8 @@ function doGet(e) {
     memberAnalysis: memberAnalysisData,
     attendanceLogs: attendanceLogsData,
     accumulatedLogs: accumulatedLogsData,
-    briefings: briefingsData
+    briefings: briefingsData,
+    learningRecords: learningRecordsData
   };
 
   return ContentService.createTextOutput(JSON.stringify(responseObj))
@@ -1129,7 +1171,7 @@ function isSameStudentNameInGAS(name1, name2) {
   if (c1 === c2) return true;
   var pure1 = c1.replace(/^[\d\.\-\_]+/, "");
   var pure2 = c2.replace(/^[\d\.\-\_]+/, "");
-  if (pure1 && pure2 && pure1 === pure2) return true;
+  if (pure1 &amp;&amp; pure2 &amp;&amp; pure1 === pure2) return true;
   return false;
 }
 
@@ -1137,12 +1179,12 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
   if (tab === "dailyLogs" || tab === "출결보강관리" || tab === "오늘 출석부" || tab === "오늘출석부") {
     var candidateDailySheets = ["오늘 출석부", "출결보강관리", "오늘출석부"];
     var sheet = null;
-    for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+    for (var cIdx = 0; cIdx &lt; candidateDailySheets.length; cIdx++) {
       var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
-      if (candidate && candidate.getLastRow() > 2) { sheet = candidate; break; }
+      if (candidate &amp;&amp; candidate.getLastRow() &gt; 2) { sheet = candidate; break; }
     }
     if (!sheet) {
-      for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+      for (var cIdx = 0; cIdx &lt; candidateDailySheets.length; cIdx++) {
         var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
         if (candidate) { sheet = candidate; break; }
       }
@@ -1153,13 +1195,13 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
       var targetRow = row;
 
       // [핵심 매칭] 일일 출석부 시트에서 학생 이름으로 최우선 검색 (날짜/시간 서식 차이 및 행 추가/삭제와 무관하게 학생 행 100% 제자리 매칭!)
-      if (sheet.getLastRow() > 2) {
+      if (sheet.getLastRow() &gt; 2) {
         var lastRow = sheet.getLastRow();
         var data = sheet.getRange(3, 1, lastRow - 2, 3).getDisplayValues(); // Col A (date), Col B (time), Col C (name)
         var matchedRow = -1;
         
         if (name) {
-          for (var i = 0; i < data.length; i++) {
+          for (var i = 0; i &lt; data.length; i++) {
             if (isSameStudentNameInGAS(data[i][2], name)) {
               matchedRow = 3 + i;
               break;
@@ -1169,7 +1211,7 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
 
         if (matchedRow !== -1) {
           targetRow = matchedRow;
-        } else if (targetRow >= 3 && targetRow <= lastRow) {
+        } else if (targetRow &gt;= 3 &amp;&amp; targetRow &lt;= lastRow) {
           // 이름으로 매칭되지 않았더라도 클라이언트가 넘겨준 row가 유효하면 해당 행 사용
           // (업데이트 작업 시 절대 lastRow + 1로 새 행을 추가하지 않음!)
         } else {
@@ -1183,7 +1225,7 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
         number: 8, event: 9, grammarDone: 10, contents: 11
       };
       var col = cols[field];
-      if (col && targetRow > 2) {
+      if (col &amp;&amp; targetRow &gt; 2) {
         var cell = sheet.getRange(targetRow, col);
         try {
           cell.setValue(value);
@@ -1298,7 +1340,7 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
           applyRichTextStyling(cell, value);
         } else {
           var checkVal = String(value).trim();
-          if (col === 8 && (checkVal.indexOf("코스업") !== -1 || checkVal.indexOf("레벨업") !== -1 || checkVal.indexOf("진로검사") !== -1)) {
+          if (col === 8 &amp;&amp; (checkVal.indexOf("코스업") !== -1 || checkVal.indexOf("레벨업") !== -1 || checkVal.indexOf("진로검사") !== -1)) {
             cell.setFontColor("#2563eb");
             cell.setFontWeight("bold");
           } else {
@@ -1320,16 +1362,16 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
       if (col) {
         var targetRow = row;
         // [Safety Guard] Verify student name at target row to strictly prevent overwriting another student
-        if (name && targetRow >= 3) {
+        if (name &amp;&amp; targetRow &gt;= 3) {
           var cleanExpectedName = String(name).trim().replace(/\s+/g, "");
           var currentNameAtRow = String(sheet.getRange(targetRow, 3).getValue() || "").trim().replace(/\s+/g, "");
-          if (currentNameAtRow && currentNameAtRow !== cleanExpectedName) {
+          if (currentNameAtRow &amp;&amp; currentNameAtRow !== cleanExpectedName) {
             // Row is occupied by another student! Search for this student's actual row
             var lastRow = sheet.getLastRow();
             var foundRow = -1;
-            if (lastRow >= 3) {
+            if (lastRow &gt;= 3) {
               var namesData = sheet.getRange(3, 3, lastRow - 2, 1).getValues();
-              for (var nIdx = 0; nIdx < namesData.length; nIdx++) {
+              for (var nIdx = 0; nIdx &lt; namesData.length; nIdx++) {
                 if (String(namesData[nIdx][0] || "").trim().replace(/\s+/g, "") === cleanExpectedName) {
                   foundRow = 3 + nIdx;
                   break;
@@ -1400,21 +1442,21 @@ function doPost(e) {
         var activityUrl = "";
         var postReadingUrl = "";
         
-        if (postData.images && postData.images.marathon) {
+        if (postData.images &amp;&amp; postData.images.marathon) {
           var marathonBase64 = postData.images.marathon.replace(/^data:image\/[a-z]+;base64,/, "");
           var blob1 = Utilities.newBlob(Utilities.base64Decode(marathonBase64), 'image/png', name + "_" + dateStr + "마라톤.png");
           var file1 = folder.createFile(blob1);
           file1.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
           marathonUrl = file1.getUrl();
         }
-        if (postData.images && postData.images.activity) {
+        if (postData.images &amp;&amp; postData.images.activity) {
           var activityBase64 = postData.images.activity.replace(/^data:image\/[a-z]+;base64,/, "");
           var blob2 = Utilities.newBlob(Utilities.base64Decode(activityBase64), 'image/png', name + "_" + dateStr + "독서활동.png");
           var file2 = folder.createFile(blob2);
           file2.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
           activityUrl = file2.getUrl();
         }
-        if (postData.images && postData.images.postReading) {
+        if (postData.images &amp;&amp; postData.images.postReading) {
           var postReadingBase64 = postData.images.postReading.replace(/^data:image\/[a-z]+;base64,/, "");
           var blob3 = Utilities.newBlob(Utilities.base64Decode(postReadingBase64), 'image/png', name + "_" + dateStr + "독후활동.png");
           var file3 = folder.createFile(blob3);
@@ -1437,10 +1479,10 @@ function doPost(e) {
         if (sheetMember) {
           var memberRowIdx = -1;
           var memberLastRow = sheetMember.getLastRow();
-          if (memberLastRow > 1) {
+          if (memberLastRow &gt; 1) {
             var memberNames = sheetMember.getRange(1, 2, memberLastRow, 1).getValues(); // Column B
             var matchName = name.replace(/\s+/g, "").toLowerCase();
-            for (var rIdx = 1; rIdx < memberNames.length; rIdx++) {
+            for (var rIdx = 1; rIdx &lt; memberNames.length; rIdx++) {
               var sheetName = String(memberNames[rIdx][0]).replace(/\s+/g, "").toLowerCase();
               if (sheetName === matchName) {
                 memberRowIdx = rIdx + 1;
@@ -1456,7 +1498,7 @@ function doPost(e) {
             var speedVal = postData.textData.readingSpeed || "-";
             var compVal = postData.textData.comprehensionScore || "-";
             var newValMember = dateStr + " 분석표 " + statusLabel + " (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
-            if (oldValMember && String(oldValMember).trim() !== "") {
+            if (oldValMember &amp;&amp; String(oldValMember).trim() !== "") {
               newValMember = newValMember + "\n" + oldValMember;
             }
             cellMember.setValue(newValMember);
@@ -1467,11 +1509,11 @@ function doPost(e) {
         var sheetBriefing = ss.getSheetByName("신규브리핑관리") || ss.getSheetByName("신규 브리핑 관리");
         if (sheetBriefing) {
           var briefingLastCol = sheetBriefing.getLastColumn();
-          if (briefingLastCol > 0) {
+          if (briefingLastCol &gt; 0) {
             var headers = sheetBriefing.getRange(1, 1, 1, briefingLastCol).getValues()[0];
             var currentMonth = (new Date().getMonth() + 1) + "월"; // 예: "8월"
             var targetColIdx = -1;
-            for (var colIdx = 0; colIdx < headers.length; colIdx++) {
+            for (var colIdx = 0; colIdx &lt; headers.length; colIdx++) {
               var headerVal = String(headers[colIdx]).trim();
               if (headerVal.indexOf(currentMonth) !== -1 || headerVal === String(new Date().getMonth() + 1)) {
                 targetColIdx = colIdx + 1; // 1-based index
@@ -1481,11 +1523,11 @@ function doPost(e) {
             
             if (targetColIdx !== -1) {
               var briefingLastRow = sheetBriefing.getLastRow();
-              if (briefingLastRow > 1) {
+              if (briefingLastRow &gt; 1) {
                 var briefingNames = sheetBriefing.getRange(1, 2, briefingLastRow, 1).getValues(); // Column B
                 var matchName = name.replace(/\s+/g, "").toLowerCase();
                 var briefingRowIdx = -1;
-                for (var rIdx = 1; rIdx < briefingNames.length; rIdx++) {
+                for (var rIdx = 1; rIdx &lt; briefingNames.length; rIdx++) {
                   var sheetName = String(briefingNames[rIdx][0]).replace(/\s+/g, "").toLowerCase();
                   if (sheetName === matchName) {
                     briefingRowIdx = rIdx + 1;
@@ -1500,7 +1542,7 @@ function doPost(e) {
                   var speedVal = postData.textData.readingSpeed || "-";
                   var compVal = postData.textData.comprehensionScore || "-";
                   var newValBriefing = dateStr + " 분석표 " + statusLabel + " (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
-                  if (oldValBriefing && String(oldValBriefing).trim() !== "") {
+                  if (oldValBriefing &amp;&amp; String(oldValBriefing).trim() !== "") {
                     newValBriefing = newValBriefing + "\n" + oldValBriefing;
                   }
                   cellBriefing.setValue(newValBriefing);
@@ -1526,7 +1568,7 @@ function doPost(e) {
     } 
     else if (postData.action === "batchUpdate") {
       var updates = postData.updates || [];
-      for (var i = 0; i < updates.length; i++) {
+      for (var i = 0; i &lt; updates.length; i++) {
         var u = updates[i];
         processSingleUpdate(ss, u.tab || "students", parseInt(u.row), u.field, u.value, u.name, u.date, u.time);
       }
@@ -1563,12 +1605,12 @@ function doPost(e) {
     else if (postData.action === "addDailyLog") {
       var candidateDailySheets = ["오늘 출석부", "출결보강관리", "오늘출석부"];
       var sheet = null;
-      for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+      for (var cIdx = 0; cIdx &lt; candidateDailySheets.length; cIdx++) {
         var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
-        if (candidate && candidate.getLastRow() > 2) { sheet = candidate; break; }
+        if (candidate &amp;&amp; candidate.getLastRow() &gt; 2) { sheet = candidate; break; }
       }
       if (!sheet) {
-        for (var cIdx = 0; cIdx < candidateDailySheets.length; cIdx++) {
+        for (var cIdx = 0; cIdx &lt; candidateDailySheets.length; cIdx++) {
           var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
           if (candidate) { sheet = candidate; break; }
         }
@@ -1586,9 +1628,9 @@ function doPost(e) {
       var targetRow = -1;
 
       // 1. 이미 시트 위쪽 시간표에 동일한 학생이 배정/등록되어 있는지 검색! (중복 생성 절대 방어)
-      if (postData.name && lastRow >= 3) {
+      if (postData.name &amp;&amp; lastRow &gt;= 3) {
         var existingNames = sheet.getRange(3, 3, lastRow - 2, 1).getDisplayValues();
-        for (var nIdx = 0; nIdx < existingNames.length; nIdx++) {
+        for (var nIdx = 0; nIdx &lt; existingNames.length; nIdx++) {
           if (isSameStudentNameInGAS(existingNames[nIdx][0], postData.name)) {
             targetRow = 3 + nIdx;
             break;
@@ -1633,9 +1675,9 @@ function doPost(e) {
       }
       
       var lastRow = sheet.getLastRow();
-      var data = lastRow > 1 ? sheet.getRange(2, 2, lastRow - 1, 1).getValues() : [];
+      var data = lastRow &gt; 1 ? sheet.getRange(2, 2, lastRow - 1, 1).getValues() : [];
       var foundRow = -1;
-      for (var i = 0; i < data.length; i++) {
+      for (var i = 0; i &lt; data.length; i++) {
         if (String(data[i][0]).trim() === postData.name.trim()) {
           foundRow = 2 + i;
           break;
@@ -1674,7 +1716,7 @@ function doPost(e) {
       var sheet = ss.getSheetByName("상담내용/리포트발송/채널발송") || ss.getSheetByName("학부모상담/채널발송");
       if (!sheet) {
         var sheets = ss.getSheets();
-        for (var i = 0; i < sheets.length; i++) {
+        for (var i = 0; i &lt; sheets.length; i++) {
           var sName = sheets[i].getName();
           if (sName.indexOf("상담내용") !== -1 || sName.indexOf("리포트발송") !== -1 || sName.indexOf("학부모상담") !== -1) {
             sheet = sheets[i];
@@ -1692,7 +1734,7 @@ function doPost(e) {
       sheet.insertRowBefore(2);
       
       var now = new Date();
-      var pad = function(n) { return (n < 10 ? "0" : "") + n; };
+      var pad = function(n) { return (n &lt; 10 ? "0" : "") + n; };
       var yyyy = String(now.getFullYear());
       var mm = String(now.getMonth() + 1);
       var dd = pad(now.getDate());
@@ -1785,7 +1827,7 @@ function doPost(e) {
           };
           if (alts[tabName]) sheet = ss.getSheetByName(alts[tabName]);
         }
-        if (sheet && row > 1 && row <= sheet.getLastRow()) {
+        if (sheet &amp;&amp; row &gt; 1 &amp;&amp; row &lt;= sheet.getLastRow()) {
           sheet.deleteRow(row);
         }
       }
@@ -1798,7 +1840,7 @@ function doPost(e) {
   }
 }
 
-// 학년 순위를 계산하는 헬퍼 함수 (초1~6 -> 중1~3 -> 고1~3 순서 정렬용)
+// 학년 순위를 계산하는 헬퍼 함수 (초1~6 -&gt; 중1~3 -&gt; 고1~3 순서 정렬용)
 function getGradeRank(gradeStr) {
   if (!gradeStr) return 99;
   var match = gradeStr.match(/(초|중|고|대|유)?\s*(\d+)/);
@@ -1856,7 +1898,7 @@ function generateDailyAttendance() {
   var today = new Date();
   var currentHour = parseInt(Utilities.formatDate(today, "Asia/Seoul", "H"), 10);
   // 만약 저녁 6시(18시) 이후라면 내일 시간표를 미리 생성합니다.
-  if (currentHour >= 18) {
+  if (currentHour &gt;= 18) {
     today = new Date(today.getTime() + 24 * 60 * 60 * 1000);
   }
   
@@ -1878,20 +1920,20 @@ function generateDailyAttendance() {
   
   var lastRowDaily = sheetDaily.getLastRow();
   
-  var validationE2 = lastRowDaily >= 2 ? sheetDaily.getRange("E2").getDataValidation() : null;
-  var validationG2 = lastRowDaily >= 2 ? sheetDaily.getRange("G2").getDataValidation() : null;
-  var validationH2 = lastRowDaily >= 2 ? sheetDaily.getRange("H2").getDataValidation() : null;
-  var validationI2 = lastRowDaily >= 2 ? sheetDaily.getRange("I2").getDataValidation() : null;
+  var validationE2 = lastRowDaily &gt;= 2 ? sheetDaily.getRange("E2").getDataValidation() : null;
+  var validationG2 = lastRowDaily &gt;= 2 ? sheetDaily.getRange("G2").getDataValidation() : null;
+  var validationH2 = lastRowDaily &gt;= 2 ? sheetDaily.getRange("H2").getDataValidation() : null;
+  var validationI2 = lastRowDaily &gt;= 2 ? sheetDaily.getRange("I2").getDataValidation() : null;
   
   // [중복 백업 및 삭제 방지 안전장치]
   // 3행의 날짜 정보가 오늘 날짜와 같다면, 이미 오늘자 시간표가 생성된 상태이므로 실행을 스킵합니다.
-  if (lastRowDaily >= 3) {
+  if (lastRowDaily &gt;= 3) {
     var checkDateVal = String(sheetDaily.getRange(3, 1).getValue()).trim();
     var checkDateMatch = checkDateVal.match(/(\d+)[\/\.](\d+)/);
     if (checkDateMatch) {
       var checkM = parseInt(checkDateMatch[1], 10);
       var checkD = parseInt(checkDateMatch[2], 10);
-      if (checkM === m && checkD === d) {
+      if (checkM === m &amp;&amp; checkD === d) {
         Logger.log("출결보강관리가 이미 생성되어 작동 중입니다. 중복 백업 및 초기화를 건너뜁니다.");
         return;
       }
@@ -1899,7 +1941,7 @@ function generateDailyAttendance() {
   }
   
   // 2행은 고정해 두고, 3행 이하 기존 데이터를 '학생수업관리'로 백업 후 지움
-  if (lastRowDaily >= 3) {
+  if (lastRowDaily &gt;= 3) {
     var sheetAccumulated = ss.getSheetByName("학생수업관리") || ss.getSheetByName("누적일일수업관리");
     if (!sheetAccumulated) {
       sheetAccumulated = ss.insertSheet("학생수업관리");
@@ -1925,31 +1967,31 @@ function generateDailyAttendance() {
     var maxRows = sheetDaily.getMaxRows();
     var frozenRows = sheetDaily.getFrozenRows();
     var rowsToDelete = lastRowDaily - 2;
-    if (rowsToDelete >= maxRows - frozenRows) {
+    if (rowsToDelete &gt;= maxRows - frozenRows) {
       sheetDaily.insertRowsAfter(maxRows, 1);
     }
     sheetDaily.deleteRows(3, rowsToDelete);
   }
   
   var lastRowSt = sheetStudents.getLastRow();
-  if (lastRowSt < 2) return;
+  if (lastRowSt &lt; 2) return;
   
   var studentsData = sheetStudents.getRange(2, 1, lastRowSt - 1, 36).getDisplayValues();
   var dailyLogsToAdd = [];
   
-  for (var i = 0; i < studentsData.length; i++) {
+  for (var i = 0; i &lt; studentsData.length; i++) {
     var name = String(studentsData[i][2] || "").trim();
     if (!name) continue;
     
     var keywords = ["국어", "세계사", "한국사", "독서", "문해력", "내신", "초등", "중등", "특강"];
     var isGroup = false;
-    for (var k = 0; k < keywords.length; k++) {
+    for (var k = 0; k &lt; keywords.length; k++) {
       if (name.indexOf(keywords[k]) !== -1) {
         isGroup = true;
         break;
       }
     }
-    if (isGroup || name.length > 8) continue;
+    if (isGroup || name.length &gt; 8) continue;
     
     var grade = String(studentsData[i][1] || "").trim();
     var notes = String(studentsData[i][10] || "").trim();
@@ -1972,13 +2014,13 @@ function generateDailyAttendance() {
     var makeupTime = "";
     if (makeupDateStr) {
       var parts = makeupDateStr.split(/[\n,\r]+/);
-      for (var pIdx = 0; pIdx < parts.length; pIdx++) {
+      for (var pIdx = 0; pIdx &lt; parts.length; pIdx++) {
         var part = parts[pIdx].trim();
         if (!part) continue;
         var cleanPart = part.replace(/\s+/g, " ");
         
         // 1. Weekly repeating makeup (e.g. "금요일 14:30" or "금 14:30")
-        if (cleanPart.indexOf("/") === -1 && cleanPart.indexOf(".") === -1 && cleanPart.indexOf("-") === -1) {
+        if (cleanPart.indexOf("/") === -1 &amp;&amp; cleanPart.indexOf(".") === -1 &amp;&amp; cleanPart.indexOf("-") === -1) {
           var wMatch = cleanPart.match(/(월요일|화요일|수요일|목요일|금요일|토요일|일요일|월|화|수|목|금|토|일)\s*(\d{1,2}:\d{2})/);
           if (wMatch) {
             var mDay = wMatch[1];
@@ -1997,7 +2039,7 @@ function generateDailyAttendance() {
         if (koDateMatch) {
           var matchM = parseInt(koDateMatch[1], 10);
           var matchD = parseInt(koDateMatch[2], 10);
-          if (matchM === m && matchD === d) {
+          if (matchM === m &amp;&amp; matchD === d) {
             isMakeupToday = true;
             var tMatch = cleanPart.match(/(\d{1,2}:\d{2})/);
             makeupTime = tMatch ? tMatch[1] : "";
@@ -2021,7 +2063,7 @@ function generateDailyAttendance() {
             matchD = val2;
           }
           
-          if (matchM === m && matchD === d) {
+          if (matchM === m &amp;&amp; matchD === d) {
             isMakeupToday = true;
             var tMatch = cleanPart.match(/(\d{1,2}:\d{2})/);
             makeupTime = tMatch ? tMatch[1] : "";
@@ -2036,10 +2078,10 @@ function generateDailyAttendance() {
     var regTime = times[todayDayName] || "";
     if (regTime) {
       var parts = regTime.split(/[,/; ]+/);
-      for (var p = 0; p < parts.length; p++) {
+      for (var p = 0; p &lt; parts.length; p++) {
         var t = parts[p].trim();
         if (t) {
-          var reasonStr = isAbsentToday ? "정규 결석" : (todayExtensionMinsVal > 0 ? "연장 (" + todayExtensionMinsVal + "분)" : "");
+          var reasonStr = isAbsentToday ? "정규 결석" : (todayExtensionMinsVal &gt; 0 ? "연장 (" + todayExtensionMinsVal + "분)" : "");
           dailyLogsToAdd.push({
             time: t, name: name, grade: grade, status: isAbsentToday ? "결석" : "대기", reason: reasonStr, notes: notes
           });
@@ -2060,13 +2102,13 @@ function generateDailyAttendance() {
         var alreadyCompletedToday = false;
         if (sheetDaily) {
           var lastRowDaily = sheetDaily.getLastRow();
-          if (lastRowDaily >= 2) {
+          if (lastRowDaily &gt;= 2) {
             var dailyData = sheetDaily.getRange(2, 1, lastRowDaily - 1, 6).getValues();
-            for (var dIdx = 0; dIdx < dailyData.length; dIdx++) {
+            for (var dIdx = 0; dIdx &lt; dailyData.length; dIdx++) {
               var dDate = String(dailyData[dIdx][0]).trim();
               var dName = String(dailyData[dIdx][2]).trim();
               var dStatus = String(dailyData[dIdx][4]).trim();
-              if (dName === name && isSameDateGAS(dDate, m + "/" + d + dayShort) && (dStatus === "수업완료" || dStatus === "보강완료")) {
+              if (dName === name &amp;&amp; isSameDateGAS(dDate, m + "/" + d + dayShort) &amp;&amp; (dStatus === "수업완료" || dStatus === "보강완료")) {
                 alreadyCompletedToday = true;
                 break;
               }
@@ -2079,7 +2121,7 @@ function generateDailyAttendance() {
         }
       }
       
-      if (makeupCompleted !== "완료" && makeupCompleted !== "보강완료") {
+      if (makeupCompleted !== "완료" &amp;&amp; makeupCompleted !== "보강완료") {
         var isDuplicateTime = regTimesAdded.some(function(rt) {
           return rt.replace(/\s+/g, "") === makeupTime.replace(/\s+/g, "");
         });
@@ -2101,11 +2143,11 @@ function generateDailyAttendance() {
     return a.name.localeCompare(b.name);
   });
   
-  if (dailyLogsToAdd.length > 0) {
+  if (dailyLogsToAdd.length &gt; 0) {
     // 3행부터 밀어넣기 시작
     var writeRange = sheetDaily.getRange(3, 1, dailyLogsToAdd.length, 11);
     var writeValues = [];
-    for (var j = 0; j < dailyLogsToAdd.length; j++) {
+    for (var j = 0; j &lt; dailyLogsToAdd.length; j++) {
       writeValues.push([
         dateStr, dailyLogsToAdd[j].time, dailyLogsToAdd[j].name, dailyLogsToAdd[j].notes,
         dailyLogsToAdd[j].status, "", dailyLogsToAdd[j].reason, "", "", "", ""
@@ -2127,7 +2169,7 @@ function generateWeeklyTimetable() {
   var sheetStudents = ss.getSheetByName("전체시간표") || ss.getSheetByName("전체 시간표");
   if (!sheetStudents) return;
   var lastRowSt = sheetStudents.getLastRow();
-  if (lastRowSt < 2) return;
+  if (lastRowSt &lt; 2) return;
   
   var studentsData = sheetStudents.getRange(2, 1, lastRowSt - 1, 32).getDisplayValues();
   
@@ -2158,7 +2200,7 @@ function generateWeeklyTimetable() {
     var hr = parseInt(match[1], 10);
     var min = parseInt(match[2], 10);
     if (isNaN(hr) || isNaN(min)) return null;
-    if (min >= 0 && min < 30) {
+    if (min &gt;= 0 &amp;&amp; min &lt; 30) {
       min = 0;
     } else {
       min = 30;
@@ -2182,13 +2224,13 @@ function generateWeeklyTimetable() {
     var numMatch = grade.match(/\d+/);
     if (numMatch) {
       var num = parseInt(numMatch[0], 10);
-      if (num <= 3) return "초등저";
-      if (num <= 6) return "초등고";
+      if (num &lt;= 3) return "초등저";
+      if (num &lt;= 6) return "초등고";
     }
     return "초등저";
   }
   
-  for (var i = 0; i < studentsData.length; i++) {
+  for (var i = 0; i &lt; studentsData.length; i++) {
     var name = String(studentsData[i][2] || "").trim();
     var grade = String(studentsData[i][1] || "").trim();
     var classes = String(studentsData[i][3] || "").trim();
@@ -2196,13 +2238,13 @@ function generateWeeklyTimetable() {
     
     var keywords = ["국어", "세계사", "한국사", "독서", "문해력", "내신", "초등", "중등", "특강"];
     var isGroup = false;
-    for (var k = 0; k < keywords.length; k++) {
+    for (var k = 0; k &lt; keywords.length; k++) {
       if (name.indexOf(keywords[k]) !== -1) {
         isGroup = true;
         break;
       }
     }
-    if (isGroup || name.length > 8) continue;
+    if (isGroup || name.length &gt; 8) continue;
     
     var cat = getCategory(grade, classes, name);
     
@@ -2212,7 +2254,7 @@ function generateWeeklyTimetable() {
       if (!timeCell) continue;
       
       var timeParts = timeCell.split(/[,/; ]+/);
-      for (var tp = 0; tp < timeParts.length; tp++) {
+      for (var tp = 0; tp &lt; timeParts.length; tp++) {
         var rawTime = timeParts[tp].trim();
         if (!rawTime) continue;
         
@@ -2234,7 +2276,7 @@ function generateWeeklyTimetable() {
     }
   }
   
-  // 요일별/시간대별/카테고리별 학생 목록을 학년 순 -> 이름 순으로 정렬
+  // 요일별/시간대별/카테고리별 학생 목록을 학년 순 -&gt; 이름 순으로 정렬
   for (var key in timetableMap) {
     timetableMap[key].sort(function(a, b) {
       var rankA = getGradeRank(a.grade);
@@ -2248,7 +2290,7 @@ function generateWeeklyTimetable() {
   var grid = [];
   
   var titleRow = [];
-  for (var c = 0; c < 30; c++) {
+  for (var c = 0; c &lt; 30; c++) {
     titleRow.push(c === 0 ? "♣ 오늘 시간표 (학생 정원 파악 보드) - 정원 12명 제한" : "");
   }
   grid.push(titleRow);
@@ -2291,16 +2333,16 @@ function generateWeeklyTimetable() {
       CATEGORIES.forEach(function(cat) {
         var key = day + "_" + timeSlot + "_" + cat;
         var students = timetableMap[key] || [];
-        if (students.length > maxRowsForSlot) {
+        if (students.length &gt; maxRowsForSlot) {
           maxRowsForSlot = students.length;
         }
       });
     });
     
     // 2. 최대 학생 수만큼 행(Row) 생성하여 셀마다 학생 1명씩 배치
-    for (var r = 0; r < maxRowsForSlot; r++) {
+    for (var r = 0; r &lt; maxRowsForSlot; r++) {
       var row = [r === 0 ? timeSlot : ""];
-      for (var c = 1; c < 30; c++) {
+      for (var c = 1; c &lt; 30; c++) {
         row.push("");
       }
       
@@ -2347,7 +2389,7 @@ function generateWeeklyTimetable() {
     }
     
     // 시간 컬럼 A열 병합 정보 기록
-    if (maxRowsForSlot > 1) {
+    if (maxRowsForSlot &gt; 1) {
       mergesToApply.push({
         row: currentRowIdx - maxRowsForSlot,
         col: 1,
@@ -2356,7 +2398,7 @@ function generateWeeklyTimetable() {
       });
     }
     
-    // 3. 정원 초과 계산 (한 시간대 당일 총원 > 12)
+    // 3. 정원 초과 계산 (한 시간대 당일 총원 &gt; 12)
     var warnings = [];
     var exceedDayIndices = [];
     WEEKDAYS.forEach(function(day, dayIdx) {
@@ -2367,13 +2409,13 @@ function generateWeeklyTimetable() {
         totalInSlot += students.length;
       });
       
-      if (totalInSlot > 12) {
+      if (totalInSlot &gt; 12) {
         warnings.push(day.substring(0, 1) + ":" + totalInSlot + "명");
         exceedDayIndices.push(dayIdx);
       }
     });
     
-    if (warnings.length > 0) {
+    if (warnings.length &gt; 0) {
       var warningRow = currentRowIdx - maxRowsForSlot;
       warningStyles.push({
         row: warningRow,
@@ -2384,8 +2426,8 @@ function generateWeeklyTimetable() {
       // 초과한 요일의 4개 열 전체 행 영역을 연한 빨간색 경고 색상으로 오버라이드
       exceedDayIndices.forEach(function(dayIdx) {
         var startCol = 2 + dayIdx * 5; // 1-based col
-        for (var rIdx = currentRowIdx - maxRowsForSlot; rIdx < currentRowIdx; rIdx++) {
-          for (var colIdx = startCol; colIdx < startCol + 4; colIdx++) {
+        for (var rIdx = currentRowIdx - maxRowsForSlot; rIdx &lt; currentRowIdx; rIdx++) {
+          for (var colIdx = startCol; colIdx &lt; startCol + 4; colIdx++) {
             cellColorStyles.push({
               row: rIdx,
               col: colIdx,
@@ -2424,10 +2466,10 @@ function generateWeeklyTimetable() {
   var backgrounds = [];
   var fontColors = [];
   
-  for (var r = 0; r < totalBodyRows; r++) {
+  for (var r = 0; r &lt; totalBodyRows; r++) {
     var bgRow = [];
     var fgRow = [];
-    for (var c = 0; c < 30; c++) {
+    for (var c = 0; c &lt; 30; c++) {
       if (c === 0) {
         bgRow.push("#f8fafc"); // 시간 컬럼
         fgRow.push("#64748b");
@@ -2447,7 +2489,7 @@ function generateWeeklyTimetable() {
   cellColorStyles.forEach(function(style) {
     var rIdx = style.row - 4; // 0-indexed body row
     var cIdx = style.col - 1; // 0-indexed column
-    if (rIdx >= 0 && rIdx < totalBodyRows && cIdx >= 0 && cIdx < 30) {
+    if (rIdx &gt;= 0 &amp;&amp; rIdx &lt; totalBodyRows &amp;&amp; cIdx &gt;= 0 &amp;&amp; cIdx &lt; 30) {
       if (style.bg) backgrounds[rIdx][cIdx] = style.bg;
       if (style.fg) fontColors[rIdx][cIdx] = style.fg;
     }
@@ -2456,8 +2498,8 @@ function generateWeeklyTimetable() {
   // 경고 표시 셀 A열 오버라이드
   warningStyles.forEach(function(w) {
     var rIdx = w.row - 4;
-    if (rIdx >= 0 && rIdx < totalBodyRows) {
-      for (var k = 0; k < w.numRows; k++) {
+    if (rIdx &gt;= 0 &amp;&amp; rIdx &lt; totalBodyRows) {
+      for (var k = 0; k &lt; w.numRows; k++) {
         backgrounds[rIdx + k][0] = "#fee2e2";
         fontColors[rIdx + k][0] = "#991b1b";
       }
@@ -2481,15 +2523,15 @@ function generateWeeklyTimetable() {
   });
   
   // 5. 열 넓이 및 정렬 서식 마무리
-  for (var index = 0; index < 5; index++) {
+  for (var index = 0; index &lt; 5; index++) {
     var col = 6 + index * 5;
     sheetWeekly.setColumnWidth(col, 15);
   }
   
   sheetWeekly.setColumnWidth(1, 140);
-  for (var index = 0; index < 6; index++) {
+  for (var index = 0; index &lt; 6; index++) {
     var colStart = 2 + index * 5;
-    for (var cOffset = 0; cOffset < 4; cOffset++) {
+    for (var cOffset = 0; cOffset &lt; 4; cOffset++) {
       sheetWeekly.setColumnWidth(colStart + cOffset, 95);
     }
   }
@@ -2517,7 +2559,7 @@ function setupSheetsAndHeaders() {
     if (sheetStudents.getRange("AJ1").getValue() !== "오늘 연장(분)") sheetStudents.getRange("AJ1").setValue("오늘 연장(분)");
     
     var lastRowSt = sheetStudents.getLastRow();
-    if (lastRowSt >= 2) {
+    if (lastRowSt &gt;= 2) {
       sheetStudents.getRange(2, 35, lastRowSt - 1, 1).setFormulaR1C1("=RC[-2]-RC[-1]");
     }
   }
@@ -2569,15 +2611,18 @@ function setupSheetsAndHeaders() {
     sheetConsult.getRange(1, 1, 1, 6).setValues([["학년", "이름", "작성기간", "작성인", "상담내용 / 분석지 / 채널 보냄", "부모님의 need / 학생 특이사항"]]);
   }
   
-  var sheetMember = ss.getSheetByName("월별상담내역") || ss.getSheetByName("회원 분석/레벨변동/전화상담");
+  var sheetMember = getMemberAnalysisSheet(ss);
   if (!sheetMember) {
     sheetMember = ss.insertSheet("월별상담내역");
     sheetMember.appendRow([
-      "순번", "이름", "학년", "등록일", "상담/채널", "학생 특이 사항\n리드인 코칭 방향\n글쓰기 방향",
-      "진도 관리\n(날짜. 제목. 진단점수)", "교과지수 / 로켓\n코스업 / 레벨업\n진로검사", "레벨\n일시변동",
+      "순번", "이름", "학년", "등록일", "상담/채널", "코칭 방향 &amp; 주력 목표",
+      "이달의 학습 요약 전광판 &amp; 최근 도서", "교과지수 / 로켓\n코스업 / 레벨업\n진로검사", "레벨\n일시변동",
       "훈민정음 /\n글쓰기 교재", "읽트 /독트\n시작일,마침일 기록", "목표달성\n스티커판\n명예의 전당",
       "분석지 발송", "독서\n방법", "아이디"
     ]);
+  } else {
+    sheetMember.getRange(1, 6).setValue("코칭 방향 &amp; 주력 목표");
+    sheetMember.getRange(1, 7).setValue("이달의 학습 요약 전광판 &amp; 최근 도서");
   }
   
   var sheetLogs = ss.getSheetByName("누적출결데이터");
@@ -2650,7 +2695,7 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   
   // 1. 5행 이하 모든 데이터 및 서식 초기화
   var lastRow = sheet.getLastRow();
-  if (lastRow >= 5) {
+  if (lastRow &gt;= 5) {
     sheet.getRange(5, 1, lastRow - 4, 26).clear();
     sheet.getRange(5, 1, lastRow - 4, 26).clearFormat();
   }
@@ -2672,8 +2717,8 @@ function updateSingleSearchSheetLayout(sheet, studentName) {
   sheet.getRange("A5:Z5").setBackground("#2e7d32").setFontColor("#ffffff").setFontWeight("bold").setFontSize(11);
   
   var header1 = [
-    "순번", "이름", "학년", "등록일", "상담/채널", "학생 특이 사항\n리드인 코칭 방향\n글쓰기 방향", 
-    "진도 관리\n(날짜. 제목. 진단점수)", "교과지수 / 로켓\n코스업 / 레벨업\n진로검사", "레벨\n일시변동", 
+    "순번", "이름", "학년", "등록일", "상담/채널", "코칭 방향 &amp; 주력 목표", 
+    "이달의 학습 요약 전광판 &amp; 최근 도서", "교과지수 / 로켓\n코스업 / 레벨업\n진로검사", "레벨\n일시변동", 
     "훈민정음 /\n글쓰기 교재", "읽트 /독트\n시작일,마침일 기록", "목표달성\n스티커판\n명예의 전당", 
     "분석지 발송", "독서\n방법", "아이디"
   ];
@@ -2729,7 +2774,7 @@ function updateAttendanceCalendarSheet(sheet, studentName, year, month) {
   
   // 1. 5행 이하 전체 삭제 및 초기화
   var lastRow = sheet.getLastRow();
-  if (lastRow >= 5) {
+  if (lastRow &gt;= 5) {
     sheet.getRange(5, 1, lastRow - 4, 7).clear();
     sheet.getRange(5, 1, lastRow - 4, 7).clearFormat();
   }
@@ -2741,7 +2786,7 @@ function updateAttendanceCalendarSheet(sheet, studentName, year, month) {
        .setHorizontalAlignment("center")
        .setVerticalAlignment("middle");
        
-  for (var c = 1; c <= 7; c++) {
+  for (var c = 1; c &lt;= 7; c++) {
     sheet.setColumnWidth(c, 110);
   }
   
@@ -2755,9 +2800,9 @@ function updateAttendanceCalendarSheet(sheet, studentName, year, month) {
   // 오늘 출석부에서 수집
   if (sheetDaily) {
     var lastDaily = sheetDaily.getLastRow();
-    if (lastDaily > 2) {
+    if (lastDaily &gt; 2) {
       var dailyData = sheetDaily.getRange(3, 1, lastDaily - 2, 11).getDisplayValues();
-      for (var i = 0; i < dailyData.length; i++) {
+      for (var i = 0; i &lt; dailyData.length; i++) {
         var rowName = String(dailyData[i][2] || "").trim();
         if (rowName.replace(/\s+/g, '') === studentName.replace(/\s+/g, '')) {
           logs.push({
@@ -2774,12 +2819,12 @@ function updateAttendanceCalendarSheet(sheet, studentName, year, month) {
   // 누적일일수업관리에서 수집
   if (sheetAccum) {
     var lastAccum = sheetAccum.getLastRow();
-    if (lastAccum > 1) {
+    if (lastAccum &gt; 1) {
       // 최근 3000행만 조회 (로딩 속도 보존)
       var startRow = Math.max(2, lastAccum - 3000);
       var numRows = lastAccum - startRow + 1;
       var accumData = sheetAccum.getRange(startRow, 1, numRows, 11).getDisplayValues();
-      for (var i = 0; i < accumData.length; i++) {
+      for (var i = 0; i &lt; accumData.length; i++) {
         var rowName = String(accumData[i][2] || "").trim();
         if (rowName.replace(/\s+/g, '') === studentName.replace(/\s+/g, '')) {
           logs.push({
@@ -2802,16 +2847,16 @@ function updateAttendanceCalendarSheet(sheet, studentName, year, month) {
   var gridCol = startDayOfWeek + 1;
   
   // 달력 행 높이 설정 (정사각형 느낌)
-  for (var r = 5; r <= 11; r++) {
+  for (var r = 5; r &lt;= 11; r++) {
     sheet.setRowHeight(r, 65);
   }
   
   // 이전 달 빈 칸 연한 회색 배경 처리
-  if (startDayOfWeek > 0) {
+  if (startDayOfWeek &gt; 0) {
     sheet.getRange(5, 1, 1, startDayOfWeek).setBackground("#f8fafc");
   }
   
-  for (var day = 1; day <= numDays; day++) {
+  for (var day = 1; day &lt;= numDays; day++) {
     var cell = sheet.getRange(gridRow, gridCol);
     var cellText = day + "\n";
     
@@ -2819,7 +2864,7 @@ function updateAttendanceCalendarSheet(sheet, studentName, year, month) {
     var matchingLog = null;
     var datePattern = new RegExp('^' + month + '[/\\.]' + day + '(\\D|$)');
     
-    for (var l = 0; l < logs.length; l++) {
+    for (var l = 0; l &lt; logs.length; l++) {
       if (datePattern.test(logs[l].date)) {
         matchingLog = logs[l];
         break;
@@ -2859,17 +2904,17 @@ function updateAttendanceCalendarSheet(sheet, studentName, year, month) {
         .setVerticalAlignment("top");
         
     gridCol++;
-    if (gridCol > 7) {
+    if (gridCol &gt; 7) {
       gridCol = 1;
       gridRow++;
     }
   }
   
   // 다음 달 빈 칸 연한 회색 배경 처리
-  if (gridCol <= 7) {
+  if (gridCol &lt;= 7) {
     sheet.getRange(gridRow, gridCol, 1, 8 - gridCol).setBackground("#f8fafc");
   }
-  if (gridRow < 10) {
+  if (gridRow &lt; 10) {
     sheet.getRange(gridRow + 1, 1, 10 - gridRow, 7).setBackground("#f8fafc");
   }
   
@@ -2894,11 +2939,11 @@ function countMatchingRows(sheetName, nameColIdx, studentName) {
   }
   if (!sheet) return 0;
   var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return 0;
+  if (lastRow &lt; 2) return 0;
   var data = sheet.getRange(2, nameColIdx, lastRow - 1, 1).getValues();
   var count = 0;
   var target = String(studentName || "").trim().toLowerCase();
-  for (var i = 0; i < data.length; i++) {
+  for (var i = 0; i &lt; data.length; i++) {
     if (String(data[i][0]).trim().toLowerCase() === target) {
       count++;
     }
@@ -2910,13 +2955,13 @@ function getMemberAnalysisSheet(ss) {
   var s = ss.getSheetByName("회원 분석/레벨변동/전화상담") || ss.getSheetByName("회원분석/레벨변동/전화상담") || ss.getSheetByName("월별상담내역") || ss.getSheetByName("회원 분석") || ss.getSheetByName("회원분석");
   if (s) return s;
   var sheets = ss.getSheets();
-  for (var i = 0; i < sheets.length; i++) {
+  for (var i = 0; i &lt; sheets.length; i++) {
     var sName = sheets[i].getName();
-    if (sName.indexOf("회원") !== -1 && sName.indexOf("분석") !== -1) {
+    if (sName.indexOf("회원") !== -1 &amp;&amp; sName.indexOf("분석") !== -1) {
       return sheets[i];
     }
   }
-  for (var i = 0; i < sheets.length; i++) {
+  for (var i = 0; i &lt; sheets.length; i++) {
     var sName = sheets[i].getName();
     if (sName.indexOf("상담내역") !== -1 || sName.indexOf("회원") !== -1) {
       return sheets[i];
@@ -2942,7 +2987,7 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
   if (!name) return;
 
   // Auto-populate today's date in Col A if empty
-  if (!dateStr && (numVal || eventVal || grammarDoneVal || contentsVal)) {
+  if (!dateStr &amp;&amp; (numVal || eventVal || grammarDoneVal || contentsVal)) {
     var today = new Date();
     var weekdays = ["일", "월", "화", "수", "목", "금", "토"];
     var todayDay = weekdays[today.getDay()];
@@ -2951,13 +2996,13 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
   }
 
   var memberLastRow = sheetMember.getLastRow();
-  if (memberLastRow < 2) return;
+  if (memberLastRow &lt; 2) return;
   var memberNames = sheetMember.getRange(2, 2, memberLastRow - 1, 1).getValues();
   var memberRowIndex = -1;
   var targetCleanName = name.replace(/\s+/g, '');
-  for (var i = 0; i < memberNames.length; i++) {
+  for (var i = 0; i &lt; memberNames.length; i++) {
     var cleanMemberName = String(memberNames[i][0] || '').replace(/\s+/g, '');
-    if (cleanMemberName && cleanMemberName === targetCleanName) {
+    if (cleanMemberName &amp;&amp; cleanMemberName === targetCleanName) {
       memberRowIndex = 2 + i;
       break;
     }
@@ -2990,7 +3035,6 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
   var maxLen = Math.max(numLines.length, eventLines.length);
 
   var groupMap = {
-    6: [],
     7: [],
     8: [],
     10: [],
@@ -2998,16 +3042,13 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
     12: []
   };
 
-  // Parse contents (Col K) into groupMap[6]
-  var contentsLines = contentsVal ? contentsVal.split(/[\r\n]+/).map(function(s) { return s.trim(); }).filter(Boolean) : [];
-  for (var cIdx = 0; cIdx < contentsLines.length; cIdx++) {
-    groupMap[6].push(eventDatePrefix + " " + contentsLines[cIdx]);
-  }
+  // [핵심 개편] F열(6열: 코칭 방향 &amp; 주력 목표)에는 더 이상 일일 수업내용(K열)을 누적하지 않습니다.
+  // 일일 수업 활동은 18열 [학습기록] 시트에 정밀 기록되며, F열은 영구 코칭 방향·성향 메모 전용으로 보존합니다.
 
-  for (var idx = 0; idx < maxLen; idx++) {
+  for (var idx = 0; idx &lt; maxLen; idx++) {
     var num = numLines[idx] || "";
     var ev = eventLines[idx] || "";
-    if (!num && !ev) continue;
+    if (!num &amp;&amp; !ev) continue;
 
     var textToAppend = eventDatePrefix;
     if (num) textToAppend += " " + num;
@@ -3034,7 +3075,7 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
   }
 
   // Parse Column J (grammarDone) items
-  for (var g = 0; g < grammarLines.length; g++) {
+  for (var g = 0; g &lt; grammarLines.length; g++) {
     var item = grammarLines[g];
     var isCompletion = (item.indexOf("글완") !== -1 || item.indexOf("글쓰기완") !== -1 || item.indexOf("완료") !== -1);
     var hasDigit = /\d+/.test(item);
@@ -3050,35 +3091,32 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
       if (currentProgress) {
         var lines = currentProgress.split("\n");
         var found = false;
-        for (var lIdx = 0; lIdx < lines.length; lIdx++) {
+        for (var lIdx = 0; lIdx &lt; lines.length; lIdx++) {
           var lineNoSpaces = lines[lIdx].replace(/\s+/g, "").toLowerCase();
-          if (cleanBookNoSpaces && lineNoSpaces.indexOf(cleanBookNoSpaces) !== -1) {
+          if (cleanBookNoSpaces &amp;&amp; lineNoSpaces.indexOf(cleanBookNoSpaces) !== -1) {
             found = true;
             var newLine = lines[lIdx];
             if (/\d+/.test(cleanBookAndScore)) {
-              // If user specified score today, update to today's date and score
               newLine = eventDatePrefix + " " + cleanBookAndScore + " 글완";
             } else {
-              // Otherwise just append " 글완" if not already present
-              if (lines[lIdx].indexOf("글완") === -1 && lines[lIdx].indexOf("글쓰기완") === -1 && lines[lIdx].indexOf("완료") === -1) {
+              if (lines[lIdx].indexOf("글완") === -1 &amp;&amp; lines[lIdx].indexOf("글쓰기완") === -1 &amp;&amp; lines[lIdx].indexOf("완료") === -1) {
                 newLine = lines[lIdx] + " 글완";
               }
             }
             lines[lIdx] = newLine;
-            // If it starts with today's date, push to groupMap[7] to prevent deletion in writeback
             if (newLine.trim().indexOf(eventDatePrefix) === 0) {
               groupMap[7].push(newLine);
             }
           }
         }
-        if (!found && cleanBookNoSpaces) {
+        if (!found &amp;&amp; cleanBookNoSpaces) {
           var newLine = eventDatePrefix + " " + cleanBookAndScore + " 글완";
           lines.push(newLine);
           groupMap[7].push(newLine);
           found = true;
-        } else if (!found && !cleanBookNoSpaces && lines.length > 0) {
+        } else if (!found &amp;&amp; !cleanBookNoSpaces &amp;&amp; lines.length &gt; 0) {
           var lastLine = lines[lines.length - 1];
-          if (lastLine.indexOf("글완") === -1 && lastLine.indexOf("글쓰기완") === -1 && lastLine.indexOf("완료") === -1) {
+          if (lastLine.indexOf("글완") === -1 &amp;&amp; lastLine.indexOf("글쓰기완") === -1 &amp;&amp; lastLine.indexOf("완료") === -1) {
             var newLine = lastLine + " 글완";
             if (newLine.trim().indexOf(eventDatePrefix) === 0) {
               groupMap[7].push(newLine);
@@ -3093,7 +3131,6 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
         groupMap[7].push(textToSet);
       }
     } else if (hasDigit) {
-      // Prepend date if not present
       var datePattern = /^\d+[\./]\d+/;
       var textToAppend = "";
       if (datePattern.test(item)) {
@@ -3109,23 +3146,37 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
     }
   }
 
-  var targetCols = [6, 7, 8, 10, 11, 12];
-  for (var c = 0; c < targetCols.length; c++) {
+  var summaryHeaderLine = buildMemberSummaryBoardLine_(ss, name);
+  var targetCols = [7, 8, 10, 11, 12];
+  for (var c = 0; c &lt; targetCols.length; c++) {
     var colNum = targetCols[c];
     var cell = sheetMember.getRange(memberRowIndex, colNum);
     var currentContent = String(cell.getValue() || "").trim();
     var lines = currentContent ? currentContent.split("\n") : [];
     
     var filteredLines = [];
-    for (var l = 0; l < lines.length; l++) {
-      if (lines[l].trim().indexOf(eventDatePrefix) !== 0) {
+    for (var l = 0; l &lt; lines.length; l++) {
+      var ln = lines[l].trim();
+      if (!ln) continue;
+      if (colNum === 7 &amp;&amp; ln.indexOf("📊") === 0) continue; // 기존 요약 전광판 줄은 최신으로 교체
+      if (ln.indexOf(eventDatePrefix) !== 0) {
         filteredLines.push(lines[l]);
       }
     }
 
     var newEventsToday = groupMap[colNum];
-    for (var n = 0; n < newEventsToday.length; n++) {
+    for (var n = 0; n &lt; newEventsToday.length; n++) {
       filteredLines.push(newEventsToday[n]);
+    }
+
+    // G열(7열: 이달의 학습 요약 전광판 &amp; 최근 도서)은 최근 도서 5줄까지만 유지 + 상단에 요약 전광판 1줄 배치
+    if (colNum === 7) {
+      if (filteredLines.length &gt; 5) {
+        filteredLines = filteredLines.slice(filteredLines.length - 5);
+      }
+      if (summaryHeaderLine) {
+        filteredLines.unshift(summaryHeaderLine);
+      }
     }
 
     var newContent = filteredLines.join("\n");
@@ -3142,7 +3193,7 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
         currentContent = newContent;
       }
       var checkVal = String(cell.getValue() || "").trim();
-      if (colNum === 8 && (checkVal.indexOf("코스업") !== -1 || checkVal.indexOf("레벨업") !== -1 || checkVal.indexOf("진로검사") !== -1)) {
+      if (colNum === 8 &amp;&amp; (checkVal.indexOf("코스업") !== -1 || checkVal.indexOf("레벨업") !== -1 || checkVal.indexOf("진로검사") !== -1)) {
         cell.setFontColor("#2563eb");
         cell.setFontWeight("bold");
       } else {
@@ -3151,6 +3202,63 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
       }
     }
   }
+}
+
+// [학습기록] 18열 시트에서 해당 학생의 이번 달 요약 1줄 생성 (G열 전광판 상단 표시용)
+function buildMemberSummaryBoardLine_(ss, studentName) {
+  var rs = ss.getSheetByName(RECORD_SHEET);
+  if (!rs || rs.getLastRow() &lt; 2) return "";
+  var h1 = String(rs.getRange(1, 1).getValue() || "").trim();
+  if (h1 !== "날짜") return "";
+  var cleanTarget = String(studentName || "").replace(/\s+/g, "");
+  if (!cleanTarget) return "";
+
+  var now = new Date();
+  var ymPrefix = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM");
+  var mm = now.getMonth() + 1;
+
+  var last = rs.getLastRow();
+  var startRow = Math.max(2, last - 800);
+  var vals = rs.getRange(startRow, 1, last - startRow + 1, 18).getValues();
+
+  var bookSet = {};
+  var diagScores = [];
+  var vocabRates = [];
+  var trCount = 0;
+
+  for (var i = 0; i &lt; vals.length; i++) {
+    var v = vals[i];
+    var rName = String(v[1] || "").replace(/\s+/g, "");
+    if (rName !== cleanTarget) continue;
+    var dStr = vocabFmtDate_(v[0]);
+    if (dStr.indexOf(ymPrefix) !== 0) continue;
+
+    var bk = String(v[5] || "").trim();
+    if (bk) bookSet[bk] = true;
+    var vr = vocabNum_(v[8]);
+    if (vr !== "") vocabRates.push(vr);
+    var ds = vocabNum_(v[9]);
+    if (ds !== "") diagScores.push(ds);
+    var tr = String(v[11] || "").trim();
+    if (tr) trCount++;
+  }
+
+  var bookCount = Object.keys(bookSet).length;
+  if (!bookCount &amp;&amp; !vocabRates.length &amp;&amp; !diagScores.length &amp;&amp; !trCount) return "";
+
+  var parts = [];
+  if (bookCount || diagScores.length) {
+    var avgDiag = diagScores.length ? Math.round(diagScores.reduce(function(a, b) { return a + b; }, 0) / diagScores.length) : "-";
+    parts.push("도서 " + bookCount + "권" + (avgDiag !== "-" ? "(진단 " + avgDiag + "점)" : ""));
+  }
+  if (vocabRates.length) {
+    var avgVoc = Math.round(vocabRates.reduce(function(a, b) { return a + b; }, 0) / vocabRates.length);
+    parts.push("어휘 " + avgVoc + "%");
+  }
+  if (trCount) {
+    parts.push("트레이닝 " + trCount + "회");
+  }
+  return "📊 [" + mm + "월 요약] " + parts.join(" · ");
 }
 
 // Google Sheets mixed text color styling function (completed books styled blue and bold line-by-line)
@@ -3179,7 +3287,7 @@ function applyRichTextStyling(cell, text) {
     
   var currentIndex = 0;
   var hasStyledLine = false;
-  for (var i = 0; i < lines.length; i++) {
+  for (var i = 0; i &lt; lines.length; i++) {
     var line = lines[i];
     var lineLength = line.length;
     try {
@@ -3210,8 +3318,8 @@ function isSameDateGAS(d1, d2) {
   if (clean1 === clean2) return true;
   var m1 = clean1.match(/(\d+)[^\d]+(\d+)/);
   var m2 = clean2.match(/(\d+)[^\d]+(\d+)/);
-  if (m1 && m2) {
-    return parseInt(m1[1], 10) === parseInt(m2[1], 10) && 
+  if (m1 &amp;&amp; m2) {
+    return parseInt(m1[1], 10) === parseInt(m2[1], 10) &amp;&amp; 
            parseInt(m1[2], 10) === parseInt(m2[2], 10);
   }
   return false;
@@ -3224,7 +3332,7 @@ function onEdit(e) {
   var sheet = range.getSheet();
   var sheetName = sheet.getName();
   
-  if (sheetName === "한명 검색" && range.getA1Notation() === "B3") {
+  if (sheetName === "한명 검색" &amp;&amp; range.getA1Notation() === "B3") {
     var studentName = String(range.getValue()).trim();
     updateSingleSearchSheetLayout(sheet, studentName);
   }
@@ -3252,7 +3360,7 @@ function onEdit(e) {
       } else {
         statusRange.setValue("");
       }
-    } else if (col === 12 && row > 1) { // L열 (결석일자)
+    } else if (col === 12 &amp;&amp; row &gt; 1) { // L열 (결석일자)
       var val = String(range.getValue()).trim();
       var dates = val ? val.split(",").map(function(d) { return d.trim(); }).filter(Boolean) : [];
       var count = dates.length;
@@ -3287,17 +3395,17 @@ function onEdit(e) {
     var endRow = range.getLastRow();
     
     // 1. 구글 시트에서 직접 등원여부(E열/5열)를 변경할 때 등원시간(F열/6열) 자동 기입 및 결석일자 동기화
-    if (startCol <= 7 && endCol >= 5) {
+    if (startCol &lt;= 7 &amp;&amp; endCol &gt;= 5) {
       var ss = SpreadsheetApp.getActiveSpreadsheet();
       var sheetStudents = ss.getSheetByName("전체시간표") || ss.getSheetByName("전체 시간표");
-      for (var r = startRow; r <= endRow; r++) {
-        if (r > 1) {
+      for (var r = startRow; r &lt;= endRow; r++) {
+        if (r &gt; 1) {
           var statusCell = sheet.getRange(r, 5);
           var timeCell = sheet.getRange(r, 6);
           var statusVal = String(statusCell.getValue()).trim();
           var studentName = String(sheet.getRange(r, 3).getValue()).trim();
           
-          if ((statusVal === "수업중" || statusVal === "수업 중" || statusVal === "보강 수업중") && !timeCell.getValue()) {
+          if ((statusVal === "수업중" || statusVal === "수업 중" || statusVal === "보강 수업중") &amp;&amp; !timeCell.getValue()) {
             var now = new Date();
             var timeStr = Utilities.formatDate(now, "Asia/Seoul", "HH:mm");
             timeCell.setValue(timeStr);
@@ -3306,12 +3414,12 @@ function onEdit(e) {
           }
 
           // 결석일자 전체시간표 연동 로직
-          if (studentName && sheetStudents) {
+          if (studentName &amp;&amp; sheetStudents) {
             var lastRowSt = sheetStudents.getLastRow();
-            if (lastRowSt >= 2) {
+            if (lastRowSt &gt;= 2) {
               var studentNames = sheetStudents.getRange(2, 3, lastRowSt - 1, 1).getValues();
               var studentRowIndex = -1;
-              for (var sIdx = 0; sIdx < studentNames.length; sIdx++) {
+              for (var sIdx = 0; sIdx &lt; studentNames.length; sIdx++) {
                 if (String(studentNames[sIdx][0]).trim() === studentName) {
                   studentRowIndex = 2 + sIdx;
                   break;
@@ -3335,7 +3443,7 @@ function onEdit(e) {
 
                 if (statusVal === "결석") {
                   var alreadyExists = false;
-                  for (var i = 0; i < datesList.length; i++) {
+                  for (var i = 0; i &lt; datesList.length; i++) {
                     if (datesList[i].replace(/\s+/g, "").indexOf(formattedAbsence.replace(/\s+/g, "")) !== -1) {
                       alreadyExists = true;
                       break;
@@ -3373,7 +3481,7 @@ function onEdit(e) {
                   var cleanAbsence = formattedAbsence.replace(/~/g, "").replace(/\s+/g, "");
                   var filteredList = [];
                   var modified = false;
-                  for (var i = 0; i < datesList.length; i++) {
+                  for (var i = 0; i &lt; datesList.length; i++) {
                     var cleanItem = datesList[i].replace(/~/g, "").replace(/\s+/g, "");
                     if (cleanItem.indexOf(cleanAbsence) === -1) {
                       filteredList.push(datesList[i]);
@@ -3424,9 +3532,9 @@ function onEdit(e) {
     }
     
     // 2. 숫자, 이벤트 등 입력 시 회원 분석 시트로 자동 누적
-    if (startCol <= 11 && endCol >= 8) {
-      for (var r = startRow; r <= endRow; r++) {
-        if (r > 1) {
+    if (startCol &lt;= 11 &amp;&amp; endCol &gt;= 8) {
+      for (var r = startRow; r &lt;= endRow; r++) {
+        if (r &gt; 1) {
           accumulateDailyEventToMemberAnalysis(sheet, r);
         }
       }
@@ -3445,9 +3553,11 @@ function onOpen() {
     .addItem("5. 매일 밤 9시 30분 자동 생성 설정", "createDailyAttendanceTrigger")
     .addItem("6. 오늘 출석부 보강 은행 미차감 정산", "runMakeupBankRecovery")
     .addItem("7. 오늘 출석부 ➔ 회원 분석 수동 전체 누적 동기화", "syncTodayDailyEventsToMemberAnalysis")
-    .addItem("8. 어휘 시트 초기 셋업 (학습기록·학생분석표)", "vocabSetupSheets")
+    .addItem("8. 어휘·학습기록(18열)·학생분석표 셋업 및 자동변환", "vocabSetupSheets")
     .addItem("9. 오답 복습지 PDF 만들기 (학생분석표 기준)", "vocabMakeReviewPdf")
     .addItem("10. 어휘 갱신 (학생앱에 반영)", "vocabBumpVersion")
+    .addItem("11. 📨 오늘 수업 브리핑 문구 창 띄우기", "showDailyBriefingModal")
+    .addItem("12. 회원 분석 시트 다이어트 (F·G열 정리 &amp; 학습기록 이관)", "migrateMemberAnalysisToLearningRecords")
     .addToUi();
 }
 
@@ -3460,9 +3570,9 @@ function syncTodayDailyEventsToMemberAnalysis() {
     return;
   }
   var lastRow = sheetDaily.getLastRow();
-  if (lastRow < 2) return;
+  if (lastRow &lt; 2) return;
   var count = 0;
-  for (var r = 2; r <= lastRow; r++) {
+  for (var r = 2; r &lt;= lastRow; r++) {
     accumulateDailyEventToMemberAnalysis(sheetDaily, r);
     count++;
   }
@@ -3472,7 +3582,7 @@ function syncTodayDailyEventsToMemberAnalysis() {
 // 매일 밤 9시 30분(오후 9~10시 사이)에 내일 출석부를 자동으로 생성하도록 트리거 등록하는 함수
 function createDailyAttendanceTrigger() {
   var triggers = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < triggers.length; i++) {
+  for (var i = 0; i &lt; triggers.length; i++) {
     if (triggers[i].getHandlerFunction() === "generateDailyAttendance") {
       ScriptApp.deleteTrigger(triggers[i]);
     }
@@ -3494,26 +3604,26 @@ function processMakeupBankOnSheetEdit(sheet, r) {
   var studentName = String(sheet.getRange(r, 3).getValue()).trim();
   
   if (!studentName) return;
-  if (statusVal !== "수업완료" && statusVal !== "보강완료") return;
+  if (statusVal !== "수업완료" &amp;&amp; statusVal !== "보강완료") return;
   if (!reasonVal) return;
   if (reasonVal.indexOf("[차감완료]") !== -1) return;
   
   var isMakeup = (reasonVal === "보강 수업");
   var isExtension = (reasonVal.indexOf("연장 (") === 0);
   
-  if (!isMakeup && !isExtension) return;
+  if (!isMakeup &amp;&amp; !isExtension) return;
   
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheetStudents = ss.getSheetByName("전체시간표") || ss.getSheetByName("전체 시간표");
   if (!sheetStudents) return;
   
   var lastRowSt = sheetStudents.getLastRow();
-  if (lastRowSt < 2) return;
+  if (lastRowSt &lt; 2) return;
   
   var studentData = sheetStudents.getRange(2, 1, lastRowSt - 1, 36).getValues();
   var studentRowIndex = -1;
   var studentRowData = null;
-  for (var sIdx = 0; sIdx < studentData.length; sIdx++) {
+  for (var sIdx = 0; sIdx &lt; studentData.length; sIdx++) {
     if (String(studentData[sIdx][2]).trim() === studentName) {
       studentRowIndex = 2 + sIdx;
       studentRowData = studentData[sIdx];
@@ -3549,7 +3659,7 @@ function processMakeupBankOnSheetEdit(sheet, r) {
     addedMins = matchExt ? parseInt(matchExt[0], 10) : 0;
   }
   
-  if (addedMins <= 0) return;
+  if (addedMins &lt;= 0) return;
   
   var newMakeupMinsDone = currentMakeupMinsDone + addedMins;
   
@@ -3559,11 +3669,11 @@ function processMakeupBankOnSheetEdit(sheet, r) {
   var targetStrikethroughsCount = Math.floor(newMakeupMinsDone / baseDuration);
   var updatedDates = [];
   var strikedCount = 0;
-  for (var i = 0; i < datesList.length; i++) {
+  for (var i = 0; i &lt; datesList.length; i++) {
     var item = datesList[i];
-    var isStriked = (item.indexOf("~~") === 0 && item.slice(-2) === "~~");
+    var isStriked = (item.indexOf("~~") === 0 &amp;&amp; item.slice(-2) === "~~");
     var cleanDate = isStriked ? item.slice(2, -2) : item;
-    if (strikedCount < targetStrikethroughsCount) {
+    if (strikedCount &lt; targetStrikethroughsCount) {
       updatedDates.push("~~" + cleanDate + "~~");
       strikedCount++;
     } else {
@@ -3581,7 +3691,7 @@ function processMakeupBankOnSheetEdit(sheet, r) {
   if (isMakeup) {
     sheetStudents.getRange(studentRowIndex, 32).setValue("보강완료");
   }
-  if (isExtension || todayExtensionMins > 0) {
+  if (isExtension || todayExtensionMins &gt; 0) {
     sheetStudents.getRange(studentRowIndex, 36).setValue(0);
   }
   
@@ -3597,11 +3707,11 @@ function runMakeupBankRecovery() {
   // 1. 전체시간표의 결석일자(L열)가 적혀있는 모든 학생의 AG열(결석누적) 및 AI열(보강잔여) 전수 자동 계산
   if (sheetStudents) {
     var lastRowSt = sheetStudents.getLastRow();
-    for (var s = 2; s <= lastRowSt; s++) {
+    for (var s = 2; s &lt;= lastRowSt; s++) {
       var absentDatesStr = String(sheetStudents.getRange(s, 12).getValue() || "").trim(); // Col L (결석일자)
       if (absentDatesStr) {
         var datesList = absentDatesStr.split(",").map(function(d) { return d.trim(); }).filter(Boolean);
-        if (datesList.length > 0) {
+        if (datesList.length &gt; 0) {
           var classesStr = String(sheetStudents.getRange(s, 4).getValue() || "");
           var grade = String(sheetStudents.getRange(s, 2).getValue() || "");
           var baseDuration = 60;
@@ -3633,12 +3743,12 @@ function runMakeupBankRecovery() {
   var count = 0;
   if (sheet) {
     var lastRow = sheet.getLastRow();
-    if (lastRow >= 2) {
-      for (var r = 2; r <= lastRow; r++) {
+    if (lastRow &gt;= 2) {
+      for (var r = 2; r &lt;= lastRow; r++) {
         var statusVal = String(sheet.getRange(r, 5).getValue()).trim();
         var reasonVal = String(sheet.getRange(r, 7).getValue()).trim();
         
-        if ((statusVal === "수업완료" || statusVal === "보강완료") && reasonVal && reasonVal.indexOf("[차감완료]") === -1) {
+        if ((statusVal === "수업완료" || statusVal === "보강완료") &amp;&amp; reasonVal &amp;&amp; reasonVal.indexOf("[차감완료]") === -1) {
           if (reasonVal === "보강 수업" || reasonVal.indexOf("연장 (") === 0) {
             try {
               processMakeupBankOnSheetEdit(sheet, r);
@@ -3666,8 +3776,17 @@ var VOCAB_SHEET = "어휘";
 var RECORD_SHEET = "학습기록";
 var ANALYSIS_SHEET = "학생분석표";
 var VOCAB_HEADERS = ["어휘ID", "구분", "책", "도서ID", "어휘", "활용형", "뜻", "예문", "출처", "사용"];
-var RECORD_HEADERS = ["일시", "날짜", "이름", "종류", "구분", "책", "문제수", "처음정답수", "정답률(%)", "진단점수", "트레이닝", "권수·차시", "오답개수", "이해도", "틀린어휘", "상세(JSON)", "기록ID"];
+// [18열 개편 확정] A~R열 (시간·상세JSON·기록ID 제거, 첫 줄 가로 병합 + 추가 활동 시 2·3번째 줄 확장)
+var RECORD_HEADERS = [
+  "날짜", "이름", "숙제현황", "성실발자국", "레벨구분", "도서명/어휘학습",
+  "어휘문제", "어휘정답", "어휘정답률", "진단점수", "독서발자국",
+  "트레이닝", "권수/차시", "오답개수", "이해도", "문해력발자국",
+  "나의 시간, 나의 기록", "틀린어휘"
+];
 var VOCAB_LEVELS = ["기초", "1레벨", "2레벨", "3레벨", "4레벨", "5레벨", "6레벨", "초1~2", "초3~4", "초5~6", "중1~3"];
+var HW_STATUS_LIST = ["숙제완료", "숙제미완", "미지참", "학원에서풀기"];
+var TRAINING_TYPE_LIST = ["읽기트레이닝", "독해트레이닝", "듣기트레이닝", "문해력트레이닝", "오답수정+선지분석", "독해밀도", "개념밀도"];
+var UNDERSTANDING_LIST = ["잘 이해했어요", "보통이에요", "아직 헷갈려요"];
 
 function vocabJson_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
@@ -3679,12 +3798,50 @@ function vocabNum_(v) {
   return isFinite(n) ? n : "";
 }
 
-function vocabParseDate_(s) {
-  var str = String(s || "");
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-    return Utilities.parseDate(str, Session.getScriptTimeZone(), "yyyy-MM-dd");
+// 오답 개수 문자열 결합 버그('10/2' -&gt; 102, '10080') 방지 파서
+function vocabParseErrorNum_(v) {
+  if (v === "" || v === null || v === undefined) return "";
+  if (typeof v === "number") return (v &gt;= 0 &amp;&amp; v &lt;= 100) ? v : 0;
+  var s = String(v).trim();
+  if (!s) return "";
+  var slashMatch = s.match(/^\s*(\d+)\s*\/\s*(\d+)/);
+  if (slashMatch) {
+    var n1 = parseInt(slashMatch[1], 10);
+    var n2 = parseInt(slashMatch[2], 10);
+    if (n2 &lt;= n1 &amp;&amp; n2 &lt; 50) return n2;
+    return n1 &lt; 50 ? n1 : 0;
   }
-  return new Date();
+  var jungMatch = s.match(/중\s*(\d+)/);
+  if (jungMatch) return parseInt(jungMatch[1], 10) || 0;
+  var numMatch = s.match(/(\d+)/);
+  if (!numMatch) return "";
+  var val = parseInt(numMatch[1], 10);
+  if (isNaN(val)) return "";
+  // 기존에 잘못 들어간 '10080', '101' 같은 비정상 오답수 자동 보정
+  if (val &gt; 50) {
+    if (s.length === 3 &amp;&amp; s.charAt(0) === "1" &amp;&amp; s.charAt(1) === "0") return parseInt(s.charAt(2), 10);
+    return 0;
+  }
+  return val;
+}
+
+function vocabParseDate_(s) {
+  if (s instanceof Date) return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+  var str = String(s || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    return Utilities.parseDate(str.substring(0, 10), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  }
+  var now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function vocabFmtDate_(d) {
+  if (!(d instanceof Date)) d = vocabParseDate_(d);
+  return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd");
+}
+
+function vocabNormBook_(s) {
+  return String(s || "").replace(/\[[^\]]*\]/g, "").replace(/\s+/g, "").toLowerCase();
 }
 
 // ---------- 어휘 읽기 (학생앱이 요청) ----------
@@ -3793,39 +3950,415 @@ function handleVocabGet(e) {
   return vocabJson_(out);
 }
 
-// ---------- 학습기록 저장 (학생앱이 전송) ----------
+// ---------- 학습기록 18열 시트 준비 · 서식 · 기존 17열 자동 마이그레이션 ----------
+function vocabStyleRecordSheet_(sheet) {
+  var maxRows = Math.max(sheet.getMaxRows(), 500);
+  sheet.getRange(1, 1, 1, RECORD_HEADERS.length)
+    .setValues([RECORD_HEADERS])
+    .setFontWeight("bold")
+    .setBackground("#1e3a8a")
+    .setFontColor("#ffffff")
+    .setHorizontalAlignment("center")
+    .setVerticalAlignment("middle");
+  sheet.setFrozenRows(1);
+  sheet.setRowHeight(1, 34);
+
+  var widths = [95, 78, 100, 145, 78, 165, 68, 68, 78, 72, 145, 115, 125, 68, 105, 150, 175, 165];
+  for (var c = 0; c &lt; widths.length; c++) {
+    sheet.setColumnWidth(c + 1, widths[c]);
+  }
+
+  var dataRows = Math.max(1, maxRows - 1);
+  sheet.getRange(2, 1, dataRows, 1).setNumberFormat("yyyy-mm-dd").setHorizontalAlignment("center");
+  sheet.getRange(2, 2, dataRows, 2).setHorizontalAlignment("center");
+  sheet.getRange(2, 5, dataRows, 1).setHorizontalAlignment("center");
+  sheet.getRange(2, 7, dataRows, 4).setHorizontalAlignment("center");
+  sheet.getRange(2, 12, dataRows, 1).setHorizontalAlignment("center");
+  sheet.getRange(2, 14, dataRows, 2).setHorizontalAlignment("center");
+
+  // 핵심 수치 열 파스텔 배경 하이라이트 (G~J, N, R)
+  sheet.getRange(2, 7, dataRows, 1).setBackground("#dbeafe");  // 어휘문제 (연파랑)
+  sheet.getRange(2, 8, dataRows, 1).setBackground("#dcfce7");  // 어휘정답 (연초록)
+  sheet.getRange(2, 9, dataRows, 1).setBackground("#fef9c3");  // 어휘정답률 (연노랑)
+  sheet.getRange(2, 10, dataRows, 1).setBackground("#f3e8ff"); // 진단점수 (연보라)
+  sheet.getRange(2, 14, dataRows, 1).setBackground("#fce7f3"); // 오답개수 (연분홍)
+  sheet.getRange(2, 18, dataRows, 1).setBackground("#ffedd5"); // 틀린어휘 (연주황)
+
+  // 드롭다운 데이터 유효성 검사 (C: 숙제현황, E: 레벨구분, L: 트레이닝, O: 이해도)
+  var ruleHw = SpreadsheetApp.newDataValidation().requireValueInList(HW_STATUS_LIST, true).setAllowInvalid(true).build();
+  var ruleLv = SpreadsheetApp.newDataValidation().requireValueInList(VOCAB_LEVELS, true).setAllowInvalid(true).build();
+  var ruleTr = SpreadsheetApp.newDataValidation().requireValueInList(TRAINING_TYPE_LIST, true).setAllowInvalid(true).build();
+  var ruleUn = SpreadsheetApp.newDataValidation().requireValueInList(UNDERSTANDING_LIST, true).setAllowInvalid(true).build();
+  sheet.getRange(2, 3, dataRows, 1).setDataValidation(ruleHw);
+  sheet.getRange(2, 5, dataRows, 1).setDataValidation(ruleLv);
+  sheet.getRange(2, 12, dataRows, 1).setDataValidation(ruleTr);
+  sheet.getRange(2, 15, dataRows, 1).setDataValidation(ruleUn);
+}
+
+// 기존 17열(A:날짜, B:시간, C:이름, D:종류, ... 또는 A:시간, B:날짜, C:이름...) 시트를 18열(방식 1 가로 병합)로 안전 변환
+function vocabIsTimeLikeValue_(val) {
+  if (!val) return false;
+  if (val instanceof Date) return true;
+  var s = String(val).trim();
+  if (s.indexOf("표준시") !== -1 || s.indexOf("GMT") !== -1) return true;
+  if (/^\d{1,2}:\d{2}/.test(s)) return true;
+  if (/^(오전|오후)\s*\d{1,2}:\d{2}/.test(s)) return true;
+  return false;
+}
+
+function vocabMigrate17To18Cols_(ss, sheet) {
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow &lt; 1) return false;
+  var headers = sheet.getRange(1, 1, 1, Math.min(Math.max(lastCol, 4), 18)).getValues()[0];
+  var h1 = String(headers[0] || "").trim();
+  var h2 = String(headers[1] || "").trim();
+  var h3 = String(headers[2] || "").trim();
+  var h4 = String(headers[3] || "").trim();
+
+  var oldValues = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, Math.min(Math.max(lastCol, 17), 18)).getValues() : [];
+
+  // 데이터 행에 B열이 '시간(Date/표준시)'이고 C열이 '학생이름'인 구버전 행이 섞여 있는지 정밀 검사
+  var hasLegacyTimeInColB = false;
+  for (var chk = 0; chk &lt; oldValues.length; chk++) {
+    if (vocabIsTimeLikeValue_(oldValues[chk][1]) &amp;&amp; String(oldValues[chk][2] || "").trim()) {
+      hasLegacyTimeInColB = true;
+      break;
+    }
+  }
+
+  var isOldHeader = (h1 === "시간" || h2 === "시간" || h4 === "종류" || (h1 === "날짜" &amp;&amp; h3 === "이름"));
+  if (!isOldHeader &amp;&amp; !hasLegacyTimeInColB) {
+    return false;
+  }
+
+  // 안전 백업 시트 생성
+  var backupName = RECORD_SHEET + "_17열백업";
+  if (!ss.getSheetByName(backupName)) {
+    var copied = sheet.copyTo(ss);
+    copied.setName(backupName);
+  }
+
+  // 날짜+이름 그룹별로 묶어서 방식 1(가로 병합 + 초과 시 2·3번째 줄)로 재구성
+  var groups = {};
+  var groupOrder = [];
+  var already18Rows = [];
+
+  for (var i = 0; i &lt; oldValues.length; i++) {
+    var v = oldValues[i];
+    var isLegacyRow = isOldHeader || vocabIsTimeLikeValue_(v[1]);
+
+    if (!isLegacyRow) {
+      // 이미 18열 포맷으로 들어온 정상 행(B열이 학생이름)은 그대로 보존
+      var nm18 = String(v[1] || "").replace(/\s+/g, "");
+      if (nm18 &amp;&amp; !vocabIsTimeLikeValue_(v[1])) {
+        var row18 = v.slice(0, 18);
+        while (row18.length &lt; 18) row18.push("");
+        row18[0] = vocabParseDate_(v[0]);
+        row18[1] = nm18;
+        already18Rows.push(row18);
+      }
+      continue;
+    }
+
+    var type = String(v[3] || "").trim();
+    if (type === "어휘오답") continue; // 불필요한 어휘오답 행 제거!
+
+    // A열(v[0])과 B열(v[1]) 중 실제 날짜(2020년 이후)를 우선 선택
+    var rawDate = v[0];
+    if (v[0] instanceof Date &amp;&amp; v[0].getFullYear() &lt; 2000 &amp;&amp; v[1] instanceof Date &amp;&amp; v[1].getFullYear() &gt;= 2000) {
+      rawDate = v[1];
+    } else if (!v[0] &amp;&amp; v[1]) {
+      rawDate = v[1];
+    }
+    var dateObj = vocabParseDate_(rawDate);
+    var dateKey = vocabFmtDate_(dateObj);
+    var name = String(v[2] || "").replace(/\s+/g, "");
+    if (!name || vocabIsTimeLikeValue_(v[2])) continue;
+
+    var gKey = dateKey + "||" + name;
+    if (!groups[gKey]) {
+      groups[gKey] = { dateObj: dateObj, name: name, records: [] };
+      groupOrder.push(gKey);
+    }
+    var rec = {
+      date: dateKey,
+      type: type,
+      level: String(v[4] || "").trim(),
+      book: String(v[5] || "").trim(),
+      total: v[6],
+      firstCorrect: v[7],
+      rate: v[8],
+      score: v[9],
+      training: String(v[10] || "").trim(),
+      detail: String(v[11] || "").trim(),
+      errors: vocabParseErrorNum_(v[12]),
+      understanding: String(v[13] || "").trim(),
+      wrongWords: String(v[14] || "").trim(),
+      step2Memo: String(v[15] || "").trim(),
+      literacyMemo: String(v[15] || "").trim(),
+      reflection: String(v[16] || "").trim()
+    };
+    groups[gKey].records.push(rec);
+  }
+
+  sheet.clear();
+  vocabStyleRecordSheet_(sheet);
+
+  if (already18Rows.length &gt; 0) {
+    sheet.getRange(2, 1, already18Rows.length, 18).setValues(already18Rows);
+  }
+
+  for (var g = 0; g &lt; groupOrder.length; g++) {
+    var grp = groups[groupOrder[g]];
+    vocabUpsertStudentDayRecords_(sheet, grp.name, grp.records);
+  }
+  return true;
+}
+
 function vocabEnsureRecordSheet_(ss) {
   var sheet = ss.getSheetByName(RECORD_SHEET);
   if (!sheet) {
     sheet = ss.insertSheet(RECORD_SHEET);
-    sheet.getRange(1, 1, 1, RECORD_HEADERS.length).setValues([RECORD_HEADERS]).setFontWeight("bold").setBackground("#e8f0fe");
-    sheet.setFrozenRows(1);
-    sheet.getRange("A:A").setNumberFormat("hh:mm");
-    sheet.getRange("B:B").setNumberFormat("mm-dd");
+    vocabStyleRecordSheet_(sheet);
+  } else {
+    var migrated = vocabMigrate17To18Cols_(ss, sheet);
+    if (!migrated) {
+      var h2 = String(sheet.getRange(1, 2).getValue() || "").trim();
+      var h3 = String(sheet.getRange(1, 3).getValue() || "").trim();
+      if (h2 !== "이름" || h3 !== "숙제현황") {
+        vocabStyleRecordSheet_(sheet);
+      }
+    }
   }
   return sheet;
 }
 
-// 전송 데이터 키 ↔ 시트 열 1:1 매핑
-//  r.date→B, name→C, r.type→D, r.level→E, r.book→F, r.total→G, r.firstCorrect→H, r.rate→I, r.score→J,
-//  r.training→K, r.detail→L, r.errors→M, r.understanding→N, r.wrongWords→O, r.json→P, r.id→Q  (A열은 서버 시각)
-function vocabBuildRows_(postData, existingIds, now) {
-  var name = String(postData.name || "").replace(/\s+/g, "");
-  var recs = postData.records || [];
-  var rows = [], skipped = 0;
-  for (var i = 0; i &lt; recs.length &amp;&amp; i &lt; 400; i++) {
-    var r = recs[i] || {};
-    var id = String(r.id || "");
-    if (id &amp;&amp; existingIds[id]) { skipped++; continue; }
-    if (id) existingIds[id] = true;
-    rows.push([
-      now, vocabParseDate_(r.date), name, String(r.type || ""), String(r.level || ""), String(r.book || ""),
-      vocabNum_(r.total), vocabNum_(r.firstCorrect), vocabNum_(r.rate), vocabNum_(r.score),
-      String(r.training || ""), String(r.detail || ""), vocabNum_(r.errors), String(r.understanding || ""),
-      String(r.wrongWords || ""), String(r.json || "").substring(0, 45000), id
-    ]);
+function vocabMakeEmptyRow18_(dateObj, name) {
+  return [
+    dateObj, name, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""
+  ];
+}
+
+// 방식 1: (날짜, 이름) 기준 첫 줄 가로 병합 + 같은 날 도서/어휘나 트레이닝이 2~3개면 두 줄·세 줄 자동 확장
+function vocabUpsertStudentDayRecords_(sheet, name, records) {
+  if (!name || !records || !records.length) return { added: 0, updated: 0 };
+
+  // 날짜별로 입력 레코드 묶기
+  var byDate = {};
+  var dateKeys = [];
+  for (var i = 0; i &lt; records.length; i++) {
+    var r = records[i] || {};
+    var rt = String(r.type || "").trim();
+    if (rt === "어휘오답") continue;
+    var dObj = vocabParseDate_(r.date);
+    var dKey = vocabFmtDate_(dObj);
+    if (!byDate[dKey]) {
+      byDate[dKey] = { dateObj: dObj, items: [] };
+      dateKeys.push(dKey);
+    }
+    byDate[dKey].items.push(r);
   }
-  return { name: name, rows: rows, skipped: skipped };
+
+  var lastRow = sheet.getLastRow();
+  var allData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 18).getValues() : [];
+  var addedCount = 0;
+  var updatedCount = 0;
+
+  for (var dIdx = 0; dIdx &lt; dateKeys.length; dIdx++) {
+    var dKey = dateKeys[dIdx];
+    var dObj = byDate[dKey].dateObj;
+    var items = byDate[dKey].items;
+
+    // 시트에서 해당 (날짜, 이름)의 기존 행 인덱스(0-based in allData) 찾기
+    var matchIndices = [];
+    for (var rowIdx = 0; rowIdx &lt; allData.length; rowIdx++) {
+      var rDate = allData[rowIdx][0] ? vocabFmtDate_(allData[rowIdx][0]) : "";
+      var rName = String(allData[rowIdx][1] || "").replace(/\s+/g, "");
+      if (rDate === dKey &amp;&amp; rName === name) {
+        matchIndices.push(rowIdx);
+      }
+    }
+
+    // 작업용 행 배열(studentRows): 기존 행이 있으면 가져오고, 없으면 빈 첫 줄 1개 생성
+    var studentRows = [];
+    for (var m = 0; m &lt; matchIndices.length; m++) {
+      var clone = allData[matchIndices[m]].slice(0, 18);
+      while (clone.length &lt; 18) clone.push("");
+      clone[0] = dObj;
+      clone[1] = name;
+      studentRows.push(clone);
+    }
+    if (!studentRows.length) {
+      studentRows.push(vocabMakeEmptyRow18_(dObj, name));
+    }
+
+    function ensureRow(idx) {
+      while (studentRows.length &lt;= idx) {
+        studentRows.push(vocabMakeEmptyRow18_(dObj, name));
+      }
+      return studentRows[idx];
+    }
+
+    for (var k = 0; k &lt; items.length; k++) {
+      var it = items[k];
+      var type = String(it.type || "").trim();
+
+      // 1) 일일요약 (숙제현황 C열, 성실발자국 D열, 독서발자국 K열, 문해력발자국 P열, 나의기록 Q열) -&gt; 첫 줄(Row 0)에 기록
+      if (type === "일일요약") {
+        var r0 = ensureRow(0);
+        if (it.hwStatus) r0[2] = String(it.hwStatus).trim();
+        if (it.step1Memo) r0[3] = String(it.step1Memo).trim();
+        if (it.step2Memo &amp;&amp; !r0[10]) r0[10] = String(it.step2Memo).trim();
+        if (it.literacyMemo &amp;&amp; !r0[15]) r0[15] = String(it.literacyMemo).trim();
+        if (it.reflection) r0[16] = String(it.reflection).trim();
+        continue;
+      }
+
+      // 2) 어휘퀴즈 (E:레벨구분, F:도서명/어휘학습, G:어휘문제, H:어휘정답, I:어휘정답률, R:틀린어휘)
+      if (type === "어휘퀴즈") {
+        var bookName = String(it.book || "").trim();
+        var normBook = vocabNormBook_(bookName);
+        var targetIdx = -1;
+        for (var s = 0; s &lt; studentRows.length; s++) {
+          var rowBook = vocabNormBook_(studentRows[s][5]);
+          // 같은 책 이름이 이미 있거나(진단점수가 먼저 찍힌 경우 등), 어휘 칸(F,G)이 비어 있는 첫 행
+          if ((normBook &amp;&amp; rowBook === normBook) || (!studentRows[s][5] &amp;&amp; studentRows[s][6] === "")) {
+            targetIdx = s;
+            break;
+          }
+        }
+        if (targetIdx === -1) targetIdx = studentRows.length;
+        var vRow = ensureRow(targetIdx);
+        if (it.level) vRow[4] = String(it.level).trim();
+        if (bookName) vRow[5] = bookName;
+        if (it.total !== "" &amp;&amp; it.total !== undefined) vRow[6] = vocabNum_(it.total);
+        if (it.firstCorrect !== "" &amp;&amp; it.firstCorrect !== undefined) vRow[7] = vocabNum_(it.firstCorrect);
+        if (it.rate !== "" &amp;&amp; it.rate !== undefined) vRow[8] = vocabNum_(it.rate);
+        if (it.wrongWords !== undefined &amp;&amp; String(it.wrongWords).trim() !== "") {
+          vRow[17] = vocabCleanWrongWordsStr_(it.wrongWords);
+        }
+        continue;
+      }
+
+      // 3) 진단 (E:레벨구분, F:도서명/어휘학습, J:진단점수, K:독서발자국)
+      // 어휘퀴즈와 책 이름이 같으면 같은 줄 J열·K열에 병합! 다른 책이면 빈 줄 또는 다음 줄에 기록
+      if (type === "진단") {
+        var dBook = String(it.book || "").trim();
+        var normDBook = vocabNormBook_(dBook);
+        var dIdxTarget = -1;
+        for (var s2 = 0; s2 &lt; studentRows.length; s2++) {
+          var existBook = vocabNormBook_(studentRows[s2][5]);
+          if (normDBook &amp;&amp; existBook === normDBook) {
+            dIdxTarget = s2;
+            break;
+          }
+        }
+        if (dIdxTarget === -1) {
+          for (var s3 = 0; s3 &lt; studentRows.length; s3++) {
+            if (!studentRows[s3][5] &amp;&amp; studentRows[s3][9] === "") {
+              dIdxTarget = s3;
+              break;
+            }
+          }
+        }
+        if (dIdxTarget === -1) dIdxTarget = studentRows.length;
+        var dRow = ensureRow(dIdxTarget);
+        if (it.level &amp;&amp; !dRow[4]) dRow[4] = String(it.level).trim();
+        if (dBook &amp;&amp; !dRow[5]) dRow[5] = dBook;
+        if (it.score !== "" &amp;&amp; it.score !== undefined) dRow[9] = vocabNum_(it.score);
+        if (it.step2Memo) dRow[10] = String(it.step2Memo).trim();
+        continue;
+      }
+
+      // 4) 트레이닝 (L:트레이닝, M:권수/차시, N:오답개수, O:이해도, P:문해력발자국)
+      // 첫 줄 L열이 비어 있으면 첫 줄에, 이미 다른 트레이닝이 들어있으면 2번째·3번째 줄에 각각 깔끔하게 기록!
+      if (type === "트레이닝") {
+        var trName = String(it.training || "").trim();
+        var trDetail = String(it.detail || "").trim();
+        var tIdxTarget = -1;
+        for (var s4 = 0; s4 &lt; studentRows.length; s4++) {
+          var existTr = String(studentRows[s4][11] || "").trim();
+          var existDt = String(studentRows[s4][12] || "").trim();
+          if (existTr === trName &amp;&amp; existDt === trDetail &amp;&amp; trName !== "") {
+            tIdxTarget = s4;
+            break;
+          }
+          if (!existTr &amp;&amp; tIdxTarget === -1) {
+            tIdxTarget = s4;
+          }
+        }
+        if (tIdxTarget === -1) tIdxTarget = studentRows.length;
+        var tRow = ensureRow(tIdxTarget);
+        if (trName) tRow[11] = trName;
+        if (trDetail) tRow[12] = trDetail;
+        var parsedErr = vocabParseErrorNum_(it.errors);
+        if (parsedErr !== "") tRow[13] = parsedErr;
+        if (it.understanding) tRow[14] = String(it.understanding).trim();
+        if (it.literacyMemo) tRow[15] = String(it.literacyMemo).trim();
+        if (it.hwStatus &amp;&amp; !tRow[2]) tRow[2] = String(it.hwStatus).trim();
+        if (it.step1Memo &amp;&amp; !tRow[3]) tRow[3] = String(it.step1Memo).trim();
+        if (it.reflection &amp;&amp; !tRow[16]) tRow[16] = String(it.reflection).trim();
+      }
+    }
+
+    // 기존 행 업데이트 + 초과 행은 시트 하단에 추가
+    for (var u = 0; u &lt; studentRows.length; u++) {
+      if (u &lt; matchIndices.length) {
+        var sheetRowNum = matchIndices[u] + 2;
+        sheet.getRange(sheetRowNum, 1, 1, 18).setValues([studentRows[u]]);
+        allData[matchIndices[u]] = studentRows[u];
+        updatedCount++;
+      } else {
+        var newRowNum = sheet.getLastRow() + 1;
+        sheet.getRange(newRowNum, 1, 1, 18).setValues([studentRows[u]]);
+        allData.push(studentRows[u]);
+        addedCount++;
+      }
+    }
+  }
+
+  return { added: addedCount, updated: updatedCount };
+}
+
+// 학생 1명의 [회원 분석] G열(이달의 학습 요약 전광판 &amp; 최근 도서)을 최신 [학습기록] 기준으로 즉시 갱신
+function refreshMemberAnalysisSummaryBoardForStudent_(ss, studentName) {
+  try {
+    var sheetMember = getMemberAnalysisSheet(ss);
+    if (!sheetMember || sheetMember.getLastRow() &lt; 2) return;
+    var cleanTarget = String(studentName || "").replace(/\s+/g, "");
+    if (!cleanTarget) return;
+    var lastRow = sheetMember.getLastRow();
+    var names = sheetMember.getRange(2, 2, lastRow - 1, 1).getValues();
+    var memberRowIndex = -1;
+    for (var i = 0; i &lt; names.length; i++) {
+      if (String(names[i][0] || "").replace(/\s+/g, "") === cleanTarget) {
+        memberRowIndex = 2 + i;
+        break;
+      }
+    }
+    if (memberRowIndex === -1) return;
+    var summaryLine = buildMemberSummaryBoardLine_(ss, cleanTarget);
+    if (!summaryLine) return;
+
+    var cell = sheetMember.getRange(memberRowIndex, 7);
+    var cur = String(cell.getValue() || "").trim();
+    var lines = cur ? cur.split("\n") : [];
+    var bookLines = [];
+    for (var l = 0; l &lt; lines.length; l++) {
+      var ln = lines[l].trim();
+      if (!ln || ln.indexOf("📊") === 0) continue;
+      bookLines.push(ln);
+    }
+    if (bookLines.length &gt; 5) {
+      bookLines = bookLines.slice(bookLines.length - 5);
+    }
+    bookLines.unshift(summaryLine);
+    var nextVal = bookLines.join("\n");
+    if (cur !== nextVal) {
+      applyRichTextStyling(cell, nextVal);
+    }
+  } catch (e) {}
 }
 
 function handleAddLearningRecord(postData) {
@@ -3838,28 +4371,9 @@ function handleAddLearningRecord(postData) {
     if (!name || !postData.records || !postData.records.length) {
       return vocabJson_({ status: "error", message: "name/records required" });
     }
-    // 같은 기록을 다시 보내도 중복되지 않게: 최근 3000행의 기록ID 확인
-    var last = sheet.getLastRow();
-    var existing = {};
-    if (last &gt;= 2) {
-      var checkCount = Math.min(3000, last - 1);
-      var ids = sheet.getRange(2, 17, checkCount, 1).getValues();
-      for (var i = 0; i &lt; ids.length; i++) if (ids[i][0]) existing[ids[i][0]] = true;
-    }
-    var built = vocabBuildRows_(postData, existing, new Date());
-    if (built.rows.length) {
-      sheet.insertRowsBefore(2, built.rows.length);
-      var targetRange = sheet.getRange(2, 1, built.rows.length, RECORD_HEADERS.length);
-      targetRange.setValues(built.rows);
-      targetRange.setFontWeight("normal").setBackground(null);
-      sheet.getRange(2, 1, built.rows.length, 1).setNumberFormat("hh:mm");
-      sheet.getRange(2, 2, built.rows.length, 1).setNumberFormat("mm-dd");
-      var as = ss.getSheetByName(ANALYSIS_SHEET);
-      if (as) {
-        as.getRange("Z2").setFormula('=IFERROR(SORT(UNIQUE(QUERY(\'' + RECORD_SHEET + '\'!$A$1:$Q,"select C where C is not null",1))),"")');
-      }
-    }
-    return vocabJson_({ status: "success", added: built.rows.length, skipped: built.skipped });
+    var res = vocabUpsertStudentDayRecords_(sheet, name, postData.records);
+    refreshMemberAnalysisSummaryBoardForStudent_(ss, name);
+    return vocabJson_({ status: "success", added: res.added, updated: res.updated });
   } catch (err) {
     return vocabJson_({ status: "error", message: String(err) });
   } finally {
@@ -3867,7 +4381,146 @@ function handleAddLearningRecord(postData) {
   }
 }
 
-// ---------- 시트 셋업 (메뉴) ----------
+// ---------- 메뉴 12번: 회원 분석 시트 다이어트 (F·G열 과거 일일기록 ➔ 18열 학습기록 이관 &amp; 안전백업) ----------
+function migrateMemberAnalysisToLearningRecords() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ui = SpreadsheetApp.getUi();
+  var sheetMember = getMemberAnalysisSheet(ss);
+  if (!sheetMember) {
+    ui.alert("[회원 분석] 시트를 찾을 수 없습니다.");
+    return;
+  }
+
+  var resp = ui.alert(
+    "회원 분석 시트 다이어트 &amp; 학습기록 이관",
+    "1) [회원 분석_백업] 시트를 먼저 안전하게 생성합니다.\n" +
+    "2) F열(코칭 방향 &amp; 주력 목표)에서 날짜가 찍힌 일일 수업메모 줄만 걸러내고 영구 코칭 메모는 그대로 보존합니다.\n" +
+    "3) G열(이달의 학습 요약 전광판 &amp; 최근 도서)의 과거 도서·진단점수 기록을 [학습기록] 18열 시트로 이관하고, G열에는 요약 전광판과 최근 도서 5권만 깔끔하게 남깁니다.\n" +
+    "4) A~E열 및 H~P열은 단 한 글자도 건드리지 않습니다.\n\n진행할까요?",
+    ui.ButtonSet.YES_NO
+  );
+  if (resp !== ui.Button.YES) return;
+
+  // 1) 안전 백업 시트 생성
+  var backupName = "회원 분석_백업";
+  if (!ss.getSheetByName(backupName)) {
+    var copied = sheetMember.copyTo(ss);
+    copied.setName(backupName);
+  }
+
+  var sheetRec = vocabEnsureRecordSheet_(ss);
+  sheetMember.getRange(1, 6).setValue("코칭 방향 &amp; 주력 목표");
+  sheetMember.getRange(1, 7).setValue("이달의 학습 요약 전광판 &amp; 최근 도서");
+
+  var lastRow = sheetMember.getLastRow();
+  if (lastRow &lt; 2) {
+    ui.alert("회원 분석 시트에 학생 데이터가 없습니다.");
+    return;
+  }
+
+  var data = sheetMember.getRange(2, 1, lastRow - 1, 7).getValues();
+  var curYear = new Date().getFullYear();
+  var migratedBookCount = 0;
+  var cleanedStudentCount = 0;
+
+  for (var i = 0; i &lt; data.length; i++) {
+    var rowNum = 2 + i;
+    var name = String(data[i][1] || "").replace(/\s+/g, "");
+    if (!name) continue;
+
+    var rawF = String(data[i][5] || "").trim();
+    var rawG = String(data[i][6] || "").trim();
+    var recordsToMigrate = [];
+
+    // F열 정리: 날짜 프리픽스(예: 26.4/15, 4/15)로 시작하는 일일 로그 줄만 분리하고 영구 코칭 방향은 보존
+    if (rawF) {
+      var fLines = rawF.split(/\r?\n/);
+      var keptFLines = [];
+      for (var fIdx = 0; fIdx &lt; fLines.length; fIdx++) {
+        var fl = fLines[fIdx].trim();
+        if (!fl) continue;
+        var fDateMatch = fl.match(/^(?:(\d{2})[\.\/])?(\d{1,2})\/(\d{1,2})\s+(.*)$/);
+        if (fDateMatch) {
+          // 날짜가 찍힌 과거 수업내용 줄 -&gt; 학습기록 성실/문해력 발자국으로 보존 가능
+          var yy = fDateMatch[1] ? (2000 + parseInt(fDateMatch[1], 10)) : curYear;
+          var mm = ("0" + parseInt(fDateMatch[2], 10)).slice(-2);
+          var dd = ("0" + parseInt(fDateMatch[3], 10)).slice(-2);
+          var memoBody = String(fDateMatch[4] || "").trim();
+          if (memoBody) {
+            recordsToMigrate.push({
+              date: yy + "-" + mm + "-" + dd,
+              type: "일일요약",
+              hwStatus: memoBody.indexOf("숙제완료") !== -1 ? "숙제완료" : (memoBody.indexOf("미지참") !== -1 ? "미지참" : ""),
+              literacyMemo: memoBody
+            });
+          }
+        } else {
+          keptFLines.push(fl);
+        }
+      }
+      var nextF = keptFLines.join("\n");
+      if (nextF !== rawF) {
+        sheetMember.getRange(rowNum, 6).setValue(nextF);
+      }
+    }
+
+    // G열 정리: 날짜+책이름+진단점수 줄을 파싱해 [학습기록]에 이관하고 최근 5권 + 요약 전광판만 유지
+    if (rawG) {
+      var gLines = rawG.split(/\r?\n/);
+      var bookLinesOnly = [];
+      for (var gIdx = 0; gIdx &lt; gLines.length; gIdx++) {
+        var gl = gLines[gIdx].trim();
+        if (!gl || gl.indexOf("📊") === 0) continue;
+        bookLinesOnly.push(gl);
+        var gDateMatch = gl.match(/^(?:(\d{2})[\.\/])?(\d{1,2})\/(\d{1,2})\s+(.+)$/);
+        if (gDateMatch) {
+          var gYy = gDateMatch[1] ? (2000 + parseInt(gDateMatch[1], 10)) : curYear;
+          var gMm = ("0" + parseInt(gDateMatch[2], 10)).slice(-2);
+          var gDd = ("0" + parseInt(gDateMatch[3], 10)).slice(-2);
+          var rest = String(gDateMatch[4] || "").replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+          var scoreMatch = rest.match(/^(.*?)\s+(\d{2,3})\s*점?$/);
+          var bTitle = scoreMatch ? scoreMatch[1].trim() : rest;
+          var bScore = scoreMatch ? parseInt(scoreMatch[2], 10) : "";
+          if (bTitle) {
+            recordsToMigrate.push({
+              date: gYy + "-" + gMm + "-" + gDd,
+              type: "진단",
+              book: bTitle,
+              score: bScore
+            });
+            migratedBookCount++;
+          }
+        }
+      }
+
+      if (recordsToMigrate.length) {
+        vocabUpsertStudentDayRecords_(sheetRec, name, recordsToMigrate);
+      }
+
+      var summaryLine = buildMemberSummaryBoardLine_(ss, name);
+      var recentBooks = bookLinesOnly.length &gt; 5 ? bookLinesOnly.slice(bookLinesOnly.length - 5) : bookLinesOnly;
+      if (summaryLine) recentBooks.unshift(summaryLine);
+      var nextG = recentBooks.join("\n");
+      var gCell = sheetMember.getRange(rowNum, 7);
+      applyRichTextStyling(gCell, nextG);
+      cleanedStudentCount++;
+    } else if (recordsToMigrate.length) {
+      vocabUpsertStudentDayRecords_(sheetRec, name, recordsToMigrate);
+      refreshMemberAnalysisSummaryBoardForStudent_(ss, name);
+      cleanedStudentCount++;
+    }
+  }
+
+  ui.alert(
+    "✅ 회원 분석 다이어트 및 학습기록 이관 완료!\n\n" +
+    "• 안전 백업 시트: [회원 분석_백업]\n" +
+    "• 정리된 학생 수: " + cleanedStudentCount + "명\n" +
+    "• [학습기록] 18열 시트로 이관된 도서·진단 기록: " + migratedBookCount + "건\n" +
+    "• F열(코칭 방향 &amp; 주력 목표)과 G열(이달의 학습 요약 전광판 &amp; 최근 도서)이 날씬하게 정리되었습니다!"
+  );
+}
+
+// ---------- 시트 셋업 (메뉴 8번) ----------
 function vocabSetupSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var ui = SpreadsheetApp.getUi();
@@ -3883,36 +4536,41 @@ function vocabSetupSheets() {
     msgs.push("[어휘] 시트: " + Math.max(0, vs.getLastRow() - 1) + "개 어휘");
   }
 
-  vocabEnsureRecordSheet_(ss);
-  msgs.push("[학습기록] 시트 준비 완료");
+  var rs = ss.getSheetByName(RECORD_SHEET);
+  if (rs &amp;&amp; String(rs.getRange(1, 1).getValue() || "").trim() === "시간") {
+    vocabMigrate17To18Cols_(ss, rs);
+    msgs.push("[학습기록] 기존 17열 데이터를 '학습기록_17열백업'에 안전 백업하고, 새 18열(방식 1 가로 병합)로 자동 변환했어요!");
+  } else {
+    rs = vocabEnsureRecordSheet_(ss);
+    vocabStyleRecordSheet_(rs);
+    msgs.push("[학습기록] 18열 시트(드롭다운·파스텔 하이라이트) 준비 완료");
+  }
 
   var as = ss.getSheetByName(ANALYSIS_SHEET);
   var build = true;
   if (as) {
-    var resp = ui.alert("[학생분석표]가 이미 있어요. 다시 만들까요?\n(선택한 학생·기간 입력값이 초기화됩니다)", ui.ButtonSet.YES_NO);
+    var resp = ui.alert("[학생분석표]가 이미 있어요. 새 18열 수식으로 다시 만들까요?\n(선택한 학생·기간 입력값이 초기화됩니다)", ui.ButtonSet.YES_NO);
     build = (resp === ui.Button.YES);
     if (build) ss.deleteSheet(as);
   }
   if (build) {
     vocabBuildAnalysisSheet_(ss);
-    msgs.push("[학생분석표] 시트를 만들었어요. B2에서 학생을 고르세요.");
+    msgs.push("[학생분석표] 18열 연동 시트를 만들었어요. B2에서 학생을 고르세요.");
   }
-  ui.alert(msgs.join("\n"));
+  ui.alert(msgs.join("\n\n"));
 }
 
-// 학생분석표: 학생·년·월 선택 + 시작일/종료일(선택) 입력 → 어휘/독서이해도(진단)/트레이닝 분석
+// 학생분석표 (18열 A~R 기준): 어휘/독서이해도(진단)/4단계 트레이닝/발자국·기록/상담메모 통합 분석
 function vocabBuildAnalysisSheet_(ss) {
   var sh = ss.insertSheet(ANALYSIS_SHEET);
   var R = "'" + RECORD_SHEET + "'!";
-  var all = R + "$A$1:$Q";
+  var all = R + "$A$1:$R";
   var range = function (col) { return R + "$" + col + ":$" + col; };
-  var dateCond = range("B") + ',"&gt;="&amp;$E$2,' + range("B") + ',"&lt;="&amp;$E$3';
-  var who = range("C") + ",$B$2";
-  var qWhere = function (type) {
-    return "where C = '\"&amp;$B$2&amp;\"' and D = '" + type + "' and B &gt;= date '\"&amp;TEXT($E$2,\"yyyy-mm-dd\")&amp;\"' and B &lt;= date '\"&amp;TEXT($E$3,\"yyyy-mm-dd\")&amp;\"'";
-  };
+  var dateCond = range("A") + ',"&gt;="&amp;$E$2,' + range("A") + ',"&lt;="&amp;$E$3';
+  var who = range("B") + ",$B$2";
+  var qDateWhere = "A &gt;= date '\"&amp;TEXT($E$2,\"yyyy-mm-dd\")&amp;\"' and A &lt;= date '\"&amp;TEXT($E$3,\"yyyy-mm-dd\")&amp;\"'";
 
-  sh.getRange("A1").setValue("학생 학습 분석표 (어휘 학습 · 독서이해도 · 4단계 트레이닝)").setFontSize(14).setFontWeight("bold");
+  sh.getRange("A1").setValue("📊 학생 종합 학습 분석표 (숙제 · 어휘 · 독서진단 · 트레이닝 · 발자국 기록)").setFontSize(14).setFontWeight("bold");
   sh.getRange("A2:A6").setValues([["학생"], ["년도"], ["월"], ["시작일 (선택)"], ["종료일 (선택)"]]).setFontWeight("bold");
   sh.getRange("B3").setFormula("=YEAR(TODAY())");
   sh.getRange("B4").setFormula("=MONTH(TODAY())");
@@ -3922,69 +4580,93 @@ function vocabBuildAnalysisSheet_(ss) {
   sh.getRange("E2:E3").setNumberFormat("yyyy-mm-dd");
   sh.getRange("B5:B6").setNumberFormat("yyyy-mm-dd");
   sh.getRange("G2").setValue("※ 월만 고르면 그 달 전체, 시작일·종료일을 입력하면 그 기간이 우선 적용됩니다.").setFontColor("#6b7280");
+  sh.getRange("G3").insertCheckboxes();
+  sh.getRange("H3").setValue("학부모 배포용 (내부 코칭/상담메모 숨기기)").setFontWeight("bold").setFontColor("#1e3a8a");
   sh.getRange("B2:B6").setBackground("#e8f0fe");
 
-  // 학생 목록(숨김 Z열) + 드롭다운
+  // 학생 목록(숨김 Z열) + 드롭다운 (학습기록 B열 기준)
   sh.getRange("Z1").setValue("학생목록");
-  sh.getRange("Z2").setFormula('=IFERROR(SORT(UNIQUE(QUERY(' + all + ',"select C where C is not null",1))),"")');
+  sh.getRange("Z2").setFormula('=IFERROR(SORT(UNIQUE(FILTER(' + R + '$B$2:$B,' + R + '$B$2:$B&lt;&gt;""))),"")');
   sh.hideColumns(26);
   sh.getRange("B2").setDataValidation(SpreadsheetApp.newDataValidation().requireValueInRange(sh.getRange("Z2:Z"), true).setAllowInvalid(true).build());
 
-  // 1) 어휘 요약
-  sh.getRange("A8").setValue("■ 어휘 학습 요약").setFontWeight("bold").setBackground("#e6f4ea");
-  var base = range("D") + ',"어휘퀴즈",' + who + "," + dateCond;
-  sh.getRange("A9:A13").setValues([["퀴즈 횟수"], ["평균 첫 정답률(%)"], ["최고 정답률(%)"], ["최저 정답률(%)"], ["처음 틀린 문제 수"]]);
-  sh.getRange("B9").setFormula("=COUNTIFS(" + base + ")");
-  sh.getRange("B10").setFormula('=IFERROR(ROUND(AVERAGEIFS(' + range("I") + "," + base + '),1),"-")');
-  sh.getRange("B11").setFormula('=IF($B$9=0,"-",MAXIFS(' + range("I") + "," + base + "))");
-  sh.getRange("B12").setFormula('=IF($B$9=0,"-",MINIFS(' + range("I") + "," + base + "))");
-  sh.getRange("B13").setFormula("=COUNTIFS(" + range("D") + ',"어휘오답",' + who + "," + dateCond + ")");
+  // 1) 어휘 학습 &amp; 숙제 성실도 요약
+  sh.getRange("A8").setValue("■ 어휘 학습 &amp; 숙제 현황 요약").setFontWeight("bold").setBackground("#e6f4ea");
+  var vocabCond = who + "," + dateCond + "," + range("G") + ',"&gt;0"';
+  sh.getRange("A9:A14").setValues([
+    ["어휘 퀴즈 횟수"],
+    ["평균 첫 정답률(%)"],
+    ["최고 정답률(%)"],
+    ["최저 정답률(%)"],
+    ["처음 틀린 어휘 문제 수 합계"],
+    ["숙제 완료 횟수"]
+  ]);
+  sh.getRange("B9").setFormula("=COUNTIFS(" + vocabCond + ")");
+  sh.getRange("B10").setFormula('=IFERROR(ROUND(AVERAGEIFS(' + range("I") + "," + vocabCond + '),1),"-")');
+  sh.getRange("B11").setFormula('=IF($B$9=0,"-",MAXIFS(' + range("I") + "," + vocabCond + "))");
+  sh.getRange("B12").setFormula('=IF($B$9=0,"-",MINIFS(' + range("I") + "," + vocabCond + "))");
+  sh.getRange("B13").setFormula('=IF($B$9=0,0,SUMIFS(' + range("G") + "," + vocabCond + ")-SUMIFS(" + range("H") + "," + vocabCond + "))");
+  sh.getRange("B14").setFormula("=COUNTIFS(" + who + "," + dateCond + "," + range("C") + ',"숙제완료")');
 
-  // 2) 책별 결과
-  sh.getRange("A15").setValue("■ 책별 어휘 결과 (최대 20권)").setFontWeight("bold").setBackground("#e6f4ea");
-  sh.getRange("A16").setFormula('=IFERROR(QUERY(' + all + ',"select F, count(F), avg(I) ' + qWhere("어휘퀴즈") + ' group by F order by count(F) desc limit 20 label F \'책\', count(F) \'횟수\', avg(I) \'평균 첫 정답률(%)\'",1),"기록이 없어요")');
+  // 우측(D8:H14) 코칭 방향 &amp; 원장님 상담 기록 연동 (학부모 배포용 체크 시 자동 숨김)
+  sh.getRange("D8").setFormula('=IF($G$3,"■ 이달의 중점 학습 가이드","■ 코칭 방향 &amp; 최근 상담 기록 (회원 분석 / 상담내용 연동)")').setFontWeight("bold").setBackground("#e8f0fe");
+  sh.getRange("D9").setValue("코칭 방향 / 목표").setFontWeight("bold");
+  sh.getRange("E9").setFormula('=IF($G$3,"학생 맞춤형 독서·문해력 코칭 진행 중",IFERROR(VLOOKUP($B$2,\'회원 분석\'!$B:$G,5,FALSE),"-"))');
+  sh.getRange("D10").setValue("이달의 요약 전광판").setFontWeight("bold");
+  sh.getRange("E10").setFormula('=IFERROR(VLOOKUP($B$2,\'회원 분석\'!$B:$G,6,FALSE),"-")');
+  sh.getRange("D11").setValue("최근 상담 메모").setFontWeight("bold");
+  sh.getRange("E11").setFormula('=IF($G$3,"(학부모 배포용 숨김)",IFERROR(TEXTJOIN(" / ",TRUE,QUERY(\'상담내용\'!$A:$F,"select A, E where C contains \'"&amp;$B$2&amp;"\' order by A desc limit 2",0)),"상담 기록 없음"))');
 
-  // 3) 많이 틀린 어휘 TOP10
-  sh.getRange("A38").setValue("■ 많이 틀린 어휘 TOP10").setFontWeight("bold").setBackground("#e6f4ea");
-  sh.getRange("A39").setFormula('=IFERROR(QUERY(' + all + ',"select O, count(O) ' + qWhere("어휘오답") + " and O &lt;&gt; '(짝짓기)' group by O order by count(O) desc limit 10 label O '어휘', count(O) '틀린 횟수'\",1),\"기록이 없어요\")");
+  // 2) 책별 어휘 결과 (최대 20권)
+  sh.getRange("A16").setValue("■ 도서별 어휘 학습 결과 (최대 20권)").setFontWeight("bold").setBackground("#e6f4ea");
+  sh.getRange("A17").setFormula('=IFERROR(QUERY(' + all + ',"select F, count(F), avg(I), R where B = \'"&amp;$B$2&amp;"\' and G is not null and ' + qDateWhere + ' group by F, R order by count(F) desc limit 20 label F \'도서명/어휘학습\', count(F) \'횟수\', avg(I) \'평균 정답률(%)\', R \'틀린 어휘\'",1),"기록이 없어요")');
 
-  // 4) 독서이해도(진단 점수)
-  sh.getRange("A51").setValue("■ 독서이해도 (진단 점수)").setFontWeight("bold").setBackground("#fef7e0");
-  var diag = range("D") + ',"진단",' + who + "," + dateCond;
-  sh.getRange("A52:A54").setValues([["진단 횟수"], ["평균 점수"], ["최고 점수"]]);
-  sh.getRange("B52").setFormula("=COUNTIFS(" + diag + ")");
-  sh.getRange("B53").setFormula('=IFERROR(ROUND(AVERAGEIFS(' + range("J") + "," + diag + '),1),"-")');
-  sh.getRange("B54").setFormula('=IF($B$52=0,"-",MAXIFS(' + range("J") + "," + diag + "))");
-  sh.getRange("A55").setFormula('=IFERROR(QUERY(' + all + ',"select B, E, F, J ' + qWhere("진단") + " order by B limit 20 label B '날짜', E '구분', F '책', J '진단점수'\",1),\"기록이 없어요\")");
+  // 3) 틀린 어휘 모아보기
+  sh.getRange("A39").setValue("■ 기간 내 틀린 어휘 목록 (복습 대상)").setFontWeight("bold").setBackground("#ffedd5");
+  sh.getRange("A40").setFormula('=IFERROR(QUERY(' + all + ',"select A, F, R where B = \'"&amp;$B$2&amp;"\' and R is not null and R &lt;&gt; \'\' and ' + qDateWhere + ' order by A desc limit 12 label A \'날짜\', F \'도서명/어휘학습\', R \'틀린 어휘\'",1),"틀린 어휘가 없어요")');
 
-  // 5) 4단계 트레이닝 (분석지 작성 참고)
-  sh.getRange("A77").setValue("■ 4단계 트레이닝 (이해도 · 오답 개수 / 분석지 참고)").setFontWeight("bold").setBackground("#fce8e6");
-  sh.getRange("A78").setFormula('=IFERROR(QUERY(' + all + ',"select K, count(K), avg(M) ' + qWhere("트레이닝") + " group by K label K '종류', count(K) '횟수', avg(M) '평균 오답 개수'\",1),\"기록이 없어요\")");
+  // 4) 독서이해도 (진단 점수 &amp; 독서발자국)
+  sh.getRange("A54").setValue("■ 독서이해도 (진단 점수 &amp; 독서발자국)").setFontWeight("bold").setBackground("#fef7e0");
+  var diagCond = who + "," + dateCond + "," + range("J") + ',"&gt;0"';
+  sh.getRange("A55:A57").setValues([["진단 횟수"], ["평균 점수"], ["최고 점수"]]);
+  sh.getRange("B55").setFormula("=COUNTIFS(" + diagCond + ")");
+  sh.getRange("B56").setFormula('=IFERROR(ROUND(AVERAGEIFS(' + range("J") + "," + diagCond + '),1),"-")');
+  sh.getRange("B57").setFormula('=IF($B$55=0,"-",MAXIFS(' + range("J") + "," + diagCond + "))");
+  sh.getRange("A58").setFormula('=IFERROR(QUERY(' + all + ',"select A, E, F, J, K where B = \'"&amp;$B$2&amp;"\' and J is not null and ' + qDateWhere + ' order by A desc limit 15 label A \'날짜\', E \'레벨\', F \'도서명\', J \'진단점수\', K \'독서발자국\'",1),"기록이 없어요")');
+
+  // 5) 4단계 트레이닝 영역별/교재별 요약
+  sh.getRange("A76").setValue("■ 트레이닝 영역별 성취도 &amp; 문해력발자국").setFontWeight("bold").setBackground("#fce8e6");
+  sh.getRange("A77").setFormula('=IFERROR(QUERY(' + all + ',"select L, count(L), avg(N) where B = \'"&amp;$B$2&amp;"\' and L is not null and L &lt;&gt; \'\' and ' + qDateWhere + ' group by L label L \'트레이닝 종류\', count(L) \'실시 횟수\', avg(N) \'평균 오답 개수\'",1),"기록이 없어요")');
+
+  sh.getRange("E76").setValue("■ 트레이닝 상세 이력 (권수/차시 · 오답 · 발자국)").setFontWeight("bold").setBackground("#fce8e6");
+  sh.getRange("E77").setFormula('=IFERROR(QUERY(' + all + ',"select A, L, M, N, O, P where B = \'"&amp;$B$2&amp;"\' and L is not null and L &lt;&gt; \'\' and ' + qDateWhere + ' order by A desc limit 15 label A \'날짜\', L \'트레이닝\', M \'권수/차시\', N \'오답수\', O \'이해도\', P \'문해력발자국\'",1),"기록이 없어요")');
+
   sh.getRange("A85:C85").setValues([["이해도", "횟수", "비율(%)"]]).setFontWeight("bold");
-  var levels = ["잘 이해했어요", "보통이에요", "아직 헷갈려요"];
-  var tr = range("D") + ',"트레이닝",' + who + "," + dateCond;
+  var levels = UNDERSTANDING_LIST;
+  var trBase = who + "," + dateCond + "," + range("L") + ',"&lt;&gt;"';
   for (var i = 0; i &lt; levels.length; i++) {
     var row = 86 + i;
     sh.getRange(row, 1).setValue(levels[i]);
-    sh.getRange(row, 2).setFormula("=COUNTIFS(" + tr + "," + range("N") + ",$A" + row + ")");
-    sh.getRange(row, 3).setFormula('=IFERROR(ROUND(B' + row + "/SUM($B$86:$B$88)*100,1),\"-\")");
+    sh.getRange(row, 2).setFormula("=COUNTIFS(" + trBase + "," + range("O") + ",$A" + row + ")");
+    sh.getRange(row, 3).setFormula('=IFERROR(ROUND(B' + row + '/SUM($B$86:$B$88)*100,1),"-")');
   }
 
   // 6) 월별 추이 (선택한 학생 전체 기간)
-  sh.getRange("A90").setValue("■ 월별 추이 (선택한 학생의 전체 기간)").setFontWeight("bold").setBackground("#e8f0fe");
-  sh.getRange("A91").setFormula('=IFERROR(QUERY(' + all + ',"select year(B), month(B)+1, avg(I), count(I) where C = \'"&amp;$B$2&amp;"\' and D = \'어휘퀴즈\' group by year(B), month(B)+1 order by year(B), month(B)+1 label year(B) \'년\', month(B)+1 \'월\', avg(I) \'평균 첫 정답률(%)\', count(I) \'퀴즈 횟수\'",1),"기록이 없어요")');
-  sh.getRange("F91").setFormula('=IFERROR(QUERY(' + all + ',"select year(B), month(B)+1, avg(J), count(J) where C = \'"&amp;$B$2&amp;"\' and D = \'진단\' group by year(B), month(B)+1 order by year(B), month(B)+1 label year(B) \'년\', month(B)+1 \'월\', avg(J) \'평균 진단점수\', count(J) \'진단 횟수\'",1),"기록이 없어요")');
+  sh.getRange("A91").setValue("■ 월별 성장 추이 (선택한 학생의 전체 기간)").setFontWeight("bold").setBackground("#e8f0fe");
+  sh.getRange("A92").setFormula('=IFERROR(QUERY(' + all + ',"select year(A), month(A)+1, avg(I), count(I) where B = \'"&amp;$B$2&amp;"\' and G is not null group by year(A), month(A)+1 order by year(A), month(A)+1 label year(A) \'년\', month(A)+1 \'월\', avg(I) \'평균 어휘정답률(%)\', count(I) \'퀴즈 횟수\'",1),"기록이 없어요")');
+  sh.getRange("F92").setFormula('=IFERROR(QUERY(' + all + ',"select year(A), month(A)+1, avg(J), count(J) where B = \'"&amp;$B$2&amp;"\' and J is not null group by year(A), month(A)+1 order by year(A), month(A)+1 label year(A) \'년\', month(A)+1 \'월\', avg(J) \'평균 진단점수\', count(J) \'진단 횟수\'",1),"기록이 없어요")');
 
   sh.setColumnWidth(1, 150);
-  sh.setColumnWidth(2, 220);
+  sh.setColumnWidth(2, 210);
   sh.setColumnWidth(3, 110);
-  sh.setColumnWidth(4, 110);
-  sh.getRange("A16:C36").setNumberFormat("General");
+  sh.setColumnWidth(4, 150);
+  sh.setColumnWidth(5, 220);
+  sh.getRange("A17:D36").setNumberFormat("General");
   sh.setFrozenRows(6);
   sh.activate();
 }
 
-// ---------- 오답 복습지 PDF (메뉴) ----------
+// ---------- 오답 복습지 PDF (메뉴 9번: R열 틀린어휘 + [어휘] 시트 조합으로 문제지 즉석 생성!) ----------
 var VOCAB_NUM = ["①", "②", "③", "④", "⑤"];
 var VOCAB_MARK = ["㉠", "㉡", "㉢", "㉣", "㉤"];
 
@@ -3999,6 +4681,75 @@ function vocabShuffle_(arr) {
 
 function vocabEsc_(s) {
   return String(s === undefined || s === null ? "" : s).replace(/&amp;/g, "&amp;amp;").replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;").replace(/"/g, "&amp;quot;");
+}
+
+function vocabLines_(txt, per) { return Math.max(1, Math.ceil(String(txt || "").length / per)); }
+
+// [어휘] 시트 데이터로 틀린 어휘의 4지선다 복습 문제(빈칸/뜻맞히기) 동적 구성
+function vocabBuildReviewQuestionFromBank_(wordStr, bookStr, levelStr, vocabRows) {
+  var target = null;
+  var normBook = vocabNormBook_(bookStr);
+  for (var i = 0; i &lt; vocabRows.length; i++) {
+    var r = vocabRows[i];
+    if (r.w === wordStr) {
+      if (normBook &amp;&amp; vocabNormBook_(r.book) === normBook) { target = r; break; }
+      if (!target) target = r;
+    }
+  }
+  if (!target) {
+    return null;
+  }
+  // 오답 보기(distractors) 3개 추출 (같은 책 또는 같은 레벨 우선)
+  var pool = [];
+  for (var j = 0; j &lt; vocabRows.length; j++) {
+    var cand = vocabRows[j];
+    if (cand.w === target.w || !cand.m) continue;
+    if (cand.level === target.level || vocabNormBook_(cand.book) === normBook) {
+      pool.push(cand);
+    }
+  }
+  if (pool.length &lt; 3) {
+    for (var k = 0; k &lt; vocabRows.length &amp;&amp; pool.length &lt; 10; k++) {
+      if (vocabRows[k].w !== target.w &amp;&amp; vocabRows[k].m) pool.push(vocabRows[k]);
+    }
+  }
+  var shuffledPool = vocabShuffle_(pool);
+  var label = (target.level ? target.level + " · " : "") + (target.book || "");
+
+  // 예문이 있고 어휘(또는 활용형)가 예문에 포함되어 있으면 빈칸 문제, 아니면 뜻 고르기 문제 생성
+  var formToBlank = target.form &amp;&amp; target.ex.indexOf(target.form) !== -1 ? target.form : (target.ex.indexOf(target.w) !== -1 ? target.w : "");
+  if (target.ex &amp;&amp; formToBlank) {
+    var wordOpts = [target.w];
+    for (var d = 0; d &lt; shuffledPool.length &amp;&amp; wordOpts.length &lt; 4; d++) {
+      if (wordOpts.indexOf(shuffledPool[d].w) === -1) wordOpts.push(shuffledPool[d].w);
+    }
+    return {
+      key: "w||" + target.w + "||" + (target.book || ""),
+      type: "blank",
+      word: target.w,
+      meaning: target.m,
+      label: label,
+      sentence: target.ex.replace(formToBlank, "( )"),
+      options: wordOpts,
+      answer: target.w
+    };
+  }
+
+  var meanOpts = [target.m];
+  for (var mIdx = 0; mIdx &lt; shuffledPool.length &amp;&amp; meanOpts.length &lt; 4; mIdx++) {
+    if (meanOpts.indexOf(shuffledPool[mIdx].m) === -1) meanOpts.push(shuffledPool[mIdx].m);
+  }
+  return {
+    key: "m||" + target.w + "||" + (target.book || ""),
+    type: "mean",
+    word: target.w,
+    meaning: target.m,
+    label: label,
+    prompt: "다음 낱말의 뜻으로 알맞은 것은?",
+    big: target.w,
+    options: meanOpts,
+    answer: target.m
+  };
 }
 
 // 같은 문제(key)를 하나로 합치고 많이 틀린 순 → 최근순
@@ -4019,8 +4770,6 @@ function vocabConsolidate_(items) {
   return out;
 }
 
-function vocabLines_(txt, per) { return Math.max(1, Math.ceil(String(txt || "").length / per)); }
-
 // 출력용 한 문제 구성(보기 순서 섞기) + 대략의 줄 수(쪽 나누기 용)
 function vocabPrepare_(g) {
   var r = g.rec, lines;
@@ -4040,7 +4789,6 @@ function vocabPrepare_(g) {
   return { g: g, type: r.type, options: opts, ansIndex: opts.indexOf(r.answer), short: shortOpts, lines: lines + 1 };
 }
 
-// 한 장에 최대 20문제, 두 단. 줄 수 추정으로 한 장에 안 들어가면 다음 장으로
 function vocabPaginate_(prepared, maxPerSheet, colCap) {
   var sheets = [], cur = null;
   function fresh() { cur = { cols: [[], []], used: [0, 0], count: 0 }; sheets.push(cur); }
@@ -4146,37 +4894,53 @@ function vocabRenderHtml_(groups, opts) {
   return { html: html + "&lt;/body&gt;&lt;/html&gt;", sheets: total, questions: prepared.length };
 }
 
-function vocabFmtDate_(d) { return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd"); }
-
-// 메뉴 [오답 복습지 PDF 만들기]: [학생분석표]에서 고른 학생·기간의 '어휘오답'으로 만든다
+// 메뉴 9번 [오답 복습지 PDF 만들기]: 18열 [학습기록]의 R열(틀린어휘) + F열(도서명)을 읽어 [어휘] 시트에서 문제 구성
 function vocabMakeReviewPdf() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var ui = SpreadsheetApp.getUi();
   var as = ss.getSheetByName(ANALYSIS_SHEET);
   var rs = ss.getSheetByName(RECORD_SHEET);
-  if (!as || !rs) { ui.alert("먼저 메뉴의 [어휘 시트 초기 셋업]을 실행해 주세요."); return; }
+  if (!as || !rs) { ui.alert("먼저 메뉴의 [8. 어휘·학습기록(18열)·학생분석표 셋업]을 실행해 주세요."); return; }
   var name = String(as.getRange("B2").getValue() || "").replace(/\s+/g, "");
   var start = as.getRange("E2").getValue();
   var end = as.getRange("E3").getValue();
   if (!name) { ui.alert("[학생분석표]의 B2에서 학생을 선택해 주세요."); return; }
   if (!(start instanceof Date) || !(end instanceof Date)) { ui.alert("[학생분석표]의 기간(적용 시작일/종료일)을 확인해 주세요."); return; }
 
-  var endMs = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1).getTime(); // 종료일 당일 포함
+  var endMs = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1).getTime();
   var startMs = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
   var last = rs.getLastRow();
+  var vocabRows = vocabReadRows_();
   var items = [];
+
   if (last &gt;= 2) {
-    var values = rs.getRange(2, 1, last - 1, 17).getValues();
+    var values = rs.getRange(2, 1, last - 1, Math.min(rs.getLastColumn(), 18)).getValues();
     for (var i = 0; i &lt; values.length; i++) {
       var v = values[i];
-      if (String(v[3]) !== "어휘오답" || String(v[2]).replace(/\s+/g, "") !== name) continue;
-      var d = v[1] instanceof Date ? v[1] : new Date(v[1]);
+      var rName = String(v[1] || "").replace(/\s+/g, "");
+      if (rName !== name) continue;
+      var d = vocabParseDate_(v[0]);
       var t = d.getTime();
       if (!(t &gt;= startMs &amp;&amp; t &lt; endMs)) continue;
-      try { items.push({ rec: JSON.parse(String(v[15])), at: t }); } catch (err) { /* 깨진 JSON 행은 건너뜀 */ }
+      var levelStr = String(v[4] || "").trim();
+      var bookStr = String(v[5] || "").trim();
+      var wrongStr = String(v[17] || "").trim();
+      if (!wrongStr) continue;
+      var words = wrongStr.split(",");
+      for (var wIdx = 0; wIdx &lt; words.length; wIdx++) {
+        var wClean = String(words[wIdx] || "").trim();
+        if (!wClean || wClean === "(짝짓기)") continue;
+        var builtQ = vocabBuildReviewQuestionFromBank_(wClean, bookStr, levelStr, vocabRows);
+        if (builtQ) {
+          items.push({ rec: builtQ, at: t });
+        }
+      }
     }
   }
-  if (!items.length) { ui.alert(name + " 학생의 " + vocabFmtDate_(start) + " ~ " + vocabFmtDate_(end) + " 기간에 처음 틀린 문제가 없어요."); return; }
+  if (!items.length) {
+    ui.alert(name + " 학생의 " + vocabFmtDate_(start) + " ~ " + vocabFmtDate_(end) + " 기간에 틀린 어휘 기록(R열)이 없거나 [어휘] 시트에서 해당 단어를 찾지 못했어요.");
+    return;
+  }
 
   var groups = vocabConsolidate_(items);
   var mm = start.getMonth() + 1;
@@ -4195,6 +4959,227 @@ function vocabMakeReviewPdf() {
     "&lt;a href='" + file.getUrl() + "' target='_blank'&gt;▶ PDF 열기 (드라이브 '어휘 오답 복습지' 폴더)&lt;/a&gt;&lt;/div&gt;").setWidth(420).setHeight(190);
   ui.showModalDialog(html, "오답 복습지");
 }
+
+// 틀린어휘 문자열에서 '(짝짓기)' 또는 '짝짓기' 같은 문제유형 꼬리표 제거
+function vocabCleanWrongWordsStr_(str) {
+  if (!str) return "";
+  var parts = String(str).split(",");
+  var cleaned = [];
+  for (var i = 0; i &lt; parts.length; i++) {
+    var w = String(parts[i] || "").trim();
+    if (!w || w === "짝짓기" || w === "(짝짓기)") continue;
+    if (cleaned.indexOf(w) === -1) cleaned.push(w);
+  }
+  return cleaned.join(", ");
+}
+
+// ---------- 메뉴 11번: 📨 오늘 수업 브리핑 문구 창 띄우기 (시트 행 높이를 늘리지 않는 팝업 방식!) ----------
+function buildStudentDailyBriefingText_(name, dateStr, rows18) {
+  var md = dateStr.length &gt;= 10 ? (parseInt(dateStr.substring(5, 7), 10) + "/" + parseInt(dateStr.substring(8, 10), 10)) : dateStr;
+  var hwStatus = "", step1Memo = "", reflection = "";
+  var books = [], trainings = [], wrongWordsAll = [];
+
+  for (var i = 0; i &lt; rows18.length; i++) {
+    var r = rows18[i];
+    if (r[2] &amp;&amp; !hwStatus) hwStatus = String(r[2]).trim();
+    if (r[3] &amp;&amp; !step1Memo) step1Memo = String(r[3]).trim();
+    if (r[16] &amp;&amp; !reflection) reflection = String(r[16]).trim();
+
+    var lv = String(r[4] || "").trim();
+    var bk = String(r[5] || "").trim();
+    var vTot = r[6], vCor = r[7], vRate = r[8], dScore = r[9];
+    var step2 = String(r[10] || "").trim();
+    var wrong = vocabCleanWrongWordsStr_(r[17]);
+
+    if (bk || vTot !== "" || dScore !== "") {
+      var bLine = "• 도서: " + (bk || "어휘 학습") + (lv ? " (" + lv + ")" : "");
+      var sub = [];
+      if (dScore !== "" &amp;&amp; dScore !== null &amp;&amp; dScore !== undefined) sub.push("독서이해도 진단 " + dScore + "점");
+      if (vTot !== "" &amp;&amp; vTot !== null &amp;&amp; vTot !== undefined) {
+        sub.push("어휘학습 " + vTot + "문항 중 " + (vCor !== "" ? vCor : 0) + "개 정답(" + (vRate !== "" ? vRate : 0) + "%)");
+      }
+      if (sub.length) bLine += " — " + sub.join(" / ");
+      if (step2) bLine += "\n  └ 독서발자국: \"" + step2 + "\"";
+      books.push(bLine);
+    }
+    if (wrong) wrongWordsAll.push(wrong);
+
+    var trName = String(r[11] || "").trim();
+    var trDet = String(r[12] || "").trim();
+    var trErr = r[13];
+    var trUnd = String(r[14] || "").trim();
+    var trMemo = String(r[15] || "").trim();
+    if (trName) {
+      var tLine = "• " + trName + (trDet ? ": " + trDet : "");
+      var tSub = [];
+      if (trErr !== "" &amp;&amp; trErr !== null &amp;&amp; trErr !== undefined) tSub.push("오답 " + trErr + "개");
+      if (trUnd) tSub.push("이해도: " + trUnd);
+      if (tSub.length) tLine += " (" + tSub.join(", ") + ")";
+      if (trMemo) tLine += "\n  └ 문해력발자국: \"" + trMemo + "\"";
+      trainings.push(tLine);
+    }
+  }
+
+  var lines = [];
+  lines.push("[독서와국어 오늘의 수업 브리핑 🌿]");
+  lines.push("안녕하세요, " + name + " 학부모님! 오늘(" + md + ") 학원에서 진행한 수업 활동 안내드립니다.");
+  lines.push("");
+  if (hwStatus || step1Memo) {
+    lines.push("✅ 숙제 현황: " + (hwStatus || "확인 완료") + (step1Memo ? " (" + step1Memo + ")" : ""));
+  }
+  if (books.length) {
+    lines.push("📚 독서 &amp; 어휘 학습");
+    for (var b = 0; b &lt; books.length; b++) lines.push(books[b]);
+  }
+  if (wrongWordsAll.length) {
+    lines.push("📝 오늘 복습한 어휘: " + wrongWordsAll.join(", "));
+  }
+  if (trainings.length) {
+    lines.push("✏️ 문해력 &amp; 국어 트레이닝");
+    for (var t = 0; t &lt; trainings.length; t++) lines.push(trainings[t]);
+  }
+  if (reflection) {
+    lines.push("💬 " + name + " 학생의 오늘 다짐: \"" + reflection + "\"");
+  }
+  lines.push("");
+  lines.push("가정에서도 따뜻한 격려와 칭찬 부탁드립니다. 감사합니다! 😊");
+  return lines.join("\n");
+}
+
+function showDailyBriefingModal() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ui = SpreadsheetApp.getUi();
+  var rs = vocabEnsureRecordSheet_(ss);
+  if (!rs || rs.getLastRow() &lt; 2) {
+    ui.alert("[학습기록] 시트에 데이터가 없습니다.");
+    return;
+  }
+
+  var activeSheet = ss.getActiveSheet();
+  var sName = activeSheet.getName();
+  var selRow = activeSheet.getActiveCell() ? activeSheet.getActiveCell().getRow() : 2;
+  var targetName = "";
+  var targetDateStr = vocabFmtDate_(new Date());
+
+  // 1) 현재 열려 있는 시트에서 클릭한 행의 학생 이름 자동 인식
+  if (sName === RECORD_SHEET &amp;&amp; selRow &gt;= 2 &amp;&amp; selRow &lt;= rs.getLastRow()) {
+    targetDateStr = vocabFmtDate_(rs.getRange(selRow, 1).getValue());
+    var candName = rs.getRange(selRow, 2).getValue();
+    if (!vocabIsTimeLikeValue_(candName)) {
+      targetName = String(candName || "").replace(/\s+/g, "");
+    }
+  } else if (sName === ANALYSIS_SHEET) {
+    targetName = String(activeSheet.getRange("B2").getValue() || "").replace(/\s+/g, "");
+  } else if ((sName === "출결보강관리" || sName === "오늘 출석부") &amp;&amp; selRow &gt;= 2) {
+    targetName = String(activeSheet.getRange(selRow, 3).getValue() || "").replace(/\s+/g, "");
+  } else if ((sName === "회원 분석" || sName === "회원분석") &amp;&amp; selRow &gt;= 2) {
+    targetName = String(activeSheet.getRange(selRow, 2).getValue() || "").replace(/\s+/g, "");
+  }
+
+  var last = rs.getLastRow();
+  var data = rs.getRange(2, 1, last - 1, Math.min(rs.getLastColumn(), 18)).getValues();
+
+  // 학생별·날짜별 브리핑 문구 전체 사전 생성 (팝업창 안에서 학생/날짜를 즉시 바꿀 수 있도록 지원)
+  var byStudentDate = {};
+  var studentOrder = [];
+  for (var i = data.length - 1; i &gt;= 0; i--) {
+    var dStr = vocabFmtDate_(data[i][0]);
+    if (vocabIsTimeLikeValue_(data[i][1])) continue;
+    var nm = String(data[i][1] || "").replace(/\s+/g, "");
+    if (!nm || !dStr) continue;
+    if (!byStudentDate[nm]) {
+      byStudentDate[nm] = {};
+      studentOrder.push(nm);
+    }
+    if (!byStudentDate[nm][dStr]) {
+      byStudentDate[nm][dStr] = [];
+    }
+  }
+  for (var rIdx = 0; rIdx &lt; data.length; rIdx++) {
+    var dStr2 = vocabFmtDate_(data[rIdx][0]);
+    if (vocabIsTimeLikeValue_(data[rIdx][1])) continue;
+    var nm2 = String(data[rIdx][1] || "").replace(/\s+/g, "");
+    if (nm2 &amp;&amp; dStr2 &amp;&amp; byStudentDate[nm2] &amp;&amp; byStudentDate[nm2][dStr2]) {
+      byStudentDate[nm2][dStr2].push(data[rIdx]);
+    }
+  }
+
+  if (!targetName || !byStudentDate[targetName]) {
+    targetName = studentOrder[0] || "";
+  }
+  var briefingsMap = {};
+  for (var sIdx = 0; sIdx &lt; studentOrder.length; sIdx++) {
+    var st = studentOrder[sIdx];
+    briefingsMap[st] = {};
+    var dates = Object.keys(byStudentDate[st]).sort().reverse();
+    for (var dIdx = 0; dIdx &lt; dates.length; dIdx++) {
+      var dt = dates[dIdx];
+      briefingsMap[st][dt] = buildStudentDailyBriefingText_(st, dt, byStudentDate[st][dt]);
+    }
+  }
+
+  var initDates = targetName &amp;&amp; briefingsMap[targetName] ? Object.keys(briefingsMap[targetName]) : [];
+  if (initDates.indexOf(targetDateStr) === -1 &amp;&amp; initDates.length &gt; 0) {
+    targetDateStr = initDates[0];
+  }
+  var initMsg = (targetName &amp;&amp; briefingsMap[targetName] &amp;&amp; briefingsMap[targetName][targetDateStr]) || "";
+
+  var htmlStr =
+    "&lt;div style='font-family:Malgun Gothic,sans-serif;padding:8px'&gt;" +
+    "&lt;div style='display:flex;gap:8px;margin-bottom:10px;align-items:center;background:#f8fafc;padding:8px 10px;border-radius:8px;border:1px solid #e2e8f0'&gt;" +
+    "  &lt;label style='font-size:12px;font-weight:bold;color:#1e3a8a'&gt;👤 학생 선택:&lt;/label&gt;" +
+    "  &lt;select id='selStudent' onchange='onStudentChange()' style='padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-weight:bold'&gt;&lt;/select&gt;" +
+    "  &lt;label style='font-size:12px;font-weight:bold;color:#1e3a8a;margin-left:6px'&gt;📅 수업일:&lt;/label&gt;" +
+    "  &lt;select id='selDate' onchange='onDateChange()' style='padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px'&gt;&lt;/select&gt;" +
+    "&lt;/div&gt;" +
+    "&lt;textarea id='briefBox' style='width:100%;height:240px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;line-height:1.55;box-sizing:border-box'&gt;" + vocabEsc_(initMsg) + "&lt;/textarea&gt;" +
+    "&lt;div style='margin-top:10px;display:flex;justify-content:space-between;align-items:center'&gt;" +
+    "&lt;span id='cpStatus' style='font-size:12px;color:#16a34a;font-weight:bold'&gt;&lt;/span&gt;" +
+    "&lt;button onclick=\"var t=document.getElementById('briefBox');t.select();document.execCommand('copy');document.getElementById('cpStatus').innerText='✅ 복사되었습니다! 카톡이나 문자에 붙여넣으세요.';\" " +
+    "style='background:#2563eb;color:#fff;border:none;padding:9px 18px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px'&gt;📋 브리핑 문구 복사하기&lt;/button&gt;" +
+    "&lt;/div&gt;" +
+    "&lt;script&gt;" +
+    "var DATA = " + JSON.stringify(briefingsMap) + ";" +
+    "var STUDENTS = " + JSON.stringify(studentOrder) + ";" +
+    "var INIT_ST = " + JSON.stringify(targetName) + ";" +
+    "var INIT_DT = " + JSON.stringify(targetDateStr) + ";" +
+    "var selSt = document.getElementById('selStudent');" +
+    "var selDt = document.getElementById('selDate');" +
+    "var box = document.getElementById('briefBox');" +
+    "var cp = document.getElementById('cpStatus');" +
+    "function init() {" +
+    "  selSt.innerHTML = '';" +
+    "  for (var i=0; i&lt;STUDENTS.length; i++) {" +
+    "    var opt = document.createElement('option');" +
+    "    opt.value = STUDENTS[i]; opt.textContent = STUDENTS[i];" +
+    "    if (STUDENTS[i] === INIT_ST) opt.selected = true;" +
+    "    selSt.appendChild(opt);" +
+    "  }" +
+    "  populateDates(INIT_ST, INIT_DT);" +
+    "}" +
+    "function populateDates(st, preferredDt) {" +
+    "  selDt.innerHTML = '';" +
+    "  var dts = DATA[st] ? Object.keys(DATA[st]) : [];" +
+    "  for (var j=0; j&lt;dts.length; j++) {" +
+    "    var opt = document.createElement('option');" +
+    "    opt.value = dts[j]; opt.textContent = dts[j];" +
+    "    if (dts[j] === preferredDt) opt.selected = true;" +
+    "    selDt.appendChild(opt);" +
+    "  }" +
+    "  updateBox();" +
+    "}" +
+    "function onStudentChange() { cp.innerText=''; populateDates(selSt.value, ''); }" +
+    "function onDateChange() { cp.innerText=''; updateBox(); }" +
+    "function updateBox() {" +
+    "  var st = selSt.value; var dt = selDt.value;" +
+    "  box.value = (DATA[st] &amp;&amp; DATA[st][dt]) ? DATA[st][dt] : '';" +
+    "}" +
+    "init();" +
+    "&lt;/script&gt;&lt;/div&gt;";
+  var out = HtmlService.createHtmlOutput(htmlStr).setWidth(520).setHeight(390);
+  ui.showModalDialog(out, "📨 오늘 수업 브리핑 문구");
+}
+
 
 
 </pre>
@@ -4739,9 +5724,9 @@ function vocabMakeReviewPdf() {
 
   <!-- MODAL: SMS PREVIEW -->
   <div class="modal-overlay" id="modalSmsPreview">
-    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3); max-width: 450px;">
+    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3); max-width: 520px; width: 92%;">
       <div class="modal-header">
-        <h3 class="modal-title">📖 다음 교재 준비 안내 문자 발송</h3>
+        <h3 class="modal-title">📨 수업 브리핑 / 안내 문자 발송</h3>
         <button class="modal-close" id="btnCloseSmsPreviewModal">
           <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -4750,16 +5735,17 @@ function vocabMakeReviewPdf() {
       </div>
       <form id="formSmsPreview">
         <div class="form-group">
-          <label for="smsPreviewPhone">수신인 번호 (학부모)</label>
-          <input type="text" id="smsPreviewPhone" class="input-custom" required>
+          <label for="smsPreviewPhone">수신인 번호 (학부모님 연락처 · 카톡 복사 시 비워둬도 됨)</label>
+          <input type="text" id="smsPreviewPhone" class="input-custom" placeholder="예: 010-1234-5678">
         </div>
         <div class="form-group">
-          <label for="smsPreviewText">문자 메시지 내용</label>
-          <textarea id="smsPreviewText" class="input-custom" rows="6" style="resize: vertical;" required></textarea>
+          <label for="smsPreviewText">브리핑 / 문자 메시지 내용 (전송 전 자유롭게 수정 가능)</label>
+          <textarea id="smsPreviewText" class="input-custom" rows="9" style="resize: vertical; line-height: 1.55;" required></textarea>
         </div>
-        <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+        <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; margin-top: 1rem;">
           <button type="button" class="btn-secondary" id="btnCancelSmsPreviewModal">취소</button>
-          <button type="submit" class="btn-primary" id="btnSendSmsPreview">문자 발송</button>
+          <button type="button" class="btn-primary" id="btnCopyKakaoBriefing" style="background: #f59e0b; border-color: #d97706; color: #fff;">📋 카톡용 복사</button>
+          <button type="submit" class="btn-primary" id="btnSendSmsPreview">📲 문자 발송</button>
         </div>
       </form>
     </div>
@@ -4858,11 +5844,11 @@ function vocabMakeReviewPdf() {
     </div>
   </div>
 
-  <script src="sheet-sim.js?v=2.2.0"></script>
-  <script src="api.js?v=2.2.0"></script>
-  <script src="sms-manager.js?v=2.2.0"></script>
-  <script src="crm-manager.js?v=2.2.0"></script>
-  <script src="dashboard-manager.js?v=2.2.0"></script>
-  <script src="app.js?v=2.2.0"></script>
+  <script src="sheet-sim.js?v=2.3.0"></script>
+  <script src="api.js?v=2.3.0"></script>
+  <script src="sms-manager.js?v=2.3.0"></script>
+  <script src="crm-manager.js?v=2.3.0"></script>
+  <script src="dashboard-manager.js?v=2.3.0"></script>
+  <script src="app.js?v=2.3.0"></script>
 </body>
 </html>

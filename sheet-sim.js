@@ -18,6 +18,7 @@ class SheetSimulator {
       memberAnalysis: [],
       attendanceLogs: [],
       accumulatedLogs: [],
+      learningRecords: [],
       weeklySchedule: [],
       teachers: []
     };
@@ -63,6 +64,7 @@ class SheetSimulator {
       memberAnalysis: dataMap.memberAnalysis || [],
       attendanceLogs: dataMap.attendanceLogs || [],
       accumulatedLogs: dataMap.accumulatedLogs || [],
+      learningRecords: dataMap.learningRecords || [],
       weeklySchedule: dataMap.weeklySchedule || [
         { id: 'ws_1', row: 2, time: '15:00', mon: '김독서', tue: '이국어', wed: '박역사', thu: '최논술', fri: '강문해', sat: '', sun: '' },
         { id: 'ws_2', row: 3, time: '16:00', mon: '강문해', tue: '김독서', wed: '이국어', thu: '박역사', fri: '최논술', sat: '', sun: '' }
@@ -197,6 +199,7 @@ class SheetSimulator {
             <button class="sheet-tab-item ${this.activeTab === '교재단계관리' ? 'active' : ''}" data-tab="교재단계관리">교재단계관리 📚</button>
             <button class="sheet-tab-item ${this.activeTab === '학부모상담/채널발송' ? 'active' : ''}" data-tab="학부모상담/채널발송">학부모상담/채널발송 💬</button>
             <button class="sheet-tab-item ${this.activeTab === '월별상담내역' ? 'active' : ''}" data-tab="월별상담내역">월별상담내역 👤</button>
+            <button class="sheet-tab-item ${this.activeTab === '학습기록' ? 'active' : ''}" data-tab="학습기록">학습기록(18열) 📖</button>
             <button class="sheet-tab-item ${this.activeTab === '출결보강관리' ? 'active' : ''}" data-tab="출결보강관리">출결보강관리 📅</button>
             <button class="sheet-tab-item ${this.activeTab === '학생수업관리' ? 'active' : ''}" data-tab="학생수업관리">학생수업관리 📝</button>
             <button class="sheet-tab-item ${this.activeTab === '교사' ? 'active' : ''}" data-tab="교사">교사 👩‍🏫</button>
@@ -206,6 +209,7 @@ class SheetSimulator {
             <button class="sheet-tab-item ${this.activeTab === '문해력교재관리' ? 'active' : ''}" data-tab="문해력교재관리">문해력교재관리 📚</button>
             <button class="sheet-tab-item ${this.activeTab === '상담내용/리포트발송/채널발송' ? 'active' : ''}" data-tab="상담내용/리포트발송/채널발송">상담내용/리포트발송/채널발송 💬</button>
             <button class="sheet-tab-item ${this.activeTab === '회원 분석/레벨변동/전화상담' ? 'active' : ''}" data-tab="회원 분석/레벨변동/전화상담">회원 분석/레벨변동/전화상담 👤</button>
+            <button class="sheet-tab-item ${this.activeTab === '학습기록' ? 'active' : ''}" data-tab="학습기록">학습기록(18열) 📖</button>
             <button class="sheet-tab-item ${this.activeTab === '오늘 출석부' ? 'active' : ''}" data-tab="오늘 출석부">오늘 출석부 📅</button>
             <button class="sheet-tab-item ${this.activeTab === '한명 검색' ? 'active' : ''}" data-tab="한명 검색">한명 검색 🔍</button>
           `}
@@ -347,8 +351,8 @@ class SheetSimulator {
             <th>학년 (C)</th>
             <th>등록일 (D)</th>
             <th>상담/채널 (E)</th>
-            <th>학생 특이사항... (F)</th>
-            <th>진도 관리 (G)</th>
+            <th>🎯 코칭 방향 & 주력 목표 (F)</th>
+            <th>📊 이달의 학습 요약 전광판 & 최근 도서 (G)</th>
             <th>교과지수... (H)</th>
             <th>레벨 변동 (I)</th>
             <th>훈민정음... (J)</th>
@@ -359,6 +363,31 @@ class SheetSimulator {
             <th>아이디 (O)</th>
             <th>연락처 (P)</th>
             <th>동작</th>
+          </tr>
+        `;
+      case "학습기록":
+        return `
+          <tr>
+            <th class="row-num-col">행</th>
+            <th>날짜 (A)</th>
+            <th>이름 (B)</th>
+            <th>숙제현황 (C)</th>
+            <th>성실발자국 (D)</th>
+            <th>레벨구분 (E)</th>
+            <th>도서명/어휘학습 (F)</th>
+            <th style="background:#dbeafe !important; color:#1e3a8a !important;">어휘문제 (G)</th>
+            <th style="background:#dcfce7 !important; color:#15803d !important;">어휘정답 (H)</th>
+            <th style="background:#fef9c3 !important; color:#854d0e !important;">어휘정답률 (I)</th>
+            <th style="background:#f3e8ff !important; color:#6b21a8 !important;">진단점수 (J)</th>
+            <th>독서발자국 (K)</th>
+            <th>트레이닝 (L)</th>
+            <th>권수/차시 (M)</th>
+            <th style="background:#fce7f3 !important; color:#9d174d !important;">오답개수 (N)</th>
+            <th>이해도 (O)</th>
+            <th>문해력발자국 (P)</th>
+            <th>나의 시간, 나의 기록 (Q)</th>
+            <th style="background:#ffedd5 !important; color:#9a3412 !important;">틀린어휘 (R)</th>
+            <th>브리핑</th>
           </tr>
         `;
       case "한명 검색":
@@ -939,8 +968,8 @@ class SheetSimulator {
             <td style="text-align:center;">학년 (C)</td>
             <td style="text-align:center;">등록일 (D)</td>
             <td style="text-align:center;">상담/채널 (E)</td>
-            <td style="text-align:center;">학생 특이사항... (F)</td>
-            <td style="text-align:center;">진도 관리 (G)</td>
+            <td style="text-align:center;">🎯 코칭 방향 & 주력 목표 (F)</td>
+            <td style="text-align:center;">📊 이달의 학습 요약 전광판 & 최근 도서 (G)</td>
             <td style="text-align:center;">교과지수... (H)</td>
             <td style="text-align:center;">레벨 변동 (I)</td>
             <td style="text-align:center;">훈민정음... (J)</td>
@@ -1205,6 +1234,47 @@ class SheetSimulator {
           `;
         }).join('');
       }
+      case "학습기록": {
+        const recs = (this.dataMap.learningRecords || []).filter(row => {
+          const nameVal = row.name ? String(row.name).toLowerCase() : "";
+          const dateVal = row.date ? String(row.date).toLowerCase() : "";
+          const bookVal = row.book ? String(row.book).toLowerCase() : "";
+          const trVal = row.training ? String(row.training).toLowerCase() : "";
+          return nameVal.includes(query) || dateVal.includes(query) || bookVal.includes(query) || trVal.includes(query);
+        });
+        if (recs.length === 0) return `<tr><td colspan="20" style="text-align:center; padding:2rem; color:var(--text-muted);">18열 학습기록 데이터가 없습니다. [구글시트 불러오기]를 눌러 동기화하세요.</td></tr>`;
+
+        const sortedRecs = [...recs].reverse().slice(0, 150);
+        return sortedRecs.map((row, idx) => {
+          const rowNum = row.row || (idx + 2);
+          return `
+            <tr data-id="lrec_${rowNum}">
+              <td class="row-num-col" style="text-align:center; font-weight:600;">${rowNum}</td>
+              <td style="text-align:center; white-space:nowrap;">${this.escapeHtml(row.date || '')}</td>
+              <td style="text-align:center; font-weight:700; color:var(--accent); white-space:nowrap;">${this.escapeHtml(row.name || '')}</td>
+              <td style="text-align:center; white-space:nowrap;">${this.escapeHtml(row.hwStatus || '')}</td>
+              <td style="max-width:140px; font-size:0.82rem;">${this.escapeHtml(row.step1Memo || '')}</td>
+              <td style="text-align:center; white-space:nowrap;">${this.escapeHtml(row.level || '')}</td>
+              <td style="font-weight:600; min-width:130px;">${this.escapeHtml(row.book || '')}</td>
+              <td style="text-align:center; background:rgba(219,234,254,0.45); font-weight:600;">${this.escapeHtml(row.vocabTotal || '')}</td>
+              <td style="text-align:center; background:rgba(220,252,231,0.45); font-weight:600;">${this.escapeHtml(row.vocabCorrect || '')}</td>
+              <td style="text-align:center; background:rgba(254,249,195,0.55); font-weight:700;">${row.vocabRate ? `${this.escapeHtml(row.vocabRate)}%` : ''}</td>
+              <td style="text-align:center; background:rgba(243,232,255,0.5); font-weight:700; color:#6b21a8;">${this.escapeHtml(row.diagScore || '')}</td>
+              <td style="max-width:140px; font-size:0.82rem;">${this.escapeHtml(row.step2Memo || '')}</td>
+              <td style="text-align:center; font-weight:600; white-space:nowrap;">${this.escapeHtml(row.training || '')}</td>
+              <td style="min-width:110px; font-size:0.83rem;">${this.escapeHtml(row.detail || '')}</td>
+              <td style="text-align:center; background:rgba(252,231,243,0.45); font-weight:700; color:#9d174d;">${this.escapeHtml(row.errors || '')}</td>
+              <td style="text-align:center; white-space:nowrap; font-size:0.82rem;">${this.escapeHtml(row.understanding || '')}</td>
+              <td style="max-width:140px; font-size:0.82rem;">${this.escapeHtml(row.literacyMemo || '')}</td>
+              <td style="max-width:160px; font-size:0.82rem;">${this.escapeHtml(row.reflection || '')}</td>
+              <td style="max-width:150px; background:rgba(255,237,213,0.45); font-size:0.82rem; color:#9a3412;">${this.escapeHtml(row.wrongWords || '')}</td>
+              <td style="text-align:center;">
+                <button type="button" onclick="window.app && window.app.smsManager && window.app.smsManager.showDailyBriefingModal('${this.escapeHtml(row.name || '')}')" style="background:#2563eb; color:#fff; border:none; border-radius:4px; padding:0.25rem 0.5rem; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap;">📨 브리핑</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
       case "교사": {
         const filtered = this.dataMap.teachers.filter(row => {
           const nameVal = row.name ? String(row.name).toLowerCase() : "";
@@ -1241,6 +1311,12 @@ class SheetSimulator {
   renderFooterLegend() {
     const activeTab = this.getNormalizedTab(this.activeTab);
     switch (activeTab) {
+      case "학습기록":
+        return `
+          <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
+            <div>📖 <strong>학습기록 (18열 A~R):</strong> 학생앱(독서기록·어휘퀴즈)에서 제출한 숙제·도서·어휘·진단점수·트레이닝·발자국·틀린어휘가 날짜+이름 기준 첫 줄 가로 병합(초과 시 2·3번째 줄 확장) 방식으로 기록됩니다. 우측 <strong>[📨 브리핑]</strong> 버튼을 누르면 학부모 브리핑 문구가 즉시 생성됩니다.</div>
+          </div>
+        `;
       case "전체시간표":
         return `
           <div class="sheet-capacity-legend" style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
@@ -2355,8 +2431,8 @@ class SheetSimulator {
                 <th>학년 (C)</th>
                 <th>등록일 (D)</th>
                 <th>상담/채널 (E)</th>
-                <th>학생 특이사항... (F)</th>
-                <th>진도 관리 (G)</th>
+                <th>🎯 코칭 방향 & 주력 목표 (F)</th>
+                <th>📊 이달의 학습 요약 전광판 & 최근 도서 (G)</th>
                 <th>교과지수... (H)</th>
                 <th>레벨 변동 (I)</th>
                 <th>훈민정음... (J)</th>

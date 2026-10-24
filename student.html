@@ -3867,8 +3867,8 @@
                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
               <div>
-                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">4. 문항수/오답개수</label>
-                <input type="text" id="literacyErrorsInput" value="${detail.errors || ''}" placeholder="예: 10/2 또는 2개"
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">4. 오답개수 (틀린 수)</label>
+                <input type="text" id="literacyErrorsInput" value="${detail.errors || ''}" placeholder="예: 2 (또는 10/2)"
                        oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
@@ -3956,8 +3956,8 @@
                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
               <div>
-                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">문항수 / 오답개수</label>
-                <input type="text" value="${detail.errors || ''}" placeholder="예: 10/2 또는 2개"
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">오답개수 (틀린 수)</label>
+                <input type="text" value="${detail.errors || ''}" placeholder="예: 2 (또는 10/2)"
                        oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
@@ -3991,8 +3991,8 @@
                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
               <div>
-                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">문항수 / 오답개수</label>
-                <input type="text" value="${detail.errors || ''}" placeholder="예: 10/2 또는 2개"
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">오답개수 (틀린 수)</label>
+                <input type="text" value="${detail.errors || ''}" placeholder="예: 2 (또는 10/2)"
                        oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
@@ -4020,8 +4020,8 @@
                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1.5">문항수 / 오답개수</label>
-                <input type="text" value="${detail.errors || ''}" placeholder="예: 10/2 또는 2개"
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">오답개수 (틀린 수)</label>
+                <input type="text" value="${detail.errors || ''}" placeholder="예: 2 (또는 10/2)"
                        oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
@@ -5164,8 +5164,16 @@
         }
       })();
 
-      // [어휘] 진단 점수 + 4단계 트레이닝 기록을 [학습기록] 시트로 전송 (실패해도 하원 처리에는 영향 없음)
-      try { if (window.VocabBridge) VocabBridge.checkout(student, state.missions); } catch (e) { console.warn("[vocab] checkout error:", e); }
+      // [어휘 및 통합 학습기록] 숙제현황 + 발자국 메모 + 도서/진단 + 트레이닝 + 나의기록을 [학습기록] 18열 시트로 전송
+      try {
+        state.missions.hwBook = hwBook;
+        state.missions.step1Memo = step1Memo;
+        state.missions.step2Memo = step2Memo;
+        state.missions.step3Memo = step3Memo;
+        state.missions.step4Memo = step4Memo;
+        state.missions.studentReflection = reflection;
+        if (window.VocabBridge) VocabBridge.checkout(student, state.missions);
+      } catch (e) { console.warn("[vocab] checkout error:", e); }
 
       // [즉각 반응!] 0초 만에 꽃다발 폭죽 터지고 정확히 3초 뒤 로그인 화면으로 자동 이동!
       showCelebration(student.name);
@@ -5444,10 +5452,10 @@
   </script>
 
   <!-- 어휘 확인 학습 (내장 9,250개 어휘 DB + 구글 시트 [어휘] 연동) -->
-  <script src="vocab_db.js?v=5"></script>
-  <script src="vocab_engine.js?v=5"></script>
-  <script src="vocab_ui.js?v=5"></script>
-  <script src="vocab_bridge.js?v=5"></script>
+  <script src="vocab_db.js?v=6"></script>
+  <script src="vocab_engine.js?v=6"></script>
+  <script src="vocab_ui.js?v=6"></script>
+  <script src="vocab_bridge.js?v=6"></script>
 
 </body>
 </html>

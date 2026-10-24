@@ -395,7 +395,35 @@
     });
   };
 
-  // ---------- 결과 저장 ----------
+  // ---------- 오답 개수 정밀 파싱 ('10/2' -> 2, '10문제 중 1개' -> 1, '10080' 문자열 결합 버그 원천 차단) ----------
+  function parseErrorCount(v) {
+    var s = String(v == null ? '' : v).trim();
+    if (!s) return 0;
+    // '10/2' 또는 '15 / 3' 형태 (총문항/오답개수)인 경우 슬래시 뒤 숫자를 오답 개수로 추출
+    var slashMatch = s.match(/^\s*(\d+)\s*\/\s*(\d+)/);
+    if (slashMatch) {
+      var n1 = parseInt(slashMatch[1], 10);
+      var n2 = parseInt(slashMatch[2], 10);
+      if (n2 <= n1 && n2 < 50) return n2;
+      return n1 < 50 ? n1 : 0;
+    }
+    // '10문제 중 2개' 또는 '오답 3' 형태인 경우 마지막 작은 숫자를 추출
+    var jungMatch = s.match(/중\s*(\d+)/);
+    if (jungMatch) return parseInt(jungMatch[1], 10) || 0;
+    // 일반 숫자 추출 (첫 번째 독립 숫자만 추출하여 숫자들이 이어붙는 현상 방지)
+    var numMatch = s.match(/(\d+)/);
+    if (!numMatch) return 0;
+    var val = parseInt(numMatch[1], 10);
+    return (isNaN(val) || val > 200) ? 0 : val;
+  }
+
+  function normalizeHwStatus(hw) {
+    var s = String(hw || '').trim().replace(/\s+/g, '');
+    if (s === '숙제완료' || s === '숙제미완' || s === '미지참' || s === '학원에서풀기') return s;
+    return String(hw || '').trim();
+  }
+
+  // ---------- 결과 저장 (어휘오답 도배 줄 생성 중단, 어휘퀴즈 1줄에 틀린어휘 통합) ----------
   function onFinish(b, target, r, gradeBand) {
     var name = cleanName(state.currentStudent);
     var date = today();
@@ -403,32 +431,37 @@
     var wrongCnt = r.wrongCount != null ? r.wrongCount : Math.max(0, (r.total || 0) - (r.firstCorrect || 0));
     var retryCnt = r.retryCount != null ? r.retryCount : wrongCnt;
     var gb = gradeBand || ((/^(초|중)/.test(String(b.level || ''))) ? b.level : levelLabel(b.level));
+    var cleanedWrong = (r.wrongWords || []).filter(function (w) {
+      var s = String(w || '').trim();
+      return s && s !== '짝짓기' && s !== '(짝짓기)';
+    });
     var entry = {
       bookId: b.id, title: target.title, level: b.level, gradeBand: gb,
       total: r.total, firstCorrect: r.firstCorrect, wrongCount: wrongCnt, retryCount: retryCnt,
-      rate: r.rate, wrongWords: r.wrongWords
+      rate: r.rate, wrongWords: cleanedWrong
     };
     state.missions.vocabResults = state.missions.vocabResults.filter(function (x) { return x.bookId !== b.id; });
     state.missions.vocabResults.push(entry);
     try { B.renderBanner(); } catch (e) { /* 무시 */ }
     try { if (typeof updateProgress === 'function') updateProgress(500); else if (typeof saveActiveSession === 'function') saveActiveSession(); } catch (e) { /* 무시 */ }
-    var quizId = name + '|' + date + '|quiz|' + b.id + '|' + r.at;
+    var hwStatus = normalizeHwStatus(state.missions.hwStatus);
+    var step1Memo = String(state.missions.step1Memo || '').trim();
     var records = [{
-      id: quizId, date: date, type: '어휘퀴즈', level: b.level, book: target.title,
-      total: r.total, firstCorrect: r.firstCorrect, rate: r.rate,
-      wrongWords: (r.wrongWords || []).join(', '),
-      json: JSON.stringify({ gradeBand: gb, wrongCount: wrongCnt, retryCount: retryCnt, retryRounds: r.retryRounds, answers: r.answers })
+      date: date,
+      type: '어휘퀴즈',
+      hwStatus: hwStatus,
+      step1Memo: step1Memo,
+      level: gb,
+      book: target.title,
+      total: r.total,
+      firstCorrect: r.firstCorrect,
+      rate: r.rate,
+      wrongWords: cleanedWrong.join(', ')
     }];
-    (r.wrongRecords || []).forEach(function (w) {
-      records.push({
-        id: quizId + '|' + w.key, date: date, type: '어휘오답', level: b.level, book: target.title,
-        wrongWords: w.type === 'match' ? '(짝짓기)' : w.word, json: JSON.stringify(w)
-      });
-    });
     send(name, records);
   }
 
-  // 수업내용(K열)에 남길 요약 한 줄  →  회원분석 '학생 특이사항'에 날짜와 함께 쌓임
+  // 수업내용(K열)에 남길 요약 한 줄
   B.summaryText = function () {
     var list = (state.missions && state.missions.vocabResults) || [];
     if (!list.length) return '';
@@ -439,42 +472,141 @@
     }).join(' / ');
   };
 
-  // ---------- 하원 시: 진단 점수 + 4단계 트레이닝(이해도·오답 개수) 전송 ----------
-  function toNum(v) { var n = parseInt(String(v == null ? '' : v).replace(/[^0-9-]/g, ''), 10); return isNaN(n) ? 0 : n; }
-
+  // ---------- 하원 시: 18열 방식 1(첫 줄 가로 병합 + 추가 활동 시 2·3번째 줄 확장) 전체 데이터 구성 ----------
   B.buildCheckoutRecords = function (student, missions, date) {
     var name = cleanName(student);
     var out = [];
-    (missions.books || []).forEach(function (b) {
-      var score = String(b.score == null ? '' : b.score).trim();
-      if (!score) return;
-      out.push({ id: name + '|' + date + '|diag|' + b.id, date: date, type: '진단', level: b.level, book: b.title, score: score });
+    if (!missions) return out;
+
+    var hwStatus = normalizeHwStatus(missions.hwStatus);
+    var hwBook = String(missions.hwBook || '').trim();
+    var rawStep1 = String(missions.step1Memo || '').trim();
+    var step1Memo = hwBook ? ('[' + hwBook + '] ' + rawStep1).trim() : rawStep1;
+    var step2Memo = String(missions.step2Memo || '').trim();
+    var step3Memo = String(missions.step3Memo || '').trim();
+    var step4Memo = String(missions.step4Memo || '').trim();
+    var literacyMemo = [step3Memo, step4Memo].filter(Boolean).join(' / ');
+    var reflection = String(missions.studentReflection || '').trim();
+
+    // 1) 당일 기본 메타(숙제현황, 성실발자국, 독서발자국, 문해력발자국, 나의 시간 나의 기록) 레코드
+    if (hwStatus || step1Memo || step2Memo || literacyMemo || reflection) {
+      out.push({
+        date: date,
+        type: '일일요약',
+        hwStatus: hwStatus,
+        step1Memo: step1Memo,
+        step2Memo: step2Memo,
+        literacyMemo: literacyMemo,
+        reflection: reflection
+      });
+    }
+
+    // 2) 어휘퀴즈 결과 (혹시 중간 전송이 누락되었더라도 하원 시 가로 병합 보장)
+    (missions.vocabResults || []).forEach(function (vr) {
+      out.push({
+        date: date,
+        type: '어휘퀴즈',
+        level: vr.gradeBand || levelLabel(vr.level),
+        book: vr.title,
+        total: vr.total,
+        firstCorrect: vr.firstCorrect,
+        rate: vr.rate,
+        wrongWords: (vr.wrongWords || []).join(', ')
+      });
     });
+
+    // 3) 2단계 도서 및 진단점수 (도서별 메모 포함, 같은 도서명이면 어휘퀴즈와 같은 줄에 자동 매칭됨)
+    (missions.books || []).forEach(function (b) {
+      var title = String(b.title || '').trim();
+      var score = String(b.score == null ? '' : b.score).trim();
+      var status = String(b.status || '').trim();
+      var bMemo = String(b.memo || '').trim();
+      if (!title && !score && !bMemo) return;
+      var bookNoteParts = [];
+      if (status && status !== '진단완료') bookNoteParts.push('[' + status + ']');
+      if (bMemo) bookNoteParts.push(bMemo);
+      if (step2Memo) bookNoteParts.push(step2Memo);
+      out.push({
+        date: date,
+        type: '진단',
+        level: levelLabel(b.level || b.course || ''),
+        book: title,
+        score: score,
+        step2Memo: bookNoteParts.join(' ')
+      });
+    });
+
+    // 4) 3단계 집중 트레이닝 (문해력트레이닝 내 비문학·문학·문법 등 다중 항목도 각각 1건씩 분리하여 통계 오류 0% 보장)
     var details = missions.trainingDetails || {};
     (missions.trainingTypes || []).forEach(function (t) {
       var d = details[t] || {};
-      var detail = '', errors = 0;
+      var under = String(d.understanding || missions.trainingUnderstanding || '').trim();
       if (t === '문해력트레이닝') {
         var items = Array.isArray(d.items) ? d.items.slice() : [];
-        if ((d.session || d.errors) && !items.some(function (it) { return it.session === d.session && it.errors === d.errors; })) {
-          items.push({ field: d.field || '복합', vol: d.vol || '1단계', session: d.session, errors: d.errors });
+        if ((d.session || d.errors || d.field || d.vol) && !items.some(function (it) { return it.field === d.field && it.vol === d.vol && it.session === d.session && it.errors === d.errors; })) {
+          items.push({ field: d.field || '비문학', vol: d.vol || '1단계', session: d.session, errors: d.errors });
         }
-        detail = items.map(function (it) { return [it.field, it.vol, it.session ? it.session + '차시' : ''].filter(Boolean).join(' '); }).join('; ');
-        items.forEach(function (it) { errors += toNum(it.errors); });
+        if (!items.length) {
+          out.push({ date: date, type: '트레이닝', training: t, detail: '', errors: 0, understanding: under, literacyMemo: literacyMemo });
+        } else {
+          items.forEach(function (it) {
+            var det = [it.field, it.vol, it.session ? it.session + '차시' : ''].filter(Boolean).join(' ');
+            out.push({
+              date: date,
+              type: '트레이닝',
+              training: t,
+              detail: det,
+              errors: parseErrorCount(it.errors),
+              understanding: under,
+              literacyMemo: literacyMemo
+            });
+          });
+        }
       } else if (t === '오답수정+선지분석') {
         var its = Array.isArray(d.items) ? d.items.slice() : [];
-        if ((d.errors || d.fixed) && !its.some(function (it) { return it.field === d.field && it.errors === d.errors && it.fixed === d.fixed; })) {
+        if ((d.errors || d.fixed || d.field) && !its.some(function (it) { return it.field === d.field && it.errors === d.errors && it.fixed === d.fixed; })) {
           its.push({ field: d.field || '복합', errors: d.errors, fixed: d.fixed });
         }
-        detail = its.map(function (it) { return [it.field, it.errors ? '오답:' + it.errors : '', it.fixed ? '수정:' + it.fixed : ''].filter(Boolean).join(' '); }).join('; ');
-        its.forEach(function (it) { errors += toNum(it.errors); });
+        if (!its.length) {
+          out.push({ date: date, type: '트레이닝', training: t, detail: '', errors: 0, understanding: under, literacyMemo: literacyMemo });
+        } else {
+          its.forEach(function (it) {
+            var det = [it.field, it.fixed ? '수정:' + it.fixed : ''].filter(Boolean).join(' ');
+            out.push({
+              date: date,
+              type: '트레이닝',
+              training: t,
+              detail: det,
+              errors: parseErrorCount(it.errors),
+              understanding: under,
+              literacyMemo: literacyMemo
+            });
+          });
+        }
       } else {
-        detail = [d.vol, d.session ? d.session + '차시' : ''].filter(Boolean).join(' ');
-        errors = toNum(d.errors);
+        var detailStr = [d.vol, d.session ? d.session + '차시' : ''].filter(Boolean).join(' ');
+        out.push({
+          date: date,
+          type: '트레이닝',
+          training: t,
+          detail: detailStr,
+          errors: parseErrorCount(d.errors),
+          understanding: under,
+          literacyMemo: literacyMemo
+        });
       }
-      out.push({ id: name + '|' + date + '|train|' + t, date: date, type: '트레이닝', training: t, detail: detail, errors: errors, understanding: d.understanding || '' });
     });
+
     return out;
+  };
+
+  // 독해밀도·개념밀도 등 외부 서랍 모듈에서 학습기록 시트로 즉시 전송할 수 있는 공용 함수
+  B.sendCustomRecord = function (recordObj) {
+    if (!recordObj) return Promise.resolve();
+    var studentName = recordObj.name || cleanName(state && state.currentStudent);
+    if (!studentName) return Promise.resolve();
+    var rec = Object.assign({ date: today() }, recordObj);
+    return send(studentName, [rec]);
   };
 
   B.checkout = function (student, missions) {

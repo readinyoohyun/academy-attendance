@@ -259,19 +259,140 @@ class SMSManager {
   }
 
   showSmsPreviewModal(studentName, completedTitle, nextTitle) {
-    const memberRec = this.app.state.memberAnalysis.find(m => m.name.replace(/\s+/g, '') === studentName.replace(/\s+/g, ''));
+    const memberRec = (this.app.state.memberAnalysis || []).find(m => m.name.replace(/\s+/g, '') === studentName.replace(/\s+/g, ''));
     const phone = memberRec ? (memberRec.phone || "").trim() : "";
     
     const message = `[생각나래] ${studentName} 학생이 교재 [${completedTitle}] 학습을 잘 완료했습니다. 다음 교재인 [${nextTitle}]를 준비해서 보내주시기 바랍니다.`;
-    
+    this.openSmsModalWithContent(`📖 다음 교재 준비 안내 문자 발송 (${studentName})`, phone, message);
+  }
+
+  buildDailyBriefingMessage(studentName) {
+    const cleanTarget = (studentName || "").replace(/\s+/g, "");
+    const allRecs = (this.app.state.learningRecords || []).filter(
+      r => (r.name || "").replace(/\s+/g, "") === cleanTarget
+    );
+
+    const now = new Date();
+    const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const todayMd = `${now.getMonth() + 1}/${now.getDate()}`;
+
+    let targetDate = todayIso;
+    let dayRecs = allRecs.filter(r => (r.date || "").slice(0, 10) === todayIso);
+    if (dayRecs.length === 0 && allRecs.length > 0) {
+      targetDate = (allRecs[allRecs.length - 1].date || todayIso).slice(0, 10);
+      dayRecs = allRecs.filter(r => (r.date || "").slice(0, 10) === targetDate);
+    }
+
+    const mdLabel = targetDate.length >= 10
+      ? `${parseInt(targetDate.slice(5, 7), 10)}/${parseInt(targetDate.slice(8, 10), 10)}`
+      : todayMd;
+
+    let hwStatus = "";
+    let step1Memo = "";
+    let reflection = "";
+    const books = [];
+    const trainings = [];
+    const wrongWordsAll = [];
+
+    dayRecs.forEach(r => {
+      if (r.hwStatus && !hwStatus) hwStatus = r.hwStatus;
+      if (r.step1Memo && !step1Memo) step1Memo = r.step1Memo;
+      if (r.reflection && !reflection) reflection = r.reflection;
+
+      if (r.book || r.vocabTotal || r.diagScore) {
+        let bLine = `• 도서: ${r.book || "어휘 학습"}${r.level ? ` (${r.level})` : ""}`;
+        const sub = [];
+        if (r.diagScore !== "" && r.diagScore !== undefined) sub.push(`독서이해도 진단 ${r.diagScore}점`);
+        if (r.vocabTotal !== "" && r.vocabTotal !== undefined) {
+          sub.push(`어휘학습 ${r.vocabTotal}문항 중 ${r.vocabCorrect || 0}개 정답(${r.vocabRate || 0}%)`);
+        }
+        if (sub.length) bLine += ` — ${sub.join(" / ")}`;
+        if (r.step2Memo) bLine += `\n  └ 독서발자국: "${r.step2Memo}"`;
+        books.push(bLine);
+      }
+      if (r.wrongWords) {
+        const cleanedWords = String(r.wrongWords)
+          .split(",")
+          .map(w => w.trim())
+          .filter(w => w && w !== "짝짓기" && w !== "(짝짓기)");
+        if (cleanedWords.length) wrongWordsAll.push(cleanedWords.join(", "));
+      }
+
+      if (r.training) {
+        let tLine = `• ${r.training}${r.detail ? `: ${r.detail}` : ""}`;
+        const tSub = [];
+        if (r.errors !== "" && r.errors !== undefined) tSub.push(`오답 ${r.errors}개`);
+        if (r.understanding) tSub.push(`이해도: ${r.understanding}`);
+        if (tSub.length) tLine += ` (${tSub.join(", ")})`;
+        if (r.literacyMemo) tLine += `\n  └ 문해력발자국: "${r.literacyMemo}"`;
+        trainings.push(tLine);
+      }
+    });
+
+    // 오늘 출석부(dailyLogs)의 실시간 수업 기록도 보조 병합 (시트 동기화 전 즉시 브리핑 지원)
+    const dailyLog = (this.app.state.dailyLogs || []).find(
+      d => (d.name || "").replace(/\s+/g, "") === cleanTarget && (d.grammarDone || d.contents)
+    );
+    if (dailyLog && dayRecs.length === 0) {
+      if (dailyLog.grammarDone) {
+        books.push(`• 독서/글쓰기: ${dailyLog.grammarDone}`);
+      }
+      if (dailyLog.contents) {
+        trainings.push(`• 오늘 수업 활동: ${dailyLog.contents}`);
+      }
+    }
+
+    const lines = [];
+    lines.push(`[독서와국어 오늘의 수업 브리핑 🌿]`);
+    lines.push(`안녕하세요, ${studentName} 학부모님! 오늘(${mdLabel}) 학원에서 진행한 수업 활동 안내드립니다.`);
+    lines.push("");
+    if (hwStatus || step1Memo) {
+      lines.push(`✅ 숙제 현황: ${hwStatus || "확인 완료"}${step1Memo ? ` (${step1Memo})` : ""}`);
+    }
+    if (books.length) {
+      lines.push(`📚 독서 & 어휘 학습`);
+      books.forEach(b => lines.push(b));
+    }
+    if (wrongWordsAll.length) {
+      lines.push(`📝 오늘 복습한 어휘: ${wrongWordsAll.join(", ")}`);
+    }
+    if (trainings.length) {
+      lines.push(`✏️ 문해력 & 국어 트레이닝`);
+      trainings.forEach(t => lines.push(t));
+    }
+    if (reflection) {
+      lines.push(`💬 ${studentName} 학생의 오늘 다짐: "${reflection}"`);
+    }
+    if (!hwStatus && !books.length && !trainings.length && !reflection) {
+      lines.push(`• 오늘 출석 및 정규 수업 활동을 성실히 마쳤습니다.`);
+    }
+    lines.push("");
+    lines.push(`가정에서도 따뜻한 격려와 칭찬 부탁드립니다. 감사합니다! 😊`);
+    return lines.join("\n");
+  }
+
+  showDailyBriefingModal(studentName) {
+    const memberRec = (this.app.state.memberAnalysis || []).find(
+      m => (m.name || "").replace(/\s+/g, "") === (studentName || "").replace(/\s+/g, "")
+    );
+    const phone = memberRec ? (memberRec.phone || "").trim() : "";
+    const message = this.buildDailyBriefingMessage(studentName);
+    this.openSmsModalWithContent(`📨 오늘 수업 브리핑 발송 / 카톡 복사 (${studentName})`, phone, message);
+  }
+
+  openSmsModalWithContent(titleText, phone, message) {
     const modal = document.getElementById("modalSmsPreview");
+    const titleEl = modal ? modal.querySelector(".modal-title") : null;
     const phoneInput = document.getElementById("smsPreviewPhone");
     const textInput = document.getElementById("smsPreviewText");
+    const copyBtn = document.getElementById("btnCopyKakaoBriefing");
     
     if (!modal || !phoneInput || !textInput) return;
+    if (titleEl && titleText) titleEl.textContent = titleText;
     
-    phoneInput.value = phone;
-    textInput.value = message;
+    phoneInput.value = phone || "";
+    textInput.value = message || "";
+    textInput.rows = Math.min(14, Math.max(7, (message || "").split("\n").length + 1));
     
     modal.classList.add("active");
     
@@ -285,6 +406,21 @@ class SMSManager {
     
     closeBtn.onclick = closeModal;
     cancelBtn.onclick = closeModal;
+
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        const txt = textInput.value;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(() => {
+            this.app.showToast("📋 브리핑 문구가 복사되었습니다! 카카오톡에 붙여넣으세요.");
+          });
+        } else {
+          textInput.select();
+          document.execCommand("copy");
+          this.app.showToast("📋 브리핑 문구가 복사되었습니다! 카카오톡에 붙여넣으세요.");
+        }
+      };
+    }
     
     form.onsubmit = (e) => {
       e.preventDefault();
@@ -298,7 +434,7 @@ class SMSManager {
 
   sendDirectSms(phone, message) {
     if (this.smsMode === "none") {
-      alert("문자 발송 모드가 '발송 안 함'으로 설정되어 있습니다.");
+      alert("문자 발송 모드가 '발송 안 함'으로 설정되어 있습니다. [📋 카톡용 복사] 버튼을 이용하시거나 설정에서 문자 발송 모드를 변경해 주세요.");
       return;
     }
     
@@ -345,11 +481,55 @@ class SMSManager {
       })
       .then(data => {
         console.log("[SMS Direct Auto Sent Successfully]", data);
-        alert("교재 완료 안내 문자가 자동으로 성공적으로 발송되었습니다!");
+        this.app.showToast("📲 학부모님께 안내 문자가 성공적으로 발송되었습니다!");
       })
       .catch(err => {
         console.error("Textbee SMS 발송 오류: ", err);
         alert("문자 자동 발송 중 오류가 발생했습니다: " + err.message);
+      });
+    } else if (this.smsMode === "local") {
+      if (!this.smsLocalIp) {
+        this.app.showToast("로컬 IP 주소가 입력되지 않았습니다!", true);
+        return;
+      }
+      let targetUrl = this.smsLocalIp.trim();
+      if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+        targetUrl = "http://" + targetUrl;
+      }
+      let sendUrl = targetUrl;
+      const hasCustomPath = targetUrl.includes("/send") || targetUrl.includes("/sms") || targetUrl.includes("/message");
+      if (!hasCustomPath) {
+        sendUrl = targetUrl.endsWith("/") ? targetUrl + "send" : targetUrl + "/send";
+      }
+      const payload = {
+        to: cleanPhone,
+        phone: cleanPhone,
+        number: cleanPhone,
+        recipients: [cleanPhone],
+        message: message
+      };
+      fetch(sendUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(res => {
+        if (!res.ok && !hasCustomPath) {
+          return fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        }
+        return res;
+      })
+      .then(res => {
+        if (!res.ok) throw new Error(`Local SMS Gateway HTTP ${res.status}`);
+        this.app.showToast("📲 로컬 와이파이 문자 발송 완료!");
+      })
+      .catch(err => {
+        console.error("Local SMS Gateway Send Error: ", err);
+        this.app.showToast("로컬 문자 발송 실패 (네트워크/IP 확인 필요)", true);
       });
     }
   }

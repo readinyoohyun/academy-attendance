@@ -186,13 +186,16 @@ main {
 /* Responsive Two Column Grid (Collapses to 1 column on tablets/mobile) */
 .responsive-two-column-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
+.responsive-two-column-grid > * {
+  min-width: 0;
+}
 @media(max-width: 900px) {
   .responsive-two-column-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
