@@ -3246,7 +3246,7 @@
           diffBadge = `<span class="px-2.5 py-1 rounded-lg ${colorClass} border text-xs font-black shadow-xs">${b.difficulty}</span>`;
         }
 
-        // 책문 열기 버튼: '어휘학습', '책소개'
+        // 책문 열기 버튼: '책 소개 읽기', '어휘지 완료'
         const vocabActive = !!b.vocabDone;
         const infoActive = !!b.infoDone;
 
@@ -3260,13 +3260,13 @@
         const preReadingButtons = `
           <div class="inline-flex items-center gap-1.5 flex-wrap">
             <span class="text-xs font-black text-slate-600 mr-0.5">책문 열기:</span>
-            <button type="button" onclick="toggleBookActivity('${b.id}', 'vocabDone')"
-                    class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ${vocabClass}">
-              <span>어휘학습</span>
-            </button>
             <button type="button" onclick="toggleBookActivity('${b.id}', 'infoDone')"
                     class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ${infoClass}">
-              <span>책소개</span>
+              <span>책 소개 읽기</span>
+            </button>
+            <button type="button" onclick="toggleBookActivity('${b.id}', 'vocabDone')"
+                    class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ${vocabClass}">
+              <span>어휘지 완료</span>
             </button>
             ${(window.VocabBridge && VocabBridge.buttonHtml) ? VocabBridge.buttonHtml(b) : ''}
           </div>
@@ -4538,8 +4538,8 @@
         const hasScore = (b.score !== undefined && b.score !== null && String(b.score).trim() !== "");
 
         const acts = [];
-        if (b.vocabDone) acts.push("어휘학습");
-        if (b.infoDone) acts.push("책소개");
+        if (b.infoDone) acts.push("책 소개 읽기");
+        if (b.vocabDone) acts.push("어휘지 완료");
         const actSuffix = acts.length > 0 ? ` [${acts.join(",")}]` : "";
 
         if (!hasScore && !isDone) {
