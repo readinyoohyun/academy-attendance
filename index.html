@@ -959,7 +959,7 @@ function doGet(e) {
         dailyLogsData.push({
           id: "daily_" + (3 + i),
           row: 3 + i,
-          date: String(data[i][0] || ""),
+          date: String(data[i][0] || "").replace(/\(([월화수목금토일])\)/g, "$1"),
           time: String(data[i][1] || ""),
           name: name,
           notes: String(data[i][3] || ""),
@@ -1224,6 +1224,7 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
       };
       var col = cols[field];
       if (col &amp;&amp; targetRow &gt; 2) {
+        if (field === "date" &amp;&amp; value) value = String(value).replace(/\(([월화수목금토일])\)/g, "$1");
         var cell = sheet.getRange(targetRow, col);
         try {
           cell.setValue(value);
@@ -1581,11 +1582,15 @@ function doPost(e) {
         }
       }
 
-      // 2. 기존 시간표에 학생이 이미 있다면 무조건 해당 행을 업데이트, 없을 때만 맨 아래(lastRow + 1)에 단 1회 신규 추가!
+      // 2. 기존 시간표에 학생이 이미 있다면 무조건 해당 행을 업데이트, 없을 때만 맨 아래(lastRow + 1)에 단 1회 신규 추가! (요일 괄호 제거 통일)
       var isExisting = (targetRow !== -1);
       if (!isExisting) {
         targetRow = lastRow + 1;
-        sheet.getRange(targetRow, 1).setValue(postData.date || Utilities.formatDate(new Date(), "GMT+9", "M/d(E)")); // 날짜요일
+        var nowD = new Date();
+        var koDays = ["일", "월", "화", "수", "목", "금", "토"];
+        var defaultDateNoParen = (nowD.getMonth() + 1) + "/" + nowD.getDate() + koDays[nowD.getDay()];
+        var cleanDateStr = String(postData.date || defaultDateNoParen).replace(/\(([월화수목금토일])\)/g, "$1");
+        sheet.getRange(targetRow, 1).setValue(cleanDateStr); // 날짜요일 (예: 10/26월)
         sheet.getRange(targetRow, 2).setValue(postData.time || "시간 외"); // 시간
         sheet.getRange(targetRow, 3).setValue(postData.name); // 이름
       }
@@ -4444,16 +4449,53 @@ function migrateMemberAnalysisToLearningRecords() {
   var migratedBookCount = 0;
   var cleanedStudentCount = 0;
 
-  for (var i = 0; i &lt; data.length; i++) {
-    var rowNum = 2 + i;
-    var name = String(data[i][1] || "").replace(/\s+/g, "");
-    if (!name) continue;
+  // [Bulk 1회 처리] 기존 학습기록 전체를 단 1번만 메모리로 읽어들여 요약 계산 및 이관 병합
+  var recLastRow = sheetRec.getLastRow();
+  var recData = recLastRow &gt;= 2 ? sheetRec.getRange(2, 1, recLastRow - 1, 18).getValues() : [];
+  var existingKeys = {};
+  var now = new Date();
+  var ymPrefix = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM");
+  var curMm = now.getMonth() + 1;
+  var summaryMap = {};
+  var latestBookMap = {};
 
+  for (var rIdx = 0; rIdx &lt; recData.length; rIdx++) {
+    var rv = recData[rIdx];
+    var rName = String(rv[1] || "").replace(/\s+/g, "");
+    if (!rName) continue;
+    var rDate = rv[0] ? vocabFmtDate_(rv[0]) : "";
+    var rBook = String(rv[5] || "").trim();
+    existingKeys[rDate + "|" + rName + "|" + vocabNormBook_(rBook)] = true;
+
+    if (rBook &amp;&amp; !latestBookMap[rName]) {
+      var rDs = vocabNum_(rv[9]);
+      latestBookMap[rName] = formatRecentBookBoardLine_(rBook + (rDs !== "" ? " " + rDs + "점" : ""));
+    }
+    if (rDate.indexOf(ymPrefix) === 0) {
+      if (!summaryMap[rName]) summaryMap[rName] = { books: {}, vocab: [], read: [], concept: [], tr: 0 };
+      if (rBook) summaryMap[rName].books[rBook] = true;
+      var vr = vocabNum_(rv[8]);
+      if (vr !== "") summaryMap[rName].vocab.push(vr);
+      var ds = vocabNum_(rv[9]);
+      if (ds !== "") summaryMap[rName].read.push(ds);
+      var tr = String(rv[11] || "").trim();
+      if (tr) summaryMap[rName].tr++;
+    }
+  }
+
+  var newRecRows = [];
+  var newFGValues = [];
+
+  for (var i = 0; i &lt; data.length; i++) {
+    var name = String(data[i][1] || "").replace(/\s+/g, "");
     var rawF = String(data[i][5] || "").trim();
     var rawG = String(data[i][6] || "").trim();
-    var recordsToMigrate = [];
+    if (!name) {
+      newFGValues.push([rawF, rawG]);
+      continue;
+    }
 
-    // F열 정리: 날짜 프리픽스(예: 26.4/15, 4/15)로 시작하는 일일 로그 줄만 분리하고 학생 성향 &amp; 코칭 방향은 보존
+    var nextF = rawF;
     if (rawF) {
       var fLines = rawF.split(/\r?\n/);
       var keptFLines = [];
@@ -4466,30 +4508,37 @@ function migrateMemberAnalysisToLearningRecords() {
           var mm = ("0" + parseInt(fDateMatch[2], 10)).slice(-2);
           var dd = ("0" + parseInt(fDateMatch[3], 10)).slice(-2);
           var memoBody = String(fDateMatch[4] || "").trim();
-          if (memoBody) {
-            recordsToMigrate.push({
-              date: yy + "-" + mm + "-" + dd,
-              type: "일일요약",
-              hwStatus: memoBody.indexOf("숙제완료") !== -1 ? "숙제완료" : (memoBody.indexOf("미지참") !== -1 ? "미지참" : ""),
-              literacyMemo: memoBody
-            });
+          var dIso = yy + "-" + mm + "-" + dd;
+          var k1 = dIso + "|" + name + "|";
+          if (memoBody &amp;&amp; !existingKeys[k1]) {
+            existingKeys[k1] = true;
+            var hwSt = memoBody.indexOf("숙제완료") !== -1 ? "숙제완료" : (memoBody.indexOf("미지참") !== -1 ? "미지참" : "");
+            newRecRows.push([vocabParseDate_(dIso), name, hwSt, "", "", "", "", "", "", "", "", "", "", "", "", memoBody, "", ""]);
           }
         } else {
           keptFLines.push(fl);
         }
       }
-      var nextF = keptFLines.join("\n");
-      if (nextF !== rawF) {
-        sheetMember.getRange(rowNum, 6).setValue(nextF);
-      }
+      nextF = keptFLines.join("\n");
     }
 
-    // G열 정리: 날짜+책이름+진단점수 줄을 파싱해 [학습기록]에 이관하고 3줄 구조(🎯목표 + 📊이달요약 + 📖최근도서 1권)만 유지
+    var goalLine = "";
+    var existingSummaryLine = "";
+    var bookCandidates = [];
     if (rawG) {
       var gLines = rawG.split(/\r?\n/);
       for (var gIdx = 0; gIdx &lt; gLines.length; gIdx++) {
         var gl = gLines[gIdx].trim();
-        if (!gl || gl.indexOf("📊") === 0 || gl.indexOf("🎯") === 0 || gl.indexOf("[목표]") === 0) continue;
+        if (!gl) continue;
+        if (gl.indexOf("🎯") === 0 || gl.indexOf("[목표]") === 0 || gl.indexOf("목표:") === 0) {
+          goalLine = gl.indexOf("🎯") === 0 ? gl : (gl.indexOf("[목표]") === 0 ? "🎯 " + gl : "🎯 [목표] " + gl.replace(/^목표:\s*/, ""));
+          continue;
+        }
+        if (gl.indexOf("📊") === 0) {
+          existingSummaryLine = gl;
+          continue;
+        }
+        bookCandidates.push(gl);
         var gDateMatch = gl.match(/^(?:(\d{2})[\.\/])?(\d{1,2})\/(\d{1,2})\s+(.+)$/);
         if (gDateMatch) {
           var gYy = gDateMatch[1] ? (2000 + parseInt(gDateMatch[1], 10)) : curYear;
@@ -4499,31 +4548,56 @@ function migrateMemberAnalysisToLearningRecords() {
           var scoreMatch = rest.match(/^(.*?)\s+(\d{2,3})\s*점?$/);
           var bTitle = scoreMatch ? scoreMatch[1].trim() : rest;
           var bScore = scoreMatch ? parseInt(scoreMatch[2], 10) : "";
-          if (bTitle) {
-            recordsToMigrate.push({
-              date: gYy + "-" + gMm + "-" + gDd,
-              type: "진단",
-              book: bTitle,
-              score: bScore
-            });
+          var gIso = gYy + "-" + gMm + "-" + gDd;
+          var k2 = gIso + "|" + name + "|" + vocabNormBook_(bTitle);
+          if (bTitle &amp;&amp; !existingKeys[k2]) {
+            existingKeys[k2] = true;
+            newRecRows.push([vocabParseDate_(gIso), name, "", "", "", bTitle, "", "", "", bScore, "", "", "", "", "", "", "", ""]);
             migratedBookCount++;
+            if (gIso.indexOf(ymPrefix) === 0) {
+              if (!summaryMap[name]) summaryMap[name] = { books: {}, vocab: [], read: [], concept: [], tr: 0 };
+              summaryMap[name].books[bTitle] = true;
+              if (bScore !== "") summaryMap[name].read.push(bScore);
+            }
           }
         }
       }
-
-      if (recordsToMigrate.length) {
-        vocabUpsertStudentDayRecords_(sheetRec, name, recordsToMigrate);
-      }
-
-      var nextG = composeMemberColGBoard_(ss, name, rawG, [], "");
-      var gCell = sheetMember.getRange(rowNum, 7);
-      applyRichTextStyling(gCell, nextG);
-      cleanedStudentCount++;
-    } else if (recordsToMigrate.length) {
-      vocabUpsertStudentDayRecords_(sheetRec, name, recordsToMigrate);
-      refreshMemberAnalysisSummaryBoardForStudent_(ss, name);
-      cleanedStudentCount++;
     }
+
+    var sm = summaryMap[name];
+    var summaryLine = existingSummaryLine;
+    if (sm) {
+      var parts = [];
+      var bCnt = Object.keys(sm.books).length;
+      if (bCnt) parts.push("독서 " + bCnt + "권");
+      if (sm.vocab.length) parts.push("어휘 " + Math.round(sm.vocab.reduce(function(a, b) { return a + b; }, 0) / sm.vocab.length) + "점");
+      if (sm.read.length) parts.push("독해 " + Math.round(sm.read.reduce(function(a, b) { return a + b; }, 0) / sm.read.length) + "점");
+      if (sm.tr) parts.push("트레이닝 " + sm.tr + "회");
+      if (parts.length) summaryLine = "📊 [" + curMm + "월] " + parts.join(" | ");
+    }
+
+    var recentBookLine = bookCandidates.length &gt; 0
+      ? formatRecentBookBoardLine_(bookCandidates[bookCandidates.length - 1])
+      : (latestBookMap[name] || "");
+
+    var outG = [];
+    if (goalLine) outG.push(goalLine);
+    if (summaryLine) outG.push(summaryLine);
+    if (recentBookLine) outG.push(recentBookLine);
+    var nextG = outG.join("\n");
+
+    newFGValues.push([nextF, nextG]);
+    if (nextF !== rawF || nextG !== rawG) cleanedStudentCount++;
+  }
+
+  // [Bulk 1회 쓰기] F열·G열 전체를 단 1번의 setValues 호출로 즉시 반영
+  sheetMember.getRange(2, 6, newFGValues.length, 2).setValues(newFGValues);
+
+  // [Bulk 1회 쓰기] 이관된 학습기록 전체를 단 1번에 병합 후 최신순 정렬 1회 실행
+  if (newRecRows.length &gt; 0) {
+    var combinedRec = recData.concat(newRecRows);
+    sheetRec.getRange(2, 1, combinedRec.length, 18).setValues(combinedRec);
+    vocabSortRecordSheetNewestFirst_(sheetRec);
   }
 
   ui.alert(
@@ -5856,11 +5930,11 @@ function showDailyBriefingModal() {
     </div>
   </div>
 
-  <script src="sheet-sim.js?v=2.3.5"></script>
-  <script src="api.js?v=2.3.5"></script>
-  <script src="sms-manager.js?v=2.3.5"></script>
-  <script src="crm-manager.js?v=2.3.5"></script>
-  <script src="dashboard-manager.js?v=2.3.5"></script>
-  <script src="app.js?v=2.3.5"></script>
+  <script src="sheet-sim.js?v=2.3.6"></script>
+  <script src="api.js?v=2.3.6"></script>
+  <script src="sms-manager.js?v=2.3.6"></script>
+  <script src="crm-manager.js?v=2.3.6"></script>
+  <script src="dashboard-manager.js?v=2.3.6"></script>
+  <script src="app.js?v=2.3.6"></script>
 </body>
 </html>

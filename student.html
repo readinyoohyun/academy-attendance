@@ -850,14 +850,14 @@
       const month = now.getMonth() + 1;
       const date = now.getDate();
       const dayChar = state.todayDay.slice(0, 1);
-      state.todayDateStr = `${month}/${date}(${dayChar})`; // [1번 개편] 10/8(목) 통일
+      state.todayDateStr = `${month}/${date}${dayChar}`; // M/d요일 (괄호 없음, 예: 10/26월)
 
-      // 구글 시트에 이미 오늘 날짜(예: 10/15목)가 기재되어 있다면 그 포맷을 우선 동기화 (단, 오늘과 다른 날짜는 절대 반영 금지)
+      // 구글 시트 활성 출석부의 날짜 포맷 동기화 (괄호 제거 통일)
       state.sheetDateStr = state.todayDateStr;
       if (Array.isArray(state.dailyLogs) && state.dailyLogs.length > 0) {
-        const topWithDate = state.dailyLogs.find(l => l && l.date && isSameDate(l.date, state.todayDateStr));
+        const topWithDate = state.dailyLogs.find(l => l && l.date && String(l.date).trim() && String(l.date).indexOf("여기부터는") !== 0);
         if (topWithDate && topWithDate.date) {
-          state.sheetDateStr = String(topWithDate.date).trim();
+          state.sheetDateStr = String(topWithDate.date).trim().replace(/\(([월화수목금토일])\)/g, "$1");
         }
       }
 
@@ -928,15 +928,7 @@
           const parsed = JSON.parse(cached);
           state.students = parsed.students || [];
           state.dailyLogs = parsed.dailyLogs || [];
-
-          // 캐시된 출석부에서 오늘 날짜 포맷 동기화 (오늘 날짜와 일치할 때만 적용)
-          state.sheetDateStr = state.todayDateStr;
-          if (Array.isArray(state.dailyLogs) && state.dailyLogs.length > 0) {
-            const topWithDate = state.dailyLogs.find(l => l && l.date && isSameDate(l.date, state.todayDateStr));
-            if (topWithDate && topWithDate.date) {
-              state.sheetDateStr = String(topWithDate.date).trim();
-            }
-          }
+          initClock();
 
           populateStudentsDatalist();
         } catch(e) {
@@ -1095,15 +1087,6 @@
           state.students = data.students || [];
           state.dailyLogs = data.dailyLogs || [];
           state.learningRecords = data.learningRecords || [];
-
-          // 구글 시트 출석부 상단 행의 날짜를 추출하여 시트의 날짜 문자열 포맷 동기화 (오늘 날짜와 일치할 때만 적용)
-          state.sheetDateStr = state.todayDateStr;
-          if (Array.isArray(state.dailyLogs) && state.dailyLogs.length > 0) {
-            const topWithDate = state.dailyLogs.find(l => l && l.date && isSameDate(l.date, state.todayDateStr));
-            if (topWithDate && topWithDate.date) {
-              state.sheetDateStr = String(topWithDate.date).trim();
-            }
-          }
           initClock();
           
           localStorage.setItem("academy_attendance_state", JSON.stringify({
@@ -1412,42 +1395,27 @@
       loginStudent(student, todayLog);
     }
 
-    // Helper: Find student's today log strictly matching student name and today's date
+    // Helper: Find student's active row in 오늘 출석부(출결보강관리) — 시트 명단에 이미 이름이 있으면 날짜와 무관하게 무조건 해당 행 매칭 (하단 중복 생성 절대 금지)
     function findStudentTodayLog(studentName) {
       if (!studentName || !Array.isArray(state.dailyLogs)) return null;
 
-      // 1. 당일 날짜(isSameDate)와 이름이 모두 일치하는 행을 시간표 순서대로 검색 (중복 시 위쪽 정규 배정 행 우선)
+      // 1순위: 오늘 날짜(또는 활성 시트 상단 날짜)와 이름이 일치하는 행
       let found = state.dailyLogs.find(l => {
         if (!l || !l.name) return false;
-        return isSameStudentName(l.name, studentName) && isSameDate(l.date, state.todayDateStr);
+        return isSameStudentName(l.name, studentName) && (isSameDate(l.date, state.todayDateStr) || (state.sheetDateStr && isSameDate(l.date, state.sheetDateStr)));
       });
       if (found) return found;
 
-      // 2. 날짜 필드가 비어있거나("-" 등) 미기재된 행 중 이름 일치 검색 (과거 다른 날짜가 적힌 행은 절대 매칭 차단!)
-      return state.dailyLogs.find(l => {
-        if (!l || !l.name) return false;
-        const hasDate = l.date && String(l.date).trim() !== "" && String(l.date).trim() !== "-";
-        if (hasDate && !isSameDate(l.date, state.todayDateStr)) {
-          return false;
-        }
-        return isSameStudentName(l.name, studentName);
-      }) || null;
+      // 2순위: 오늘 출석부 시트에 이미 배정된 동일 이름 행 (18시 이후 내일 출석부가 미리 올라온 경우 포함)
+      return state.dailyLogs.find(l => l && l.name && isSameStudentName(l.name, studentName)) || null;
     }
 
     // Helper: Allocate a guaranteed safe, non-colliding row number for a student
     function getSafeNextDailyLogRow(studentName) {
-      // 1. 이미 active logs에 본인의 행이 있다면 그 행 반환 (과거 다른 날짜 제외)
-      if (studentName && Array.isArray(state.dailyLogs)) {
-        const myLog = state.dailyLogs.find(l => {
-          if (!l || !l.name) return false;
-          const hasDate = l.date && String(l.date).trim() !== "" && String(l.date).trim() !== "-";
-          if (hasDate && !isSameDate(l.date, state.todayDateStr)) return false;
-          return isSameStudentName(l.name, studentName);
-        });
-        if (myLog && myLog.row) {
-          const r = parseInt(myLog.row, 10);
-          if (!isNaN(r) && r >= 3) return r;
-        }
+      const myLog = findStudentTodayLog(studentName);
+      if (myLog && myLog.row) {
+        const r = parseInt(myLog.row, 10);
+        if (!isNaN(r) && r >= 3) return r;
       }
 
       // 2. 현재 시트에 존재하는 실제 행 번호 중 최댓값 바로 다음 행 반환 (과거 삭제된 테스트 누적 오차 원천 차단)
@@ -1607,23 +1575,10 @@
         const nowTimeStr = new Date().toTimeString().slice(0, 5);
         const scheduledTime = (existingLog && existingLog.time) ? existingLog.time : getStudentScheduledTime(student);
 
-        // 1. Locate or create today's daily log with strict student name validation
-        let dailyLog = null;
-        if (existingLog && existingLog.name && isSameStudentName(existingLog.name, student.name)) {
-          dailyLog = existingLog;
-        } else {
-          dailyLog = findStudentTodayLog(student.name);
-        }
-
-        // [중복 행 생성 절대 방어 2중 잠금] dailyLogs 배열 전체에서 동일 이름 행이 있는지 최종 확인 (과거 다른 날짜 행 제외)
-        if (!dailyLog && Array.isArray(state.dailyLogs)) {
-          dailyLog = state.dailyLogs.find(l => {
-            if (!l || !l.name) return false;
-            const hasDate = l.date && String(l.date).trim() !== "" && String(l.date).trim() !== "-";
-            if (hasDate && !isSameDate(l.date, state.todayDateStr)) return false;
-            return isSameStudentName(l.name, student.name);
-          }) || null;
-        }
+        // 1. Locate or create today's daily log with strict student name validation (SSOT: findStudentTodayLog)
+        let dailyLog = (existingLog && existingLog.name && isSameStudentName(existingLog.name, student.name))
+          ? existingLog
+          : findStudentTodayLog(student.name);
 
         const today = state.todayDateStr;
         const savedInTimeKey = `first_intime_${today}_${cleanName}`;
@@ -4768,14 +4723,6 @@
       if (!targetLog || !targetLog.name || !isSameStudentName(targetLog.name, cleanName)) {
         targetLog = findStudentTodayLog(student.name);
       }
-      if (!targetLog && Array.isArray(state.dailyLogs)) {
-        targetLog = state.dailyLogs.find(l => {
-          if (!l || !l.name) return false;
-          const hasDate = l.date && String(l.date).trim() !== "" && String(l.date).trim() !== "-";
-          if (hasDate && !isSameDate(l.date, state.todayDateStr)) return false;
-          return isSameStudentName(l.name, student.name);
-        }) || null;
-      }
 
       if (!targetLog) {
         const newRow = getSafeNextDailyLogRow(student.name);
@@ -5228,14 +5175,6 @@
       let targetLog = state.currentDailyLog;
       if (!targetLog || !targetLog.name || !isSameStudentName(targetLog.name, cleanName)) {
         targetLog = findStudentTodayLog(student.name);
-      }
-      if (!targetLog && Array.isArray(state.dailyLogs)) {
-        targetLog = state.dailyLogs.find(l => {
-          if (!l || !l.name) return false;
-          const hasDate = l.date && String(l.date).trim() !== "" && String(l.date).trim() !== "-";
-          if (hasDate && !isSameDate(l.date, state.todayDateStr)) return false;
-          return isSameStudentName(l.name, student.name);
-        }) || null;
       }
       const scheduledTime = (targetLog && targetLog.time) ? targetLog.time : getStudentScheduledTime(student);
 
