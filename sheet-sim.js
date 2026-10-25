@@ -350,18 +350,18 @@ class SheetSimulator {
             <th>이름 (B)</th>
             <th>학년 (C)</th>
             <th>등록일 (D)</th>
-            <th>상담/채널 (E)</th>
-            <th>🎯 코칭 방향 & 주력 목표 (F)</th>
-            <th>📊 이달의 학습 요약 전광판 & 최근 도서 (G)</th>
-            <th>교과지수... (H)</th>
-            <th>레벨 변동 (I)</th>
-            <th>훈민정음... (J)</th>
-            <th>읽트/독트... (K)</th>
-            <th>목표달성... (L)</th>
-            <th>분석지 발송 (M)</th>
-            <th>독서 방법 (N)</th>
-            <th>아이디 (O)</th>
-            <th>연락처 (P)</th>
+            <th>최초상담 (E)</th>
+            <th>🧭 학생 성향 & 코칭 방향 (F)</th>
+            <th>🎯 주력 목표 & 이달의 학습 전광판 (G)</th>
+            <th>코스업/레벨업 (H)</th>
+            <th>레벨변동 (I)</th>
+            <th>숙제교재 (J)</th>
+            <th>읽트/독트 (K)</th>
+            <th>스티커판 (L)</th>
+            <th>분석지발송 (M)</th>
+            <th>독서방법 (N)</th>
+            <th>학생ID (O)</th>
+            <th>학부모 전화번호 (P)</th>
             <th>동작</th>
           </tr>
         `;
@@ -967,18 +967,18 @@ class SheetSimulator {
             <td style="text-align:center;">이름 (B)</td>
             <td style="text-align:center;">학년 (C)</td>
             <td style="text-align:center;">등록일 (D)</td>
-            <td style="text-align:center;">상담/채널 (E)</td>
-            <td style="text-align:center;">🎯 코칭 방향 & 주력 목표 (F)</td>
-            <td style="text-align:center;">📊 이달의 학습 요약 전광판 & 최근 도서 (G)</td>
-            <td style="text-align:center;">교과지수... (H)</td>
-            <td style="text-align:center;">레벨 변동 (I)</td>
-            <td style="text-align:center;">훈민정음... (J)</td>
-            <td style="text-align:center;">읽트/독트... (K)</td>
-            <td style="text-align:center;">목표달성... (L)</td>
-            <td style="text-align:center;">분석지 발송 (M)</td>
-            <td style="text-align:center;">독서 방법 (N)</td>
-            <td style="text-align:center;">아이디 (O)</td>
-            <td style="text-align:center;">연락처 (P)</td>
+            <td style="text-align:center;">최초상담 (E)</td>
+            <td style="text-align:center;">🧭 학생 성향 & 코칭 방향 (F)</td>
+            <td style="text-align:center;">🎯 주력 목표 & 이달의 학습 전광판 (G)</td>
+            <td style="text-align:center;">코스업/레벨업 (H)</td>
+            <td style="text-align:center;">레벨변동 (I)</td>
+            <td style="text-align:center;">숙제교재 (J)</td>
+            <td style="text-align:center;">읽트/독트 (K)</td>
+            <td style="text-align:center;">스티커판 (L)</td>
+            <td style="text-align:center;">분석지발송 (M)</td>
+            <td style="text-align:center;">독서방법 (N)</td>
+            <td style="text-align:center;">학생ID (O)</td>
+            <td style="text-align:center;">학부모 전화번호 (P)</td>
             <td>(Q)</td>
             <td>(R)</td>
           </tr>
@@ -1345,7 +1345,7 @@ class SheetSimulator {
       case "월별상담내역":
         return `
           <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
-            <div>💡 <strong>월별상담내역:</strong> 등하원, 코칭 방향, 진도 상태, 레벨 업 일자, 훈민정음 완료 진도 등 학생 프로필과 개별 분석이 총망라된 마스터 테이블입니다.</div>
+            <div>💡 <strong>회원 분석/레벨변동/전화상담:</strong> 학생 성향 & 코칭 방향(F), 주력 목표 & 이달의 학습 전광판(G), 코스업/레벨업(H), 숙제교재(J) 등 전교생 분석 현황이 총망라된 마스터 테이블입니다.</div>
           </div>
         `;
       case "한명 검색":
@@ -2288,7 +2288,7 @@ class SheetSimulator {
         field = "levelUp";
       } else if (lowerEvent.includes("진단") || lowerEvent.includes("진도")) {
         field = "progress";
-      } else if (lowerEvent.includes("훈민정음") || lowerEvent.includes("한자") || lowerEvent.includes("교재")) {
+      } else if (lowerEvent.includes("숙제교재") || lowerEvent.includes("훈민정음") || lowerEvent.includes("한자") || lowerEvent.includes("교재")) {
         field = "grammarDone";
       } else if (lowerEvent.includes("독서계획표") || lowerEvent.includes("친구") || lowerEvent.includes("탐험가") || lowerEvent.includes("고수") || lowerEvent.includes("챔피언") || lowerEvent.includes("마스터") || lowerEvent.includes("달성") || lowerEvent.includes("스티커")) {
         field = "bookPlan";
@@ -2382,7 +2382,55 @@ class SheetSimulator {
     targetFields.forEach(field => {
       let currentContent = (student[field] || "").trim();
       let lines = currentContent ? currentContent.split("\n") : [];
-      
+
+      if (field === "progress") {
+        let goalLine = "";
+        let summaryLine = "";
+        const bookCandidates = [];
+        lines.forEach(l => {
+          const ln = l.trim();
+          if (!ln) return;
+          if (ln.startsWith("🎯") || ln.startsWith("[목표]") || ln.startsWith("목표:")) {
+            goalLine = ln.startsWith("🎯") ? ln : (ln.startsWith("[목표]") ? `🎯 ${ln}` : `🎯 [목표] ${ln.replace(/^목표:\s*/, "")}`);
+          } else if (ln.startsWith("📊")) {
+            summaryLine = ln;
+          } else if (ln.indexOf(eventDatePrefix) !== 0) {
+            bookCandidates.push(ln);
+          }
+        });
+        groupMap.progress.forEach(text => {
+          if (text) bookCandidates.push(text);
+        });
+        let recentBookLine = "";
+        if (bookCandidates.length > 0) {
+          let s = bookCandidates[bookCandidates.length - 1].replace(/^📖\s*(?:\[최근\])?\s*/, "").replace(/^(?:\d{2}[\.\/])?\d{1,2}\/\d{1,2}\s+/, "").trim();
+          if (s) {
+            if (/\([^)]+\)$/.test(s)) {
+              recentBookLine = `📖 [최근] ${s}`;
+            } else {
+              const hasComplete = /글완|글쓰기완|완료/.test(s);
+              const body = s.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+              const m = body.match(/^(.*?)\s+(\d{2,3})\s*점?$/);
+              const title = m ? m[1].trim() : body;
+              const score = m ? `${m[2]}점` : "";
+              const tags = [];
+              if (hasComplete) tags.push("글완");
+              if (score) tags.push(score);
+              recentBookLine = `📖 [최근] ${title || s}${tags.length ? ` (${tags.join("/")})` : ""}`;
+            }
+          }
+        }
+        const newContent = [goalLine, summaryLine, recentBookLine].filter(Boolean).join("\n");
+        if (originalValues[field] !== newContent.trim()) {
+          student[field] = newContent;
+          this.onDataChanged("memberAnalysis", this.dataMap.memberAnalysis);
+          if (window.app && window.app.updateFieldInGoogleSheets) {
+            window.app.updateFieldInGoogleSheets(student.row, field, newContent, "memberAnalysis");
+          }
+        }
+        return;
+      }
+
       const filteredLines = lines.filter(line => line.trim().indexOf(eventDatePrefix) !== 0);
 
       const newEventsToday = groupMap[field];
@@ -2430,18 +2478,18 @@ class SheetSimulator {
                 <th>이름 (B)</th>
                 <th>학년 (C)</th>
                 <th>등록일 (D)</th>
-                <th>상담/채널 (E)</th>
-                <th>🎯 코칭 방향 & 주력 목표 (F)</th>
-                <th>📊 이달의 학습 요약 전광판 & 최근 도서 (G)</th>
-                <th>교과지수... (H)</th>
-                <th>레벨 변동 (I)</th>
-                <th>훈민정음... (J)</th>
-                <th>읽트/독트... (K)</th>
-                <th>목표달성... (L)</th>
-                <th>분석지 발송 (M)</th>
-                <th>독서 방법 (N)</th>
-                <th>아이디 (O)</th>
-                <th>연락처 (P)</th>
+                <th>최초상담 (E)</th>
+                <th>🧭 학생 성향 & 코칭 방향 (F)</th>
+                <th>🎯 주력 목표 & 이달의 학습 전광판 (G)</th>
+                <th>코스업/레벨업 (H)</th>
+                <th>레벨변동 (I)</th>
+                <th>숙제교재 (J)</th>
+                <th>읽트/독트 (K)</th>
+                <th>스티커판 (L)</th>
+                <th>분석지발송 (M)</th>
+                <th>독서방법 (N)</th>
+                <th>학생ID (O)</th>
+                <th>학부모 전화번호 (P)</th>
               </tr>
             </thead>
             <tbody>
