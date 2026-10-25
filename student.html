@@ -1094,6 +1094,7 @@
         if (data && typeof data === 'object') {
           state.students = data.students || [];
           state.dailyLogs = data.dailyLogs || [];
+          state.learningRecords = data.learningRecords || [];
 
           // 구글 시트 출석부 상단 행의 날짜를 추출하여 시트의 날짜 문자열 포맷 동기화 (오늘 날짜와 일치할 때만 적용)
           state.sheetDateStr = state.todayDateStr;
@@ -1107,7 +1108,8 @@
           
           localStorage.setItem("academy_attendance_state", JSON.stringify({
             students: state.students,
-            dailyLogs: state.dailyLogs
+            dailyLogs: state.dailyLogs,
+            learningRecords: state.learningRecords
           }));
 
           populateStudentsDatalist();
@@ -1824,6 +1826,7 @@
           if (document.getElementById("step4MemoInput")) document.getElementById("step4MemoInput").value = state.missions.step4Memo || "";
           if (document.getElementById("nextBookMemoInput")) document.getElementById("nextBookMemoInput").value = state.missions.nextBookMemo || "";
           if (document.getElementById("studentReflectionInput")) document.getElementById("studentReflectionInput").value = state.missions.studentReflection || "";
+          try { if (window.VocabBridge && VocabBridge.renderBanner) VocabBridge.renderBanner(); } catch (e) {}
 
           // 다음 책 알림 배너 및 최근 진단 도서 동기화
           checkPersistentNextBook(student);
@@ -1846,6 +1849,7 @@
           if (dailyLog) {
             populateExistingMissions(dailyLog);
           }
+          restoreTodayLearningRecordsFromSheet(student);
           checkInProgressBookFromPreviousSession(student);
         }
 
@@ -2354,6 +2358,85 @@
         });
         renderSetEventItems();
         renderSoloEventItems();
+      }
+    }
+
+    // 다른 기기(태블릿 ↔ 선생님 PC)에서 같은 날 재로그인 시 구글 시트 [학습기록] 18열 데이터를 읽어 화면에 그대로 복원
+    function restoreTodayLearningRecordsFromSheet(student) {
+      try {
+        if (!student || !student.name || !Array.isArray(state.learningRecords)) return;
+        const cleanSt = String(student.name).replace(/\s+/g, "");
+        const dNow = new Date();
+        const todayIso = `${dNow.getFullYear()}-${String(dNow.getMonth() + 1).padStart(2, "0")}-${String(dNow.getDate()).padStart(2, "0")}`;
+        const rows = state.learningRecords.filter(r => {
+          if (!r || String(r.name || "").replace(/\s+/g, "") !== cleanSt) return false;
+          return r.date === todayIso || isSameDate(r.date, state.todayDateStr);
+        });
+        if (!rows.length) return;
+
+        rows.forEach(r => {
+          if (r.hwStatus && !state.missions.hwStatus) {
+            const hwNorm = r.hwStatus === "학원에서풀기" ? "학원에서 풀기" : r.hwStatus;
+            state.missions.hwStatus = hwNorm;
+            state.missions.hwDoneStatus = hwNorm;
+          }
+          if (r.step1Memo && !state.missions.step1Memo) state.missions.step1Memo = r.step1Memo;
+          if (r.step2Memo && !state.missions.step2Memo) state.missions.step2Memo = r.step2Memo;
+          if (r.literacyMemo && !state.missions.step4Memo) state.missions.step4Memo = r.literacyMemo;
+          if (r.reflection && !state.missions.studentReflection) state.missions.studentReflection = r.reflection;
+
+          if (r.book) {
+            const existBook = state.missions.books.find(b => b && b.title === r.book);
+            if (!existBook) {
+              state.missions.books.push({
+                title: r.book,
+                level: r.level || "",
+                score: r.diagScore !== undefined && r.diagScore !== "" ? String(r.diagScore) : "",
+                status: r.diagScore !== undefined && r.diagScore !== "" ? "진단완료" : "독서완료",
+                memo: r.step2Memo || ""
+              });
+            } else if (r.diagScore !== undefined && r.diagScore !== "" && !existBook.score) {
+              existBook.score = String(r.diagScore);
+            }
+          }
+          if (r.vocabTotal !== undefined && r.vocabTotal !== "") {
+            if (!Array.isArray(state.missions.vocabResults)) state.missions.vocabResults = [];
+            const existV = state.missions.vocabResults.find(v => v && v.title === r.book);
+            if (!existV) {
+              state.missions.vocabResults.push({
+                bookId: r.book,
+                title: r.book,
+                level: r.level || "",
+                gradeBand: r.level || "",
+                total: Number(r.vocabTotal) || 0,
+                firstCorrect: Number(r.vocabCorrect) || 0,
+                rate: Number(r.vocabRate) || 0,
+                wrongWords: r.wrongWords ? String(r.wrongWords).split(",").map(w => w.trim()).filter(Boolean) : []
+              });
+            }
+          }
+          if (r.training) {
+            if (!state.missions.trainingTypes.includes(r.training)) {
+              state.missions.trainingTypes.push(r.training);
+            }
+            if (r.understanding && !state.missions.trainingUnderstanding) {
+              state.missions.trainingUnderstanding = r.understanding;
+            }
+          }
+        });
+
+        refreshHwCombinedStatus();
+        renderBookList();
+        renderTrainingTypeButtons();
+        renderTrainingCards();
+        applyTrainingUnderstandingUI(state.missions.trainingUnderstanding || "");
+        if (document.getElementById("step1MemoInput") && state.missions.step1Memo) document.getElementById("step1MemoInput").value = state.missions.step1Memo;
+        if (document.getElementById("step2MemoInput") && state.missions.step2Memo) document.getElementById("step2MemoInput").value = state.missions.step2Memo;
+        if (document.getElementById("step4MemoInput") && state.missions.step4Memo) document.getElementById("step4MemoInput").value = state.missions.step4Memo;
+        if (document.getElementById("studentReflectionInput") && state.missions.studentReflection) document.getElementById("studentReflectionInput").value = state.missions.studentReflection;
+        try { if (window.VocabBridge && VocabBridge.renderBanner) VocabBridge.renderBanner(); } catch (e) {}
+      } catch (e) {
+        console.warn("restoreTodayLearningRecordsFromSheet error:", e);
       }
     }
 
@@ -5073,6 +5156,12 @@
 
       // [당일 재로그인 대비] 하원 완료된 세션 백업 저장 (당일 재로그인 시 100% 자동 복원)
       try {
+        state.missions.hwBook = hwBook;
+        state.missions.step1Memo = step1Memo;
+        state.missions.step2Memo = step2Memo;
+        state.missions.step3Memo = step3Memo;
+        state.missions.step4Memo = step4Memo;
+        state.missions.studentReflection = reflection;
         const lastSessionKey = "last_completed_session_" + cleanName + "_" + state.todayDateStr;
         localStorage.setItem(lastSessionKey, JSON.stringify({
           date: state.todayDateStr,
