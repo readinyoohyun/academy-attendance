@@ -331,17 +331,128 @@ class SMSManager {
       }
     });
 
-    // 오늘 출석부(dailyLogs)의 실시간 수업 기록도 보조 병합 (시트 동기화 전 즉시 브리핑 지원)
+    // 오늘 출석부(dailyLogs)의 실시간 수업 기록도 정밀 파싱하여 병합 (학습기록 동기화 전에도 100% 동일한 양식으로 즉시 브리핑 지원)
     const dailyLog = (this.app.state.dailyLogs || []).find(
       d => (d.name || "").replace(/\s+/g, "") === cleanTarget && (d.grammarDone || d.contents)
     );
     if (dailyLog && dayRecs.length === 0) {
-      if (dailyLog.grammarDone) {
-        books.push(`• 독서/글쓰기: ${dailyLog.grammarDone}`);
+      const s = String(dailyLog.contents || "").trim();
+      const g = String(dailyLog.grammarDone || "").trim();
+
+      if (s.includes("숙제완료")) hwStatus = "숙제완료";
+      else if (s.includes("숙제미완")) hwStatus = "숙제미완";
+      else if (s.includes("미지참")) hwStatus = "미지참";
+      else if (s.includes("학원에서 풀기") || s.includes("학원에서풀기")) hwStatus = "학원에서풀기";
+
+      const hwBookMatch = s.match(/(?:숙제완료|숙제미완|미지참|학원에서\s*풀기)\s*\(([^)]+)\)/);
+      const hwBook = hwBookMatch ? hwBookMatch[1].trim() : "";
+      const step1Match = s.match(/\[성실발자국:\s*([^\]]+)\]/);
+      const rawStep1 = step1Match ? step1Match[1].trim() : "";
+      step1Memo = hwBook ? (rawStep1 ? `[${hwBook}] ${rawStep1}` : `[${hwBook}]`) : rawStep1;
+
+      const step2Match = s.match(/\[독서발자국:\s*([^\]]+)\]/);
+      const parsedStep2 = step2Match ? step2Match[1].trim() : "";
+
+      const litParts = [];
+      const step3Match = s.match(/\[메모:\s*([^\]]+)\]/);
+      if (step3Match && step3Match[1].trim()) litParts.push(step3Match[1].trim());
+      const step4Match = s.match(/\[문해력발자국:\s*([^\]]+)\]/);
+      if (step4Match && step4Match[1].trim()) litParts.push(step4Match[1].trim());
+      const parsedLitMemo = litParts.join(" / ");
+
+      const reflMatch = s.match(/\[소감\]\s*([^|\r\n]+)/);
+      if (reflMatch && reflMatch[1].trim()) reflection = reflMatch[1].trim();
+
+      // [어휘] 블록 파싱
+      const vocabRegex = /\[어휘\]\s*([^\/|\r\n]+)\/학습(\d+)개\/오답(\d+)개(?:\/재학습\d+개)?\/\s*『([^』]+)』(?:\s*오답:([^\/|\r\n]+))?/g;
+      let vMatch;
+      const recordedNormBooks = [];
+      const normBookFn = (t) => String(t || "").replace(/^\[[^\]]+\]\s*/, "").replace(/\([^)]*\)/g, "").replace(/\s+/g, "").toLowerCase();
+
+      while ((vMatch = vocabRegex.exec(s)) !== null) {
+        const vLevel = (vMatch[1] || "").trim();
+        const vTotal = parseInt(vMatch[2], 10) || 0;
+        const vWrong = parseInt(vMatch[3], 10) || 0;
+        const vFirstCor = Math.max(0, vTotal - vWrong);
+        const vRate = vTotal > 0 ? Math.round((vFirstCor / vTotal) * 100) : 0;
+        const vBook = (vMatch[4] || "").trim();
+        const vWrongWords = String(vMatch[5] || "")
+          .split(",")
+          .map(w => w.trim())
+          .filter(w => w && w !== "짝짓기" && w !== "(짝짓기)");
+        if (vWrongWords.length) wrongWordsAll.push(vWrongWords.join(", "));
+        if (vBook) recordedNormBooks.push(normBookFn(vBook));
+        books.push(`• 도서: ${vBook || "어휘 학습"}${vLevel ? ` (${vLevel})` : ""} — 어휘학습 ${vTotal}문항 중 ${vFirstCor}개 정답(${vRate}%)`);
       }
-      if (dailyLog.contents) {
-        trainings.push(`• 오늘 수업 활동: ${dailyLog.contents}`);
+
+      // J열 진단 도서 파싱
+      if (g) {
+        g.split(/\s*,\s*/).forEach((item, idx) => {
+          const cleanItem = item.trim();
+          if (!cleanItem || cleanItem.startsWith("글쓰기:")) return;
+          const noWrite = cleanItem.replace(/\s*(글완|글쓰기완료|글쓰기완|작성완료|작성중)\s*$/g, "").trim();
+          const scMatch = noWrite.match(/^(.*?)\s+(\d{2,3})\s*점?$/);
+          const bTitle = scMatch ? scMatch[1].trim() : noWrite;
+          const bScore = scMatch ? scMatch[2] : "";
+          let bLine = `• 도서: ${bTitle}${bScore ? ` — 독서이해도 진단 ${bScore}점` : ""}`;
+          if (idx === 0 && parsedStep2) bLine += `\n  └ 독서발자국: "${parsedStep2}"`;
+          books.push(bLine);
+          recordedNormBooks.push(normBookFn(bTitle));
+        });
       }
+
+      // K열 도서 상태 및 트레이닝 블록 파싱
+      const segments = s.split(/\s*\|\s*/);
+      segments.forEach(rawSeg => {
+        const seg = rawSeg.trim();
+        if (!seg || seg.startsWith("[어휘]") || seg.startsWith("[소감]") || seg.startsWith("다음책:")) return;
+        if (/^(?:숙제완료|숙제미완|미지참|학원에서\s*풀기)/.test(seg)) return;
+
+        const trRegex = /(읽기|독해|듣기|문해력|오답수정\+선지분석|어휘|국어)\[([^\]]+)\]/g;
+        let trMatch;
+        let hadTr = false;
+        while ((trMatch = trRegex.exec(seg)) !== null) {
+          hadTr = true;
+          const trType = trMatch[1].trim();
+          const trItems = trMatch[2].split(/\s*,\s*/);
+          trItems.forEach((tItem, tIdx) => {
+            const cleanT = tItem.trim();
+            if (!cleanT) return;
+            const errMatch = cleanT.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+            const tDetail = errMatch ? errMatch[1].trim() : cleanT;
+            let errNum = "";
+            if (errMatch) {
+              const rawErr = errMatch[2].trim();
+              const slashM = rawErr.match(/\/(\d+)/);
+              errNum = slashM ? slashM[1] : (rawErr.match(/\d+/) ? rawErr.match(/\d+/)[0] : "");
+            }
+            let tLine = `• ${trType}: ${tDetail}${errNum !== "" ? ` (오답 ${errNum}개)` : ""}`;
+            if (tIdx === 0 && parsedLitMemo && trainings.length === 0) {
+              tLine += `\n  └ 문해력발자국: "${parsedLitMemo}"`;
+            }
+            trainings.push(tLine);
+          });
+        }
+        if (hadTr) return;
+
+        if (/(?:독서\s*대기|독서중|완독|진단\s*완료|진단완료|책\s*찜하기|예약)/.test(seg)) {
+          const cleanSeg = seg.replace(/\[독서발자국:\s*[^\]]+\]/g, "").trim();
+          const bookItems = cleanSeg.split(/,\s*(?=[^,:\[\]]+(?:\([^)]*\))?[^,:\[\]]*:\s*(?:독서\s*대기|독서중|완독|진단\s*완료|진단완료|책\s*찜하기|예약))/);
+          bookItems.forEach(bEntry => {
+            const bm = bEntry.trim().match(/^(.+?):\s*(독서\s*대기|독서중|완독|진단\s*완료|진단완료|책\s*찜하기|예약)/);
+            if (bm) {
+              const bTitle = bm[1].trim();
+              const bStatus = bm[2].trim();
+              const nb = normBookFn(bTitle);
+              const dup = recordedNormBooks.some(ex => ex && nb && (ex === nb || ex.includes(nb) || nb.includes(ex)));
+              if (!dup) {
+                books.push(`• 도서: ${bTitle} (${bStatus})`);
+                recordedNormBooks.push(nb);
+              }
+            }
+          });
+        }
+      });
     }
 
     const lines = [];
