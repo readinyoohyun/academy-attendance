@@ -381,7 +381,8 @@ class DashboardManager {
             card.innerHTML = `
               <div class="card-header">
                 <span class="student-name" style="color: #0f172a;">${this.escapeHtml(student.name)}</span>
-                <div style="display:flex; align-items:center; gap:0.3rem;">
+                <div style="display:flex; align-items:center; gap:0.3rem; position:relative; z-index:10;">
+                  <button type="button" class="btn-briefing-quick" style="background:rgba(37,99,235,0.12); border:1px solid rgba(37,99,235,0.3); color:#1d4ed8; padding:0.15rem 0.45rem; border-radius:4px; font-size:0.72rem; font-weight:700; cursor:pointer; transition:background 0.2s;" title="오늘 수업 브리핑 문자/카톡">📨 브리핑</button>
                   <span class="student-grade" style="color: #475569; font-weight: 600;">${student.grade}</span>
                   <span class="badge-time" style="background:rgba(99,102,241,0.08); color:#4f46e5; border:1px solid rgba(99,102,241,0.15); padding:0.1rem 0.35rem; border-radius:4px; font-size:0.7rem; font-weight:700;">${timeStr}</span>
                   ${dailyLog ? `<button class="btn-delete-card-daily" data-row="${dailyLog.row}" data-name="${this.escapeHtml(student.name)}" style="background:none; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer; padding:0 0.2rem; line-height:1; margin-left:0.3rem; display:inline-flex; align-items:center; transition:color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'" title="오늘 명단에서 삭제">×</button>` : ''}
@@ -411,7 +412,8 @@ class DashboardManager {
             card.innerHTML = `
               <div class="card-header">
                 <span class="student-name">${this.escapeHtml(student.name)}</span>
-                <div style="display:flex; align-items:center; gap:0.3rem;">
+                <div style="display:flex; align-items:center; gap:0.3rem; position:relative; z-index:10;">
+                  <button type="button" class="btn-briefing-quick" style="background:rgba(37,99,235,0.12); border:1px solid rgba(37,99,235,0.3); color:#1d4ed8; padding:0.15rem 0.45rem; border-radius:4px; font-size:0.72rem; font-weight:700; cursor:pointer; transition:background 0.2s;" title="오늘 수업 브리핑 문자/카톡">📨 브리핑</button>
                   <span class="student-grade">${student.grade}</span>
                   <span class="badge-time" style="background:rgba(99,102,241,0.1); color:var(--accent); border:1px solid rgba(99,102,241,0.2); padding:0.1rem 0.35rem; border-radius:4px; font-size:0.7rem; font-weight:600;">${timeStr}</span>
                   ${dailyLog ? `<button class="btn-delete-card-daily" data-row="${dailyLog.row}" data-name="${this.escapeHtml(student.name)}" style="background:none; border:none; color:var(--text-secondary); font-size:1.2rem; cursor:pointer; padding:0 0.2rem; line-height:1; margin-left:0.3rem; display:inline-flex; align-items:center; transition:color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-secondary)'" title="오늘 명단에서 삭제">×</button>` : ''}
@@ -429,7 +431,6 @@ class DashboardManager {
                   </div>
                   <div style="display:flex; align-items:center; gap:0.3rem; flex-shrink:0; z-index:10;">
                     ${typeClass === "in-class" ? `<button class="btn-complete-quick" style="background:#10b981; border:1px solid #059669; color:#ffffff; padding:0.2rem 0.4rem; border-radius:4px; font-size:0.75rem; font-weight:700; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">수업 완료</button>` : ''}
-                    ${(typeClass === "completed" || typeClass === "in-class") ? `<button class="btn-briefing-quick" style="background:rgba(37,99,235,0.12); border:1px solid rgba(37,99,235,0.3); color:#1d4ed8; padding:0.2rem 0.45rem; border-radius:4px; font-size:0.73rem; font-weight:700; cursor:pointer; transition:background 0.2s;" title="오늘 수업 브리핑 문자/카톡">📨 브리핑</button>` : ''}
                   </div>
                 </div>
                 ${timerHtml}
@@ -445,7 +446,7 @@ class DashboardManager {
             `;
           }
           card.addEventListener("click", (e) => {
-            if (e.target.classList.contains("btn-briefing-quick")) {
+            if (e.target.closest(".btn-briefing-quick")) {
               e.stopPropagation();
               this.app.smsManager.showDailyBriefingModal(student.name);
               return;
