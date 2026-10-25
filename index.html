@@ -40,6 +40,9 @@
         </svg>
         오늘 출석부 생성
       </button>
+      <button class="btn-primary" id="btnTopOpenDailyBriefing" onclick="if(window.app && window.app.sms) window.app.sms.showDailyBriefingModal();" style="padding: 0.5rem 1.2rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #f59e0b, #ea580c); border-radius: 20px; border: none; cursor: pointer; color: white; font-weight: 700; transition: opacity 0.2s; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);">
+        📨 수업 브리핑 문구
+      </button>
       
       <!-- Tab Controls -->
       <nav class="nav-tabs" style="margin: 0;">
@@ -5961,6 +5964,16 @@ function showDailyBriefingModal() {
         </button>
       </div>
       <form id="formSmsPreview">
+        <div id="briefingSelectorRow" style="display: none; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.9rem; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); padding: 0.7rem; border-radius: 10px;">
+          <div>
+            <label for="briefingStudentSelect" style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--accent); margin-bottom: 0.3rem;">👤 학생 선택</label>
+            <select id="briefingStudentSelect" class="select-custom" style="width: 100%; padding: 0.45rem 0.6rem; font-size: 0.88rem; font-weight: 700;"></select>
+          </div>
+          <div>
+            <label for="briefingDateSelect" style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--accent); margin-bottom: 0.3rem;">📅 수업일 선택</label>
+            <select id="briefingDateSelect" class="select-custom" style="width: 100%; padding: 0.45rem 0.6rem; font-size: 0.88rem; font-weight: 700;"></select>
+          </div>
+        </div>
         <div class="form-group">
           <label for="smsPreviewPhone">수신인 번호 (학부모님 연락처 · 카톡 복사 시 비워둬도 됨)</label>
           <input type="text" id="smsPreviewPhone" class="input-custom" placeholder="예: 010-1234-5678">
@@ -6071,11 +6084,11 @@ function showDailyBriefingModal() {
     </div>
   </div>
 
-  <script src="sheet-sim.js?v=2.3.0"></script>
-  <script src="api.js?v=2.3.0"></script>
-  <script src="sms-manager.js?v=2.3.0"></script>
-  <script src="crm-manager.js?v=2.3.0"></script>
-  <script src="dashboard-manager.js?v=2.3.0"></script>
-  <script src="app.js?v=2.3.0"></script>
+  <script src="sheet-sim.js?v=2.3.1"></script>
+  <script src="api.js?v=2.3.1"></script>
+  <script src="sms-manager.js?v=2.3.1"></script>
+  <script src="crm-manager.js?v=2.3.1"></script>
+  <script src="dashboard-manager.js?v=2.3.1"></script>
+  <script src="app.js?v=2.3.1"></script>
 </body>
 </html>

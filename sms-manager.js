@@ -259,6 +259,8 @@ class SMSManager {
   }
 
   showSmsPreviewModal(studentName, completedTitle, nextTitle) {
+    const selectorRow = document.getElementById("briefingSelectorRow");
+    if (selectorRow) selectorRow.style.display = "none";
     const memberRec = (this.app.state.memberAnalysis || []).find(m => m.name.replace(/\s+/g, '') === studentName.replace(/\s+/g, ''));
     const phone = memberRec ? (memberRec.phone || "").trim() : "";
     
@@ -266,7 +268,7 @@ class SMSManager {
     this.openSmsModalWithContent(`📖 다음 교재 준비 안내 문자 발송 (${studentName})`, phone, message);
   }
 
-  buildDailyBriefingMessage(studentName) {
+  buildDailyBriefingMessage(studentName, preferredDate = "") {
     const cleanTarget = (studentName || "").replace(/\s+/g, "");
     const allRecs = (this.app.state.learningRecords || []).filter(
       r => (r.name || "").replace(/\s+/g, "") === cleanTarget
@@ -276,9 +278,9 @@ class SMSManager {
     const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const todayMd = `${now.getMonth() + 1}/${now.getDate()}`;
 
-    let targetDate = todayIso;
-    let dayRecs = allRecs.filter(r => (r.date || "").slice(0, 10) === todayIso);
-    if (dayRecs.length === 0 && allRecs.length > 0) {
+    let targetDate = preferredDate || todayIso;
+    let dayRecs = allRecs.filter(r => (r.date || "").slice(0, 10) === targetDate);
+    if (!preferredDate && dayRecs.length === 0 && allRecs.length > 0) {
       targetDate = (allRecs[allRecs.length - 1].date || todayIso).slice(0, 10);
       dayRecs = allRecs.filter(r => (r.date || "").slice(0, 10) === targetDate);
     }
@@ -371,13 +373,81 @@ class SMSManager {
     return lines.join("\n");
   }
 
-  showDailyBriefingModal(studentName) {
-    const memberRec = (this.app.state.memberAnalysis || []).find(
-      m => (m.name || "").replace(/\s+/g, "") === (studentName || "").replace(/\s+/g, "")
-    );
-    const phone = memberRec ? (memberRec.phone || "").trim() : "";
-    const message = this.buildDailyBriefingMessage(studentName);
-    this.openSmsModalWithContent(`📨 오늘 수업 브리핑 발송 / 카톡 복사 (${studentName})`, phone, message);
+  showDailyBriefingModal(studentName = "", preferredDate = "") {
+    const allRecs = this.app.state.learningRecords || [];
+    const allStudents = this.app.state.students || [];
+    const nameSet = new Set();
+
+    // 최근 학습기록에 있는 학생들을 먼저 추가 후 전체 학생 추가
+    for (let i = allRecs.length - 1; i >= 0; i--) {
+      const nm = (allRecs[i].name || "").trim();
+      if (nm) nameSet.add(nm);
+    }
+    allStudents.forEach(s => {
+      const nm = (s.name || "").trim();
+      if (nm) nameSet.add(nm);
+    });
+    const studentList = Array.from(nameSet);
+
+    let activeStudent = (studentName || "").trim();
+    if (!activeStudent && this.app.crm && this.app.crm.selectedStudent) {
+      activeStudent = (this.app.crm.selectedStudent.name || "").trim();
+    }
+    if (!activeStudent && studentList.length > 0) {
+      activeStudent = studentList[0];
+    }
+
+    const selectorRow = document.getElementById("briefingSelectorRow");
+    const stSelect = document.getElementById("briefingStudentSelect");
+    const dtSelect = document.getElementById("briefingDateSelect");
+
+    const populateDatesAndRender = (targetStudent, targetDatePref = "") => {
+      const cleanTarget = (targetStudent || "").replace(/\s+/g, "");
+      const stRecs = allRecs.filter(r => (r.name || "").replace(/\s+/g, "") === cleanTarget);
+      const dateSet = new Set();
+      for (let i = stRecs.length - 1; i >= 0; i--) {
+        const d = (stRecs[i].date || "").slice(0, 10);
+        if (d) dateSet.add(d);
+      }
+      const now = new Date();
+      const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      if (dateSet.size === 0) dateSet.add(todayIso);
+      const dateList = Array.from(dateSet);
+
+      let chosenDate = targetDatePref;
+      if (!chosenDate) {
+        chosenDate = dateSet.has(todayIso) ? todayIso : dateList[0];
+      }
+
+      if (dtSelect) {
+        dtSelect.innerHTML = dateList
+          .map(d => `<option value="${d}" ${d === chosenDate ? "selected" : ""}>${d}${d === todayIso ? " (오늘)" : ""}</option>`)
+          .join("");
+      }
+
+      const memberRec = (this.app.state.memberAnalysis || []).find(
+        m => (m.name || "").replace(/\s+/g, "") === cleanTarget
+      );
+      const phone = memberRec ? (memberRec.phone || "").trim() : "";
+      const message = this.buildDailyBriefingMessage(targetStudent, chosenDate);
+      this.openSmsModalWithContent(`📨 오늘 수업 브리핑 발송 / 카톡 복사 (${targetStudent})`, phone, message);
+    };
+
+    if (selectorRow && stSelect && dtSelect) {
+      selectorRow.style.display = "grid";
+      stSelect.innerHTML = studentList
+        .map(nm => `<option value="${nm}" ${nm === activeStudent ? "selected" : ""}>${nm}</option>`)
+        .join("");
+
+      stSelect.onchange = () => {
+        populateDatesAndRender(stSelect.value, "");
+      };
+      dtSelect.onchange = () => {
+        populateDatesAndRender(stSelect.value, dtSelect.value);
+      };
+    }
+
+    populateDatesAndRender(activeStudent, preferredDate);
   }
 
   openSmsModalWithContent(titleText, phone, message) {
