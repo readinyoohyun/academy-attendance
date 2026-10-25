@@ -552,7 +552,7 @@
         <span class="inline-block p-3 rounded-2xl bg-blue-50 text-blue-600 text-3xl mb-2 shadow-inner">
           📖
         </span>
-        <h3 class="text-xl sm:text-2xl font-black text-slate-900">도서 등록</h3>
+        <h3 id="bookModalTitle" class="text-xl sm:text-2xl font-black text-slate-900">도서 등록</h3>
         <p class="text-xs sm:text-sm text-slate-500 mt-1">오늘 읽은 권수, 분야, 레벨, 코스, 도서명 및 점수를 입력해 주세요.</p>
       </div>
 
@@ -655,13 +655,13 @@
         </button>
 
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 order-1 sm:order-2">
-          <button type="button" onclick="saveBookAndAddNext()" 
+          <button type="button" id="btnSaveBookAddNext" onclick="saveBookAndAddNext()" 
                   class="px-3.5 sm:px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-bold rounded-2xl transition flex items-center justify-center gap-1 break-keep text-center">
             <span>➕ 등록 후 다음 책 추가</span>
           </button>
           <button type="button" onclick="saveBookAndClose()" 
                   class="px-4 sm:px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1 break-keep text-center">
-            <span>완료 (등록 후 닫기)</span>
+            <span id="btnSaveBookCloseLabel">완료 (등록 후 닫기)</span>
           </button>
         </div>
       </div>
@@ -2630,6 +2630,14 @@
     });
 
     function openBookModal() {
+      state.editingBookId = null;
+      const modalTitleEl = document.getElementById("bookModalTitle");
+      if (modalTitleEl) modalTitleEl.textContent = "도서 등록";
+      const btnAddNext = document.getElementById("btnSaveBookAddNext");
+      if (btnAddNext) btnAddNext.classList.remove("hidden");
+      const btnCloseLabel = document.getElementById("btnSaveBookCloseLabel");
+      if (btnCloseLabel) btnCloseLabel.textContent = "완료 (등록 후 닫기)";
+
       document.getElementById("modalBookLevel").value = "";
       const crsSelect = document.getElementById("modalBookCourse");
       if (crsSelect) {
@@ -2655,6 +2663,54 @@
           crsSelect.value = "재독";
         }
       }
+
+      initAllModalCustomDropdowns();
+
+      document.getElementById("bookModal").classList.remove("hidden");
+      document.getElementById("modalBookTitle").focus();
+    }
+
+    function editBook(bookId) {
+      const b = (state.missions.books || []).find(item => item.id === bookId);
+      if (!b) return;
+
+      state.editingBookId = bookId;
+      const modalTitleEl = document.getElementById("bookModalTitle");
+      if (modalTitleEl) modalTitleEl.textContent = "도서 정보 수정";
+      const btnAddNext = document.getElementById("btnSaveBookAddNext");
+      if (btnAddNext) btnAddNext.classList.add("hidden");
+      const btnCloseLabel = document.getElementById("btnSaveBookCloseLabel");
+      if (btnCloseLabel) btnCloseLabel.textContent = "수정 완료";
+
+      const lvl = b.level || "";
+      document.getElementById("modalBookLevel").value = lvl;
+      const crsSelect = document.getElementById("modalBookCourse");
+      if (crsSelect) {
+        if (lvl === "기초" || lvl === "[자율]" || lvl === "자율 독서" || lvl === "자율" || lvl.includes("자율")) {
+          crsSelect.value = "";
+          crsSelect.disabled = true;
+          crsSelect.classList.add("bg-slate-100", "cursor-not-allowed");
+        } else {
+          crsSelect.disabled = false;
+          crsSelect.classList.remove("bg-slate-100", "cursor-not-allowed");
+          crsSelect.value = b.course || "1코스";
+        }
+      }
+      document.getElementById("modalBookGenre").value = b.genre || "";
+      updateDifficultyOptions(lvl, b.difficulty || "");
+      document.getElementById("modalBookTitle").value = b.title || "";
+      document.getElementById("modalBookScore").value = b.score || "";
+
+      const diagOpt = document.getElementById("optStatusDiag");
+      if (diagOpt) {
+        diagOpt.disabled = false;
+        diagOpt.innerText = b.score ? "진단 완료 💯" : "진단 완료";
+      }
+      document.getElementById("modalBookStatus").value = b.status || (b.score ? "진단 완료" : "독서 대기");
+
+      const mMemo = document.getElementById("modalBookMemo");
+      if (mMemo) mMemo.value = b.memo || "";
+      closeAutocompleteList();
 
       initAllModalCustomDropdowns();
 
@@ -2724,6 +2780,7 @@
     }
 
     function closeBookModal() {
+      state.editingBookId = null;
       closeAutocompleteList();
       document.getElementById("bookModal").classList.add("hidden");
     }
@@ -3031,29 +3088,11 @@
         return false;
       }
 
-      const order = (state.missions.books.length + 1) + "권째";
-
       let genre = document.getElementById("modalBookGenre").value || "문학";
       let level = document.getElementById("modalBookLevel").value || "3레벨";
       let course = (level === "기초" || level === "[자율]" || level.includes("자율")) ? "" : (document.getElementById("modalBookCourse").value || "1코스");
       let difficulty = document.getElementById("modalBookDifficulty") ? document.getElementById("modalBookDifficulty").value : "";
-
-      const book = {
-        id: "book_" + Date.now(),
-        order: order,
-        genre: genre,
-        level: level,
-        course: course,
-        difficulty: difficulty,
-        title: title,
-        score: score,
-        status: status,
-        vocabDone: false,
-        infoDone: false,
-        writingStatus: "작성 안 함",
-        memo: (document.getElementById("modalBookMemo") ? document.getElementById("modalBookMemo").value.trim() : ""),
-        jFormatted: formatJColBookRecord(level, course, title, score, "", difficulty)
-      };
+      let memoVal = document.getElementById("modalBookMemo") ? document.getElementById("modalBookMemo").value.trim() : "";
 
       const isReserved = (status === "책 찜하기" || status === "예약");
       if (title && state.currentStudent) {
@@ -3067,10 +3106,51 @@
         }
       }
 
-      state.missions.books.push(book);
-      if (!state.missions.noteBookTitle && !isReserved) {
-        state.missions.noteBookTitle = title;
+      const editingIdx = state.editingBookId
+        ? (state.missions.books || []).findIndex(item => item.id === state.editingBookId)
+        : -1;
+
+      if (editingIdx !== -1) {
+        const existingBook = state.missions.books[editingIdx];
+        const prevTitle = existingBook.title;
+        existingBook.genre = genre;
+        existingBook.level = level;
+        existingBook.course = course;
+        existingBook.difficulty = difficulty;
+        existingBook.title = title;
+        existingBook.score = score;
+        existingBook.status = status;
+        existingBook.memo = memoVal;
+        existingBook.jFormatted = formatJColBookRecord(level, course, title, score, existingBook.writingStatus || "", difficulty);
+
+        if (state.missions.noteBookTitle === prevTitle) {
+          state.missions.noteBookTitle = title;
+        }
+        state.editingBookId = null;
+      } else {
+        const order = (state.missions.books.length + 1) + "권째";
+        const book = {
+          id: "book_" + Date.now(),
+          order: order,
+          genre: genre,
+          level: level,
+          course: course,
+          difficulty: difficulty,
+          title: title,
+          score: score,
+          status: status,
+          vocabDone: false,
+          infoDone: false,
+          writingStatus: "작성 안 함",
+          memo: memoVal,
+          jFormatted: formatJColBookRecord(level, course, title, score, "", difficulty)
+        };
+        state.missions.books.push(book);
+        if (!state.missions.noteBookTitle && !isReserved) {
+          state.missions.noteBookTitle = title;
+        }
       }
+
       renderBookList();
       renderNoteBookChips();
       renderNextBookChips();
@@ -3342,9 +3422,14 @@
               <span class="font-black text-slate-900 text-sm sm:text-base">${b.title}</span>
               ${scoreBadge}
             </div>
-            <button onclick="removeBook('${b.id}')" class="text-slate-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition text-xs font-bold whitespace-nowrap">
-              삭제
-            </button>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <button type="button" onclick="editBook('${b.id}')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-lg transition text-xs font-extrabold whitespace-nowrap shadow-xs">
+                수정
+              </button>
+              <button type="button" onclick="removeBook('${b.id}')" class="text-slate-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition text-xs font-bold whitespace-nowrap">
+                삭제
+              </button>
+            </div>
           </div>
 
           <div class="flex items-center justify-between gap-3 flex-wrap pt-2.5 border-t border-slate-100">
