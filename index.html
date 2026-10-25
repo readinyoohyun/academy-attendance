@@ -4445,78 +4445,120 @@ function migrateMemberAnalysisToLearningRecords() {
   }
 
   var data = sheetMember.getRange(2, 1, lastRow - 1, 7).getValues();
-  var curYear = new Date().getFullYear();
-  var migratedBookCount = 0;
-  var cleanedStudentCount = 0;
-
-  // [Bulk 1회 처리] 기존 학습기록 전체를 단 1번만 메모리로 읽어들여 요약 계산 및 이관 병합
-  var recLastRow = sheetRec.getLastRow();
-  var recData = recLastRow &gt;= 2 ? sheetRec.getRange(2, 1, recLastRow - 1, 18).getValues() : [];
-  var existingKeys = {};
-  var now = new Date();
-  var ymPrefix = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM");
-  var curMm = now.getMonth() + 1;
-  var summaryMap = {};
-  var latestBookMap = {};
-
-  for (var rIdx = 0; rIdx &lt; recData.length; rIdx++) {
-    var rv = recData[rIdx];
-    var rName = String(rv[1] || "").replace(/\s+/g, "");
-    if (!rName) continue;
-    var rDate = rv[0] ? vocabFmtDate_(rv[0]) : "";
-    var rBook = String(rv[5] || "").trim();
-    existingKeys[rDate + "|" + rName + "|" + vocabNormBook_(rBook)] = true;
-
-    if (rBook &amp;&amp; !latestBookMap[rName]) {
-      var rDs = vocabNum_(rv[9]);
-      latestBookMap[rName] = formatRecentBookBoardLine_(rBook + (rDs !== "" ? " " + rDs + "점" : ""));
-    }
-    if (rDate.indexOf(ymPrefix) === 0) {
-      if (!summaryMap[rName]) summaryMap[rName] = { books: {}, vocab: [], read: [], concept: [], tr: 0 };
-      if (rBook) summaryMap[rName].books[rBook] = true;
-      var vr = vocabNum_(rv[8]);
-      if (vr !== "") summaryMap[rName].vocab.push(vr);
-      var ds = vocabNum_(rv[9]);
-      if (ds !== "") summaryMap[rName].read.push(ds);
-      var tr = String(rv[11] || "").trim();
-      if (tr) summaryMap[rName].tr++;
+  var sheetBackup = ss.getSheetByName(backupName);
+  var backupMap = {};
+  if (sheetBackup &amp;&amp; sheetBackup.getLastRow() &gt;= 2) {
+    var bData = sheetBackup.getRange(2, 1, sheetBackup.getLastRow() - 1, 7).getValues();
+    for (var bIdx = 0; bIdx &lt; bData.length; bIdx++) {
+      var bName = String(bData[bIdx][1] || "").replace(/\s+/g, "");
+      if (bName) {
+        backupMap[bName] = {
+          f: String(bData[bIdx][5] || "").trim(),
+          g: String(bData[bIdx][6] || "").trim()
+        };
+      }
     }
   }
 
+  var now = new Date();
+  var curYear = now.getFullYear();
+  var todayIso = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  var ymPrefix = todayIso.substring(0, 7);
+  var curMm = now.getMonth() + 1;
+  var migratedBookCount = 0;
+  var fixedFutureDateCount = 0;
+  var cleanedStudentCount = 0;
+
+  // [Bulk 1회 처리] 기존 학습기록 전체를 단 1번만 메모리로 읽어들여 미래 날짜(작년 11~12월분이 올해로 잘못 들어간 행) 자동 보정 및 중복 제거
+  var recLastRow = sheetRec.getLastRow();
+  var rawRecData = recLastRow &gt;= 2 ? sheetRec.getRange(2, 1, recLastRow - 1, 18).getValues() : [];
+  var recData = [];
+  var existingKeys = {};
+
+  for (var rIdx = 0; rIdx &lt; rawRecData.length; rIdx++) {
+    var rv = rawRecData[rIdx];
+    var rName = String(rv[1] || "").replace(/\s+/g, "");
+    if (!rName) continue;
+    var rDate = rv[0] ? vocabFmtDate_(rv[0]) : "";
+    if (rDate &gt; todayIso &amp;&amp; /^\d{4}-\d{2}-\d{2}$/.test(rDate)) {
+      var fixedYr = parseInt(rDate.substring(0, 4), 10) - 1;
+      rDate = fixedYr + rDate.substring(4);
+      rv[0] = vocabParseDate_(rDate);
+      fixedFutureDateCount++;
+    }
+    var rBook = String(rv[5] || "").trim();
+    var rMemo = String(rv[15] || "").trim();
+    var dedupKey = rDate + "|" + rName + "|" + vocabNormBook_(rBook) + "|" + String(rv[9] || "") + "|" + String(rv[10] || "") + "|" + String(rv[11] || "") + "|" + String(rv[12] || "") + "|" + rMemo;
+    if (existingKeys[dedupKey]) continue;
+    existingKeys[dedupKey] = true;
+    existingKeys[rDate + "|" + rName + "|" + vocabNormBook_(rBook)] = true;
+    if (rMemo) existingKeys[rDate + "|" + rName + "||" + rMemo] = true;
+    var rStep2Memo = String(rv[10] || "").trim();
+    if (rStep2Memo) existingKeys[rDate + "|" + rName + "||" + rStep2Memo] = true;
+    recData.push(rv);
+  }
+
   var newRecRows = [];
-  var newFGValues = [];
+  var studentMetaList = [];
 
   for (var i = 0; i &lt; data.length; i++) {
     var name = String(data[i][1] || "").replace(/\s+/g, "");
-    var rawF = String(data[i][5] || "").trim();
-    var rawG = String(data[i][6] || "").trim();
+    var curF = String(data[i][5] || "").trim();
+    var curG = String(data[i][6] || "").trim();
     if (!name) {
-      newFGValues.push([rawF, rawG]);
+      studentMetaList.push({ name: "", rawF: curF, rawG: curG, nextF: curF, goalLine: "", existingSummaryLine: "", latestGDate: "", latestGBookLine: "" });
       continue;
     }
 
-    var nextF = rawF;
-    if (rawF) {
-      var fLines = rawF.split(/\r?\n/);
-      var keptFLines = [];
+    var bk = backupMap[name];
+    var sourceF = (bk &amp;&amp; bk.f &amp;&amp; bk.f.length &gt; curF.length) ? bk.f : curF;
+    var sourceG = (bk &amp;&amp; bk.g &amp;&amp; bk.g.length &gt; curG.length) ? bk.g : curG;
+
+    var nextF = curF;
+    if (sourceF) {
+      var fLines = sourceF.split(/\r?\n/);
+      var fParsed = [];
       for (var fIdx = 0; fIdx &lt; fLines.length; fIdx++) {
         var fl = fLines[fIdx].trim();
         if (!fl) continue;
         var fDateMatch = fl.match(/^(?:(\d{2})[\.\/])?(\d{1,2})\/(\d{1,2})\s+(.*)$/);
-        if (fDateMatch) {
-          var yy = fDateMatch[1] ? (2000 + parseInt(fDateMatch[1], 10)) : curYear;
-          var mm = ("0" + parseInt(fDateMatch[2], 10)).slice(-2);
-          var dd = ("0" + parseInt(fDateMatch[3], 10)).slice(-2);
-          var memoBody = String(fDateMatch[4] || "").trim();
-          var dIso = yy + "-" + mm + "-" + dd;
-          var k1 = dIso + "|" + name + "|";
-          if (memoBody &amp;&amp; !existingKeys[k1]) {
+        fParsed.push({ raw: fl, match: fDateMatch });
+      }
+      var fRunYear = curYear;
+      var fPrevMmDd = "";
+      for (var fRev = fParsed.length - 1; fRev &gt;= 0; fRev--) {
+        var fp = fParsed[fRev];
+        if (!fp.match) continue;
+        var mm = ("0" + parseInt(fp.match[2], 10)).slice(-2);
+        var dd = ("0" + parseInt(fp.match[3], 10)).slice(-2);
+        var mmDd = mm + "-" + dd;
+        if (fp.match[1]) {
+          fRunYear = 2000 + parseInt(fp.match[1], 10);
+        } else {
+          if ((fRunYear + "-" + mmDd) &gt; todayIso) {
+            fRunYear = curYear - 1;
+          } else if (fPrevMmDd &amp;&amp; mmDd &gt; fPrevMmDd &amp;&amp; parseInt(mm, 10) &gt; parseInt(fPrevMmDd.substring(0, 2), 10) + 1) {
+            fRunYear--;
+          }
+        }
+        fPrevMmDd = mmDd;
+        fp.dIso = fRunYear + "-" + mmDd;
+        fp.memoBody = String(fp.match[4] || "").trim();
+      }
+      var keptFLines = [];
+      for (var fIdx2 = 0; fIdx2 &lt; fParsed.length; fIdx2++) {
+        var fp2 = fParsed[fIdx2];
+        if (fp2.match &amp;&amp; fp2.dIso) {
+          var k1 = fp2.dIso + "|" + name + "||" + fp2.memoBody;
+          var k1Short = fp2.dIso + "|" + name + "|";
+          if (fp2.memoBody &amp;&amp; !existingKeys[k1] &amp;&amp; !existingKeys[k1Short]) {
             existingKeys[k1] = true;
-            var hwSt = memoBody.indexOf("숙제완료") !== -1 ? "숙제완료" : (memoBody.indexOf("미지참") !== -1 ? "미지참" : "");
-            newRecRows.push([vocabParseDate_(dIso), name, hwSt, "", "", "", "", "", "", "", "", "", "", "", "", memoBody, "", ""]);
+            existingKeys[k1Short] = true;
+            var hwSt = fp2.memoBody.indexOf("숙제완료") !== -1 ? "숙제완료" : (fp2.memoBody.indexOf("미지참") !== -1 ? "미지참" : "");
+            newRecRows.push([vocabParseDate_(fp2.dIso), name, hwSt, "", "", "", "", "", "", "", "", "", "", "", "", fp2.memoBody, "", ""]);
           }
         } else {
-          keptFLines.push(fl);
+          keptFLines.push(fp2.raw);
         }
       }
       nextF = keptFLines.join("\n");
@@ -4524,48 +4566,157 @@ function migrateMemberAnalysisToLearningRecords() {
 
     var goalLine = "";
     var existingSummaryLine = "";
-    var bookCandidates = [];
-    if (rawG) {
-      var gLines = rawG.split(/\r?\n/);
+    var latestGDate = "";
+    var latestGBookLine = "";
+
+    // 현재 G열에 수기로 입력된 목표(🎯)가 있으면 최우선 보존
+    var curGLines = (curG + "\n" + sourceG).split(/\r?\n/);
+    for (var cg = 0; cg &lt; curGLines.length; cg++) {
+      var cgl = curGLines[cg].trim();
+      if (!goalLine &amp;&amp; (cgl.indexOf("🎯") === 0 || cgl.indexOf("[목표]") === 0 || cgl.indexOf("목표:") === 0)) {
+        goalLine = cgl.indexOf("🎯") === 0 ? cgl : (cgl.indexOf("[목표]") === 0 ? "🎯 " + cgl : "🎯 [목표] " + cgl.replace(/^목표:\s*/, ""));
+      }
+    }
+
+    if (sourceG) {
+      var gLines = sourceG.split(/\r?\n/);
+      var gParsed = [];
       for (var gIdx = 0; gIdx &lt; gLines.length; gIdx++) {
         var gl = gLines[gIdx].trim();
-        if (!gl) continue;
-        if (gl.indexOf("🎯") === 0 || gl.indexOf("[목표]") === 0 || gl.indexOf("목표:") === 0) {
-          goalLine = gl.indexOf("🎯") === 0 ? gl : (gl.indexOf("[목표]") === 0 ? "🎯 " + gl : "🎯 [목표] " + gl.replace(/^목표:\s*/, ""));
-          continue;
-        }
+        if (!gl || gl.indexOf("🎯") === 0 || gl.indexOf("[목표]") === 0 || gl.indexOf("목표:") === 0) continue;
         if (gl.indexOf("📊") === 0) {
           existingSummaryLine = gl;
           continue;
         }
-        bookCandidates.push(gl);
         var gDateMatch = gl.match(/^(?:(\d{2})[\.\/])?(\d{1,2})\/(\d{1,2})\s+(.+)$/);
-        if (gDateMatch) {
-          var gYy = gDateMatch[1] ? (2000 + parseInt(gDateMatch[1], 10)) : curYear;
-          var gMm = ("0" + parseInt(gDateMatch[2], 10)).slice(-2);
-          var gDd = ("0" + parseInt(gDateMatch[3], 10)).slice(-2);
-          var rest = String(gDateMatch[4] || "").replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+        gParsed.push({ raw: gl, match: gDateMatch });
+      }
+      var gRunYear = curYear;
+      var gPrevMmDd = "";
+      for (var gRev = gParsed.length - 1; gRev &gt;= 0; gRev--) {
+        var gp = gParsed[gRev];
+        if (!gp.match) continue;
+        var gMm = ("0" + parseInt(gp.match[2], 10)).slice(-2);
+        var gDd = ("0" + parseInt(gp.match[3], 10)).slice(-2);
+        var gMmDd = gMm + "-" + gDd;
+        if (gp.match[1]) {
+          gRunYear = 2000 + parseInt(gp.match[1], 10);
+        } else {
+          if ((gRunYear + "-" + gMmDd) &gt; todayIso) {
+            gRunYear = curYear - 1;
+          } else if (gPrevMmDd &amp;&amp; gMmDd &gt; gPrevMmDd &amp;&amp; parseInt(gMm, 10) &gt; parseInt(gPrevMmDd.substring(0, 2), 10) + 1) {
+            gRunYear--;
+          }
+        }
+        gPrevMmDd = gMmDd;
+        gp.gIso = gRunYear + "-" + gMmDd;
+      }
+
+      for (var gIdx2 = 0; gIdx2 &lt; gParsed.length; gIdx2++) {
+        var gp2 = gParsed[gIdx2];
+        if (gp2.match &amp;&amp; gp2.gIso) {
+          var rest = String(gp2.match[4] || "").replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
           var scoreMatch = rest.match(/^(.*?)\s+(\d{2,3})\s*점?$/);
           var bTitle = scoreMatch ? scoreMatch[1].trim() : rest;
           var bScore = scoreMatch ? parseInt(scoreMatch[2], 10) : "";
-          var gIso = gYy + "-" + gMm + "-" + gDd;
-          var k2 = gIso + "|" + name + "|" + vocabNormBook_(bTitle);
+          var k2 = gp2.gIso + "|" + name + "|" + vocabNormBook_(bTitle);
           if (bTitle &amp;&amp; !existingKeys[k2]) {
             existingKeys[k2] = true;
-            newRecRows.push([vocabParseDate_(gIso), name, "", "", "", bTitle, "", "", "", bScore, "", "", "", "", "", "", "", ""]);
+            newRecRows.push([vocabParseDate_(gp2.gIso), name, "", "", "", bTitle, "", "", "", bScore, "", "", "", "", "", "", "", ""]);
             migratedBookCount++;
-            if (gIso.indexOf(ymPrefix) === 0) {
-              if (!summaryMap[name]) summaryMap[name] = { books: {}, vocab: [], read: [], concept: [], tr: 0 };
-              summaryMap[name].books[bTitle] = true;
-              if (bScore !== "") summaryMap[name].read.push(bScore);
-            }
           }
+          if (!latestGDate || gp2.gIso &gt;= latestGDate) {
+            latestGDate = gp2.gIso;
+            latestGBookLine = formatRecentBookBoardLine_(gp2.raw);
+          }
+        } else if (gp2.raw.indexOf("📖") === 0 &amp;&amp; !latestGBookLine) {
+          latestGBookLine = formatRecentBookBoardLine_(gp2.raw);
         }
       }
     }
 
-    var sm = summaryMap[name];
-    var summaryLine = existingSummaryLine;
+    studentMetaList.push({
+      name: name,
+      rawF: curF,
+      rawG: curG,
+      nextF: nextF,
+      goalLine: goalLine,
+      existingSummaryLine: existingSummaryLine,
+      latestGDate: latestGDate,
+      latestGBookLine: latestGBookLine
+    });
+  }
+
+  // 전체 학습기록(기존 보정본 + 신규 이관본)을 합쳐서 최신 날짜순으로 메모리에서 정렬 후 단 1회 일괄 기록
+  var combinedRec = recData.concat(newRecRows);
+  var blocks = [];
+  var blockMap = {};
+  for (var cIdx = 0; cIdx &lt; combinedRec.length; cIdx++) {
+    var r = combinedRec[cIdx];
+    var dStr = r[0] ? vocabFmtDate_(r[0]) : "";
+    var nm = String(r[1] || "").replace(/\s+/g, "");
+    var bKey = dStr + "||" + nm;
+    if (!blockMap[bKey]) {
+      blockMap[bKey] = { dateStr: dStr, seq: blocks.length, rows: [] };
+      blocks.push(blockMap[bKey]);
+    }
+    blockMap[bKey].rows.push(r);
+  }
+  blocks.sort(function(a, b) {
+    if (a.dateStr !== b.dateStr) return b.dateStr.localeCompare(a.dateStr);
+    return b.seq - a.seq;
+  });
+  var sortedRec = [];
+  for (var b = 0; b &lt; blocks.length; b++) {
+    for (var br = 0; br &lt; blocks[b].rows.length; br++) {
+      sortedRec.push(blocks[b].rows[br]);
+    }
+  }
+
+  if (sortedRec.length &gt; 0) {
+    sheetRec.getRange(2, 1, sortedRec.length, 18).setValues(sortedRec);
+    if (recLastRow - 1 &gt; sortedRec.length) {
+      sheetRec.getRange(2 + sortedRec.length, 1, (recLastRow - 1) - sortedRec.length, 18).clearContent();
+    }
+  }
+
+  // 정렬 완료된 최신 학습기록(sortedRec)을 기준으로 이달(10월) 요약과 가장 최근 읽은 책 1권을 정확히 산출
+  var summaryMap = {};
+  var latestBookMap = {};
+  for (var sIdx = 0; sIdx &lt; sortedRec.length; sIdx++) {
+    var srv = sortedRec[sIdx];
+    var sName = String(srv[1] || "").replace(/\s+/g, "");
+    if (!sName) continue;
+    var sDate = srv[0] ? vocabFmtDate_(srv[0]) : "";
+    var sBook = String(srv[5] || "").trim();
+    if (sBook &amp;&amp; !latestBookMap[sName]) {
+      var sDs = vocabNum_(srv[9]);
+      latestBookMap[sName] = {
+        date: sDate,
+        line: formatRecentBookBoardLine_(sBook + (sDs !== "" ? " " + sDs + "점" : ""))
+      };
+    }
+    if (sDate.indexOf(ymPrefix) === 0) {
+      if (!summaryMap[sName]) summaryMap[sName] = { books: {}, vocab: [], read: [], concept: [], tr: 0 };
+      if (sBook) summaryMap[sName].books[sBook] = true;
+      var vr = vocabNum_(srv[8]);
+      if (vr !== "") summaryMap[sName].vocab.push(vr);
+      var ds = vocabNum_(srv[9]);
+      if (ds !== "") summaryMap[sName].read.push(ds);
+      var tr = String(srv[11] || "").trim();
+      if (tr) summaryMap[sName].tr++;
+    }
+  }
+
+  var newFGValues = [];
+  for (var mIdx = 0; mIdx &lt; studentMetaList.length; mIdx++) {
+    var meta = studentMetaList[mIdx];
+    if (!meta.name) {
+      newFGValues.push([meta.rawF, meta.rawG]);
+      continue;
+    }
+    var sm = summaryMap[meta.name];
+    var summaryLine = "";
     if (sm) {
       var parts = [];
       var bCnt = Object.keys(sm.books).length;
@@ -4576,36 +4727,36 @@ function migrateMemberAnalysisToLearningRecords() {
       if (parts.length) summaryLine = "📊 [" + curMm + "월] " + parts.join(" | ");
     }
 
-    var recentBookLine = bookCandidates.length &gt; 0
-      ? formatRecentBookBoardLine_(bookCandidates[bookCandidates.length - 1])
-      : (latestBookMap[name] || "");
+    var lb = latestBookMap[meta.name];
+    var recentBookLine = "";
+    if (lb &amp;&amp; (!meta.latestGDate || lb.date &gt;= meta.latestGDate)) {
+      recentBookLine = lb.line;
+    } else if (meta.latestGBookLine) {
+      recentBookLine = meta.latestGBookLine;
+    } else if (lb) {
+      recentBookLine = lb.line;
+    }
 
     var outG = [];
-    if (goalLine) outG.push(goalLine);
+    if (meta.goalLine) outG.push(meta.goalLine);
     if (summaryLine) outG.push(summaryLine);
     if (recentBookLine) outG.push(recentBookLine);
     var nextG = outG.join("\n");
 
-    newFGValues.push([nextF, nextG]);
-    if (nextF !== rawF || nextG !== rawG) cleanedStudentCount++;
+    newFGValues.push([meta.nextF, nextG]);
+    if (meta.nextF !== meta.rawF || nextG !== meta.rawG) cleanedStudentCount++;
   }
 
   // [Bulk 1회 쓰기] F열·G열 전체를 단 1번의 setValues 호출로 즉시 반영
   sheetMember.getRange(2, 6, newFGValues.length, 2).setValues(newFGValues);
 
-  // [Bulk 1회 쓰기] 이관된 학습기록 전체를 단 1번에 병합 후 최신순 정렬 1회 실행
-  if (newRecRows.length &gt; 0) {
-    var combinedRec = recData.concat(newRecRows);
-    sheetRec.getRange(2, 1, combinedRec.length, 18).setValues(combinedRec);
-    vocabSortRecordSheetNewestFirst_(sheetRec);
-  }
-
   ui.alert(
-    "✅ 회원 분석 다이어트 및 학습기록 이관 완료!\n\n" +
+    "✅ 회원 분석 다이어트 및 학습기록 연도 보정 완료!\n\n" +
     "• 안전 백업 시트: [회원 분석_백업]\n" +
     "• 정리된 학생 수: " + cleanedStudentCount + "명\n" +
-    "• [학습기록] 18열 시트로 이관된 도서·진단 기록: " + migratedBookCount + "건\n" +
-    "• F열(학생 성향 &amp; 코칭 방향), G열(주력 목표 &amp; 이달의 학습 전광판 3줄), J열(숙제교재)이 완벽하게 정리되었습니다!"
+    "• 미래 날짜(2026-11~12월) ➔ 작년(2025년) 자동 복구: " + fixedFutureDateCount + "건\n" +
+    "• [학습기록] 18열 시트로 추가 이관된 기록: " + migratedBookCount + "건\n" +
+    "• 올해 최신 기록(10월)이 최상단에 오도록 재정렬 완료되었습니다!"
   );
 }
 
@@ -5930,11 +6081,11 @@ function showDailyBriefingModal() {
     </div>
   </div>
 
-  <script src="sheet-sim.js?v=2.3.6"></script>
-  <script src="api.js?v=2.3.6"></script>
-  <script src="sms-manager.js?v=2.3.6"></script>
-  <script src="crm-manager.js?v=2.3.6"></script>
-  <script src="dashboard-manager.js?v=2.3.6"></script>
-  <script src="app.js?v=2.3.6"></script>
+  <script src="sheet-sim.js?v=2.3.7"></script>
+  <script src="api.js?v=2.3.7"></script>
+  <script src="sms-manager.js?v=2.3.7"></script>
+  <script src="crm-manager.js?v=2.3.7"></script>
+  <script src="dashboard-manager.js?v=2.3.7"></script>
+  <script src="app.js?v=2.3.7"></script>
 </body>
 </html>
