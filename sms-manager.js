@@ -281,7 +281,10 @@ class SMSManager {
     let targetDate = preferredDate || todayIso;
     let dayRecs = allRecs.filter(r => (r.date || "").slice(0, 10) === targetDate);
     if (!preferredDate && dayRecs.length === 0 && allRecs.length > 0) {
-      targetDate = (allRecs[allRecs.length - 1].date || todayIso).slice(0, 10);
+      targetDate = allRecs.reduce((max, r) => {
+        const d = (r.date || "").slice(0, 10);
+        return d > max ? d : max;
+      }, "") || todayIso;
       dayRecs = allRecs.filter(r => (r.date || "").slice(0, 10) === targetDate);
     }
 
@@ -489,8 +492,8 @@ class SMSManager {
     const allStudents = this.app.state.students || [];
     const nameSet = new Set();
 
-    // 최근 학습기록에 있는 학생들을 먼저 추가 후 전체 학생 추가
-    for (let i = allRecs.length - 1; i >= 0; i--) {
+    // 상단 2행이 최신 학습기록이므로 앞에서부터 추가 후 전체 학생 추가
+    for (let i = 0; i < allRecs.length; i++) {
       const nm = (allRecs[i].name || "").trim();
       if (nm) nameSet.add(nm);
     }
@@ -516,14 +519,14 @@ class SMSManager {
       const cleanTarget = (targetStudent || "").replace(/\s+/g, "");
       const stRecs = allRecs.filter(r => (r.name || "").replace(/\s+/g, "") === cleanTarget);
       const dateSet = new Set();
-      for (let i = stRecs.length - 1; i >= 0; i--) {
-        const d = (stRecs[i].date || "").slice(0, 10);
+      stRecs.forEach(r => {
+        const d = (r.date || "").slice(0, 10);
         if (d) dateSet.add(d);
-      }
+      });
       const now = new Date();
       const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       if (dateSet.size === 0) dateSet.add(todayIso);
-      const dateList = Array.from(dateSet);
+      const dateList = Array.from(dateSet).sort().reverse();
 
       let chosenDate = targetDatePref;
       if (!chosenDate) {
