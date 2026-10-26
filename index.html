@@ -3630,9 +3630,10 @@ function onOpen() {
     .addItem("7. 오늘 출석부 ➔ 회원 분석 수동 전체 누적 동기화", "syncTodayDailyEventsToMemberAnalysis")
     .addItem("8. 어휘·학습기록(18열)·학생분석표 셋업 및 자동변환", "vocabSetupSheets")
     .addItem("9. 오답 복습지 PDF 만들기 (학생분석표 기준)", "vocabMakeReviewPdf")
-    .addItem("10. 어휘 갱신 (학생앱에 반영)", "vocabBumpVersion")
-    .addItem("11. 📨 오늘 수업 브리핑 문구 창 띄우기", "showDailyBriefingModal")
-    .addItem("12. 회원 분석 시트 다이어트 (F·G열 정리 &amp; 학습기록 이관)", "migrateMemberAnalysisToLearningRecords")
+    .addItem("10. 📊 학부모 발송용 학생 분석표 PDF 만들기 (학생분석표 기준)", "vocabMakeAnalysisReportPdf")
+    .addItem("11. 어휘 갱신 (학생앱에 반영)", "vocabBumpVersion")
+    .addItem("12. 📨 오늘 수업 브리핑 문구 창 띄우기", "showDailyBriefingModal")
+    .addItem("13. 회원 분석 시트 다이어트 (F·G열 정리 &amp; 학습기록 이관)", "migrateMemberAnalysisToLearningRecords")
     .addToUi();
 }
 
@@ -3773,70 +3774,107 @@ function processMakeupBankOnSheetEdit(sheet, r) {
   reasonCell.setValue(reasonVal + " [차감완료]");
 }
 
-// 전체시간표의 결석 누적분(AG열) 전수 계산 및 오늘 출석부 보강 은행 차감 일괄 정산 함수
+// 전체시간표의 결석 누적분(AG열) 전수 계산 및 오늘 출석부 보강 은행 차감 일괄 정산 함수 (단 1회 Bulk 읽기/쓰기)
 function runMakeupBankRecovery() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheetStudents = ss.getSheetByName("전체시간표") || ss.getSheetByName("전체 시간표");
   var updatedStudentsCount = 0;
-  
-  // 1. 전체시간표의 결석일자(L열)가 적혀있는 모든 학생의 AG열(결석누적) 및 AI열(보강잔여) 전수 자동 계산
-  if (sheetStudents) {
+  var stData = [];
+  var stMap = {};
+
+  if (sheetStudents &amp;&amp; sheetStudents.getLastRow() &gt;= 2) {
+    ensureColumns(sheetStudents, 36);
     var lastRowSt = sheetStudents.getLastRow();
-    for (var s = 2; s &lt;= lastRowSt; s++) {
-      var absentDatesStr = String(sheetStudents.getRange(s, 12).getValue() || "").trim(); // Col L (결석일자)
+    stData = sheetStudents.getRange(2, 1, lastRowSt - 1, 36).getValues();
+    for (var i = 0; i &lt; stData.length; i++) {
+      var stRow = stData[i];
+      var sName = String(stRow[2] || "").trim();
+      if (sName &amp;&amp; stMap[sName] === undefined) stMap[sName] = i;
+
+      var absentDatesStr = String(stRow[11] || "").trim(); // Col L (12)
       if (absentDatesStr) {
         var datesList = absentDatesStr.split(",").map(function(d) { return d.trim(); }).filter(Boolean);
         if (datesList.length &gt; 0) {
-          var classesStr = String(sheetStudents.getRange(s, 4).getValue() || "");
-          var grade = String(sheetStudents.getRange(s, 2).getValue() || "");
-          var baseDuration = 60;
+          var classesStr = String(stRow[3] || "");
+          var grade = String(stRow[1] || "");
           var match = classesStr.match(/(\d+)\s*분/);
-          if (match) {
-            baseDuration = parseInt(match[1], 10);
-          } else {
-            if (grade.indexOf("중") !== -1 || grade.indexOf("고") !== -1 || grade.indexOf("예비중") !== -1) {
-              baseDuration = 90;
-            } else {
-              baseDuration = 60;
-            }
-          }
-          
+          var baseDuration = match ? parseInt(match[1], 10) : ((grade.indexOf("중") !== -1 || grade.indexOf("고") !== -1 || grade.indexOf("예비중") !== -1) ? 90 : 60);
           var newAbsentMinsAcc = datesList.length * baseDuration;
-          var currentMakeupMinsDone = parseInt(sheetStudents.getRange(s, 34).getValue() || "0", 10) || 0; // Col AH (34)
-          var newMakeupMinsRemaining = Math.max(0, newAbsentMinsAcc - currentMakeupMinsDone);
-          
-          sheetStudents.getRange(s, 33).setValue(newAbsentMinsAcc); // Col AG (33)
-          sheetStudents.getRange(s, 35).setValue(newMakeupMinsRemaining); // Col AI (35)
+          var currentMakeupMinsDone = parseInt(stRow[33] || "0", 10) || 0; // Col AH (34)
+          stRow[32] = newAbsentMinsAcc; // Col AG (33)
+          stRow[34] = Math.max(0, newAbsentMinsAcc - currentMakeupMinsDone); // Col AI (35)
           updatedStudentsCount++;
         }
       }
     }
   }
 
-  // 2. 오늘 출석부의 보강 수업/연장 차감 일괄 정산
+  // 2. 오늘 출석부의 보강 수업/연장 차감 일괄 정산 (메모리 계산 후 1회 Bulk 반영)
   var sheet = ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘 출석부");
   var count = 0;
-  if (sheet) {
+  if (sheet &amp;&amp; sheet.getLastRow() &gt;= 2 &amp;&amp; stData.length &gt; 0) {
     var lastRow = sheet.getLastRow();
-    if (lastRow &gt;= 2) {
-      for (var r = 2; r &lt;= lastRow; r++) {
-        var statusVal = String(sheet.getRange(r, 5).getValue()).trim();
-        var reasonVal = String(sheet.getRange(r, 7).getValue()).trim();
-        
-        if ((statusVal === "수업완료" || statusVal === "보강완료") &amp;&amp; reasonVal &amp;&amp; reasonVal.indexOf("[차감완료]") === -1) {
-          if (reasonVal === "보강 수업" || reasonVal.indexOf("연장 (") === 0) {
-            try {
-              processMakeupBankOnSheetEdit(sheet, r);
-              count++;
-            } catch (e) {
-              console.error("Row " + r + " recovery error: " + e);
-            }
-          }
+    var dailyData = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
+    var dailyModified = false;
+    for (var r = 0; r &lt; dailyData.length; r++) {
+      var dRow = dailyData[r];
+      var studentName = String(dRow[2] || "").trim();
+      var statusVal = String(dRow[4] || "").trim();
+      var reasonVal = String(dRow[6] || "").trim();
+      if (!studentName || (statusVal !== "수업완료" &amp;&amp; statusVal !== "보강완료") || !reasonVal || reasonVal.indexOf("[차감완료]") !== -1) continue;
+      var isMakeup = (reasonVal === "보강 수업");
+      var isExtension = (reasonVal.indexOf("연장 (") === 0);
+      if (!isMakeup &amp;&amp; !isExtension) continue;
+      var stIdx = stMap[studentName];
+      if (stIdx === undefined) continue;
+
+      var sRow = stData[stIdx];
+      var cStr = String(sRow[3] || "");
+      var grd = String(sRow[1] || "");
+      var mDur = cStr.match(/(60|70|90|100|120|180)\s*분/);
+      var bDur = mDur ? parseInt(mDur[1], 10) : ((grd.indexOf("중") !== -1 || grd.indexOf("고") !== -1 || grd.indexOf("예비중") !== -1) ? 90 : 60);
+      var curDone = parseInt(sRow[33], 10) || 0;
+      var curAbsentAcc = parseInt(sRow[32], 10) || 0;
+      var todayExt = parseInt(sRow[35], 10) || 0;
+      var addedMins = isMakeup ? (bDur + todayExt) : (reasonVal.match(/\d+/) ? parseInt(reasonVal.match(/\d+/)[0], 10) : 0);
+      if (addedMins &lt;= 0) continue;
+
+      var newDone = curDone + addedMins;
+      var absStr = String(sRow[11] || "");
+      var dList = absStr ? absStr.split(",").map(function(d) { return d.trim(); }).filter(Boolean) : [];
+      var targetStrikes = Math.floor(newDone / bDur);
+      var updatedDates = [];
+      var striked = 0;
+      for (var k = 0; k &lt; dList.length; k++) {
+        var itm = dList[k];
+        var isSt = (itm.indexOf("~~") === 0 &amp;&amp; itm.slice(-2) === "~~");
+        var cleanD = isSt ? itm.slice(2, -2) : itm;
+        if (striked &lt; targetStrikes) {
+          updatedDates.push("~~" + cleanD + "~~");
+          striked++;
+        } else {
+          updatedDates.push(cleanD);
         }
       }
+      sRow[11] = updatedDates.join(", ");
+      sRow[33] = newDone;
+      sRow[34] = Math.max(0, curAbsentAcc - newDone);
+      if (isMakeup) sRow[31] = "보강완료";
+      if (isExtension || todayExt &gt; 0) sRow[35] = 0;
+
+      dRow[6] = reasonVal + " [차감완료]";
+      dailyModified = true;
+      count++;
+    }
+    if (dailyModified) {
+      sheet.getRange(2, 1, dailyData.length, 7).setValues(dailyData);
     }
   }
-  
+
+  if (sheetStudents &amp;&amp; stData.length &gt; 0 &amp;&amp; (updatedStudentsCount &gt; 0 || count &gt; 0)) {
+    sheetStudents.getRange(2, 1, stData.length, 36).setValues(stData);
+  }
+
   SpreadsheetApp.getUi().alert("보강 은행 일괄 정산 완료!\n- 전체시간표 결석 누적분(AG열) 갱신: " + updatedStudentsCount + "명\n- 오늘 출석부 보강 차감 완료: " + count + "건 🍀");
 }
 
@@ -3916,7 +3954,14 @@ function vocabFmtDate_(d) {
 }
 
 function vocabNormBook_(s) {
-  return String(s || "").replace(/\[[^\]]*\]/g, "").replace(/\s+/g, "").toLowerCase();
+  var str = String(s || "").trim();
+  if (!str) return "";
+  return str
+    .replace(/\[[^\]]*\]/g, "")
+    .replace(/\((?:독서중|독서\s*대기|독서완료|요약하기|어휘학습|책소개|[^\)]*쪽|\d+\s*~\s*\d+)\)/g, "")
+    .replace(/^(?:[1-6]-[1-4]\s*)?(?:노랑|초록|파랑|빨강|보라|주황|연두|하늘|분홍|남색|갈색)?\s*/, "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
 }
 
 // ---------- 어휘 읽기 (학생앱이 요청) ----------
@@ -4442,15 +4487,6 @@ function splitCleanBookEntries18_(rawBookStr, defaultLv, defaultScore) {
   return results;
 }
 
-function normBookKeyForMerge18_(title) {
-  var s = String(title || "").trim();
-  if (!s) return "";
-  s = s.replace(/\[[^\]]*\]/g, "")
-       .replace(/\((?:독서중|독서\s*대기|독서완료|요약하기|어휘학습|책소개|[^\)]*쪽|\d+\s*~\s*\d+)\)/g, "")
-       .replace(/^(?:[1-6]-[1-4]\s*)?(?:노랑|초록|파랑|빨강|보라|주황|연두|하늘|분홍|남색|갈색)?\s*/, "");
-  return s.replace(/\s+/g, "").toLowerCase();
-}
-
 function decomposeAndMergeStudentDayRows18_(dateObj, name, rows) {
   var hwStatus = "";
   var step1Parts = [];
@@ -4482,10 +4518,10 @@ function decomposeAndMergeStudentDayRows18_(dateObj, name, rows) {
     }
     for (var c = 0; c &lt; cleanList.length; c++) {
       var item = cleanList[c];
-      var nk = normBookKeyForMerge18_(item.title);
+      var nk = vocabNormBook_(item.title);
       var found = null;
       for (var b = 0; b &lt; books.length; b++) {
-        var bnk = normBookKeyForMerge18_(books[b].title);
+        var bnk = vocabNormBook_(books[b].title);
         if ((nk &amp;&amp; bnk &amp;&amp; (nk === bnk || nk.indexOf(bnk) !== -1 || bnk.indexOf(nk) !== -1)) || (!books[b].title &amp;&amp; !nk)) {
           found = books[b];
           break;
@@ -4506,9 +4542,9 @@ function decomposeAndMergeStudentDayRows18_(dateObj, name, rows) {
 
   function upsertVocab(level, book, total, correct, rate, wrongWords) {
     var bTitle = String(book || "").trim();
-    var nk = normBookKeyForMerge18_(bTitle);
+    var nk = vocabNormBook_(bTitle);
     for (var v = 0; v &lt; vocabs.length; v++) {
-      var vnk = normBookKeyForMerge18_(vocabs[v].book);
+      var vnk = vocabNormBook_(vocabs[v].book);
       if (nk &amp;&amp; vnk &amp;&amp; (nk === vnk || nk.indexOf(vnk) !== -1 || vnk.indexOf(nk) !== -1)) {
         if (level &amp;&amp; !vocabs[v].level) vocabs[v].level = level;
         if (bTitle.length &gt; vocabs[v].book.length) vocabs[v].book = bTitle;
@@ -4820,11 +4856,11 @@ function decomposeAndMergeStudentDayRows18_(dateObj, name, rows) {
 
   for (var bIdx = 0; bIdx &lt; books.length; bIdx++) {
     var bk = books[bIdx];
-    var bnk = normBookKeyForMerge18_(bk.title);
+    var bnk = vocabNormBook_(bk.title);
     var matchedV = null;
     for (var vIdx = 0; vIdx &lt; vocabs.length; vIdx++) {
       if (usedVocabIdx[vIdx]) continue;
-      var vnk = normBookKeyForMerge18_(vocabs[vIdx].book);
+      var vnk = vocabNormBook_(vocabs[vIdx].book);
       if (bnk &amp;&amp; vnk &amp;&amp; (bnk === vnk || bnk.indexOf(vnk) !== -1 || vnk.indexOf(bnk) !== -1)) {
         matchedV = vocabs[vIdx];
         usedVocabIdx[vIdx] = true;
@@ -4850,7 +4886,7 @@ function decomposeAndMergeStudentDayRows18_(dateObj, name, rows) {
   for (var vIdx2 = 0; vIdx2 &lt; vocabs.length; vIdx2++) {
     if (usedVocabIdx[vIdx2]) continue;
     var uv = vocabs[vIdx2];
-    if (mergedBookVocabList.length === 1 &amp;&amp; mergedBookVocabList[0].total === "" &amp;&amp; (!uv.book || normBookKeyForMerge18_(mergedBookVocabList[0].book) === normBookKeyForMerge18_(uv.book))) {
+    if (mergedBookVocabList.length === 1 &amp;&amp; mergedBookVocabList[0].total === "" &amp;&amp; (!uv.book || vocabNormBook_(mergedBookVocabList[0].book) === vocabNormBook_(uv.book))) {
       var m0 = mergedBookVocabList[0];
       if (!m0.level) m0.level = uv.level;
       if (!m0.book) m0.book = uv.book;
@@ -5357,7 +5393,7 @@ function migrateMemberAnalysisToLearningRecords() {
     }
     if (sDate.indexOf(ymPrefix) === 0) {
       if (!summaryMap[sName]) summaryMap[sName] = { books: {}, vocab: [], read: [], concept: [], tr: 0 };
-      if (sBook) summaryMap[sName].books[normBookKeyForMerge18_(sBook) || sBook] = true;
+      if (sBook) summaryMap[sName].books[vocabNormBook_(sBook) || sBook] = true;
       var vr = vocabNum_(srv[8]);
       if (vr !== "") summaryMap[sName].vocab.push(vr);
       var ds = vocabNum_(srv[9]);
@@ -5461,6 +5497,11 @@ function vocabBuildAnalysisSheet_(ss) {
   var who = range("B") + ",$B$2";
   var qDateWhere = "A &gt;= date '\"&amp;TEXT($E$2,\"yyyy-mm-dd\")&amp;\"' and A &lt;= date '\"&amp;TEXT($E$3,\"yyyy-mm-dd\")&amp;\"'";
 
+  var memberSheetObj = getMemberAnalysisSheet(ss);
+  var memberSheetName = memberSheetObj ? memberSheetObj.getName() : "회원 분석";
+  var consultSheetObj = ss.getSheetByName("학부모상담/채널발송") || ss.getSheetByName("상담내용/리포트발송/채널발송") || ss.getSheetByName("상담내용");
+  var consultSheetName = consultSheetObj ? consultSheetObj.getName() : "학부모상담/채널발송";
+
   sh.getRange("A1").setValue("📊 학생 종합 학습 분석표 (숙제 · 어휘 · 독서진단 · 트레이닝 · 발자국 기록)").setFontSize(14).setFontWeight("bold");
   sh.getRange("A2:A6").setValues([["학생"], ["년도"], ["월"], ["시작일 (선택)"], ["종료일 (선택)"]]).setFontWeight("bold");
   sh.getRange("B3").setFormula("=YEAR(TODAY())");
@@ -5475,9 +5516,9 @@ function vocabBuildAnalysisSheet_(ss) {
   sh.getRange("H3").setValue("학부모 배포용 (내부 코칭/상담메모 숨기기)").setFontWeight("bold").setFontColor("#1e3a8a");
   sh.getRange("B2:B6").setBackground("#e8f0fe");
 
-  // 학생 목록(숨김 Z열) + 드롭다운 (학습기록 B열 기준)
+  // 학생 목록(숨김 Z열) + 드롭다운 (학습기록 B열 기준, 1행 고정으로 행 삽입 시 밀림 방지)
   sh.getRange("Z1").setValue("학생목록");
-  sh.getRange("Z2").setFormula('=IFERROR(SORT(UNIQUE(FILTER(' + R + '$B$2:$B,' + R + '$B$2:$B&lt;&gt;""))),"")');
+  sh.getRange("Z2").setFormula('=IFERROR(SORT(UNIQUE(QUERY(' + all + ',"select B where B is not null",1))),"")');
   sh.hideColumns(26);
   sh.getRange("B2").setDataValidation(SpreadsheetApp.newDataValidation().requireValueInRange(sh.getRange("Z2:Z"), true).setAllowInvalid(true).build());
 
@@ -5502,15 +5543,15 @@ function vocabBuildAnalysisSheet_(ss) {
   // 우측(D8:H14) 코칭 방향 &amp; 원장님 상담 기록 연동 (학부모 배포용 체크 시 자동 숨김)
   sh.getRange("D8").setFormula('=IF($G$3,"■ 이달의 중점 학습 가이드","■ 코칭 방향 &amp; 최근 상담 기록 (회원 분석 / 상담내용 연동)")').setFontWeight("bold").setBackground("#e8f0fe");
   sh.getRange("D9").setValue("코칭 방향 / 목표").setFontWeight("bold");
-  sh.getRange("E9").setFormula('=IF($G$3,"학생 맞춤형 독서·문해력 코칭 진행 중",IFERROR(VLOOKUP($B$2,\'회원 분석\'!$B:$G,5,FALSE),"-"))');
+  sh.getRange("E9").setFormula('=IF($G$3,"학생 맞춤형 독서·문해력 코칭 진행 중",IFERROR(VLOOKUP($B$2,\'' + memberSheetName + '\'!$B:$G,5,FALSE),"-"))');
   sh.getRange("D10").setValue("이달의 요약 전광판").setFontWeight("bold");
-  sh.getRange("E10").setFormula('=IFERROR(VLOOKUP($B$2,\'회원 분석\'!$B:$G,6,FALSE),"-")');
+  sh.getRange("E10").setFormula('=IFERROR(VLOOKUP($B$2,\'' + memberSheetName + '\'!$B:$G,6,FALSE),"-")');
   sh.getRange("D11").setValue("최근 상담 메모").setFontWeight("bold");
-  sh.getRange("E11").setFormula('=IF($G$3,"(학부모 배포용 숨김)",IFERROR(TEXTJOIN(" / ",TRUE,QUERY(\'상담내용\'!$A:$F,"select A, E where C contains \'"&amp;$B$2&amp;"\' order by A desc limit 2",0)),"상담 기록 없음"))');
+  sh.getRange("E11").setFormula('=IF($G$3,"(학부모 배포용 숨김)",IFERROR(TEXTJOIN(" / ",TRUE,QUERY(\'' + consultSheetName + '\'!$A:$F,"select C, E where B contains \'"&amp;$B$2&amp;"\' order by C desc limit 2",0)),"상담 기록 없음"))');
 
   // 2) 책별 어휘 결과 (최대 20권)
   sh.getRange("A16").setValue("■ 도서별 어휘 학습 결과 (최대 20권)").setFontWeight("bold").setBackground("#e6f4ea");
-  sh.getRange("A17").setFormula('=IFERROR(QUERY(' + all + ',"select F, count(F), avg(I), R where B = \'"&amp;$B$2&amp;"\' and G is not null and ' + qDateWhere + ' group by F, R order by count(F) desc limit 20 label F \'도서명/어휘학습\', count(F) \'횟수\', avg(I) \'평균 정답률(%)\', R \'틀린 어휘\'",1),"기록이 없어요")');
+  sh.getRange("A17").setFormula('=IFERROR(QUERY(' + all + ',"select F, count(F), avg(I), max(R) where B = \'"&amp;$B$2&amp;"\' and G is not null and ' + qDateWhere + ' group by F order by count(F) desc limit 20 label F \'도서명/어휘학습\', count(F) \'횟수\', avg(I) \'평균 정답률(%)\', max(R) \'최근 틀린 어휘\'",1),"기록이 없어요")');
 
   // 3) 틀린 어휘 모아보기
   sh.getRange("A39").setValue("■ 기간 내 틀린 어휘 목록 (복습 대상)").setFontWeight("bold").setBackground("#ffedd5");
@@ -5576,26 +5617,29 @@ function vocabEsc_(s) {
 
 function vocabLines_(txt, per) { return Math.max(1, Math.ceil(String(txt || "").length / per)); }
 
-// [어휘] 시트 데이터로 틀린 어휘의 4지선다 복습 문제(빈칸/뜻맞히기) 동적 구성
+// [어휘] 시트 데이터(vocabReadRows_: {level, title, w, f, m, e})로 틀린 어휘의 4지선다 복습 문제(빈칸/뜻맞히기) 동적 구성
 function vocabBuildReviewQuestionFromBank_(wordStr, bookStr, levelStr, vocabRows) {
+  var cleanWord = String(wordStr || "").replace(/\([^\)]*\)/g, "").trim();
+  if (!cleanWord) return null;
   var target = null;
   var normBook = vocabNormBook_(bookStr);
   for (var i = 0; i &lt; vocabRows.length; i++) {
     var r = vocabRows[i];
-    if (r.w === wordStr) {
-      if (normBook &amp;&amp; vocabNormBook_(r.book) === normBook) { target = r; break; }
+    if (r.w === wordStr || r.w === cleanWord) {
+      if (normBook &amp;&amp; vocabNormBook_(r.title) === normBook) { target = r; break; }
       if (!target) target = r;
     }
   }
   if (!target) {
     return null;
   }
+  var targetBookNorm = vocabNormBook_(target.title);
   // 오답 보기(distractors) 3개 추출 (같은 책 또는 같은 레벨 우선)
   var pool = [];
   for (var j = 0; j &lt; vocabRows.length; j++) {
     var cand = vocabRows[j];
     if (cand.w === target.w || !cand.m) continue;
-    if (cand.level === target.level || vocabNormBook_(cand.book) === normBook) {
+    if ((normBook &amp;&amp; vocabNormBook_(cand.title) === normBook) || (targetBookNorm &amp;&amp; vocabNormBook_(cand.title) === targetBookNorm) || cand.level === target.level) {
       pool.push(cand);
     }
   }
@@ -5605,33 +5649,52 @@ function vocabBuildReviewQuestionFromBank_(wordStr, bookStr, levelStr, vocabRows
     }
   }
   var shuffledPool = vocabShuffle_(pool);
-  var label = (target.level ? target.level + " · " : "") + (target.book || "");
+  var label = (target.level ? target.level + " · " : "") + (target.title || bookStr || "");
+  var ex = String(target.e || "").trim();
+  var form = String(target.f || target.w || "").trim();
 
-  // 예문이 있고 어휘(또는 활용형)가 예문에 포함되어 있으면 빈칸 문제, 아니면 뜻 고르기 문제 생성
-  var formToBlank = target.form &amp;&amp; target.ex.indexOf(target.form) !== -1 ? target.form : (target.ex.indexOf(target.w) !== -1 ? target.w : "");
-  if (target.ex &amp;&amp; formToBlank) {
-    var wordOpts = [target.w];
+  // 1) 예문에 이미 '( )' 빈칸이 들어 있거나 어휘(또는 활용형)가 예문에 포함되어 있으면 빈칸 문제 생성
+  var blankSentence = "";
+  var useFormOption = false;
+  if (ex) {
+    if (/\(\s*\)/.test(ex)) {
+      blankSentence = ex.replace(/\(\s*\)/g, "( )");
+      useFormOption = !!form;
+    } else if (form &amp;&amp; ex.indexOf(form) !== -1) {
+      blankSentence = ex.replace(form, "( )");
+      useFormOption = true;
+    } else if (ex.indexOf(target.w) !== -1) {
+      blankSentence = ex.replace(target.w, "( )");
+      useFormOption = false;
+    }
+  }
+
+  if (blankSentence) {
+    var ansWord = useFormOption ? form : target.w;
+    var wordOpts = [ansWord];
     for (var d = 0; d &lt; shuffledPool.length &amp;&amp; wordOpts.length &lt; 4; d++) {
-      if (wordOpts.indexOf(shuffledPool[d].w) === -1) wordOpts.push(shuffledPool[d].w);
+      var candOpt = useFormOption ? (shuffledPool[d].f || shuffledPool[d].w) : shuffledPool[d].w;
+      if (candOpt &amp;&amp; wordOpts.indexOf(candOpt) === -1) wordOpts.push(candOpt);
     }
     return {
-      key: "w||" + target.w + "||" + (target.book || ""),
+      key: "w||" + target.w + "||" + (target.title || ""),
       type: "blank",
       word: target.w,
       meaning: target.m,
       label: label,
-      sentence: target.ex.replace(formToBlank, "( )"),
+      sentence: blankSentence,
       options: wordOpts,
-      answer: target.w
+      answer: ansWord
     };
   }
 
+  // 2) 예문이 없거나 빈칸 치환이 불가능하면 뜻 고르기 문제 생성
   var meanOpts = [target.m];
   for (var mIdx = 0; mIdx &lt; shuffledPool.length &amp;&amp; meanOpts.length &lt; 4; mIdx++) {
     if (meanOpts.indexOf(shuffledPool[mIdx].m) === -1) meanOpts.push(shuffledPool[mIdx].m);
   }
   return {
-    key: "m||" + target.w + "||" + (target.book || ""),
+    key: "m||" + target.w + "||" + (target.title || ""),
     type: "mean",
     word: target.w,
     meaning: target.m,
@@ -5846,9 +5909,403 @@ function vocabMakeReviewPdf() {
   var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder("어휘 오답 복습지");
   var file = folder.createFile(pdf);
   var html = HtmlService.createHtmlOutput(
-    "&lt;div style='font-family:sans-serif;line-height:1.7'&gt;&lt;b&gt;" + vocabEsc_(name) + "&lt;/b&gt; 오답 복습지를 만들었어요.&lt;br&gt;문제 " + out.questions + "개 · 문제지 " + out.sheets + "장 + 정답지 " + out.sheets + "쪽&lt;br&gt;&lt;br&gt;" +
-    "&lt;a href='" + file.getUrl() + "' target='_blank'&gt;▶ PDF 열기 (드라이브 '어휘 오답 복습지' 폴더)&lt;/a&gt;&lt;/div&gt;").setWidth(420).setHeight(190);
-  ui.showModalDialog(html, "오답 복습지");
+    "&lt;div style='font-family:Malgun Gothic,sans-serif;line-height:1.7;padding:6px'&gt;&lt;b&gt;" + vocabEsc_(name) + "&lt;/b&gt; 학생의 어휘 오답 복습지를 만들었어요.&lt;br&gt;" +
+    "• 기간: " + vocabEsc_(vocabFmtDate_(start) + " ~ " + vocabFmtDate_(end)) + "&lt;br&gt;" +
+    "• 구성: 문제 &lt;b&gt;" + out.questions + "문항&lt;/b&gt; · 문제지 " + out.sheets + "장 + 정답 및 해설 " + out.sheets + "쪽&lt;br&gt;&lt;br&gt;" +
+    "&lt;a href='" + file.getUrl() + "' target='_blank' style='display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;font-weight:bold'&gt;▶ 오답 복습지 PDF 열기 / 다운로드&lt;/a&gt;" +
+    "&lt;div style='margin-top:8px;font-size:11px;color:#64748b'&gt;※ 구글 드라이브 '어휘 오답 복습지' 폴더에 자동 저장되었습니다.&lt;/div&gt;&lt;/div&gt;").setWidth(440).setHeight(210);
+  ui.showModalDialog(html, "📝 어휘 오답 복습지 PDF");
+}
+
+// ---------- 메뉴 10번: 📊 학부모 발송용 학생 분석표 PDF 만들기 (학생분석표 B2 학생 · E2~E3 기간 기준) ----------
+function vocabRenderAnalysisReportHtml_(d) {
+  var css =
+    "@page{size:A4;margin:14mm 14mm 14mm 14mm}" +
+    "body{font-family:'Malgun Gothic','Nanum Gothic',sans-serif;color:#1e293b;margin:0;padding:0;font-size:9.5pt;line-height:1.45}" +
+    ".hd{border-bottom:2.5px solid #1e3a8a;padding-bottom:8px;margin-bottom:12px;display:table;width:100%}" +
+    ".hd-l{display:table-cell;vertical-align:bottom}.hd-r{display:table-cell;vertical-align:bottom;text-align:right;font-size:8.5pt;color:#475569}" +
+    ".sub{font-size:8.5pt;color:#2563eb;font-weight:bold;letter-spacing:0.5px}" +
+    ".ttl{font-size:17pt;font-weight:bold;color:#0f172a;margin-top:2px}" +
+    ".badge{display:inline-block;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:2px 8px;border-radius:12px;font-weight:bold;font-size:9pt}" +
+    ".cards{width:100%;border-collapse:separate;border-spacing:6px 0;margin:0 -6px 12px -6px;table-layout:fixed}" +
+    ".card{background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;vertical-align:top}" +
+    ".card-k{font-size:8pt;color:#64748b;font-weight:bold;margin-bottom:3px}" +
+    ".card-v{font-size:13pt;font-weight:bold;color:#0f172a}" +
+    ".card-s{font-size:7.8pt;color:#475569;margin-top:3px}" +
+    ".sec{margin-top:11px;margin-bottom:5px;font-size:10.5pt;font-weight:bold;color:#1e3a8a;border-left:4px solid #2563eb;padding-left:7px}" +
+    "table.tb{width:100%;border-collapse:collapse;margin-bottom:8px;table-layout:fixed}" +
+    "table.tb th{background:#f1f5f9;color:#334155;font-size:8.3pt;font-weight:bold;padding:5px 6px;border:1px solid #cbd5e1;text-align:center}" +
+    "table.tb td{font-size:8.5pt;padding:5px 6px;border:1px solid #cbd5e1;vertical-align:middle;word-wrap:break-word}" +
+    ".c{text-align:center}.r{text-align:right}" +
+    ".box{background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:8.8pt}" +
+    ".wchip{display:inline-block;background:#fff7ed;border:1px solid #fed7aa;border-radius:4px;padding:3px 7px;margin:2px 3px 2px 0;font-size:8.3pt}" +
+    ".wchip b{color:#c2410c}" +
+    ".ft{margin-top:14px;border-top:1px dashed #94a3b8;padding-top:6px;font-size:8pt;color:#64748b;text-align:center}";
+
+  var h = "&lt;html&gt;&lt;head&gt;&lt;meta charset='utf-8'&gt;&lt;style&gt;" + css + "&lt;/style&gt;&lt;/head&gt;&lt;body&gt;";
+  h += "&lt;div class='hd'&gt;&lt;div class='hd-l'&gt;&lt;div class='sub'&gt;독서와국어 · 개인별 맞춤형 문해력 성장 리포트&lt;/div&gt;" +
+       "&lt;div class='ttl'&gt;" + vocabEsc_(d.title) + "&lt;/div&gt;&lt;/div&gt;" +
+       "&lt;div class='hd-r'&gt;&lt;span class='badge'&gt;" + vocabEsc_(d.name) + (d.grade ? " (" + vocabEsc_(d.grade) + ")" : "") + "&lt;/span&gt;&lt;br&gt;" +
+       "분석 기간: &lt;b&gt;" + vocabEsc_(d.period) + "&lt;/b&gt;&lt;/div&gt;&lt;/div&gt;";
+
+  // 1) 4대 핵심 지표 요약 카드
+  h += "&lt;table class='cards'&gt;&lt;tr&gt;" +
+       "&lt;td class='card'&gt;&lt;div class='card-k'&gt;✅ 수업 참여 · 숙제 성실도&lt;/div&gt;&lt;div class='card-v'&gt;수업 " + d.lessonDays + "일 / 숙제완료 " + d.hwDoneCount + "회&lt;/div&gt;" +
+       "&lt;div class='card-s'&gt;" + vocabEsc_(d.hwSubText) + "&lt;/div&gt;&lt;/td&gt;" +
+       "&lt;td class='card'&gt;&lt;div class='card-k'&gt;📗 어휘 확인 학습 성취도&lt;/div&gt;&lt;div class='card-v'&gt;" + (d.vocabCount &gt; 0 ? ("평균 " + d.vocabAvg + "%") : "-") + "&lt;/div&gt;" +
+       "&lt;div class='card-s'&gt;퀴즈 " + d.vocabCount + "회 · 최고 " + d.vocabMax + " / 최저 " + d.vocabMin + " (오답 " + d.vocabWrongTotal + "개)&lt;/div&gt;&lt;/td&gt;" +
+       "&lt;td class='card'&gt;&lt;div class='card-k'&gt;📘 독서이해도 진단 점수&lt;/div&gt;&lt;div class='card-v'&gt;" + (d.diagCount &gt; 0 ? ("평균 " + d.diagAvg + "점") : "-") + "&lt;/div&gt;" +
+       "&lt;div class='card-s'&gt;진단 " + d.diagCount + "회 · 최고 " + d.diagMax + " · 학습도서 " + d.bookCount + "권&lt;/div&gt;&lt;/td&gt;" +
+       "&lt;td class='card'&gt;&lt;div class='card-k'&gt;✏️ 4단계 집중 트레이닝&lt;/div&gt;&lt;div class='card-v'&gt;총 " + d.trTotalCount + "회 실시&lt;/div&gt;" +
+       "&lt;div class='card-s'&gt;이해도 우수(잘 이해) " + d.undGood + "회 · 보통 " + d.undMid + "회&lt;/div&gt;&lt;/td&gt;" +
+       "&lt;/tr&gt;&lt;/table&gt;";
+
+  // 2) 이달의 학습 목표 &amp; 코칭 가이드
+  if (d.goalText || d.coachingText || d.consultText) {
+    h += "&lt;div class='sec'&gt;1. 이달의 중점 학습 목표 및 코칭 방향&lt;/div&gt;&lt;div class='box'&gt;";
+    if (d.goalText) h += "&lt;div&gt;&lt;b&gt;• 중점 목표 / 요약:&lt;/b&gt; " + vocabEsc_(d.goalText).replace(/\n/g, " &amp;nbsp;|&amp;nbsp; ") + "&lt;/div&gt;";
+    if (d.coachingText) h += "&lt;div style='margin-top:3px'&gt;&lt;b&gt;• 지도 방향:&lt;/b&gt; " + vocabEsc_(d.coachingText).replace(/\n/g, " ") + "&lt;/div&gt;";
+    if (d.consultText) h += "&lt;div style='margin-top:3px;color:#475569'&gt;&lt;b&gt;• 최근 상담 기록:&lt;/b&gt; " + vocabEsc_(d.consultText) + "&lt;/div&gt;";
+    h += "&lt;/div&gt;";
+  }
+
+  // 3) 도서별 독서이해도 진단 &amp; 어휘 학습 결과
+  h += "&lt;div class='sec'&gt;2. 도서별 독서이해도 진단 및 어휘 학습 성취도&lt;/div&gt;";
+  if (d.bookRows.length &gt; 0) {
+    h += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
+         "&lt;th style='width:13%'&gt;날짜&lt;/th&gt;&lt;th style='width:11%'&gt;레벨&lt;/th&gt;&lt;th style='width:31%'&gt;도서명 / 어휘학습&lt;/th&gt;" +
+         "&lt;th style='width:15%'&gt;어휘 정답률&lt;/th&gt;&lt;th style='width:12%'&gt;독서 진단점수&lt;/th&gt;&lt;th style='width:18%'&gt;독서발자국 / 틀린 어휘&lt;/th&gt;" +
+         "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
+    for (var b = 0; b &lt; d.bookRows.length; b++) {
+      var br = d.bookRows[b];
+      var vTxt = br.vTotal !== "" ? (br.vRate + "% (" + br.vCorr + "/" + br.vTotal + ")") : "-";
+      var dTxt = br.dScore !== "" ? (br.dScore + "점") : "-";
+      var memoArr = [];
+      if (br.step2) memoArr.push(br.step2);
+      if (br.wrong) memoArr.push("오답: " + br.wrong);
+      h += "&lt;tr&gt;&lt;td class='c'&gt;" + vocabEsc_(br.date) + "&lt;/td&gt;&lt;td class='c'&gt;" + vocabEsc_(br.level || "-") + "&lt;/td&gt;" +
+           "&lt;td&gt;&lt;b&gt;" + vocabEsc_(br.book || "어휘 학습") + "&lt;/b&gt;&lt;/td&gt;&lt;td class='c'&gt;" + vocabEsc_(vTxt) + "&lt;/td&gt;" +
+           "&lt;td class='c'&gt;" + vocabEsc_(dTxt) + "&lt;/td&gt;&lt;td&gt;" + vocabEsc_(memoArr.join(" / ") || "-") + "&lt;/td&gt;&lt;/tr&gt;";
+    }
+    h += "&lt;/tbody&gt;&lt;/table&gt;";
+  } else {
+    h += "&lt;div class='box'&gt;선택한 기간 내 도서·어휘 학습 기록이 없습니다.&lt;/div&gt;";
+  }
+
+  // 4) 기간 내 틀린 어휘 및 뜻 정리 (복습 대상)
+  h += "&lt;div class='sec'&gt;3. 기간 내 집중 복습 어휘 목록 (틀린 어휘 &amp; 뜻 정리)&lt;/div&gt;";
+  if (d.wrongWordList.length &gt; 0) {
+    h += "&lt;div class='box'&gt;";
+    for (var w = 0; w &lt; d.wrongWordList.length; w++) {
+      var ww = d.wrongWordList[w];
+      h += "&lt;span class='wchip'&gt;&lt;b&gt;" + vocabEsc_(ww.word) + "&lt;/b&gt;" +
+           (ww.meaning ? ": " + vocabEsc_(ww.meaning) : "") +
+           (ww.book ? " &lt;span style='color:#64748b'&gt;(" + vocabEsc_(ww.book) + ")&lt;/span&gt;" : "") + "&lt;/span&gt;";
+    }
+    h += "&lt;/div&gt;";
+  } else {
+    h += "&lt;div class='box'&gt;기간 내 틀린 어휘가 없거나 모든 어휘를 첫 시도에 정확히 맞혔습니다! 👏&lt;/div&gt;";
+  }
+
+  // 5) 4단계 집중 트레이닝 영역별 성취도 &amp; 상세 이력
+  h += "&lt;div class='sec'&gt;4. 4단계 집중 트레이닝 영역별 성취도 및 문해력발자국&lt;/div&gt;";
+  if (d.trSummary.length &gt; 0) {
+    h += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
+         "&lt;th style='width:28%'&gt;트레이닝 영역&lt;/th&gt;&lt;th style='width:14%'&gt;실시 횟수&lt;/th&gt;&lt;th style='width:16%'&gt;평균 오답 수&lt;/th&gt;&lt;th style='width:42%'&gt;주요 학습 교재 · 권수/차시&lt;/th&gt;" +
+         "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
+    for (var ts = 0; ts &lt; d.trSummary.length; ts++) {
+      var tItem = d.trSummary[ts];
+      h += "&lt;tr&gt;&lt;td&gt;&lt;b&gt;" + vocabEsc_(tItem.type) + "&lt;/b&gt;&lt;/td&gt;&lt;td class='c'&gt;" + tItem.count + "회&lt;/td&gt;" +
+           "&lt;td class='c'&gt;" + (tItem.avgErr !== "-" ? tItem.avgErr + "개" : "-") + "&lt;/td&gt;&lt;td&gt;" + vocabEsc_(tItem.details) + "&lt;/td&gt;&lt;/tr&gt;";
+    }
+    h += "&lt;/tbody&gt;&lt;/table&gt;";
+  }
+  if (d.trRows.length &gt; 0) {
+    h += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
+         "&lt;th style='width:13%'&gt;날짜&lt;/th&gt;&lt;th style='width:20%'&gt;트레이닝 영역&lt;/th&gt;&lt;th style='width:24%'&gt;권수 / 차시&lt;/th&gt;" +
+         "&lt;th style='width:10%'&gt;오답 수&lt;/th&gt;&lt;th style='width:15%'&gt;자기 이해도&lt;/th&gt;&lt;th style='width:18%'&gt;문해력발자국&lt;/th&gt;" +
+         "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
+    for (var tr = 0; tr &lt; d.trRows.length; tr++) {
+      var rowT = d.trRows[tr];
+      h += "&lt;tr&gt;&lt;td class='c'&gt;" + vocabEsc_(rowT.date) + "&lt;/td&gt;&lt;td class='c'&gt;&lt;b&gt;" + vocabEsc_(rowT.type) + "&lt;/b&gt;&lt;/td&gt;" +
+           "&lt;td&gt;" + vocabEsc_(rowT.detail || "-") + "&lt;/td&gt;&lt;td class='c'&gt;" + (rowT.err !== "" ? rowT.err + "개" : "-") + "&lt;/td&gt;" +
+           "&lt;td class='c'&gt;" + vocabEsc_(rowT.und || "-") + "&lt;/td&gt;&lt;td&gt;" + vocabEsc_(rowT.memo || "-") + "&lt;/td&gt;&lt;/tr&gt;";
+    }
+    h += "&lt;/tbody&gt;&lt;/table&gt;";
+  } else if (!d.trSummary.length) {
+    h += "&lt;div class='box'&gt;선택한 기간 내 트레이닝 기록이 없습니다.&lt;/div&gt;";
+  }
+
+  // 6) 나의 시간, 나의 기록 (성실발자국 &amp; 학생 한줄 다짐)
+  if (d.reflections.length &gt; 0) {
+    h += "&lt;div class='sec'&gt;5. 나의 시간, 나의 기록 (학생 스스로 남긴 수업 다짐 &amp; 성실발자국)&lt;/div&gt;&lt;div class='box'&gt;";
+    for (var rf = 0; rf &lt; d.reflections.length; rf++) {
+      var rItem = d.reflections[rf];
+      h += "&lt;div style='margin-bottom:3px'&gt;• &lt;b&gt;[" + vocabEsc_(rItem.date) + "]&lt;/b&gt; " + vocabEsc_(rItem.text) + "&lt;/div&gt;";
+    }
+    h += "&lt;/div&gt;";
+  }
+
+  h += "&lt;div class='ft'&gt;본 리포트는 학원 수업 및 학생 자기주도 학습 기록을 바탕으로 발행되었습니다. 가정에서도 따뜻한 격려와 칭찬 부탁드립니다. 🌿&lt;/div&gt;";
+  h += "&lt;/body&gt;&lt;/html&gt;";
+  return h;
+}
+
+function vocabMakeAnalysisReportPdf() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ui = SpreadsheetApp.getUi();
+  var as = ss.getSheetByName(ANALYSIS_SHEET);
+  var rs = ss.getSheetByName(RECORD_SHEET);
+  if (!as || !rs) {
+    ui.alert("먼저 메뉴의 [8. 어휘·학습기록(18열)·학생분석표 셋업]을 실행해 주세요.");
+    return;
+  }
+
+  var name = String(as.getRange("B2").getValue() || "").replace(/\s+/g, "");
+  var start = as.getRange("E2").getValue();
+  var end = as.getRange("E3").getValue();
+  var hideInternal = !!as.getRange("G3").getValue();
+  if (!name) {
+    ui.alert("[학생분석표]의 B2 셀에서 학생을 먼저 선택해 주세요.");
+    return;
+  }
+  if (!(start instanceof Date) || !(end instanceof Date)) {
+    ui.alert("[학생분석표]의 기간(적용 시작일 E2 / 종료일 E3)을 확인해 주세요.");
+    return;
+  }
+
+  var startMs = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+  var endMs = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1).getTime();
+  var periodStr = vocabFmtDate_(start) + " ~ " + vocabFmtDate_(end);
+
+  // 1) [회원 분석] 및 [상담내용]에서 학년·목표·코칭방향 1회 Bulk 조회
+  var grade = "", coachingText = "", goalText = "", consultText = "";
+  var sheetMember = getMemberAnalysisSheet(ss);
+  if (sheetMember &amp;&amp; sheetMember.getLastRow() &gt;= 2) {
+    var mVals = sheetMember.getRange(2, 1, sheetMember.getLastRow() - 1, Math.min(sheetMember.getLastColumn(), 8)).getValues();
+    for (var m = 0; m &lt; mVals.length; m++) {
+      if (String(mVals[m][1] || "").replace(/\s+/g, "") === name) {
+        grade = String(mVals[m][2] || "").trim();
+        coachingText = hideInternal ? "학생 맞춤형 독서·어휘·문해력 집중 코칭 진행 중" : String(mVals[m][5] || "").trim();
+        goalText = String(mVals[m][6] || "").trim();
+        break;
+      }
+    }
+  }
+  if (!hideInternal) {
+    var sheetConsult = ss.getSheetByName("학부모상담/채널발송") || ss.getSheetByName("상담내용/리포트발송/채널발송") || ss.getSheetByName("상담내용");
+    if (sheetConsult &amp;&amp; sheetConsult.getLastRow() &gt;= 2) {
+      var cVals = sheetConsult.getRange(2, 1, sheetConsult.getLastRow() - 1, Math.min(sheetConsult.getLastColumn(), 6)).getValues();
+      var cLogs = [];
+      for (var c = cVals.length - 1; c &gt;= 0 &amp;&amp; cLogs.length &lt; 2; c--) {
+        var cName = String(cVals[c][1] || "").replace(/\s+/g, "");
+        var cNameAlt = String(cVals[c][2] || "").replace(/\s+/g, "");
+        if (cName === name || cNameAlt === name) {
+          var cMemo = String(cVals[c][4] || "").trim();
+          if (cMemo) cLogs.push(cMemo);
+        }
+      }
+      consultText = cLogs.join(" / ");
+    }
+  }
+
+  // 2) [어휘] 시트 사전(뜻 매칭용) 1회 로드
+  var vocabRows = vocabReadRows_();
+  var meaningMap = {};
+  for (var vr = 0; vr &lt; vocabRows.length; vr++) {
+    var vRow = vocabRows[vr];
+    if (vRow.w &amp;&amp; !meaningMap[vRow.w]) meaningMap[vRow.w] = vRow.m;
+  }
+
+  // 3) [학습기록] 18열 1회 Bulk 조회 및 집계
+  var dateSet = {};
+  var hwDoneCount = 0, hwOtherCount = 0;
+  var vocabRates = [], vocabWrongTotal = 0;
+  var diagScores = [];
+  var bookSet = {};
+  var bookRows = [];
+  var wrongWordsSeen = {}, wrongWordList = [];
+  var trByType = {}, trOrder = [], trRows = [];
+  var undGood = 0, undMid = 0, undLow = 0;
+  var reflections = [];
+
+  if (rs.getLastRow() &gt;= 2) {
+    var rVals = rs.getRange(2, 1, rs.getLastRow() - 1, Math.min(rs.getLastColumn(), 18)).getValues();
+    for (var i = 0; i &lt; rVals.length; i++) {
+      var v = rVals[i];
+      if (String(v[1] || "").replace(/\s+/g, "") !== name) continue;
+      var dObj = vocabParseDate_(v[0]);
+      var tMs = dObj.getTime();
+      if (!(tMs &gt;= startMs &amp;&amp; tMs &lt; endMs)) continue;
+      var dStr = vocabFmtDate_(dObj);
+      dateSet[dStr] = true;
+
+      var hw = String(v[2] || "").trim();
+      var step1 = String(v[3] || "").trim();
+      if (hw === "숙제완료") hwDoneCount++;
+      else if (hw) hwOtherCount++;
+
+      var lv = String(v[4] || "").trim();
+      var bk = String(v[5] || "").trim();
+      var gTot = vocabNum_(v[6]);
+      var hCor = vocabNum_(v[7]);
+      var iRate = vocabNum_(v[8]);
+      var jScore = vocabNum_(v[9]);
+      var kStep2 = String(v[10] || "").trim();
+      var rWrong = vocabCleanWrongWordsStr_(v[17]);
+
+      if (bk) bookSet[vocabNormBook_(bk) || bk] = true;
+      if (gTot !== "" &amp;&amp; gTot &gt; 0) {
+        var rateVal = iRate !== "" ? iRate : (hCor !== "" ? Math.round((hCor / gTot) * 100) : "");
+        if (rateVal !== "") vocabRates.push(rateVal);
+        if (hCor !== "") vocabWrongTotal += Math.max(0, gTot - hCor);
+      }
+      if (jScore !== "" &amp;&amp; jScore &gt; 0) {
+        diagScores.push(jScore);
+      }
+      if (bk || gTot !== "" || jScore !== "" || kStep2 || rWrong) {
+        bookRows.push({
+          date: dStr.substring(5),
+          level: lv,
+          book: bk,
+          vTotal: gTot,
+          vCorr: hCor,
+          vRate: iRate !== "" ? iRate : (gTot &amp;&amp; hCor !== "" ? Math.round((hCor / gTot) * 100) : ""),
+          dScore: jScore,
+          step2: kStep2,
+          wrong: rWrong
+        });
+      }
+      if (rWrong) {
+        var wParts = rWrong.split(",");
+        for (var wp = 0; wp &lt; wParts.length; wp++) {
+          var wClean = String(wParts[wp] || "").trim();
+          if (!wClean || wrongWordsSeen[wClean]) continue;
+          wrongWordsSeen[wClean] = true;
+          wrongWordList.push({
+            word: wClean,
+            meaning: meaningMap[wClean] || "",
+            book: bk
+          });
+        }
+      }
+
+      var lTr = String(v[11] || "").trim();
+      var mDet = String(v[12] || "").trim();
+      var nErr = vocabParseErrorNum_(v[13]);
+      var oUnd = String(v[14] || "").trim();
+      var pMemo = String(v[15] || "").trim();
+      if (lTr) {
+        if (!trByType[lTr]) {
+          trByType[lTr] = { type: lTr, count: 0, errs: [], details: [] };
+          trOrder.push(lTr);
+        }
+        trByType[lTr].count++;
+        if (nErr !== "") trByType[lTr].errs.push(nErr);
+        if (mDet &amp;&amp; trByType[lTr].details.length &lt; 4 &amp;&amp; trByType[lTr].details.indexOf(mDet) === -1) {
+          trByType[lTr].details.push(mDet);
+        }
+        if (oUnd === "잘 이해했어요") undGood++;
+        else if (oUnd === "보통이에요") undMid++;
+        else if (oUnd === "아직 헷갈려요") undLow++;
+
+        trRows.push({
+          date: dStr.substring(5),
+          type: lTr,
+          detail: mDet,
+          err: nErr,
+          und: oUnd,
+          memo: pMemo
+        });
+      }
+
+      var qRefl = String(v[16] || "").trim();
+      if (step1 || qRefl) {
+        var rParts = [];
+        if (step1) rParts.push("[성실발자국] " + step1);
+        if (qRefl) rParts.push("\"" + qRefl + "\"");
+        reflections.push({ date: dStr.substring(5), text: rParts.join(" — ") });
+      }
+    }
+  }
+
+  var lessonDays = Object.keys(dateSet).length;
+  if (lessonDays === 0) {
+    ui.alert(name + " 학생의 " + periodStr + " 기간에 저장된 [학습기록]이 없습니다.\n기간(E2~E3)이나 학생 이름(B2)을 확인해 주세요.");
+    return;
+  }
+
+  var vocabCount = vocabRates.length;
+  var vocabAvg = vocabCount ? (Math.round((vocabRates.reduce(function(a, b) { return a + b; }, 0) / vocabCount) * 10) / 10) : "-";
+  var vocabMax = vocabCount ? (Math.max.apply(null, vocabRates) + "%") : "-";
+  var vocabMin = vocabCount ? (Math.min.apply(null, vocabRates) + "%") : "-";
+
+  var diagCount = diagScores.length;
+  var diagAvg = diagCount ? (Math.round((diagScores.reduce(function(a, b) { return a + b; }, 0) / diagCount) * 10) / 10) : "-";
+  var diagMax = diagCount ? (Math.max.apply(null, diagScores) + "점") : "-";
+
+  var trSummary = [];
+  for (var tIdx = 0; tIdx &lt; trOrder.length; tIdx++) {
+    var tg = trByType[trOrder[tIdx]];
+    var avgE = tg.errs.length ? (Math.round((tg.errs.reduce(function(a, b) { return a + b; }, 0) / tg.errs.length) * 10) / 10) : "-";
+    trSummary.push({
+      type: tg.type,
+      count: tg.count,
+      avgErr: avgE,
+      details: tg.details.join(", ") || "-"
+    });
+  }
+
+  var mm = start.getMonth() + 1;
+  var sameMonth = (start.getFullYear() === end.getFullYear() &amp;&amp; start.getMonth() === end.getMonth() &amp;&amp; start.getDate() === 1);
+  var reportTitle = (sameMonth ? (start.getFullYear() + "년 " + mm + "월 ") : "") + "학생 종합 학습 분석표";
+
+  var htmlDoc = vocabRenderAnalysisReportHtml_({
+    name: name,
+    grade: grade,
+    title: reportTitle,
+    period: periodStr,
+    lessonDays: lessonDays,
+    hwDoneCount: hwDoneCount,
+    hwSubText: hwDoneCount &gt; 0 ? ("숙제 완료율 우수 · 성실 참여") : ("수업 기록 " + lessonDays + "일 기준"),
+    vocabCount: vocabCount,
+    vocabAvg: vocabAvg,
+    vocabMax: vocabMax,
+    vocabMin: vocabMin,
+    vocabWrongTotal: vocabWrongTotal,
+    diagCount: diagCount,
+    diagAvg: diagAvg,
+    diagMax: diagMax,
+    bookCount: Object.keys(bookSet).length,
+    trTotalCount: trRows.length,
+    undGood: undGood,
+    undMid: undMid,
+    undLow: undLow,
+    goalText: goalText,
+    coachingText: coachingText,
+    consultText: consultText,
+    bookRows: bookRows.slice(0, 20),
+    wrongWordList: wrongWordList.slice(0, 30),
+    trSummary: trSummary,
+    trRows: trRows.slice(0, 15),
+    reflections: reflections.slice(0, 10)
+  });
+
+  var fileName = name + "_" + vocabFmtDate_(start) + "~" + vocabFmtDate_(end) + "_학생학습분석표.pdf";
+  var pdfBlob = Utilities.newBlob(htmlDoc, "text/html", "analysis_report.html").getAs("application/pdf").setName(fileName);
+  var folders = DriveApp.getFoldersByName("학생 학습 분석표");
+  var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder("학생 학습 분석표");
+  var file = folder.createFile(pdfBlob);
+
+  var modalHtml = HtmlService.createHtmlOutput(
+    "&lt;div style='font-family:Malgun Gothic,sans-serif;line-height:1.7;padding:6px'&gt;" +
+    "&lt;b&gt;" + vocabEsc_(name) + "&lt;/b&gt; 학생의 &lt;b&gt;학부모 발송용 학습 분석표 PDF&lt;/b&gt;를 만들었어요!&lt;br&gt;" +
+    "• 분석 기간: " + vocabEsc_(periodStr) + " (수업 " + lessonDays + "일)&lt;br&gt;" +
+    "• 요약: 도서 " + Object.keys(bookSet).length + "권 · 어휘퀴즈 " + vocabCount + "회 · 독서진단 " + diagCount + "회 · 트레이닝 " + trRows.length + "회&lt;br&gt;&lt;br&gt;" +
+    "&lt;a href='" + file.getUrl() + "' target='_blank' style='display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:9px 18px;border-radius:6px;font-weight:bold'&gt;▶ 학습 분석표 PDF 열기 / 다운로드&lt;/a&gt;" +
+    "&lt;div style='margin-top:8px;font-size:11px;color:#64748b'&gt;※ 구글 드라이브 '학생 학습 분석표' 폴더에 자동 저장되었습니다.&lt;br&gt;※ 카톡이나 채널로 학부모님께 바로 파일 전송하실 수 있습니다.&lt;/div&gt;&lt;/div&gt;"
+  ).setWidth(460).setHeight(230);
+  ui.showModalDialog(modalHtml, "📊 학부모 발송용 학생 학습 분석표 PDF");
 }
 
 // 틀린어휘 문자열에서 '(짝짓기)' 또는 '짝짓기' 같은 문제유형 꼬리표 제거
