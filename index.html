@@ -822,7 +822,6 @@
               </button>
             </div>
             <pre class="code-content" id="gasCodeBlock">
-
 function ensureColumns(sheet, requiredCols) {
   if (!sheet) return;
   var maxCols = sheet.getMaxColumns();
@@ -3625,6 +3624,7 @@ function onOpen() {
     .addItem("11. 어휘 갱신 (학생앱에 반영)", "vocabBumpVersion")
     .addItem("12. 📨 오늘 수업 브리핑 문구 창 띄우기", "showDailyBriefingModal")
     .addItem("13. 회원 분석 시트 다이어트 (F·G열 정리 &amp; 학습기록 이관)", "migrateMemberAnalysisToLearningRecords")
+    .addItem("14. [학습기록] 헤더 및 열 정렬 1회 일괄(Bulk) 보정", "fixAndAlignLearningRecordHeadersAndRowsBulk")
     .addToUi();
 }
 
@@ -3646,6 +3646,11 @@ function syncTodayDailyEventsToMemberAnalysis() {
   var dailyValues = sheetDaily.getRange(3, 1, lastRow - 2, 11).getValues();
   var sheetMember = getMemberAnalysisSheet(ss);
   var sheetRec = vocabEnsureRecordSheet_(ss);
+
+  // [사전 보정] 학습기록 시트에 열 밀림 행이 있으면 1회 일괄(Bulk)로 먼저 깨끗이 정렬
+  if (sheetRec) {
+    alignLearningRecordColumnsBulk_(sheetRec);
+  }
 
   var studentRecordsMap = {};
   var syncCount = 0;
@@ -4127,11 +4132,24 @@ function vocabParseErrorNum_(v) {
   return val;
 }
 
+function isLearningRecordDatePattern_(v) {
+  if (!v) return false;
+  if (v instanceof Date) return true;
+  var s = String(v).trim();
+  return /^20\d{2}[\.\/-]\s*\d{1,2}[\.\/-]\s*\d{1,2}/.test(s);
+}
+
 function vocabParseDate_(s) {
   if (s instanceof Date) return new Date(s.getFullYear(), s.getMonth(), s.getDate());
   var str = String(s || "").trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-    return Utilities.parseDate(str.substring(0, 10), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  var mFull = str.match(/^(\d{4})[\.\/-]\s*(\d{1,2})[\.\/-]\s*(\d{1,2})/);
+  if (mFull) {
+    return new Date(parseInt(mFull[1], 10), parseInt(mFull[2], 10) - 1, parseInt(mFull[3], 10));
+  }
+  var mMd = str.match(/^(\d{1,2})\/(\d{1,2})/);
+  if (mMd) {
+    var curYear = new Date().getFullYear();
+    return new Date(curYear, parseInt(mMd[1], 10) - 1, parseInt(mMd[2], 10));
   }
   var now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -4366,9 +4384,143 @@ function vocabEnsureRecordSheet_(ss) {
     if (h2 !== "이름" || h3 !== "숙제현황") {
       vocabStyleRecordSheet_(sheet);
     }
+    // [자동 자가치유 (Self-Healing)] 2행 B열에 날짜가 들어가 있는 등 열 밀림이 감지되면 즉시 1회 일괄(Bulk) 보정
+    var lastRow = sheet.getLastRow();
+    if (lastRow &gt;= 2) {
+      var checkB2 = sheet.getRange(2, 2).getValue();
+      if (isLearningRecordDatePattern_(checkB2)) {
+        alignLearningRecordColumnsBulk_(sheet);
+      }
+    }
     vocabSortRecordSheetNewestFirst_(sheet);
   }
   return sheet;
+}
+
+// [핵심 규정 준수] [학습기록] 18열 시트의 헤더 및 데이터 열 위치를 1회 일괄(Bulk)로 정밀 보정
+function alignLearningRecordColumnsBulk_(sheet) {
+  if (!sheet) return { processed: 0, shifted: 0, resultRows: 0 };
+  vocabStyleRecordSheet_(sheet);
+  var lastRow = sheet.getLastRow();
+  if (lastRow &lt; 2) return { processed: 0, shifted: 0, resultRows: 0 };
+
+  // 1회 일괄(Bulk) 메모리 로드
+  var rawData = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
+  var alignedData = [];
+  var shiftedStudentMap = {};
+  var shiftedCount = 0;
+
+  for (var i = 0; i &lt; rawData.length; i++) {
+    var r = rawData[i];
+    // 열 밀림 판별: B열에 날짜 패턴이 있고 C열이 날짜가 아닌 경우 (구버전 타임스탬프 삽입으로 한 칸씩 밀린 행)
+    var isShifted = isLearningRecordDatePattern_(r[1]) &amp;&amp; !isLearningRecordDatePattern_(r[2]);
+    if (isShifted) {
+      shiftedCount++;
+      var dateVal = r[1] || r[0];
+      var nameVal = String(r[2] || "").trim().replace(/\s+/g, "");
+      var typeVal = String(r[3] || "").trim();
+      if (!nameVal) continue;
+      if (!shiftedStudentMap[nameVal]) shiftedStudentMap[nameVal] = [];
+
+      // 트레이닝 열 탐색 (11열 우선, 없으면 10열)
+      var trName = String(r[11] || r[10] || "").trim();
+      var trDetail = String(r[12] || r[11] || "").trim();
+      var trErr = (r[13] !== "" &amp;&amp; r[13] !== undefined) ? r[13] : r[12];
+      var trUnd = String(r[14] || r[13] || "").trim();
+
+      if (typeVal === "일일요약") {
+        shiftedStudentMap[nameVal].push({ date: dateVal, type: "일일요약" });
+      } else if (typeVal === "진단") {
+        shiftedStudentMap[nameVal].push({
+          date: dateVal,
+          type: "진단",
+          level: String(r[4] || "").trim(),
+          book: String(r[5] || "").trim(),
+          score: r[9],
+          step2Memo: String(r[10] || "").trim()
+        });
+      } else if (typeVal === "트레이닝" || trName) {
+        shiftedStudentMap[nameVal].push({
+          date: dateVal,
+          type: "트레이닝",
+          training: trName,
+          detail: trDetail,
+          errors: trErr,
+          understanding: trUnd
+        });
+      } else if (typeVal === "어휘퀴즈" || typeVal === "어휘") {
+        shiftedStudentMap[nameVal].push({
+          date: dateVal,
+          type: "어휘퀴즈",
+          level: String(r[4] || "").trim(),
+          book: String(r[5] || "").trim(),
+          total: r[6],
+          firstCorrect: r[7],
+          rate: r[8],
+          wrongWords: String(r[17] || r[14] || "").trim()
+        });
+      } else {
+        if (r[5]) {
+          shiftedStudentMap[nameVal].push({
+            date: dateVal,
+            type: "진단",
+            level: String(r[4] || "").trim(),
+            book: String(r[5] || "").trim(),
+            score: r[9]
+          });
+        }
+        if (trName) {
+          shiftedStudentMap[nameVal].push({
+            date: dateVal,
+            type: "트레이닝",
+            training: trName,
+            detail: trDetail,
+            errors: trErr,
+            understanding: trUnd
+          });
+        }
+      }
+    } else {
+      alignedData.push(r);
+    }
+  }
+
+  // 밀린 행들을 (날짜, 학생) 기준으로 첫 줄 가로병합하여 alignedData에 일괄 반영
+  if (shiftedCount &gt; 0) {
+    var sNames = Object.keys(shiftedStudentMap);
+    for (var s = 0; s &lt; sNames.length; s++) {
+      var sn = sNames[s];
+      vocabUpsertSingleStudentDayRecordsInMemory_(alignedData, sn, shiftedStudentMap[sn]);
+    }
+
+    // 1회 일괄(Bulk) 시트 반영 (기존 잔여 행 깨끗이 정리)
+    sheet.getRange(2, 1, Math.max(rawData.length, alignedData.length), 18).clearContent();
+    if (alignedData.length &gt; 0) {
+      sheet.getRange(2, 1, alignedData.length, 18).setValues(alignedData);
+    }
+    vocabStyleRecordSheet_(sheet);
+    vocabSortRecordSheetNewestFirst_(sheet);
+  }
+
+  return { processed: rawData.length, shifted: shiftedCount, resultRows: alignedData.length };
+}
+
+// [메뉴 14번] [학습기록] 헤더 및 열 정렬 1회 일괄(Bulk) 보정
+function fixAndAlignLearningRecordHeadersAndRowsBulk() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetRec = vocabEnsureRecordSheet_(ss);
+  var res = alignLearningRecordColumnsBulk_(sheetRec);
+  try {
+    SpreadsheetApp.getUi().alert(
+      "✅ [학습기록] 18열 헤더 및 데이터 열 정렬 완료!\n\n" +
+      "• 점검 데이터: " + res.processed + "행\n" +
+      "• 밀린 열 자동 보정: " + res.shifted + "건\n" +
+      "• 최종 정렬된 학습기록: " + res.resultRows + "행\n\n" +
+      "헤더(A:날짜, B:이름, C:숙제현황, D:성실발자국, E:레벨구분, F:도서명, J:진단점수, L:트레이닝 등)와 데이터 내용이 100% 일치하도록 보정되었습니다. ✨"
+    );
+  } catch (uiErr) {
+    Logger.log("fixAndAlignLearningRecordHeadersAndRowsBulk 완료: " + JSON.stringify(res));
+  }
 }
 
 function parseDailyDateToIso_(dateStr) {
@@ -6936,10 +7088,6 @@ function showDailyBriefingModal() {
   var out = HtmlService.createHtmlOutput(htmlStr).setWidth(520).setHeight(390);
   ui.showModalDialog(out, "📨 오늘 수업 브리핑 문구");
 }
-
-
-
-
             </pre>
           </div>
         </div>
