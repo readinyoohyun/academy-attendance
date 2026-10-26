@@ -822,6 +822,7 @@
               </button>
             </div>
             <pre class="code-content" id="gasCodeBlock">
+
 function ensureColumns(sheet, requiredCols) {
   if (!sheet) return;
   var maxCols = sheet.getMaxColumns();
@@ -1236,7 +1237,9 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
             throw err;
           }
         }
-        if (field === "number" || field === "event" || field === "grammarDone" || field === "contents" || (field === "status" &amp;&amp; (value === "수업완료" || value === "보강완료"))) {
+        if (field === "number" || field === "event" || field === "grammarDone" || field === "contents" || 
+            (field === "status" &amp;&amp; (value === "수업완료" || value === "보강완료" || value === "하원완료" || value === "하원" || value === "귀가"))) {
+          syncDailyRowToLearningRecordRealtime_(sheet, targetRow);
           accumulateDailyEventToMemberAnalysis(sheet, targetRow);
         }
       }
@@ -1349,6 +1352,28 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
         }
       }
     }
+  }
+}
+
+// 테블릿/웹앱에서 하원완료 또는 수업내용 수정 시 [학습기록] 18열 시트에 즉시 실시간 동기화
+function syncDailyRowToLearningRecordRealtime_(sheetDaily, rowNumber) {
+  if (!sheetDaily || rowNumber &lt; 3) return;
+  try {
+    var ss = sheetDaily.getParent();
+    var sheetRec = vocabEnsureRecordSheet_(ss);
+    if (!sheetRec) return;
+    var rowValues = sheetDaily.getRange(rowNumber, 1, 1, 11).getValues()[0];
+    var dateStr = String(rowValues[0] || "").trim();
+    var name = String(rowValues[2] || "").trim().replace(/\s+/g, "");
+    if (!name) return;
+    var isoDate = parseDailyDateToIso_(dateStr);
+    var records = parseDailyRowToLearningRecords_(rowValues, isoDate);
+    if (records &amp;&amp; records.length &gt; 0) {
+      vocabUpsertStudentDayRecords_(sheetRec, name, records);
+      refreshMemberAnalysisSummaryBoardForStudent_(ss, name);
+    }
+  } catch (err) {
+    console.error("[syncDailyRowToLearningRecordRealtime] Error:", err);
   }
 }
 
@@ -3624,6 +3649,7 @@ function onOpen() {
     .addItem("11. 어휘 갱신 (학생앱에 반영)", "vocabBumpVersion")
     .addItem("12. 📨 오늘 수업 브리핑 문구 창 띄우기", "showDailyBriefingModal")
     .addItem("13. [학습기록] 헤더 및 열 정렬 1회 일괄(Bulk) 보정", "fixAndAlignLearningRecordHeadersAndRowsBulk")
+    .addItem("14. [10월 26일] 누락 학습기록 1회 즉시 복구", "recoverOctober26RecordsBulk")
     .addToUi();
 }
 
@@ -4314,23 +4340,8 @@ function vocabStyleRecordSheet_(sheet) {
   sheet.getRange(2, 12, dataRows, 1).setHorizontalAlignment("center");
   sheet.getRange(2, 14, dataRows, 2).setHorizontalAlignment("center");
 
-  // 핵심 수치 열 파스텔 배경 하이라이트 (G~J, N, R)
-  sheet.getRange(2, 7, dataRows, 1).setBackground("#dbeafe");  // 어휘문제 (연파랑)
-  sheet.getRange(2, 8, dataRows, 1).setBackground("#dcfce7");  // 어휘정답 (연초록)
-  sheet.getRange(2, 9, dataRows, 1).setBackground("#fef9c3");  // 어휘정답률 (연노랑)
-  sheet.getRange(2, 10, dataRows, 1).setBackground("#f3e8ff"); // 진단점수 (연보라)
-  sheet.getRange(2, 14, dataRows, 1).setBackground("#fce7f3"); // 오답개수 (연분홍)
-  sheet.getRange(2, 18, dataRows, 1).setBackground("#ffedd5"); // 틀린어휘 (연주황)
-
-  // 드롭다운 데이터 유효성 검사 (C: 숙제현황, E: 레벨구분, L: 트레이닝, O: 이해도)
-  var ruleHw = SpreadsheetApp.newDataValidation().requireValueInList(HW_STATUS_LIST, true).setAllowInvalid(true).build();
-  var ruleLv = SpreadsheetApp.newDataValidation().requireValueInList(VOCAB_LEVELS, true).setAllowInvalid(true).build();
-  var ruleTr = SpreadsheetApp.newDataValidation().requireValueInList(TRAINING_TYPE_LIST, true).setAllowInvalid(true).build();
-  var ruleUn = SpreadsheetApp.newDataValidation().requireValueInList(UNDERSTANDING_LIST, true).setAllowInvalid(true).build();
-  sheet.getRange(2, 3, dataRows, 1).setDataValidation(ruleHw);
-  sheet.getRange(2, 5, dataRows, 1).setDataValidation(ruleLv);
-  sheet.getRange(2, 12, dataRows, 1).setDataValidation(ruleTr);
-  sheet.getRange(2, 15, dataRows, 1).setDataValidation(ruleUn);
+  // [원장님 서식 영구 보존] 데이터 행(2행~)의 사용자 드롭다운 칩 색상 및 셀 배경 서식을
+  // 절대 덮어쓰지 않도록 setBackground 및 setDataValidation 강제 덮어쓰기 코드를 완전히 배제합니다.
 }
 
 function vocabIsTimeLikeValue_(val) {
@@ -4509,14 +4520,13 @@ function alignLearningRecordColumnsBulk_(sheet) {
     if (alignedData.length &gt; 0) {
       sheet.getRange(2, 1, alignedData.length, 18).setValues(alignedData);
     }
-    vocabStyleRecordSheet_(sheet);
     vocabSortRecordSheetNewestFirst_(sheet);
   }
 
   return { processed: rawData.length, shifted: shiftedCount, resultRows: alignedData.length };
 }
 
-// [메뉴 14번] [학습기록] 헤더 및 열 정렬 1회 일괄(Bulk) 보정
+// [메뉴 13번] [학습기록] 헤더 및 열 정렬 1회 일괄(Bulk) 보정
 function fixAndAlignLearningRecordHeadersAndRowsBulk() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheetRec = vocabEnsureRecordSheet_(ss);
@@ -4532,6 +4542,108 @@ function fixAndAlignLearningRecordHeadersAndRowsBulk() {
   } catch (uiErr) {
     Logger.log("fixAndAlignLearningRecordHeadersAndRowsBulk 완료: " + JSON.stringify(res));
   }
+}
+
+// [메뉴 14번] [10월 26일] 누락 학습기록 1회 일괄(Bulk) 즉시 복구
+function recoverOctober26RecordsBulk() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetRec = vocabEnsureRecordSheet_(ss);
+  if (!sheetRec) {
+    SpreadsheetApp.getUi().alert("❌ [학습기록] 시트를 찾을 수 없습니다.");
+    return;
+  }
+
+  // 10월 26일 확인된 학생 7명의 수업/진단/트레이닝 데이터 (18열 SSOT 규격)
+  var oct26Records = [
+    {
+      name: "김지원",
+      recs: [
+        { date: "2026-10-26", hwStatus: "완료", book: "만희네 집", level: "기초", score: 60, type: "진단" }
+      ]
+    },
+    {
+      name: "김주비",
+      recs: [
+        { date: "2026-10-26", hwStatus: "완료", training: "문해력트레이닝", detail: "복합 1단계 20차시", errors: 2, understanding: "보통이에요", type: "트레이닝" }
+      ]
+    },
+    {
+      name: "강예진",
+      recs: [
+        { date: "2026-10-26", hwStatus: "미완료", training: "문해력트레이닝", detail: "복합 1단계 40차시", errors: 2, understanding: "잘 이해했어요", type: "트레이닝" }
+      ]
+    },
+    {
+      name: "유예성",
+      recs: [
+        { date: "2026-10-26", hwStatus: "완료", training: "문해력트레이닝", detail: "복합 1단계", errors: 0, understanding: "잘 이해했어요", type: "트레이닝" }
+      ]
+    },
+    {
+      name: "김가온",
+      recs: [
+        { date: "2026-10-26", hwStatus: "완료", book: "찰리와 초콜릿 공장", level: "5레벨", type: "진단" }
+      ]
+    },
+    {
+      name: "박지운",
+      recs: [
+        { date: "2026-10-26", hwStatus: "완료", book: "조금만 기다려 봐", level: "4레벨", type: "진단" }
+      ]
+    },
+    {
+      name: "김주은",
+      recs: [
+        { date: "2026-10-26", hwStatus: "완료", training: "문해력트레이닝", detail: "어휘 2단계 20차시", errors: 1, understanding: "잘 이해했어요", type: "트레이닝" }
+      ]
+    }
+  ];
+
+  var studentRecordsMap = {};
+  for (var i = 0; i &lt; oct26Records.length; i++) {
+    var item = oct26Records[i];
+    studentRecordsMap[item.name] = item.recs;
+  }
+
+  // 출결보강관리 또는 오늘 출석부 시트에 10/26 기록이 남아있는지 추가 수집
+  var candidateDaily = ["오늘 출석부", "출결보강관리", "학생수업관리"];
+  for (var c = 0; c &lt; candidateDaily.length; c++) {
+    var sh = ss.getSheetByName(candidateDaily[c]);
+    if (sh &amp;&amp; sh.getLastRow() &gt;= 3) {
+      var vals = sh.getRange(3, 1, sh.getLastRow() - 2, 11).getValues();
+      for (var r = 0; r &lt; vals.length; r++) {
+        var row = vals[r];
+        var iso = parseDailyDateToIso_(row[0]);
+        if (iso === "2026-10-26") {
+          var nm = String(row[2] || "").trim().replace(/\s+/g, "");
+          if (nm) {
+            var recs = parseDailyRowToLearningRecords_(row, "2026-10-26");
+            if (recs &amp;&amp; recs.length &gt; 0) {
+              if (!studentRecordsMap[nm]) studentRecordsMap[nm] = [];
+              studentRecordsMap[nm] = studentRecordsMap[nm].concat(recs);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 1회 일괄(Bulk) [학습기록] 시트에 반영
+  var res = vocabUpsertAllStudentsDayRecordsBulk_(sheetRec, studentRecordsMap);
+
+  // [회원 분석] 시트 전광판(G열) 동기화
+  var sKeys = Object.keys(studentRecordsMap);
+  for (var k = 0; k &lt; sKeys.length; k++) {
+    refreshMemberAnalysisSummaryBoardForStudent_(ss, sKeys[k]);
+  }
+
+  SpreadsheetApp.getUi().alert(
+    "✅ [10월 26일] 누락 학습기록 1회 일괄(Bulk) 복구 완료!\n\n" +
+    "• 대상 학생: " + sKeys.length + "명 (김지원, 김주비, 강예진, 유예성, 김가온, 박지운, 김주은 등)\n" +
+    "• 신규 추가: " + res.added + "건 / 갱신: " + res.updated + "건\n" +
+    "• [학습기록] 시트 최상단(2026-10-25 바로 위)에 정렬되었습니다.\n" +
+    "• 원장님의 드롭다운 칩 색상 및 셀 서식은 안전하게 유지됩니다."
+  );
 }
 
 function parseDailyDateToIso_(dateStr) {
@@ -4893,6 +5005,8 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         }
         if (dIdxTarget === -1) dIdxTarget = studentRows.length;
         var dRow = ensureRow(dIdxTarget);
+        if (it.hwStatus &amp;&amp; !dRow[2]) dRow[2] = String(it.hwStatus).trim();
+        if (dBook &amp;&amp; !dRow[3]) dRow[3] = dBook;
         if (it.level &amp;&amp; !dRow[4]) dRow[4] = String(it.level).trim();
         if (dBook &amp;&amp; !dRow[5]) dRow[5] = dBook;
         if (it.score !== "" &amp;&amp; it.score !== undefined) dRow[9] = vocabNum_(it.score);
@@ -4917,6 +5031,7 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         }
         if (tIdxTarget === -1) tIdxTarget = studentRows.length;
         var tRow = ensureRow(tIdxTarget);
+        if (trDetail &amp;&amp; !tRow[10]) tRow[10] = trDetail;
         if (trName) tRow[11] = trName;
         if (trDetail) tRow[12] = trDetail;
         var parsedErr = vocabParseErrorNum_(it.errors);
@@ -6107,7 +6222,11 @@ function showDailyBriefingModal() {
   var out = HtmlService.createHtmlOutput(htmlStr).setWidth(520).setHeight(390);
   ui.showModalDialog(out, "📨 오늘 수업 브리핑 문구");
 }
-            </pre>
+
+
+
+
+</pre>
           </div>
         </div>
 
