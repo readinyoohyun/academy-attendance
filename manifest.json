@@ -1,7 +1,7 @@
 {
-  "name": "독서 문해력 성장 기록",
-  "short_name": "독서 문해력 성장 기록",
-  "description": "유현리드인 한그루역사 학생 독서 및 문해력 성장 기록장",
+  "name": "읽·생·쓰",
+  "short_name": "읽·생·쓰",
+  "description": "유현리드인 한그루역사 학생 독서 및 문해력 성장 기록장 - 나는 읽고, 생각하고, 씁니다.",
   "start_url": "./student.html",
   "display": "standalone",
   "background_color": "#f8fafc",
