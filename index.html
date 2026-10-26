@@ -822,6 +822,7 @@
               </button>
             </div>
             <pre class="code-content" id="gasCodeBlock">
+
 function ensureColumns(sheet, requiredCols) {
   if (!sheet) return;
   var maxCols = sheet.getMaxColumns();
@@ -1236,7 +1237,7 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
             throw err;
           }
         }
-        if (field === "number" || field === "event" || field === "grammarDone" || field === "contents") {
+        if (field === "number" || field === "event" || field === "grammarDone" || field === "contents" || (field === "status" &amp;&amp; (value === "수업완료" || value === "보강완료"))) {
           accumulateDailyEventToMemberAnalysis(sheet, targetRow);
         }
       }
@@ -1890,6 +1891,11 @@ function generateDailyAttendance() {
   
   // 2행은 고정해 두고, 3행 이하 기존 데이터를 '학생수업관리'로 백업 후 지움
   if (lastRowDaily &gt;= 3) {
+    try {
+      syncTodayDailyEventsToMemberAnalysis();
+    } catch (autoSyncErr) {
+      Logger.log("일일 출석부 백업 전 학습기록 자동 동기화 에러: " + autoSyncErr);
+    }
     var sheetAccumulated = ss.getSheetByName("학생수업관리") || ss.getSheetByName("누적일일수업관리");
     if (!sheetAccumulated) {
       sheetAccumulated = ss.insertSheet("학생수업관리");
@@ -2992,33 +2998,18 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
   };
 
   // [핵심 개편] F열(6열: 코칭 방향 &amp; 주력 목표)에는 더 이상 일일 수업내용(K열)을 누적하지 않습니다.
-  // 일일 수업 활동(숙제현황·성실발자국·독서발자국·문해력발자국·나의기록)은 18열 [학습기록] 시트에 즉시 동기화합니다!
-  if (contentsVal) {
+  // 일일 수업 활동(숙제현황·성실발자국·독서발자국·문해력발자국·나의기록·도서·트레이닝)은 18열 [학습기록] 시트에 즉시 동기화합니다!
+  if (contentsVal || grammarDoneVal) {
     try {
-      var fpNow = parseDailyContentsFootprints_(contentsVal);
-      if (fpNow) {
-        var sheetRecNow = vocabEnsureRecordSheet_(ss);
-        var dParts = dateFormatted.split("/");
-        var isoDateNow = vocabFmtDate_(new Date());
-        if (dParts.length === 2) {
-          var mmNow = parseInt(dParts[0], 10);
-          var ddNow = parseInt(dParts[1], 10);
-          var yyyyNow = new Date().getFullYear();
-          if (!isNaN(mmNow) &amp;&amp; !isNaN(ddNow)) {
-            isoDateNow = yyyyNow + "-" + (mmNow &lt; 10 ? "0" + mmNow : mmNow) + "-" + (ddNow &lt; 10 ? "0" + ddNow : ddNow);
-          }
-        }
-        vocabUpsertStudentDayRecords_(sheetRecNow, targetCleanName, [{
-          date: isoDateNow,
-          type: "일일요약",
-          hwStatus: fpNow.hwStatus,
-          step1Memo: fpNow.step1Memo,
-          step2Memo: fpNow.step2Memo,
-          literacyMemo: fpNow.literacyMemo,
-          reflection: fpNow.reflection
-        }]);
+      var sheetRecNow = vocabEnsureRecordSheet_(ss);
+      var isoDateNow = parseDailyDateToIso_(dateFormatted);
+      var dayRecs = parseDailyRowToLearningRecords_(rowValues, isoDateNow);
+      if (dayRecs &amp;&amp; dayRecs.length &gt; 0) {
+        vocabUpsertStudentDayRecords_(sheetRecNow, targetCleanName, dayRecs);
       }
-    } catch (fpErr) {}
+    } catch (fpErr) {
+      console.error("[accumulateDailyEvent] Error syncing to learning records:", fpErr);
+    }
   }
 
   for (var idx = 0; idx &lt; maxLen; idx++) {
@@ -3627,7 +3618,7 @@ function onOpen() {
     .addItem("4. 한명 검색 시트 만들기", "createSingleSearchSheet")
     .addItem("5. 매일 밤 9시 30분 자동 생성 설정", "createDailyAttendanceTrigger")
     .addItem("6. 오늘 출석부 보강 은행 미차감 정산", "runMakeupBankRecovery")
-    .addItem("7. 오늘 출석부 ➔ 회원 분석 수동 전체 누적 동기화", "syncTodayDailyEventsToMemberAnalysis")
+    .addItem("7. 오늘 출석부 ➔ [학습기록]·회원분석 1회 일괄(Bulk) 동기화", "syncTodayDailyEventsToMemberAnalysis")
     .addItem("8. 어휘·학습기록(18열)·학생분석표 셋업 및 자동변환", "vocabSetupSheets")
     .addItem("9. 오답 복습지 PDF 만들기 (학생분석표 기준)", "vocabMakeReviewPdf")
     .addItem("10. 📊 학부모 발송용 학생 분석표 PDF 만들기 (학생분석표 기준)", "vocabMakeAnalysisReportPdf")
@@ -3637,22 +3628,220 @@ function onOpen() {
     .addToUi();
 }
 
-// 오늘 출석부의 전체 행을 스캔하여 회원 분석 시트로 한 번에 누적 동기화하는 함수
+// [핵심 규정 준수] 오늘 출석부 전체 행을 스캔하여 [학습기록](18열) 및 [회원 분석] 시트로 1회 일괄(Bulk) 동기화하는 함수
 function syncTodayDailyEventsToMemberAnalysis() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheetDaily = ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘 출석부");
+  var sheetDaily = ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘 출석부") || ss.getSheetByName("오늘출석부");
   if (!sheetDaily) {
     SpreadsheetApp.getUi().alert("오늘 출석부 시트를 찾을 수 없습니다.");
     return;
   }
   var lastRow = sheetDaily.getLastRow();
-  if (lastRow &lt; 2) return;
-  var count = 0;
-  for (var r = 2; r &lt;= lastRow; r++) {
-    accumulateDailyEventToMemberAnalysis(sheetDaily, r);
-    count++;
+  if (lastRow &lt; 3) {
+    SpreadsheetApp.getUi().alert("오늘 출석부에 동기화할 학생 데이터가 없습니다.");
+    return;
   }
-  SpreadsheetApp.getUi().alert("오늘 출석부 " + (lastRow - 1) + "명 전체의 수업내용 및 이벤트가 [회원 분석] 시트로 모두 누적 동기화되었습니다! ✨");
+
+  // 1회 일괄(Bulk) 메모리 로드
+  var dailyValues = sheetDaily.getRange(3, 1, lastRow - 2, 11).getValues();
+  var sheetMember = getMemberAnalysisSheet(ss);
+  var sheetRec = vocabEnsureRecordSheet_(ss);
+
+  var studentRecordsMap = {};
+  var syncCount = 0;
+
+  for (var r = 0; r &lt; dailyValues.length; r++) {
+    var row = dailyValues[r];
+    var dateStr = String(row[0] || "").trim();
+    var name = String(row[2] || "").trim();
+    if (!name) continue;
+
+    var isoDate = parseDailyDateToIso_(dateStr);
+    var cleanName = name.replace(/\s+/g, "");
+
+    var records = parseDailyRowToLearningRecords_(row, isoDate);
+    if (records &amp;&amp; records.length &gt; 0) {
+      if (!studentRecordsMap[cleanName]) studentRecordsMap[cleanName] = [];
+      studentRecordsMap[cleanName] = studentRecordsMap[cleanName].concat(records);
+      syncCount++;
+    }
+  }
+
+  // 1회 일괄(Bulk) [학습기록] 18열 시트 반영
+  if (sheetRec &amp;&amp; Object.keys(studentRecordsMap).length &gt; 0) {
+    vocabUpsertAllStudentsDayRecordsBulk_(sheetRec, studentRecordsMap);
+  }
+
+  // 1회 일괄(Bulk) [회원 분석] 시트 이벤트 및 전광판(G열) 동기화
+  if (sheetMember) {
+    syncDailyEventsToMemberAnalysisBulk_(ss, sheetDaily, sheetMember, dailyValues);
+  }
+
+  try {
+    SpreadsheetApp.getUi().alert(
+      "🎉 동기화 완료!\n\n" +
+      "오늘 출석부 학생 " + syncCount + "명의 독서·어휘·트레이닝·발자국 기록이\n" +
+      "[학습기록](18열) 시트 상단 및 [회원 분석] 시트에 1회 일괄(Bulk)로 즉시 반영되었습니다! ✨"
+    );
+  } catch (uiErr) {
+    Logger.log("syncTodayDailyEventsToMemberAnalysis 완료: " + syncCount + "명 동기화");
+  }
+}
+
+// [핵심 규정 준수] 오늘 출석부 전체 데이터를 [회원 분석] 시트와 1회 일괄(Bulk)로 동기화
+function syncDailyEventsToMemberAnalysisBulk_(ss, sheetDaily, sheetMember, dailyValues) {
+  var memberLastRow = sheetMember.getLastRow();
+  if (memberLastRow &lt; 2) return;
+
+  var memberData = sheetMember.getRange(2, 1, memberLastRow - 1, 16).getValues();
+  var memberMap = {};
+  for (var m = 0; m &lt; memberData.length; m++) {
+    var mName = String(memberData[m][1] || "").replace(/\s+/g, "");
+    if (mName) memberMap[mName] = m;
+  }
+
+  var yy = "26";
+  try {
+    yy = String(new Date().getFullYear()).substring(2);
+  } catch (err) {}
+
+  var splitRegex = /[\n,;]+/;
+
+  for (var r = 0; r &lt; dailyValues.length; r++) {
+    var row = dailyValues[r];
+    var dateStr = String(row[0] || "").trim();
+    var name = String(row[2] || "").trim();
+    var numVal = String(row[7] || "").trim();
+    var eventVal = String(row[8] || "").trim();
+    var grammarDoneVal = String(row[9] || "").trim();
+    var contentsVal = String(row[10] || "").trim();
+
+    if (!name || (!numVal &amp;&amp; !eventVal &amp;&amp; !grammarDoneVal &amp;&amp; !contentsVal)) continue;
+
+    var cleanName = name.replace(/\s+/g, "");
+    var mIdx = memberMap[cleanName];
+    if (mIdx === undefined) continue;
+
+    var mdMatch = dateStr.match(/(\d+\/\d+)/);
+    var dateFormatted = mdMatch ? mdMatch[1] : ((new Date().getMonth() + 1) + "/" + new Date().getDate());
+    var eventDatePrefix = yy + "." + dateFormatted;
+
+    var numLines = numVal ? numVal.split(splitRegex).map(function(s) { return s.trim(); }).filter(Boolean) : [];
+    var eventLines = eventVal ? eventVal.split(splitRegex).map(function(s) { return s.trim(); }).filter(Boolean) : [];
+    var grammarLines = grammarDoneVal ? grammarDoneVal.split(splitRegex).map(function(s) { return s.trim(); }).filter(Boolean) : [];
+
+    var maxLen = Math.max(numLines.length, eventLines.length);
+    var groupMap = { 7: [], 8: [], 10: [], 11: [], 12: [] };
+
+    for (var idx = 0; idx &lt; maxLen; idx++) {
+      var num = numLines[idx] || "";
+      var ev = eventLines[idx] || "";
+      if (!num &amp;&amp; !ev) continue;
+      var textToAppend = eventDatePrefix;
+      if (num) textToAppend += " " + num;
+      if (ev) textToAppend += " " + ev;
+
+      var targetCol = 8;
+      var lowerEvent = ev.toLowerCase();
+      if (lowerEvent.indexOf("코스업") !== -1 || lowerEvent.indexOf("레벨업") !== -1 || lowerEvent.indexOf("진로검사") !== -1) {
+        targetCol = 8;
+      } else if (lowerEvent.indexOf("진단") !== -1 || lowerEvent.indexOf("진도") !== -1) {
+        targetCol = 7;
+      } else if (lowerEvent.indexOf("숙제교재") !== -1 || lowerEvent.indexOf("훈민정음") !== -1 || lowerEvent.indexOf("한자") !== -1 || lowerEvent.indexOf("교재") !== -1) {
+        targetCol = 10;
+      } else if (lowerEvent.indexOf("독서계획표") !== -1 || lowerEvent.indexOf("친구") !== -1 || lowerEvent.indexOf("탐험가") !== -1 || lowerEvent.indexOf("고수") !== -1 || lowerEvent.indexOf("챔피언") !== -1 || lowerEvent.indexOf("마스터") !== -1 || lowerEvent.indexOf("달성") !== -1 || lowerEvent.indexOf("스티커") !== -1) {
+        targetCol = 12;
+      } else if (lowerEvent.indexOf("읽트") !== -1 || lowerEvent.indexOf("독트") !== -1 || lowerEvent.indexOf("읽기") !== -1 || lowerEvent.indexOf("독서") !== -1) {
+        targetCol = 11;
+      } else {
+        targetCol = 8;
+      }
+      groupMap[targetCol].push(textToAppend);
+    }
+
+    for (var g = 0; g &lt; grammarLines.length; g++) {
+      var item = grammarLines[g];
+      var isCompletion = (item.indexOf("글완") !== -1 || item.indexOf("글쓰기완") !== -1 || item.indexOf("완료") !== -1);
+      var hasDigit = /\d+/.test(item);
+
+      if (isCompletion) {
+        var cleanBookAndScore = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+        var cleanBook = cleanBookAndScore.replace(/\s*\d+점?$/, "").trim();
+        var cleanBookNoSpaces = cleanBook.replace(/\s+/g, "").toLowerCase();
+
+        var currentProgress = String(memberData[mIdx][6] || "").trim(); // Col G
+        if (currentProgress) {
+          var lines = currentProgress.split("\n");
+          var found = false;
+          for (var lIdx = 0; lIdx &lt; lines.length; lIdx++) {
+            var lineNoSpaces = lines[lIdx].replace(/\s+/g, "").toLowerCase();
+            if (cleanBookNoSpaces &amp;&amp; lineNoSpaces.indexOf(cleanBookNoSpaces) !== -1) {
+              found = true;
+              var newLine = lines[lIdx];
+              if (/\d+/.test(cleanBookAndScore)) {
+                newLine = eventDatePrefix + " " + cleanBookAndScore + " 글완";
+              } else {
+                if (lines[lIdx].indexOf("글완") === -1 &amp;&amp; lines[lIdx].indexOf("글쓰기완") === -1 &amp;&amp; lines[lIdx].indexOf("완료") === -1) {
+                  newLine = lines[lIdx] + " 글완";
+                }
+              }
+              lines[lIdx] = newLine;
+              if (newLine.trim().indexOf(eventDatePrefix) === 0 || newLine.trim().indexOf("📖") === 0) {
+                groupMap[7].push(newLine);
+              }
+            }
+          }
+          if (!found &amp;&amp; cleanBookNoSpaces) {
+            var newLine = eventDatePrefix + " " + cleanBookAndScore + " 글완";
+            lines.push(newLine);
+            groupMap[7].push(newLine);
+          }
+          memberData[mIdx][6] = lines.join("\n");
+        } else {
+          var textToSet = eventDatePrefix + " " + (cleanBookAndScore ? cleanBookAndScore + " 글완" : "글완");
+          memberData[mIdx][6] = textToSet;
+          groupMap[7].push(textToSet);
+        }
+      } else if (hasDigit) {
+        var datePattern = /^\d+[\./]\d+/;
+        var textToAppend = "";
+        if (datePattern.test(item)) {
+          textToAppend = /^\d+\/\d+/.test(item) ? (yy + "." + item) : item;
+        } else {
+          textToAppend = eventDatePrefix + " " + item;
+        }
+        groupMap[7].push(textToAppend);
+      }
+    }
+
+    // G열 (전광판)
+    var currentG = String(memberData[mIdx][6] || "").trim();
+    var newColG = composeMemberColGBoard_(ss, name, currentG, groupMap[7], eventDatePrefix);
+    memberData[mIdx][6] = newColG;
+
+    // H열 (7), J열 (9), K열 (10), L열 (11)
+    var colPairs = [[8, 7], [10, 9], [11, 10], [12, 11]];
+    for (var cp = 0; cp &lt; colPairs.length; cp++) {
+      var mapKey = colPairs[cp][0];
+      var dataIdx = colPairs[cp][1];
+      var cellText = String(memberData[mIdx][dataIdx] || "").trim();
+      var cLines = cellText ? cellText.split("\n") : [];
+      var fLines = [];
+      for (var cl = 0; cl &lt; cLines.length; cl++) {
+        if (cLines[cl].trim() &amp;&amp; cLines[cl].trim().indexOf(eventDatePrefix) !== 0) {
+          fLines.push(cLines[cl]);
+        }
+      }
+      var newEvs = groupMap[mapKey] || [];
+      for (var ne = 0; ne &lt; newEvs.length; ne++) {
+        fLines.push(newEvs[ne]);
+      }
+      memberData[mIdx][dataIdx] = fLines.join("\n");
+    }
+  }
+
+  // 1회 일괄(Bulk) 쓰기
+  sheetMember.getRange(2, 1, memberData.length, 16).setValues(memberData);
 }
 
 // 매일 밤 9시 30분(오후 9~10시 사이)에 내일 출석부를 자동으로 생성하도록 트리거 등록하는 함수
@@ -4162,7 +4351,12 @@ function vocabSortRecordSheetNewestFirst_(sheet) {
 }
 
 function vocabEnsureRecordSheet_(ss) {
-  var sheet = ss.getSheetByName(RECORD_SHEET);
+  var names = [RECORD_SHEET, "[" + RECORD_SHEET + "]", "학습기록", "[학습기록]", "학습 기록", "[학습 기록]"];
+  var sheet = null;
+  for (var i = 0; i &lt; names.length; i++) {
+    var cand = ss.getSheetByName(names[i]);
+    if (cand) { sheet = cand; break; }
+  }
   if (!sheet) {
     sheet = ss.insertSheet(RECORD_SHEET);
     vocabStyleRecordSheet_(sheet);
@@ -4177,14 +4371,204 @@ function vocabEnsureRecordSheet_(ss) {
   return sheet;
 }
 
+function parseDailyDateToIso_(dateStr) {
+  var now = new Date();
+  var year = now.getFullYear();
+  if (!dateStr) return Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  var m = String(dateStr).match(/(\d+)\/(\d+)/);
+  if (m) {
+    var mm = parseInt(m[1], 10);
+    var dd = parseInt(m[2], 10);
+    return year + "-" + (mm &lt; 10 ? "0" + mm : mm) + "-" + (dd &lt; 10 ? "0" + dd : dd);
+  }
+  return Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd");
+}
+
+// 오늘 출석부 1행(Col A~K)의 데이터를 [학습기록] 18열 규격 레코드 목록으로 정밀 파싱
+function parseDailyRowToLearningRecords_(row, isoDate) {
+  var colJ = String(row[9] || "").trim();
+  var colK = String(row[10] || "").trim();
+  if (!colJ &amp;&amp; !colK) return [];
+
+  var records = [];
+  var hwStatus = "";
+  var step1Memo = "";
+  var step2Memo = "";
+  var step3Memo = "";
+  var step4Memo = "";
+  var reflection = "";
+
+  var booksMap = {};
+  var trainings = [];
+
+  // 1. Col J: 진단글쓰기 / 특별수업
+  if (colJ) {
+    var jEntries = colJ.split(/[,;\n]+/).map(function(s) { return s.trim(); }).filter(Boolean);
+    jEntries.forEach(function(entry) {
+      var raw = entry.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+      var score = "";
+      var sm = raw.match(/^(.*?[^\d\s])\s*(\d{2,3})\s*점?$/);
+      if (sm) {
+        raw = sm[1].trim();
+        score = parseInt(sm[2], 10);
+      }
+      var level = "";
+      var lm = raw.match(/^([1-6](?:-[1-4])?|기초(?:\s*(?:씨앗|새싹|줄기|열매))?)\s*(?:초록|노랑|파랑|주황|빨강)?\s*(.*)$/);
+      var title = raw;
+      if (lm) {
+        level = lm[1].trim();
+        title = lm[2].trim();
+      }
+      title = title.replace(/^(초록|노랑|파랑|주황|빨강)\s+/, "").trim();
+      if (title) {
+        var normKey = title.replace(/\s+/g, "").toLowerCase();
+        booksMap[normKey] = { title: title, level: level, score: score !== "" ? score : "", notes: [] };
+      }
+    });
+  }
+
+  // 2. Col K: 수업내용 및 특이사항
+  if (colK) {
+    var parts = colK.split("|").map(function(s) { return s.trim(); }).filter(Boolean);
+    parts.forEach(function(part) {
+      // 숙제 점검
+      var hwMatch = part.match(/^(숙제완료|숙제미완|미지참|학원에서\s*풀기)(?:\s*\((.*?)\))?(?:\s*\[성실발자국:\s*(.*?)\])?/);
+      if (hwMatch) {
+        hwStatus = hwMatch[1];
+        if (hwMatch[2]) step1Memo = hwMatch[2].trim();
+        if (hwMatch[3]) step1Memo = (step1Memo ? step1Memo + " / " : "") + hwMatch[3].trim();
+        return;
+      }
+      if (part.indexOf("[성실발자국:") === 0) {
+        var m = part.match(/\[성실발자국:\s*(.*?)\]/);
+        if (m) step1Memo = (step1Memo ? step1Memo + " / " : "") + m[1].trim();
+        return;
+      }
+
+      // 소감
+      if (part.indexOf("[소감]") === 0) {
+        reflection = part.replace(/^\[소감\]\s*/, "").trim();
+        return;
+      }
+
+      // 어휘 요약
+      if (part.indexOf("[어휘]") === 0) {
+        var vm = part.match(/\[어휘\]\s*(?:『(.*?)』|(.*?))\s*(\d+)\/(\d+)\((\d+)%\)/);
+        if (vm) {
+          var bTitle = (vm[1] || vm[2] || "").trim();
+          records.push({
+            date: isoDate,
+            type: "어휘퀴즈",
+            book: bTitle,
+            total: parseInt(vm[4], 10),
+            firstCorrect: parseInt(vm[3], 10),
+            rate: parseInt(vm[5], 10)
+          });
+          return;
+        }
+      }
+
+      // 집중 트레이닝
+      var trMatch = part.match(/^(문해력트레이닝|문해력|오답수정\+선지분석|읽기트레이닝|독서트레이닝)(?:\[(.*?)\])?(?:\s*\[(잘 이해했어요|보통이에요|어려웠어요)\])?(?:\s*\[문해력발자국:\s*(.*?)\])?/);
+      if (trMatch) {
+        var trType = trMatch[1];
+        if (trType === "문해력") trType = "문해력트레이닝";
+        var trDetail = trMatch[2] || "";
+        var trUnder = trMatch[3] || "";
+        var trLit = trMatch[4] || "";
+
+        var errCount = "";
+        var errM = trDetail.match(/오답\s*:\s*(\d+)/) || trDetail.match(/\((\d+)\/(\d+)\)/);
+        if (errM) errCount = parseInt(errM[1], 10);
+
+        trainings.push({
+          date: isoDate,
+          type: "트레이닝",
+          training: trType,
+          detail: trDetail,
+          errors: errCount,
+          understanding: trUnder,
+          literacyMemo: trLit
+        });
+        if (trLit) step4Memo = (step4Memo ? step4Memo + " / " : "") + trLit;
+        return;
+      }
+
+      // 일반 교재 미지참 등 특이사항
+      if (part.indexOf("교재 안 가져옴") !== -1 || part.indexOf("교재 안가져옴") !== -1) {
+        hwStatus = hwStatus || "미지참";
+        step1Memo = (step1Memo ? step1Memo + " / " : "") + part;
+        return;
+      }
+      if (part.indexOf("빠작어휘") !== -1 &amp;&amp; part.indexOf("완료") !== -1) {
+        step1Memo = (step1Memo ? step1Memo + " / " : "") + part;
+        return;
+      }
+
+      // 도서 및 독서발자국
+      var bMatch = part.match(/^([^:\[]+)(?::\s*([^\[]+))?(.*)$/);
+      if (bMatch) {
+        var candTitle = bMatch[1].trim();
+        var candStatus = (bMatch[2] || "").trim();
+        var candExtra = (bMatch[3] || "").trim();
+
+        if (candTitle.indexOf("다음책") === 0) return;
+
+        var noteArr = [];
+        if (candStatus) noteArr.push(candStatus);
+        if (candExtra) noteArr.push(candExtra);
+
+        var normKey2 = candTitle.replace(/\s+/g, "").toLowerCase();
+        if (!booksMap[normKey2]) {
+          booksMap[normKey2] = { title: candTitle, level: "", score: "", notes: noteArr };
+        } else {
+          booksMap[normKey2].notes.push.apply(booksMap[normKey2].notes, noteArr);
+        }
+        return;
+      }
+    });
+  }
+
+  // 1) 일일요약 레코드
+  if (hwStatus || step1Memo || step2Memo || step3Memo || step4Memo || reflection) {
+    records.push({
+      date: isoDate,
+      type: "일일요약",
+      hwStatus: hwStatus,
+      step1Memo: step1Memo,
+      step2Memo: step2Memo,
+      literacyMemo: [step3Memo, step4Memo].filter(Boolean).join(" / "),
+      reflection: reflection
+    });
+  }
+
+  // 2) 진단 / 도서 레코드
+  Object.keys(booksMap).forEach(function(k) {
+    var b = booksMap[k];
+    records.push({
+      date: isoDate,
+      type: "진단",
+      level: b.level,
+      book: b.title,
+      score: b.score,
+      step2Memo: b.notes.join(" ").trim()
+    });
+  });
+
+  // 3) 트레이닝 레코드
+  trainings.forEach(function(t) { records.push(t); });
+
+  return records;
+}
+
 function vocabMakeEmptyRow18_(dateObj, name) {
   return [
     dateObj, name, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""
   ];
 }
 
-// 방식 1: (날짜, 이름) 기준 첫 줄 가로 병합 + 최신 기록을 무조건 시트 최상단(2행)에 누적 기록!
-function vocabUpsertStudentDayRecords_(sheet, name, records) {
+// [학습기록] 메모리 배열(allData)에 1명 학생의 일일 학습기록을 병합/삽입하는 순수 메모리 연산 함수 (Bulk 일괄 처리용)
+function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
   if (!name || !records || !records.length) return { added: 0, updated: 0 };
 
   var byDate = {};
@@ -4202,8 +4586,6 @@ function vocabUpsertStudentDayRecords_(sheet, name, records) {
     byDate[dKey].items.push(r);
   }
 
-  var lastRow = sheet.getLastRow();
-  var allData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 18).getValues() : [];
   var addedCount = 0;
   var updatedCount = 0;
 
@@ -4369,7 +4751,6 @@ function vocabUpsertStudentDayRecords_(sheet, name, records) {
       }
     }
 
-    // 기존 행을 제거한 뒤 해당 날짜 구간의 최상단(오늘 기록이면 무조건 2행 맨 위!)에 삽입
     if (matchIndices.length &gt; 0) {
       for (var rm = matchIndices.length - 1; rm &gt;= 0; rm--) {
         allData.splice(matchIndices[rm], 1);
@@ -4390,13 +4771,48 @@ function vocabUpsertStudentDayRecords_(sheet, name, records) {
     }
   }
 
-  // 전체 데이터를 상단 2행부터 일괄 기록하고 최신순 정렬 보장
+  return { added: addedCount, updated: updatedCount };
+}
+
+// 방식 1: (날짜, 이름) 기준 첫 줄 가로 병합 + 최신 기록을 무조건 시트 최상단(2행)에 누적 기록! (단일 학생)
+function vocabUpsertStudentDayRecords_(sheet, name, records) {
+  if (!name || !records || !records.length) return { added: 0, updated: 0 };
+  var lastRow = sheet.getLastRow();
+  var allData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 18).getValues() : [];
+  var res = vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records);
+  if (allData.length &gt; 0) {
+    sheet.getRange(2, 1, allData.length, 18).setValues(allData);
+    vocabSortRecordSheetNewestFirst_(sheet);
+  }
+  return res;
+}
+
+// [핵심 규정 준수] 다수 학생의 일일 학습기록을 1회 일괄(Bulk)로 [학습기록] 시트에 반영
+function vocabUpsertAllStudentsDayRecordsBulk_(sheet, studentRecordsMap) {
+  var studentNames = Object.keys(studentRecordsMap || {});
+  if (!studentNames.length) return { added: 0, updated: 0 };
+
+  var lastRow = sheet.getLastRow();
+  var allData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 18).getValues() : [];
+  var totalAdded = 0;
+  var totalUpdated = 0;
+
+  for (var i = 0; i &lt; studentNames.length; i++) {
+    var sName = studentNames[i];
+    var recs = studentRecordsMap[sName];
+    if (recs &amp;&amp; recs.length) {
+      var res = vocabUpsertSingleStudentDayRecordsInMemory_(allData, sName, recs);
+      totalAdded += res.added;
+      totalUpdated += res.updated;
+    }
+  }
+
   if (allData.length &gt; 0) {
     sheet.getRange(2, 1, allData.length, 18).setValues(allData);
     vocabSortRecordSheetNewestFirst_(sheet);
   }
 
-  return { added: addedCount, updated: updatedCount };
+  return { added: totalAdded, updated: totalUpdated };
 }
 
 // 학생 1명의 [회원 분석] G열(주력 목표 &amp; 이달의 학습 전광판)을 최신 [학습기록] 기준 3줄(🎯목표/📊이달요약/📖최근1권)로 즉시 갱신
@@ -6523,7 +6939,8 @@ function showDailyBriefingModal() {
 
 
 
-</pre>
+
+            </pre>
           </div>
         </div>
 

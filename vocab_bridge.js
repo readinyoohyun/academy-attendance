@@ -14,7 +14,14 @@
   var indexMap = null;
 
   function gasUrl() {
-    try { return (state && state.config && state.config.gasWebhookUrl) || ''; } catch (e) { return ''; }
+    try {
+      if (typeof state !== 'undefined' && state && state.config && state.config.gasWebhookUrl) {
+        return state.config.gasWebhookUrl;
+      }
+      return localStorage.getItem('gas_webhook_url') || '';
+    } catch (e) {
+      return '';
+    }
   }
   function withParams(url, qs) { return url + (url.indexOf('?') >= 0 ? '&' : '?') + qs; }
   // 책 제목 비교용 정리: [개정] 같은 대괄호, 끝의 (연도) 표기, 공백·기호 제거
