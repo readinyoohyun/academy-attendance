@@ -2131,8 +2131,8 @@ class CRMManager {
       if (dIso) dateSet.add(dIso);
 
       let hw = String(r.hwStatus || "").trim();
-      if (hw === "완료") hw = "숙제완료";
-      else if (hw === "미완료" || hw === "미완") hw = "숙제미완";
+      if (hw === "완료" || hw === "숙제 완료") hw = "숙제완료";
+      else if (hw === "미완료" || hw === "미완" || hw === "숙제 미완") hw = "숙제미완";
       else if (hw === "학원에서 풀기") hw = "학원에서풀기";
       if (hw && !hwByDate[dIso]) hwByDate[dIso] = hw;
 
@@ -2648,29 +2648,11 @@ class CRMManager {
         logsSummary = "해당 기간 출결 수업 일지 기록 없음";
       }
       
-      // [추가] 과거 리드인 상담/리포트 발송 기록 조회 (띄어쓰기 없이 키워드 매칭)
-      const queryKeywords = ["리드인리포트", "리드인분석표", "리포트", "분석표"];
-      const isLidinReport = (text) => {
-        const normalizedText = String(text || "").replace(/\s+/g, "");
-        return queryKeywords.some(kw => normalizedText.includes(kw));
-      };
-      
+      // 과거 상담/브리핑 원문(content) 재탕 방지: 발송 건수만 인사말 로테이션 인덱스 산출용으로 카운트
       const studentConsultations = (this.app.state.consultations || []).filter(c => {
         return c && c.name && c.name.replace(/\s+/g, '') === name.replace(/\s+/g, '');
       });
-      
-      const pastLidinReports = studentConsultations.filter(c => {
-        return isLidinReport(c.author) || isLidinReport(c.content);
-      });
-      
-      let pastReportsReference = "";
-      if (pastLidinReports.length > 0) {
-        pastReportsReference = pastLidinReports.slice(-3).map((r, idx) => {
-          return `--- 과거 리포트 예시 ${idx + 1} ---\n[작성기간]: ${r.period || '없음'}\n[내용]:\n${r.content || ''}`;
-        }).join("\n\n");
-      } else {
-        pastReportsReference = "등록된 과거 리포트 이력 없음 (원장의 기본 리포트 작법 스타일로 집필하세요)";
-      }
+      const pastReportCount = studentConsultations.length;
   
       
       // [리드인 성적 주입] 크롤링된 실 성적 또는 [학습기록] 기간 집계 데이터 폴백
@@ -2740,7 +2722,6 @@ class CRMManager {
         "가정에서도 책 속에서 무럭무럭 자라나는 아이의 소중한 발걸음을 함께 지켜봐 주시고 응원해 주세요.",
         "가정에서도 아이가 지치지 않고 즐거운 독서 습관을 이어갈 수 있도록 따뜻한 사랑과 칭찬을 부탁드립니다."
       ];
-      const pastReportCount = (pastLidinReports || []).length;
       const selectedIndex = pastReportCount % endingPhrases.length;
       const randomEnding = endingPhrases[selectedIndex];
 
@@ -2770,9 +2751,6 @@ class CRMManager {
 - 비판적 이해도: ${critiqueVal}%
 - 기간 내 완독 도서 수: ${booksCount}권
 - 독서 속도 특이사항: ${speedAlertVal || "정상 범위 내 독서 속도 유지 중"}
-
-[원장님의 기존 리드인 리포트 작성 스타일 참고 (중요! 원장님의 어조와 글쓰기 톤앤매너를 학습하여 유사한 양식과 따뜻한 문체로 글을 작성하세요)]:
-${pastReportsReference}
 
 [원장님 추가 요구사항]:
 ${extra || '없음'}
@@ -3169,27 +3147,55 @@ ${textbookSummary}
       sectionsContainer.appendChild(introDiv);
     }
 
-    // [기간 시각화 요약 카드] 시트 [학습기록]에 데이터가 존재하면 한눈에 보는 기간 활동 요약표 삽입
+    // [기간 시각화 요약 카드] 시트 [학습기록]에 데이터가 존재하면 컬러 게이지 바와 3색 이해도 차트가 포함된 시각화 요약표 삽입
     const agg = report.periodVisualData || this.aggregateStudentPeriodData(name, start, end);
     if (agg && agg.lessonDays > 0) {
       const summaryBox = document.createElement("div");
       summaryBox.className = "ai-report-section";
       summaryBox.style.marginBottom = "0.6rem";
-      summaryBox.style.padding = "0.55rem 0.75rem";
+      summaryBox.style.padding = "0.65rem 0.85rem";
       summaryBox.style.background = "#f8fafc";
-      summaryBox.style.border = "1px solid #cbd5e1";
+      summaryBox.style.border = "1.5px solid #cbd5e1";
       summaryBox.style.borderRadius = "8px";
 
       const bookBadges = (agg.bookRows || []).map(b => `${b.book || "어휘학습"}${b.dScore !== "" ? `(진단${b.dScore}점)` : ""}${b.vRate !== "" ? `(어휘${b.vRate}%)` : ""}`).slice(0, 5).join(" · ") || "기록 없음";
       const trainingBadges = (agg.trSummary || []).map(t => `${t.type} ${t.count}회(${t.details})`).slice(0, 4).join(" · ") || "기록 없음";
       const wrongBadges = (agg.wrongWords || []).slice(0, 8).join(", ") || "없음(전 문항 정답)";
 
+      const hwPct = Math.min(100, Math.max(0, agg.hwRate || 0));
+      const vPct = agg.vocabCount > 0 ? Math.min(100, Math.max(0, Math.round(agg.vocabAvg))) : 0;
+      const dPct = agg.diagCount > 0 ? Math.min(100, Math.max(0, Math.round(agg.diagAvg))) : Math.min(100, agg.bookCount * 20);
+      const undTot = (agg.undGood || 0) + (agg.undMid || 0) + (agg.undLow || 0);
+      const trPct = undTot > 0 ? Math.min(100, Math.round(((agg.undGood + agg.undMid * 0.8) / undTot) * 100)) : (agg.trTotalCount > 0 ? 85 : 0);
+
       summaryBox.innerHTML = `
-        <div style="font-size: 0.78rem; font-weight: 800; color: #1e3a8a; margin-bottom: 0.35rem; display: flex; justify-content: space-between; align-items: center;">
-          <span>📊 기간 내 핵심 학습 활동 지표 (${startDot} ~ ${endDot})</span>
-          <span style="font-size: 0.72rem; color: #475569; font-weight: 700;">출석 ${agg.lessonDays}회 | 숙제수행 ${agg.hwRate}% | 어휘정답 ${agg.vocabCount > 0 ? agg.vocabAvg + '%' : '-'}</span>
+        <div style="font-size: 0.78rem; font-weight: 800; color: #1e3a8a; margin-bottom: 0.45rem; display: flex; justify-content: space-between; align-items: center;">
+          <span>📊 기간 내 핵심 학습 성취 시각화 (${startDot} ~ ${endDot})</span>
+          <span style="font-size: 0.72rem; color: #ffffff; background: #1e3a8a; padding: 2px 8px; border-radius: 10px; font-weight: 700;">수업 ${agg.lessonDays}회 | 도서 ${agg.bookCount}권 | 트레이닝 ${agg.trTotalCount}회</span>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.75rem; font-size: 0.74rem; color: #334155; line-height: 1.4;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem; margin-bottom: 0.5rem;">
+          <div style="background:#ecfdf5; border:1px solid #6ee7b7; border-radius:6px; padding:0.4rem 0.5rem;">
+            <div style="font-size:0.68rem; font-weight:700; color:#047857;">✅ 숙제 성실도</div>
+            <div style="font-size:0.84rem; font-weight:800; color:#0f172a;">${hwPct}% (${agg.hwDoneCount}회)</div>
+            <div style="height:5px; background:#d1fae5; border-radius:3px; margin-top:3px; overflow:hidden;"><div style="width:${hwPct}%; height:100%; background:#10b981;"></div></div>
+          </div>
+          <div style="background:#eff6ff; border:1px solid #93c5fd; border-radius:6px; padding:0.4rem 0.5rem;">
+            <div style="font-size:0.68rem; font-weight:700; color:#1d4ed8;">📗 어휘 정답률</div>
+            <div style="font-size:0.84rem; font-weight:800; color:#0f172a;">${agg.vocabCount > 0 ? agg.vocabAvg + "%" : "-"} (${agg.vocabCount}회)</div>
+            <div style="height:5px; background:#dbeafe; border-radius:3px; margin-top:3px; overflow:hidden;"><div style="width:${vPct}%; height:100%; background:#2563eb;"></div></div>
+          </div>
+          <div style="background:#f5f3ff; border:1px solid #c4b5fd; border-radius:6px; padding:0.4rem 0.5rem;">
+            <div style="font-size:0.68rem; font-weight:700; color:#6d28d9;">📘 독서 진단점수</div>
+            <div style="font-size:0.84rem; font-weight:800; color:#0f172a;">${agg.diagCount > 0 ? agg.diagAvg + "점" : agg.bookCount + "권"}</div>
+            <div style="height:5px; background:#ede9fe; border-radius:3px; margin-top:3px; overflow:hidden;"><div style="width:${dPct}%; height:100%; background:#7c3aed;"></div></div>
+          </div>
+          <div style="background:#fffbeb; border:1px solid #fcd34d; border-radius:6px; padding:0.4rem 0.5rem;">
+            <div style="font-size:0.68rem; font-weight:700; color:#b45309;">✏️ 트레이닝 성취</div>
+            <div style="font-size:0.84rem; font-weight:800; color:#0f172a;">${trPct}% (${agg.trTotalCount}회)</div>
+            <div style="height:5px; background:#fef3c7; border-radius:3px; margin-top:3px; overflow:hidden;"><div style="width:${trPct}%; height:100%; background:#f59e0b;"></div></div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem 0.75rem; font-size: 0.73rem; color: #334155; line-height: 1.4;">
           <div><strong style="color:#0f172a;">📚 읽은 도서(${agg.bookCount}권):</strong> <span contenteditable="true">${bookBadges}</span></div>
           <div><strong style="color:#0f172a;">⚡ 트레이닝(${agg.trTotalCount}회):</strong> <span contenteditable="true">${trainingBadges}</span></div>
           <div style="grid-column: 1 / -1;"><strong style="color:#0f172a;">🔤 집중 복습 어휘:</strong> <span contenteditable="true">${wrongBadges}</span></div>

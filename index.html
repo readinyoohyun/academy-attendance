@@ -5615,8 +5615,6 @@ function vocabBuildAnalysisSheet_(ss) {
 
   var memberSheetObj = getMemberAnalysisSheet(ss);
   var memberSheetName = memberSheetObj ? memberSheetObj.getName() : "회원 분석";
-  var consultSheetObj = ss.getSheetByName("학부모상담/채널발송") || ss.getSheetByName("상담내용/리포트발송/채널발송") || ss.getSheetByName("상담내용");
-  var consultSheetName = consultSheetObj ? consultSheetObj.getName() : "학부모상담/채널발송";
 
   sh.getRange("A1").setValue("📊 학생 종합 학습 분석표 (숙제 · 어휘 · 독서진단 · 트레이닝 · 발자국 기록)").setFontSize(14).setFontWeight("bold");
   sh.getRange("A2:A6").setValues([["학생"], ["년도"], ["월"], ["시작일 (선택)"], ["종료일 (선택)"]]).setFontWeight("bold");
@@ -5629,7 +5627,7 @@ function vocabBuildAnalysisSheet_(ss) {
   sh.getRange("B5:B6").setNumberFormat("yyyy-mm-dd");
   sh.getRange("G2").setValue("※ 월만 고르면 그 달 전체, 시작일·종료일을 입력하면 그 기간이 우선 적용됩니다.").setFontColor("#6b7280");
   sh.getRange("G3").insertCheckboxes();
-  sh.getRange("H3").setValue("학부모 배포용 (내부 코칭/상담메모 숨기기)").setFontWeight("bold").setFontColor("#1e3a8a");
+  sh.getRange("H3").setValue("학부모 배포용 (내부 코칭메모 숨기기)").setFontWeight("bold").setFontColor("#1e3a8a");
   sh.getRange("B2:B6").setBackground("#e8f0fe");
 
   // 학생 목록(숨김 Z열) + 드롭다운 (학습기록 B열 기준, 1행 고정으로 행 삽입 시 밀림 방지)
@@ -5638,8 +5636,8 @@ function vocabBuildAnalysisSheet_(ss) {
   sh.hideColumns(26);
   sh.getRange("B2").setDataValidation(SpreadsheetApp.newDataValidation().requireValueInRange(sh.getRange("Z2:Z"), true).setAllowInvalid(true).build());
 
-  // 1) 어휘 학습 &amp; 숙제 성실도 요약
-  sh.getRange("A8").setValue("■ 어휘 학습 &amp; 숙제 현황 요약").setFontWeight("bold").setBackground("#e6f4ea");
+  // 1) 어휘 학습 &amp; 숙제 성실도 요약 (+ C열 SPARKLINE 컬러 막대 그래프)
+  sh.getRange("A8:C8").setValues([["■ 어휘 학습 &amp; 숙제 현황 요약", "수치", "시각화 그래프"]]).setFontWeight("bold").setBackground("#e6f4ea");
   var vocabCond = who + "," + dateCond + "," + range("G") + ',"&gt;0"';
   sh.getRange("A9:A14").setValues([
     ["어휘 퀴즈 횟수"],
@@ -5654,16 +5652,18 @@ function vocabBuildAnalysisSheet_(ss) {
   sh.getRange("B11").setFormula('=IF($B$9=0,"-",MAXIFS(' + range("I") + "," + vocabCond + "))");
   sh.getRange("B12").setFormula('=IF($B$9=0,"-",MINIFS(' + range("I") + "," + vocabCond + "))");
   sh.getRange("B13").setFormula('=IF($B$9=0,0,SUMIFS(' + range("G") + "," + vocabCond + ")-SUMIFS(" + range("H") + "," + vocabCond + "))");
-  sh.getRange("B14").setFormula("=COUNTIFS(" + who + "," + dateCond + "," + range("C") + ',"숙제완료")');
+  sh.getRange("B14").setFormula("=COUNTIFS(" + who + "," + dateCond + "," + range("C") + ',"숙제 완료")');
+  sh.getRange("C10").setFormula('=IF(ISNUMBER(B10),SPARKLINE(B10,{"charttype","bar";"max",100;"color1","#2563eb"}),"")');
+  sh.getRange("C11").setFormula('=IF(ISNUMBER(B11),SPARKLINE(B11,{"charttype","bar";"max",100;"color1","#10b981"}),"")');
+  sh.getRange("C12").setFormula('=IF(ISNUMBER(B12),SPARKLINE(B12,{"charttype","bar";"max",100;"color1","#f59e0b"}),"")');
+  sh.getRange("C14").setFormula('=IF(B14&gt;0,SPARKLINE(B14,{"charttype","bar";"max",MAX(10,B14);"color1","#059669"}),"")');
 
-  // 우측(D8:H14) 코칭 방향 &amp; 원장님 상담 기록 연동 (학부모 배포용 체크 시 자동 숨김)
-  sh.getRange("D8").setFormula('=IF($G$3,"■ 이달의 중점 학습 가이드","■ 코칭 방향 &amp; 최근 상담 기록 (회원 분석 / 상담내용 연동)")').setFontWeight("bold").setBackground("#e8f0fe");
+  // 우측(D8:H10) 코칭 방향 &amp; 이달의 요약 전광판 연동 (과거 발송 브리핑/상담원문 노출 완전 제거)
+  sh.getRange("D8").setValue("■ 이달의 중점 학습 목표 &amp; 요약 전광판").setFontWeight("bold").setBackground("#e8f0fe");
   sh.getRange("D9").setValue("코칭 방향 / 목표").setFontWeight("bold");
   sh.getRange("E9").setFormula('=IF($G$3,"학생 맞춤형 독서·문해력 코칭 진행 중",IFERROR(VLOOKUP($B$2,\'' + memberSheetName + '\'!$B:$G,5,FALSE),"-"))');
   sh.getRange("D10").setValue("이달의 요약 전광판").setFontWeight("bold");
   sh.getRange("E10").setFormula('=IFERROR(VLOOKUP($B$2,\'' + memberSheetName + '\'!$B:$G,6,FALSE),"-")');
-  sh.getRange("D11").setValue("최근 상담 메모").setFontWeight("bold");
-  sh.getRange("E11").setFormula('=IF($G$3,"(학부모 배포용 숨김)",IFERROR(TEXTJOIN(" / ",TRUE,QUERY(\'' + consultSheetName + '\'!$A:$F,"select C, E where B contains \'"&amp;$B$2&amp;"\' order by C desc limit 2",0)),"상담 기록 없음"))');
 
   // 2) 책별 어휘 결과 (최대 20권)
   sh.getRange("A16").setValue("■ 도서별 어휘 학습 결과 (최대 20권)").setFontWeight("bold").setBackground("#e6f4ea");
@@ -5673,13 +5673,15 @@ function vocabBuildAnalysisSheet_(ss) {
   sh.getRange("A39").setValue("■ 기간 내 틀린 어휘 목록 (복습 대상)").setFontWeight("bold").setBackground("#ffedd5");
   sh.getRange("A40").setFormula('=IFERROR(QUERY(' + all + ',"select A, F, R where B = \'"&amp;$B$2&amp;"\' and R is not null and R &lt;&gt; \'\' and ' + qDateWhere + ' order by A desc limit 12 label A \'날짜\', F \'도서명/어휘학습\', R \'틀린 어휘\'",1),"틀린 어휘가 없어요")');
 
-  // 4) 독서이해도 (진단 점수 &amp; 독서발자국)
-  sh.getRange("A54").setValue("■ 독서이해도 (진단 점수 &amp; 독서발자국)").setFontWeight("bold").setBackground("#fef7e0");
+  // 4) 독서이해도 (진단 점수 &amp; 독서발자국 + SPARKLINE 그래프)
+  sh.getRange("A54:C54").setValues([["■ 독서이해도 (진단 점수 &amp; 독서발자국)", "점수", "성취도 그래프"]]).setFontWeight("bold").setBackground("#fef7e0");
   var diagCond = who + "," + dateCond + "," + range("J") + ',"&gt;0"';
   sh.getRange("A55:A57").setValues([["진단 횟수"], ["평균 점수"], ["최고 점수"]]);
   sh.getRange("B55").setFormula("=COUNTIFS(" + diagCond + ")");
   sh.getRange("B56").setFormula('=IFERROR(ROUND(AVERAGEIFS(' + range("J") + "," + diagCond + '),1),"-")');
   sh.getRange("B57").setFormula('=IF($B$55=0,"-",MAXIFS(' + range("J") + "," + diagCond + "))");
+  sh.getRange("C56").setFormula('=IF(ISNUMBER(B56),SPARKLINE(B56,{"charttype","bar";"max",100;"color1","#7c3aed"}),"")');
+  sh.getRange("C57").setFormula('=IF(ISNUMBER(B57),SPARKLINE(B57,{"charttype","bar";"max",100;"color1","#10b981"}),"")');
   sh.getRange("A58").setFormula('=IFERROR(QUERY(' + all + ',"select A, E, F, J, K where B = \'"&amp;$B$2&amp;"\' and J is not null and ' + qDateWhere + ' order by A desc limit 15 label A \'날짜\', E \'레벨\', F \'도서명\', J \'진단점수\', K \'독서발자국\'",1),"기록이 없어요")');
 
   // 5) 4단계 트레이닝 영역별/교재별 요약
@@ -5689,14 +5691,16 @@ function vocabBuildAnalysisSheet_(ss) {
   sh.getRange("E76").setValue("■ 트레이닝 상세 이력 (권수/차시 · 오답 · 발자국)").setFontWeight("bold").setBackground("#fce8e6");
   sh.getRange("E77").setFormula('=IFERROR(QUERY(' + all + ',"select A, L, M, N, O, P where B = \'"&amp;$B$2&amp;"\' and L is not null and L &lt;&gt; \'\' and ' + qDateWhere + ' order by A desc limit 15 label A \'날짜\', L \'트레이닝\', M \'권수/차시\', N \'오답수\', O \'이해도\', P \'문해력발자국\'",1),"기록이 없어요")');
 
-  sh.getRange("A85:C85").setValues([["이해도", "횟수", "비율(%)"]]).setFontWeight("bold");
+  sh.getRange("A85:D85").setValues([["이해도", "횟수", "비율(%)", "비율 그래프"]]).setFontWeight("bold");
   var levels = UNDERSTANDING_LIST;
+  var barColors = ["#10b981", "#3b82f6", "#f59e0b"];
   var trBase = who + "," + dateCond + "," + range("L") + ',"&lt;&gt;"';
   for (var i = 0; i &lt; levels.length; i++) {
     var row = 86 + i;
     sh.getRange(row, 1).setValue(levels[i]);
     sh.getRange(row, 2).setFormula("=COUNTIFS(" + trBase + "," + range("O") + ",$A" + row + ")");
     sh.getRange(row, 3).setFormula('=IFERROR(ROUND(B' + row + '/SUM($B$86:$B$88)*100,1),"-")');
+    sh.getRange(row, 4).setFormula('=IF(ISNUMBER(C' + row + '),SPARKLINE(C' + row + ',{"charttype","bar";"max",100;"color1","' + barColors[i] + '"}),"")');
   }
 
   // 6) 월별 추이 (선택한 학생 전체 기간)
@@ -6036,72 +6040,112 @@ function vocabMakeReviewPdf() {
 // ---------- 메뉴 10번: 📊 학부모 발송용 학생 분석표 PDF 만들기 (학생분석표 B2 학생 · E2~E3 기간 기준) ----------
 function vocabRenderAnalysisReportHtml_(d) {
   var css =
-    "@page{size:A4;margin:14mm 14mm 14mm 14mm}" +
-    "body{font-family:'Malgun Gothic','Nanum Gothic',sans-serif;color:#1e293b;margin:0;padding:0;font-size:9.5pt;line-height:1.45}" +
-    ".hd{border-bottom:2.5px solid #1e3a8a;padding-bottom:8px;margin-bottom:12px;display:table;width:100%}" +
+    "@page{size:A4;margin:12mm 13mm 12mm 13mm}" +
+    "body{font-family:'Malgun Gothic','Nanum Gothic',sans-serif;color:#1e293b;margin:0;padding:0;font-size:9.2pt;line-height:1.45}" +
+    ".hd{border-bottom:3px solid #1e3a8a;padding-bottom:8px;margin-bottom:11px;display:table;width:100%}" +
     ".hd-l{display:table-cell;vertical-align:bottom}.hd-r{display:table-cell;vertical-align:bottom;text-align:right;font-size:8.5pt;color:#475569}" +
     ".sub{font-size:8.5pt;color:#2563eb;font-weight:bold;letter-spacing:0.5px}" +
-    ".ttl{font-size:17pt;font-weight:bold;color:#0f172a;margin-top:2px}" +
-    ".badge{display:inline-block;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:2px 8px;border-radius:12px;font-weight:bold;font-size:9pt}" +
+    ".ttl{font-size:16.5pt;font-weight:bold;color:#0f172a;margin-top:2px}" +
+    ".badge{display:inline-block;background:#1e3a8a;color:#ffffff;padding:3px 10px;border-radius:12px;font-weight:bold;font-size:9pt;margin-bottom:3px}" +
     ".cards{width:100%;border-collapse:separate;border-spacing:6px 0;margin:0 -6px 12px -6px;table-layout:fixed}" +
-    ".card{background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;vertical-align:top}" +
-    ".card-k{font-size:8pt;color:#64748b;font-weight:bold;margin-bottom:3px}" +
-    ".card-v{font-size:13pt;font-weight:bold;color:#0f172a}" +
-    ".card-s{font-size:7.8pt;color:#475569;margin-top:3px}" +
-    ".sec{margin-top:11px;margin-bottom:5px;font-size:10.5pt;font-weight:bold;color:#1e3a8a;border-left:4px solid #2563eb;padding-left:7px}" +
+    ".card{border-radius:8px;padding:8px 10px;vertical-align:top}" +
+    ".c-em{background:#ecfdf5;border:1.5px solid #6ee7b7}" +
+    ".c-bl{background:#eff6ff;border:1.5px solid #93c5fd}" +
+    ".c-vi{background:#f5f3ff;border:1.5px solid #c4b5fd}" +
+    ".c-am{background:#fffbeb;border:1.5px solid #fcd34d}" +
+    ".card-k{font-size:8pt;font-weight:bold;margin-bottom:3px}" +
+    ".card-v{font-size:12.5pt;font-weight:bold;color:#0f172a}" +
+    ".card-s{font-size:7.6pt;color:#475569;margin-top:4px}" +
+    ".gbar-bg{width:100%;height:7px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-top:5px}" +
+    ".gbar-fill{height:7px;border-radius:4px}" +
+    ".sec{margin-top:11px;margin-bottom:5px;font-size:10.2pt;font-weight:bold;color:#1e3a8a;border-left:4px solid #2563eb;padding-left:7px;background:#f8fafc;padding-top:3px;padding-bottom:3px}" +
     "table.tb{width:100%;border-collapse:collapse;margin-bottom:8px;table-layout:fixed}" +
-    "table.tb th{background:#f1f5f9;color:#334155;font-size:8.3pt;font-weight:bold;padding:5px 6px;border:1px solid #cbd5e1;text-align:center}" +
-    "table.tb td{font-size:8.5pt;padding:5px 6px;border:1px solid #cbd5e1;vertical-align:middle;word-wrap:break-word}" +
+    "table.tb th{background:#1e293b;color:#ffffff;font-size:8.2pt;font-weight:bold;padding:5px 6px;border:1px solid #cbd5e1;text-align:center}" +
+    "table.tb td{font-size:8.3pt;padding:5px 6px;border:1px solid #cbd5e1;vertical-align:middle;word-wrap:break-word}" +
+    "table.tb tr:nth-child(even) td{background:#f8fafc}" +
     ".c{text-align:center}.r{text-align:right}" +
-    ".box{background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:8.8pt}" +
-    ".wchip{display:inline-block;background:#fff7ed;border:1px solid #fed7aa;border-radius:4px;padding:3px 7px;margin:2px 3px 2px 0;font-size:8.3pt}" +
+    ".box{background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:8.6pt}" +
+    ".lv-pill{display:inline-block;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;border-radius:4px;padding:1px 5px;font-size:7.8pt;font-weight:bold}" +
+    ".sc-pill{display:inline-block;border-radius:4px;padding:1px 6px;font-size:8pt;font-weight:bold}" +
+    ".wchip{display:inline-block;background:#fff7ed;border:1px solid #fdba74;border-radius:5px;padding:3px 7px;margin:2px 3px 2px 0;font-size:8.2pt}" +
     ".wchip b{color:#c2410c}" +
-    ".ft{margin-top:14px;border-top:1px dashed #94a3b8;padding-top:6px;font-size:8pt;color:#64748b;text-align:center}";
+    ".ft{margin-top:12px;border-top:1px dashed #94a3b8;padding-top:6px;font-size:7.8pt;color:#64748b;text-align:center}";
+
+  var hwPct = d.lessonDays &gt; 0 ? Math.min(100, Math.round((d.hwDoneCount / d.lessonDays) * 100)) : 0;
+  var vPct = (typeof d.vocabAvg === "number" &amp;&amp; !isNaN(d.vocabAvg)) ? Math.min(100, Math.max(0, Math.round(d.vocabAvg))) : 0;
+  var dPct = (typeof d.diagAvg === "number" &amp;&amp; !isNaN(d.diagAvg)) ? Math.min(100, Math.max(0, Math.round(d.diagAvg))) : 0;
+  var undTotal = (d.undGood || 0) + (d.undMid || 0) + (d.undLow || 0);
+  var trPct = undTotal &gt; 0 ? Math.min(100, Math.round(((d.undGood + d.undMid * 0.8) / undTotal) * 100)) : (d.trTotalCount &gt; 0 ? 85 : 0);
+
+  function renderInlineScoreBar(numVal, suffix, mode) {
+    if (numVal === "" || numVal === "-" || numVal === undefined || numVal === null || isNaN(Number(numVal))) return "-";
+    var n = Math.min(100, Math.max(0, Math.round(Number(numVal))));
+    var col = "#10b981", bg = "#dcfce7", tx = "#166534";
+    if (n &lt; 80) { col = "#f59e0b"; bg = "#fef3c7"; tx = "#92400e"; }
+    else if (n &lt; 90) { col = (mode === "diag" ? "#7c3aed" : "#2563eb"); bg = (mode === "diag" ? "#ede9fe" : "#dbeafe"); tx = (mode === "diag" ? "#5b21b6" : "#1e40af"); }
+    return "&lt;div style='text-align:left'&gt;" +
+      "&lt;span class='sc-pill' style='background:" + bg + ";color:" + tx + "'&gt;" + numVal + suffix + "&lt;/span&gt;" +
+      "&lt;div class='gbar-bg' style='height:5px;margin-top:3px'&gt;&lt;div class='gbar-fill' style='width:" + n + "%;height:5px;background:" + col + "'&gt;&lt;/div&gt;&lt;/div&gt;" +
+      "&lt;/div&gt;";
+  }
 
   var h = "&lt;html&gt;&lt;head&gt;&lt;meta charset='utf-8'&gt;&lt;style&gt;" + css + "&lt;/style&gt;&lt;/head&gt;&lt;body&gt;";
-  h += "&lt;div class='hd'&gt;&lt;div class='hd-l'&gt;&lt;div class='sub'&gt;독서와국어 · 개인별 맞춤형 문해력 성장 리포트&lt;/div&gt;" +
+  h += "&lt;div class='hd'&gt;&lt;div class='hd-l'&gt;&lt;div class='sub'&gt;독서와국어 · 데이터 시각화 맞춤형 문해력 성장 리포트&lt;/div&gt;" +
        "&lt;div class='ttl'&gt;" + vocabEsc_(d.title) + "&lt;/div&gt;&lt;/div&gt;" +
        "&lt;div class='hd-r'&gt;&lt;span class='badge'&gt;" + vocabEsc_(d.name) + (d.grade ? " (" + vocabEsc_(d.grade) + ")" : "") + "&lt;/span&gt;&lt;br&gt;" +
        "분석 기간: &lt;b&gt;" + vocabEsc_(d.period) + "&lt;/b&gt;&lt;/div&gt;&lt;/div&gt;";
 
-  // 1) 4대 핵심 지표 요약 카드
+  // 1) 4대 핵심 지표 컬러 카드 + 가로 게이지 그래프
   h += "&lt;table class='cards'&gt;&lt;tr&gt;" +
-       "&lt;td class='card'&gt;&lt;div class='card-k'&gt;✅ 수업 참여 · 숙제 성실도&lt;/div&gt;&lt;div class='card-v'&gt;수업 " + d.lessonDays + "일 / 숙제완료 " + d.hwDoneCount + "회&lt;/div&gt;" +
-       "&lt;div class='card-s'&gt;" + vocabEsc_(d.hwSubText) + "&lt;/div&gt;&lt;/td&gt;" +
-       "&lt;td class='card'&gt;&lt;div class='card-k'&gt;📗 어휘 확인 학습 성취도&lt;/div&gt;&lt;div class='card-v'&gt;" + (d.vocabCount &gt; 0 ? ("평균 " + d.vocabAvg + "%") : "-") + "&lt;/div&gt;" +
-       "&lt;div class='card-s'&gt;퀴즈 " + d.vocabCount + "회 · 최고 " + d.vocabMax + " / 최저 " + d.vocabMin + " (오답 " + d.vocabWrongTotal + "개)&lt;/div&gt;&lt;/td&gt;" +
-       "&lt;td class='card'&gt;&lt;div class='card-k'&gt;📘 독서이해도 진단 점수&lt;/div&gt;&lt;div class='card-v'&gt;" + (d.diagCount &gt; 0 ? ("평균 " + d.diagAvg + "점") : "-") + "&lt;/div&gt;" +
+       "&lt;td class='card c-em'&gt;&lt;div class='card-k' style='color:#047857'&gt;✅ 출석 · 숙제 성실도&lt;/div&gt;" +
+       "&lt;div class='card-v'&gt;수업 " + d.lessonDays + "일 / 완료 " + d.hwDoneCount + "회&lt;/div&gt;" +
+       "&lt;div class='gbar-bg'&gt;&lt;div class='gbar-fill' style='width:" + hwPct + "%;background:#10b981'&gt;&lt;/div&gt;&lt;/div&gt;" +
+       "&lt;div class='card-s'&gt;성실 수행률 &lt;b&gt;" + hwPct + "%&lt;/b&gt; · " + vocabEsc_(d.hwSubText) + "&lt;/div&gt;&lt;/td&gt;" +
+
+       "&lt;td class='card c-bl'&gt;&lt;div class='card-k' style='color:#1d4ed8'&gt;📗 어휘 확인 학습 성취도&lt;/div&gt;" +
+       "&lt;div class='card-v'&gt;" + (d.vocabCount &gt; 0 ? ("평균 " + d.vocabAvg + "%") : "기록 없음") + "&lt;/div&gt;" +
+       "&lt;div class='gbar-bg'&gt;&lt;div class='gbar-fill' style='width:" + vPct + "%;background:#2563eb'&gt;&lt;/div&gt;&lt;/div&gt;" +
+       "&lt;div class='card-s'&gt;퀴즈 " + d.vocabCount + "회 · 최고 " + d.vocabMax + " (오답 " + d.vocabWrongTotal + "개)&lt;/div&gt;&lt;/td&gt;" +
+
+       "&lt;td class='card c-vi'&gt;&lt;div class='card-k' style='color:#6d28d9'&gt;📘 독서이해도 진단 점수&lt;/div&gt;" +
+       "&lt;div class='card-v'&gt;" + (d.diagCount &gt; 0 ? ("평균 " + d.diagAvg + "점") : ("도서 " + d.bookCount + "권")) + "&lt;/div&gt;" +
+       "&lt;div class='gbar-bg'&gt;&lt;div class='gbar-fill' style='width:" + dPct + "%;background:#7c3aed'&gt;&lt;/div&gt;&lt;/div&gt;" +
        "&lt;div class='card-s'&gt;진단 " + d.diagCount + "회 · 최고 " + d.diagMax + " · 학습도서 " + d.bookCount + "권&lt;/div&gt;&lt;/td&gt;" +
-       "&lt;td class='card'&gt;&lt;div class='card-k'&gt;✏️ 4단계 집중 트레이닝&lt;/div&gt;&lt;div class='card-v'&gt;총 " + d.trTotalCount + "회 실시&lt;/div&gt;" +
-       "&lt;div class='card-s'&gt;이해도 우수(잘 이해) " + d.undGood + "회 · 보통 " + d.undMid + "회&lt;/div&gt;&lt;/td&gt;" +
+
+       "&lt;td class='card c-am'&gt;&lt;div class='card-k' style='color:#b45309'&gt;✏️ 4단계 집중 트레이닝&lt;/div&gt;" +
+       "&lt;div class='card-v'&gt;총 " + d.trTotalCount + "회 실시&lt;/div&gt;" +
+       "&lt;div class='gbar-bg'&gt;&lt;div class='gbar-fill' style='width:" + trPct + "%;background:#f59e0b'&gt;&lt;/div&gt;&lt;/div&gt;" +
+       "&lt;div class='card-s'&gt;잘 이해 " + d.undGood + "회 · 보통 " + d.undMid + "회 (성취도 " + trPct + "%)&lt;/div&gt;&lt;/td&gt;" +
        "&lt;/tr&gt;&lt;/table&gt;";
 
-  // 2) 이달의 학습 목표 &amp; 코칭 가이드
-  if (d.goalText || d.coachingText || d.consultText) {
-    h += "&lt;div class='sec'&gt;1. 이달의 중점 학습 목표 및 코칭 방향&lt;/div&gt;&lt;div class='box'&gt;";
-    if (d.goalText) h += "&lt;div&gt;&lt;b&gt;• 중점 목표 / 요약:&lt;/b&gt; " + vocabEsc_(d.goalText).replace(/\n/g, " &amp;nbsp;|&amp;nbsp; ") + "&lt;/div&gt;";
-    if (d.coachingText) h += "&lt;div style='margin-top:3px'&gt;&lt;b&gt;• 지도 방향:&lt;/b&gt; " + vocabEsc_(d.coachingText).replace(/\n/g, " ") + "&lt;/div&gt;";
-    if (d.consultText) h += "&lt;div style='margin-top:3px;color:#475569'&gt;&lt;b&gt;• 최근 상담 기록:&lt;/b&gt; " + vocabEsc_(d.consultText) + "&lt;/div&gt;";
+  // 2) 이달의 학습 목표 &amp; 코칭 가이드 (과거 발송 브리핑 consultText 완전 제외)
+  if (d.goalText || d.coachingText) {
+    h += "&lt;div class='sec'&gt;1. 이달의 중점 학습 목표 및 코칭 방향&lt;/div&gt;&lt;div class='box' style='background:#eff6ff;border-color:#bfdbfe'&gt;";
+    if (d.goalText) h += "&lt;div&gt;&lt;b style='color:#1e40af'&gt;• 중점 목표 / 요약:&lt;/b&gt; " + vocabEsc_(d.goalText).replace(/\n/g, " &amp;nbsp;|&amp;nbsp; ") + "&lt;/div&gt;";
+    if (d.coachingText) h += "&lt;div style='margin-top:4px'&gt;&lt;b style='color:#1e40af'&gt;• 코칭 방향:&lt;/b&gt; " + vocabEsc_(d.coachingText).replace(/\n/g, " ") + "&lt;/div&gt;";
     h += "&lt;/div&gt;";
   }
 
-  // 3) 도서별 독서이해도 진단 &amp; 어휘 학습 결과
-  h += "&lt;div class='sec'&gt;2. 도서별 독서이해도 진단 및 어휘 학습 성취도&lt;/div&gt;";
+  // 3) 도서별 독서이해도 진단 &amp; 어휘 학습 결과 (컬러 막대 그래프 포함)
+  h += "&lt;div class='sec'&gt;2. 도서별 독서이해도 진단 및 어휘 학습 성취도 (시각화 그래프)&lt;/div&gt;";
   if (d.bookRows.length &gt; 0) {
     h += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
-         "&lt;th style='width:13%'&gt;날짜&lt;/th&gt;&lt;th style='width:11%'&gt;레벨&lt;/th&gt;&lt;th style='width:31%'&gt;도서명 / 어휘학습&lt;/th&gt;" +
-         "&lt;th style='width:15%'&gt;어휘 정답률&lt;/th&gt;&lt;th style='width:12%'&gt;독서 진단점수&lt;/th&gt;&lt;th style='width:18%'&gt;독서발자국 / 틀린 어휘&lt;/th&gt;" +
+         "&lt;th style='width:11%'&gt;날짜&lt;/th&gt;&lt;th style='width:11%'&gt;레벨&lt;/th&gt;&lt;th style='width:29%'&gt;도서명 / 어휘학습&lt;/th&gt;" +
+         "&lt;th style='width:16%'&gt;어휘 정답률&lt;/th&gt;&lt;th style='width:15%'&gt;독서 진단점수&lt;/th&gt;&lt;th style='width:18%'&gt;독서발자국 / 틀린 어휘&lt;/th&gt;" +
          "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
     for (var b = 0; b &lt; d.bookRows.length; b++) {
       var br = d.bookRows[b];
-      var vTxt = br.vTotal !== "" ? (br.vRate + "% (" + br.vCorr + "/" + br.vTotal + ")") : "-";
-      var dTxt = br.dScore !== "" ? (br.dScore + "점") : "-";
+      var vCell = br.vTotal !== "" ? renderInlineScoreBar(br.vRate, "% (" + br.vCorr + "/" + br.vTotal + ")", "vocab") : "&lt;div class='c'&gt;-&lt;/div&gt;";
+      var dCell = br.dScore !== "" ? renderInlineScoreBar(br.dScore, "점", "diag") : "&lt;div class='c'&gt;-&lt;/div&gt;";
       var memoArr = [];
       if (br.step2) memoArr.push(br.step2);
       if (br.wrong) memoArr.push("오답: " + br.wrong);
-      h += "&lt;tr&gt;&lt;td class='c'&gt;" + vocabEsc_(br.date) + "&lt;/td&gt;&lt;td class='c'&gt;" + vocabEsc_(br.level || "-") + "&lt;/td&gt;" +
-           "&lt;td&gt;&lt;b&gt;" + vocabEsc_(br.book || "어휘 학습") + "&lt;/b&gt;&lt;/td&gt;&lt;td class='c'&gt;" + vocabEsc_(vTxt) + "&lt;/td&gt;" +
-           "&lt;td class='c'&gt;" + vocabEsc_(dTxt) + "&lt;/td&gt;&lt;td&gt;" + vocabEsc_(memoArr.join(" / ") || "-") + "&lt;/td&gt;&lt;/tr&gt;";
+      h += "&lt;tr&gt;&lt;td class='c'&gt;" + vocabEsc_(br.date) + "&lt;/td&gt;" +
+           "&lt;td class='c'&gt;" + (br.level ? "&lt;span class='lv-pill'&gt;" + vocabEsc_(br.level) + "&lt;/span&gt;" : "-") + "&lt;/td&gt;" +
+           "&lt;td&gt;&lt;b&gt;" + vocabEsc_(br.book || "어휘 학습") + "&lt;/b&gt;&lt;/td&gt;" +
+           "&lt;td&gt;" + vCell + "&lt;/td&gt;" +
+           "&lt;td&gt;" + dCell + "&lt;/td&gt;" +
+           "&lt;td&gt;" + vocabEsc_(memoArr.join(" / ") || "-") + "&lt;/td&gt;&lt;/tr&gt;";
     }
     h += "&lt;/tbody&gt;&lt;/table&gt;";
   } else {
@@ -6111,7 +6155,7 @@ function vocabRenderAnalysisReportHtml_(d) {
   // 4) 기간 내 틀린 어휘 및 뜻 정리 (복습 대상)
   h += "&lt;div class='sec'&gt;3. 기간 내 집중 복습 어휘 목록 (틀린 어휘 &amp; 뜻 정리)&lt;/div&gt;";
   if (d.wrongWordList.length &gt; 0) {
-    h += "&lt;div class='box'&gt;";
+    h += "&lt;div class='box' style='background:#fffbeb;border-color:#fde68a'&gt;";
     for (var w = 0; w &lt; d.wrongWordList.length; w++) {
       var ww = d.wrongWordList[w];
       h += "&lt;span class='wchip'&gt;&lt;b&gt;" + vocabEsc_(ww.word) + "&lt;/b&gt;" +
@@ -6120,32 +6164,59 @@ function vocabRenderAnalysisReportHtml_(d) {
     }
     h += "&lt;/div&gt;";
   } else {
-    h += "&lt;div class='box'&gt;기간 내 틀린 어휘가 없거나 모든 어휘를 첫 시도에 정확히 맞혔습니다! 👏&lt;/div&gt;";
+    h += "&lt;div class='box' style='background:#ecfdf5;border-color:#a7f3d0;color:#065f46'&gt;기간 내 틀린 어휘가 없거나 모든 어휘를 첫 시도에 정확히 맞혔습니다! 👏&lt;/div&gt;";
   }
 
-  // 5) 4단계 집중 트레이닝 영역별 성취도 &amp; 상세 이력
-  h += "&lt;div class='sec'&gt;4. 4단계 집중 트레이닝 영역별 성취도 및 문해력발자국&lt;/div&gt;";
+  // 5) 4단계 집중 트레이닝 영역별 성취도 &amp; 이해도 3색 비율 그래프
+  h += "&lt;div class='sec'&gt;4. 4단계 집중 트레이닝 영역별 성취도 및 이해도 분포 그래프&lt;/div&gt;";
+  if (undTotal &gt; 0) {
+    var gPct = Math.round((d.undGood / undTotal) * 100);
+    var mPct = Math.round((d.undMid / undTotal) * 100);
+    var lPct = Math.max(0, 100 - gPct - mPct);
+    h += "&lt;div class='box' style='margin-bottom:6px'&gt;" +
+         "&lt;div style='font-size:8.2pt;font-weight:bold;margin-bottom:4px;color:#334155'&gt;📊 자기주도 학습 이해도 비율: " +
+         "&lt;span style='color:#059669'&gt;● 잘 이해했어요 " + d.undGood + "회(" + gPct + "%)&lt;/span&gt; &amp;nbsp; " +
+         "&lt;span style='color:#2563eb'&gt;● 보통이에요 " + d.undMid + "회(" + mPct + "%)&lt;/span&gt; &amp;nbsp; " +
+         "&lt;span style='color:#d97706'&gt;● 아직 헷갈려요 " + d.undLow + "회(" + lPct + "%)&lt;/span&gt;&lt;/div&gt;" +
+         "&lt;table style='width:100%;border-collapse:collapse;height:10px;border-radius:5px;overflow:hidden'&gt;&lt;tr&gt;" +
+         (gPct &gt; 0 ? "&lt;td style='width:" + gPct + "%;background:#10b981;height:10px'&gt;&lt;/td&gt;" : "") +
+         (mPct &gt; 0 ? "&lt;td style='width:" + mPct + "%;background:#3b82f6;height:10px'&gt;&lt;/td&gt;" : "") +
+         (lPct &gt; 0 ? "&lt;td style='width:" + lPct + "%;background:#f59e0b;height:10px'&gt;&lt;/td&gt;" : "") +
+         "&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;";
+  }
   if (d.trSummary.length &gt; 0) {
+    var maxTrCnt = 1;
+    for (var mc = 0; mc &lt; d.trSummary.length; mc++) {
+      if (d.trSummary[mc].count &gt; maxTrCnt) maxTrCnt = d.trSummary[mc].count;
+    }
     h += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
-         "&lt;th style='width:28%'&gt;트레이닝 영역&lt;/th&gt;&lt;th style='width:14%'&gt;실시 횟수&lt;/th&gt;&lt;th style='width:16%'&gt;평균 오답 수&lt;/th&gt;&lt;th style='width:42%'&gt;주요 학습 교재 · 권수/차시&lt;/th&gt;" +
+         "&lt;th style='width:22%'&gt;트레이닝 영역&lt;/th&gt;&lt;th style='width:24%'&gt;학습 비중 그래프 (횟수)&lt;/th&gt;&lt;th style='width:14%'&gt;평균 오답 수&lt;/th&gt;&lt;th style='width:40%'&gt;주요 학습 교재 · 권수/차시&lt;/th&gt;" +
          "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
     for (var ts = 0; ts &lt; d.trSummary.length; ts++) {
       var tItem = d.trSummary[ts];
-      h += "&lt;tr&gt;&lt;td&gt;&lt;b&gt;" + vocabEsc_(tItem.type) + "&lt;/b&gt;&lt;/td&gt;&lt;td class='c'&gt;" + tItem.count + "회&lt;/td&gt;" +
-           "&lt;td class='c'&gt;" + (tItem.avgErr !== "-" ? tItem.avgErr + "개" : "-") + "&lt;/td&gt;&lt;td&gt;" + vocabEsc_(tItem.details) + "&lt;/td&gt;&lt;/tr&gt;";
+      var cntPct = Math.min(100, Math.max(12, Math.round((tItem.count / maxTrCnt) * 100)));
+      h += "&lt;tr&gt;&lt;td&gt;&lt;b&gt;" + vocabEsc_(tItem.type) + "&lt;/b&gt;&lt;/td&gt;" +
+           "&lt;td&gt;&lt;div style='font-weight:bold;color:#1e40af'&gt;" + tItem.count + "회 실시&lt;/div&gt;" +
+           "&lt;div class='gbar-bg' style='height:6px;margin-top:2px'&gt;&lt;div class='gbar-fill' style='width:" + cntPct + "%;height:6px;background:#3b82f6'&gt;&lt;/div&gt;&lt;/div&gt;&lt;/td&gt;" +
+           "&lt;td class='c'&gt;" + (tItem.avgErr !== "-" ? "&lt;span class='sc-pill' style='background:#fef3c7;color:#92400e'&gt;평균 " + tItem.avgErr + "개&lt;/span&gt;" : "&lt;span class='sc-pill' style='background:#dcfce7;color:#166534'&gt;완료&lt;/span&gt;") + "&lt;/td&gt;" +
+           "&lt;td&gt;" + vocabEsc_(tItem.details) + "&lt;/td&gt;&lt;/tr&gt;";
     }
     h += "&lt;/tbody&gt;&lt;/table&gt;";
   }
   if (d.trRows.length &gt; 0) {
     h += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
-         "&lt;th style='width:13%'&gt;날짜&lt;/th&gt;&lt;th style='width:20%'&gt;트레이닝 영역&lt;/th&gt;&lt;th style='width:24%'&gt;권수 / 차시&lt;/th&gt;" +
-         "&lt;th style='width:10%'&gt;오답 수&lt;/th&gt;&lt;th style='width:15%'&gt;자기 이해도&lt;/th&gt;&lt;th style='width:18%'&gt;문해력발자국&lt;/th&gt;" +
+         "&lt;th style='width:12%'&gt;날짜&lt;/th&gt;&lt;th style='width:19%'&gt;트레이닝 영역&lt;/th&gt;&lt;th style='width:24%'&gt;권수 / 차시&lt;/th&gt;" +
+         "&lt;th style='width:10%'&gt;오답 수&lt;/th&gt;&lt;th style='width:16%'&gt;자기 이해도&lt;/th&gt;&lt;th style='width:19%'&gt;문해력발자국&lt;/th&gt;" +
          "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
     for (var tr = 0; tr &lt; d.trRows.length; tr++) {
       var rowT = d.trRows[tr];
+      var undBadge = rowT.und || "-";
+      if (rowT.und === "잘 이해했어요") undBadge = "&lt;span class='sc-pill' style='background:#dcfce7;color:#166534'&gt;잘 이해했어요&lt;/span&gt;";
+      else if (rowT.und === "보통이에요") undBadge = "&lt;span class='sc-pill' style='background:#dbeafe;color:#1e40af'&gt;보통이에요&lt;/span&gt;";
+      else if (rowT.und === "아직 헷갈려요") undBadge = "&lt;span class='sc-pill' style='background:#fef3c7;color:#92400e'&gt;아직 헷갈려요&lt;/span&gt;";
       h += "&lt;tr&gt;&lt;td class='c'&gt;" + vocabEsc_(rowT.date) + "&lt;/td&gt;&lt;td class='c'&gt;&lt;b&gt;" + vocabEsc_(rowT.type) + "&lt;/b&gt;&lt;/td&gt;" +
            "&lt;td&gt;" + vocabEsc_(rowT.detail || "-") + "&lt;/td&gt;&lt;td class='c'&gt;" + (rowT.err !== "" ? rowT.err + "개" : "-") + "&lt;/td&gt;" +
-           "&lt;td class='c'&gt;" + vocabEsc_(rowT.und || "-") + "&lt;/td&gt;&lt;td&gt;" + vocabEsc_(rowT.memo || "-") + "&lt;/td&gt;&lt;/tr&gt;";
+           "&lt;td class='c'&gt;" + undBadge + "&lt;/td&gt;&lt;td&gt;" + vocabEsc_(rowT.memo || "-") + "&lt;/td&gt;&lt;/tr&gt;";
     }
     h += "&lt;/tbody&gt;&lt;/table&gt;";
   } else if (!d.trSummary.length) {
@@ -6154,10 +6225,10 @@ function vocabRenderAnalysisReportHtml_(d) {
 
   // 6) 나의 시간, 나의 기록 (성실발자국 &amp; 학생 한줄 다짐)
   if (d.reflections.length &gt; 0) {
-    h += "&lt;div class='sec'&gt;5. 나의 시간, 나의 기록 (학생 스스로 남긴 수업 다짐 &amp; 성실발자국)&lt;/div&gt;&lt;div class='box'&gt;";
+    h += "&lt;div class='sec'&gt;5. 나의 시간, 나의 기록 (학생 스스로 남긴 수업 다짐 &amp; 성실발자국)&lt;/div&gt;&lt;div class='box' style='background:#f0fdf4;border-color:#bbf7d0'&gt;";
     for (var rf = 0; rf &lt; d.reflections.length; rf++) {
       var rItem = d.reflections[rf];
-      h += "&lt;div style='margin-bottom:3px'&gt;• &lt;b&gt;[" + vocabEsc_(rItem.date) + "]&lt;/b&gt; " + vocabEsc_(rItem.text) + "&lt;/div&gt;";
+      h += "&lt;div style='margin-bottom:3px'&gt;🌱 &lt;b&gt;[" + vocabEsc_(rItem.date) + "]&lt;/b&gt; " + vocabEsc_(rItem.text) + "&lt;/div&gt;";
     }
     h += "&lt;/div&gt;";
   }
@@ -6194,8 +6265,8 @@ function vocabMakeAnalysisReportPdf() {
   var endMs = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1).getTime();
   var periodStr = vocabFmtDate_(start) + " ~ " + vocabFmtDate_(end);
 
-  // 1) [회원 분석] 및 [상담내용]에서 학년·목표·코칭방향 1회 Bulk 조회
-  var grade = "", coachingText = "", goalText = "", consultText = "";
+  // 1) [회원 분석]에서 학년·목표·코칭방향만 1회 Bulk 조회 ([학부모상담/채널발송]의 과거 발송 브리핑 조회 완전 제거!)
+  var grade = "", coachingText = "", goalText = "";
   var sheetMember = getMemberAnalysisSheet(ss);
   if (sheetMember &amp;&amp; sheetMember.getLastRow() &gt;= 2) {
     var mVals = sheetMember.getRange(2, 1, sheetMember.getLastRow() - 1, Math.min(sheetMember.getLastColumn(), 8)).getValues();
@@ -6206,22 +6277,6 @@ function vocabMakeAnalysisReportPdf() {
         goalText = String(mVals[m][6] || "").trim();
         break;
       }
-    }
-  }
-  if (!hideInternal) {
-    var sheetConsult = ss.getSheetByName("학부모상담/채널발송") || ss.getSheetByName("상담내용/리포트발송/채널발송") || ss.getSheetByName("상담내용");
-    if (sheetConsult &amp;&amp; sheetConsult.getLastRow() &gt;= 2) {
-      var cVals = sheetConsult.getRange(2, 1, sheetConsult.getLastRow() - 1, Math.min(sheetConsult.getLastColumn(), 6)).getValues();
-      var cLogs = [];
-      for (var c = cVals.length - 1; c &gt;= 0 &amp;&amp; cLogs.length &lt; 2; c--) {
-        var cName = String(cVals[c][1] || "").replace(/\s+/g, "");
-        var cNameAlt = String(cVals[c][2] || "").replace(/\s+/g, "");
-        if (cName === name || cNameAlt === name) {
-          var cMemo = String(cVals[c][4] || "").trim();
-          if (cMemo) cLogs.push(cMemo);
-        }
-      }
-      consultText = cLogs.join(" / ");
     }
   }
 
@@ -6261,7 +6316,7 @@ function vocabMakeAnalysisReportPdf() {
       var bk = String(v[5] || "").trim();
       var step1 = String(v[3] || "").trim();
       if (step1 &amp;&amp; bk &amp;&amp; step1 === bk) step1 = "";
-      if (hw === "숙제완료") hwDoneCount++;
+      if (hw === "숙제 완료" || hw === "숙제완료") hwDoneCount++;
       else if (hw) hwOtherCount++;
 
       var gTot = vocabNum_(v[6]);
@@ -6402,7 +6457,6 @@ function vocabMakeAnalysisReportPdf() {
     undLow: undLow,
     goalText: goalText,
     coachingText: coachingText,
-    consultText: consultText,
     bookRows: bookRows.slice(0, 20),
     wrongWordList: wrongWordList.slice(0, 30),
     trSummary: trSummary,
@@ -6639,6 +6693,8 @@ function showDailyBriefingModal() {
   var out = HtmlService.createHtmlOutput(htmlStr).setWidth(520).setHeight(390);
   ui.showModalDialog(out, "📨 오늘 수업 브리핑 문구");
 }
+
+
 
 </pre>
           </div>
