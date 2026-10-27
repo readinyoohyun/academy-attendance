@@ -3103,12 +3103,13 @@ function formatRecentBookBoardLine_(rawBookLine) {
   return "📖 [최근] " + title + (tags.length ? " (" + tags.join("/") + ")" : "");
 }
 
-// G열(주력 목표 &amp; 이달의 학습 전광판) 3줄 구조 조립: 1) 🎯 [목표] 수기 보존, 2) 📊 [이달] 요약, 3) 📖 [최근] 도서 1권
+// G열(주력 목표 &amp; 이달의 학습 전광판) 3줄 구조 조립 + 날짜별 진단 기록 누적 보존
 function composeMemberColGBoard_(ss, studentName, currentGText, newBookEventsToday, eventDatePrefix) {
   var lines = String(currentGText || "").split(/\r?\n/);
   var goalLine = "";
   var existingSummaryLine = "";
-  var bookCandidates = [];
+  var oldRecentBookLine = "";
+  var historyLines = [];
 
   for (var i = 0; i &lt; lines.length; i++) {
     var ln = lines[i].trim();
@@ -3123,20 +3124,37 @@ function composeMemberColGBoard_(ss, studentName, currentGText, newBookEventsTod
       existingSummaryLine = ln;
       continue;
     }
+    if (ln.indexOf("📖") === 0) {
+      oldRecentBookLine = ln;
+      continue;
+    }
+    // 날짜별 진단 히스토리 라인 (오늘 날짜 라인은 아래에서 최신으로 재구성하므로 제외)
     if (eventDatePrefix &amp;&amp; ln.indexOf(eventDatePrefix) === 0) continue;
-    bookCandidates.push(ln);
+    historyLines.push(ln);
   }
 
+  // 오늘 입력된 신규 도서 이벤트 수집
+  var todayDateLines = [];
+  var recentCandidate = "";
   if (newBookEventsToday &amp;&amp; newBookEventsToday.length) {
     for (var n = 0; n &lt; newBookEventsToday.length; n++) {
-      if (newBookEventsToday[n]) bookCandidates.push(newBookEventsToday[n]);
+      var ev = String(newBookEventsToday[n] || "").trim();
+      if (!ev) continue;
+      todayDateLines.push(ev);
+      recentCandidate = ev;
     }
   }
 
+  // 1) 🎯 [목표] 수기 영구 보존
+  // 2) 📊 [이달] 요약 자동 산출
   var summaryLine = buildMemberSummaryBoardLine_(ss, studentName) || existingSummaryLine;
+
+  // 3) 📖 [최근] 도서 1권 (오늘 진단/도서 기록이 있으면 최신 도서로 즉시 갱신)
   var recentBookLine = "";
-  if (bookCandidates.length &gt; 0) {
-    recentBookLine = formatRecentBookBoardLine_(bookCandidates[bookCandidates.length - 1]);
+  if (recentCandidate) {
+    recentBookLine = formatRecentBookBoardLine_(recentCandidate);
+  } else if (oldRecentBookLine) {
+    recentBookLine = oldRecentBookLine;
   } else {
     var rs = ss.getSheetByName(RECORD_SHEET);
     if (rs &amp;&amp; rs.getLastRow() &gt;= 2) {
@@ -3159,6 +3177,12 @@ function composeMemberColGBoard_(ss, studentName, currentGText, newBookEventsTod
   if (goalLine) out.push(goalLine);
   if (summaryLine) out.push(summaryLine);
   if (recentBookLine) out.push(recentBookLine);
+  for (var h = 0; h &lt; historyLines.length; h++) {
+    out.push(historyLines[h]);
+  }
+  for (var t = 0; t &lt; todayDateLines.length; t++) {
+    out.push(todayDateLines[t]);
+  }
   return out.join("\n");
 }
 
@@ -3289,7 +3313,7 @@ function onEdit(e) {
     }
   }
   
-  if (sheetName === "출결보강관리" || sheetName === "오늘 출석부") {
+  if (sheetName === "출결보강관리" || sheetName === "오늘 출석부" || sheetName === "오늘출석부") {
     var startCol = range.getColumn();
     var endCol = range.getLastColumn();
     var startRow = range.getRow();
@@ -3602,6 +3626,14 @@ function syncDailyEventsToMemberAnalysisBulk_(ss, sheetDaily, sheetMember, daily
 
     var cleanName = name.replace(/\s+/g, "");
     var mIdx = memberMap[cleanName];
+    if (mIdx === undefined) {
+      for (var mk in memberMap) {
+        if (isSameStudentNameInGAS(mk, name)) {
+          mIdx = memberMap[mk];
+          break;
+        }
+      }
+    }
     if (mIdx === undefined) continue;
 
     var mdMatch = dateStr.match(/(\d+\/\d+)/);
@@ -3646,53 +3678,23 @@ function syncDailyEventsToMemberAnalysisBulk_(ss, sheetDaily, sheetMember, daily
       var isCompletion = (item.indexOf("글완") !== -1 || item.indexOf("글쓰기완") !== -1 || item.indexOf("완료") !== -1);
       var hasDigit = /\d+/.test(item);
 
+      var entryToAppend = "";
       if (isCompletion) {
         var cleanBookAndScore = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
-        var cleanBook = cleanBookAndScore.replace(/\s*\d+점?$/, "").trim();
-        var cleanBookNoSpaces = cleanBook.replace(/\s+/g, "").toLowerCase();
-
-        var currentProgress = String(memberData[mIdx][6] || "").trim(); // Col G
-        if (currentProgress) {
-          var lines = currentProgress.split("\n");
-          var found = false;
-          for (var lIdx = 0; lIdx &lt; lines.length; lIdx++) {
-            var lineNoSpaces = lines[lIdx].replace(/\s+/g, "").toLowerCase();
-            if (cleanBookNoSpaces &amp;&amp; lineNoSpaces.indexOf(cleanBookNoSpaces) !== -1) {
-              found = true;
-              var newLine = lines[lIdx];
-              if (/\d+/.test(cleanBookAndScore)) {
-                newLine = eventDatePrefix + " " + cleanBookAndScore + " 글완";
-              } else {
-                if (lines[lIdx].indexOf("글완") === -1 &amp;&amp; lines[lIdx].indexOf("글쓰기완") === -1 &amp;&amp; lines[lIdx].indexOf("완료") === -1) {
-                  newLine = lines[lIdx] + " 글완";
-                }
-              }
-              lines[lIdx] = newLine;
-              if (newLine.trim().indexOf(eventDatePrefix) === 0 || newLine.trim().indexOf("📖") === 0) {
-                groupMap[7].push(newLine);
-              }
-            }
-          }
-          if (!found &amp;&amp; cleanBookNoSpaces) {
-            var newLine = eventDatePrefix + " " + cleanBookAndScore + " 글완";
-            lines.push(newLine);
-            groupMap[7].push(newLine);
-          }
-          memberData[mIdx][6] = lines.join("\n");
-        } else {
-          var textToSet = eventDatePrefix + " " + (cleanBookAndScore ? cleanBookAndScore + " 글완" : "글완");
-          memberData[mIdx][6] = textToSet;
-          groupMap[7].push(textToSet);
-        }
+        entryToAppend = eventDatePrefix + " " + cleanBookAndScore + " 글완";
       } else if (hasDigit) {
         var datePattern = /^\d+[\./]\d+/;
-        var textToAppend = "";
         if (datePattern.test(item)) {
-          textToAppend = /^\d+\/\d+/.test(item) ? (yy + "." + item) : item;
+          entryToAppend = /^\d+\/\d+/.test(item) ? (yy + "." + item) : item;
         } else {
-          textToAppend = eventDatePrefix + " " + item;
+          entryToAppend = eventDatePrefix + " " + item;
         }
-        groupMap[7].push(textToAppend);
+      } else if (item.trim()) {
+        entryToAppend = eventDatePrefix + " " + item.trim();
+      }
+
+      if (entryToAppend) {
+        groupMap[7].push(entryToAppend);
       }
     }
 
@@ -6294,8 +6296,6 @@ function showDailyBriefingModal() {
   var out = HtmlService.createHtmlOutput(htmlStr).setWidth(520).setHeight(390);
   ui.showModalDialog(out, "📨 오늘 수업 브리핑 문구");
 }
-
-
 
 </pre>
           </div>
