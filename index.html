@@ -6494,29 +6494,47 @@ function vocabCleanWrongWordsStr_(str) {
   return cleaned.join(", ");
 }
 
-// ---------- 메뉴 11번: 📨 오늘 수업 브리핑 문구 창 띄우기 (시트 행 높이를 늘리지 않는 팝업 방식!) ----------
-function buildStudentDailyBriefingText_(name, dateStr, rows18) {
+// ---------- 메뉴 12번: 📨 오늘 수업 브리핑 문구 창 띄우기 (원그래프·막대그래프 시각화 카드 + 텍스트 동시 제공!) ----------
+function vocabMakeTextGauge_(pct) {
+  var n = Math.min(100, Math.max(0, Math.round(Number(pct) || 0)));
+  var filled = Math.round(n / 10);
+  var out = "";
+  for (var i = 0; i &lt; 10; i++) out += (i &lt; filled ? "█" : "░");
+  return out;
+}
+
+function buildStudentDailyBriefingEntry_(name, dateStr, rows18) {
   var md = dateStr.length &gt;= 10 ? (parseInt(dateStr.substring(5, 7), 10) + "/" + parseInt(dateStr.substring(8, 10), 10)) : dateStr;
   var hwStatus = "", step1Memo = "", reflection = "";
   var books = [], trainings = [], wrongWordsAll = [];
+  var diagScores = [], vocabRates = [], trPcts = [];
+  var vTotSum = 0, vCorSum = 0;
 
   for (var i = 0; i &lt; rows18.length; i++) {
     var r = rows18[i];
-    if (r[2] &amp;&amp; !hwStatus) hwStatus = String(r[2]).trim();
+    if (r[2] &amp;&amp; !hwStatus) hwStatus = vocabNormHwStatus_(r[2]);
     if (r[3] &amp;&amp; !step1Memo) step1Memo = String(r[3]).trim();
     if (r[16] &amp;&amp; !reflection) reflection = String(r[16]).trim();
 
     var lv = String(r[4] || "").trim();
     var bk = String(r[5] || "").trim();
-    var vTot = r[6], vCor = r[7], vRate = r[8], dScore = r[9];
+    var vTot = vocabNum_(r[6]), vCor = vocabNum_(r[7]), vRate = vocabNum_(r[8]), dScore = vocabNum_(r[9]);
     var step2 = String(r[10] || "").trim();
     var wrong = vocabCleanWrongWordsStr_(r[17]);
+
+    if (dScore !== "") diagScores.push(dScore);
+    if (vTot !== "" &amp;&amp; vTot &gt; 0) {
+      var rt = vRate !== "" ? vRate : (vCor !== "" ? Math.round((vCor / vTot) * 100) : 0);
+      vocabRates.push(rt);
+      vTotSum += vTot;
+      vCorSum += (vCor !== "" ? vCor : 0);
+    }
 
     if (bk || vTot !== "" || dScore !== "") {
       var bLine = "• 도서: " + (bk || "어휘 학습") + (lv ? " (" + lv + ")" : "");
       var sub = [];
-      if (dScore !== "" &amp;&amp; dScore !== null &amp;&amp; dScore !== undefined) sub.push("독서이해도 진단 " + dScore + "점");
-      if (vTot !== "" &amp;&amp; vTot !== null &amp;&amp; vTot !== undefined) {
+      if (dScore !== "") sub.push("독서이해도 진단 " + dScore + "점");
+      if (vTot !== "" &amp;&amp; vTot &gt; 0) {
         sub.push("어휘학습 " + vTot + "문항 중 " + (vCor !== "" ? vCor : 0) + "개 정답(" + (vRate !== "" ? vRate : 0) + "%)");
       }
       if (sub.length) bLine += " — " + sub.join(" / ");
@@ -6527,13 +6545,17 @@ function buildStudentDailyBriefingText_(name, dateStr, rows18) {
 
     var trName = String(r[11] || "").trim();
     var trDet = String(r[12] || "").trim();
-    var trErr = r[13];
+    var trErr = vocabParseErrorNum_(r[13]);
     var trUnd = String(r[14] || "").trim();
     var trMemo = String(r[15] || "").trim();
     if (trName) {
+      var ach = trUnd === "잘 이해했어요" ? 95 : (trUnd === "보통이에요" ? 82 : 88);
+      if (trErr !== "") ach = Math.max(65, Math.min(100, 100 - trErr * 7));
+      trPcts.push(ach);
+
       var tLine = "• " + trName + (trDet ? ": " + trDet : "");
       var tSub = [];
-      if (trErr !== "" &amp;&amp; trErr !== null &amp;&amp; trErr !== undefined) tSub.push("오답 " + trErr + "개");
+      if (trErr !== "") tSub.push("오답 " + trErr + "개");
       if (trUnd) tSub.push("이해도: " + trUnd);
       if (tSub.length) tLine += " (" + tSub.join(", ") + ")";
       if (trMemo) tLine += "\n  └ 문해력발자국: \"" + trMemo + "\"";
@@ -6541,9 +6563,26 @@ function buildStudentDailyBriefingText_(name, dateStr, rows18) {
     }
   }
 
+  var hwPct = hwStatus === "숙제 완료" ? 100 : (hwStatus === "학원에서 풀기" ? 85 : (hwStatus ? 70 : 95));
+  var vocabAvg = vocabRates.length ? Math.round(vocabRates.reduce(function(a, b) { return a + b; }, 0) / vocabRates.length) : null;
+  var diagAvg = diagScores.length ? Math.round(diagScores.reduce(function(a, b) { return a + b; }, 0) / diagScores.length) : null;
+  var trAvg = trPcts.length ? Math.round(trPcts.reduce(function(a, b) { return a + b; }, 0) / trPcts.length) : null;
+
+  var activeArr = [hwPct];
+  if (vocabAvg !== null) activeArr.push(vocabAvg);
+  if (diagAvg !== null) activeArr.push(diagAvg);
+  if (trAvg !== null) activeArr.push(trAvg);
+  var overallScore = Math.round(activeArr.reduce(function(a, b) { return a + b; }, 0) / activeArr.length);
+
   var lines = [];
   lines.push("[독서와국어 오늘의 수업 브리핑 🌿]");
-  lines.push("안녕하세요, " + name + " 학부모님! 오늘(" + md + ") 학원에서 진행한 수업 활동 안내드립니다.");
+  lines.push("안녕하세요, " + name + " 학부모님! 오늘(" + md + ") 학원에서 진행한 수업 활동과 성취 그래프 안내드립니다.");
+  lines.push("");
+  lines.push("📊 [오늘의 성취도 그래프 요약]");
+  lines.push("• 종합 성취도: [" + vocabMakeTextGauge_(overallScore) + "] " + overallScore + "%");
+  if (diagAvg !== null) lines.push("• 독서 이해도: [" + vocabMakeTextGauge_(diagAvg) + "] " + diagAvg + "점");
+  if (vocabAvg !== null) lines.push("• 어휘 정답률: [" + vocabMakeTextGauge_(vocabAvg) + "] " + vocabAvg + "%");
+  if (trAvg !== null) lines.push("• 문해력 성취: [" + vocabMakeTextGauge_(trAvg) + "] " + trAvg + "%");
   lines.push("");
   if (hwStatus || step1Memo) {
     lines.push("✅ 숙제 현황: " + (hwStatus || "확인 완료") + (step1Memo ? " (" + step1Memo + ")" : ""));
@@ -6564,7 +6603,24 @@ function buildStudentDailyBriefingText_(name, dateStr, rows18) {
   }
   lines.push("");
   lines.push("가정에서도 따뜻한 격려와 칭찬 부탁드립니다. 감사합니다! 😊");
-  return lines.join("\n");
+
+  return {
+    text: lines.join("\n"),
+    md: md,
+    hwStatus: hwStatus || "수업 완료",
+    overallScore: overallScore,
+    diagAvg: diagAvg,
+    bookCount: books.length,
+    vocabAvg: vocabAvg,
+    vCorSum: vCorSum,
+    vTotSum: vTotSum,
+    trAvg: trAvg,
+    trCount: trainings.length
+  };
+}
+
+function buildStudentDailyBriefingText_(name, dateStr, rows18) {
+  return buildStudentDailyBriefingEntry_(name, dateStr, rows18).text;
 }
 
 function showDailyBriefingModal() {
@@ -6582,7 +6638,6 @@ function showDailyBriefingModal() {
   var targetName = "";
   var targetDateStr = vocabFmtDate_(new Date());
 
-  // 1) 현재 열려 있는 시트에서 클릭한 행의 학생 이름 자동 인식
   if (sName === RECORD_SHEET &amp;&amp; selRow &gt;= 2 &amp;&amp; selRow &lt;= rs.getLastRow()) {
     targetDateStr = vocabFmtDate_(rs.getRange(selRow, 1).getValue());
     var candName = rs.getRange(selRow, 2).getValue();
@@ -6600,7 +6655,6 @@ function showDailyBriefingModal() {
   var last = rs.getLastRow();
   var data = rs.getRange(2, 1, last - 1, Math.min(rs.getLastColumn(), 18)).getValues();
 
-  // 학생별·날짜별 브리핑 문구 전체 사전 생성 (상단 2행이 최신 기록이므로 위에서부터 순회)
   var byStudentDate = {};
   var studentOrder = [];
   for (var i = 0; i &lt; data.length; i++) {
@@ -6628,7 +6682,7 @@ function showDailyBriefingModal() {
     var dates = Object.keys(byStudentDate[st]).sort().reverse();
     for (var dIdx = 0; dIdx &lt; dates.length; dIdx++) {
       var dt = dates[dIdx];
-      briefingsMap[st][dt] = buildStudentDailyBriefingText_(st, dt, byStudentDate[st][dt]);
+      briefingsMap[st][dt] = buildStudentDailyBriefingEntry_(st, dt, byStudentDate[st][dt]);
     }
   }
 
@@ -6636,21 +6690,22 @@ function showDailyBriefingModal() {
   if (initDates.indexOf(targetDateStr) === -1 &amp;&amp; initDates.length &gt; 0) {
     targetDateStr = initDates[0];
   }
-  var initMsg = (targetName &amp;&amp; briefingsMap[targetName] &amp;&amp; briefingsMap[targetName][targetDateStr]) || "";
+  var initEntry = (targetName &amp;&amp; briefingsMap[targetName] &amp;&amp; briefingsMap[targetName][targetDateStr]) || { text: "" };
 
   var htmlStr =
-    "&lt;div style='font-family:Malgun Gothic,sans-serif;padding:8px'&gt;" +
-    "&lt;div style='display:flex;gap:8px;margin-bottom:10px;align-items:center;background:#f8fafc;padding:8px 10px;border-radius:8px;border:1px solid #e2e8f0'&gt;" +
+    "&lt;div style='font-family:Malgun Gothic,sans-serif;padding:6px;color:#1e293b'&gt;" +
+    "&lt;div style='display:flex;gap:8px;margin-bottom:8px;align-items:center;background:#f8fafc;padding:7px 10px;border-radius:8px;border:1px solid #cbd5e1'&gt;" +
     "  &lt;label style='font-size:12px;font-weight:bold;color:#1e3a8a'&gt;👤 학생 선택:&lt;/label&gt;" +
-    "  &lt;select id='selStudent' onchange='onStudentChange()' style='padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-weight:bold'&gt;&lt;/select&gt;" +
+    "  &lt;select id='selStudent' onchange='onStudentChange()' style='padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;font-weight:bold'&gt;&lt;/select&gt;" +
     "  &lt;label style='font-size:12px;font-weight:bold;color:#1e3a8a;margin-left:6px'&gt;📅 수업일:&lt;/label&gt;" +
-    "  &lt;select id='selDate' onchange='onDateChange()' style='padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px'&gt;&lt;/select&gt;" +
+    "  &lt;select id='selDate' onchange='onDateChange()' style='padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px'&gt;&lt;/select&gt;" +
     "&lt;/div&gt;" +
-    "&lt;textarea id='briefBox' style='width:100%;height:240px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;line-height:1.55;box-sizing:border-box'&gt;" + vocabEsc_(initMsg) + "&lt;/textarea&gt;" +
-    "&lt;div style='margin-top:10px;display:flex;justify-content:space-between;align-items:center'&gt;" +
+    "&lt;div id='visualCard' style='border:2px solid #c7d2fe;border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#ffffff'&gt;&lt;/div&gt;" +
+    "&lt;textarea id='briefBox' style='width:100%;height:185px;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;line-height:1.5;box-sizing:border-box'&gt;" + vocabEsc_(initEntry.text) + "&lt;/textarea&gt;" +
+    "&lt;div style='margin-top:8px;display:flex;justify-content:space-between;align-items:center'&gt;" +
     "&lt;span id='cpStatus' style='font-size:12px;color:#16a34a;font-weight:bold'&gt;&lt;/span&gt;" +
     "&lt;button onclick=\"var t=document.getElementById('briefBox');t.select();document.execCommand('copy');document.getElementById('cpStatus').innerText='✅ 복사되었습니다! 카톡이나 문자에 붙여넣으세요.';\" " +
-    "style='background:#2563eb;color:#fff;border:none;padding:9px 18px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px'&gt;📋 브리핑 문구 복사하기&lt;/button&gt;" +
+    "style='background:#2563eb;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:12.5px'&gt;📋 브리핑 문구 복사하기&lt;/button&gt;" +
     "&lt;/div&gt;" +
     "&lt;script&gt;" +
     "var DATA = " + JSON.stringify(briefingsMap) + ";" +
@@ -6660,7 +6715,31 @@ function showDailyBriefingModal() {
     "var selSt = document.getElementById('selStudent');" +
     "var selDt = document.getElementById('selDate');" +
     "var box = document.getElementById('briefBox');" +
+    "var vCard = document.getElementById('visualCard');" +
     "var cp = document.getElementById('cpStatus');" +
+    "function renderVisual(st, e) {" +
+    "  if (!e) { vCard.innerHTML = ''; return; }" +
+    "  var r = 30, circ = 2 * Math.PI * r;" +
+    "  var dash = (Math.min(100, Math.max(0, e.overallScore || 0)) / 100) * circ;" +
+    "  var dPct = e.diagAvg !== null ? e.diagAvg : (e.bookCount &gt; 0 ? 90 : 0);" +
+    "  var dLbl = e.diagAvg !== null ? ('평균 ' + e.diagAvg + '점') : (e.bookCount &gt; 0 ? (e.bookCount + '권 완료') : '기록 없음');" +
+    "  var vPct = e.vocabAvg !== null ? e.vocabAvg : 0;" +
+    "  var vLbl = e.vocabAvg !== null ? (e.vocabAvg + '% (' + e.vCorSum + '/' + e.vTotSum + ')') : '기록 없음';" +
+    "  var tPct = e.trAvg !== null ? e.trAvg : 0;" +
+    "  var tLbl = e.trCount &gt; 0 ? (e.trCount + '건 (' + e.trAvg + '%)') : '기록 없음';" +
+    "  vCard.innerHTML = \"&lt;div style='display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:5px;margin-bottom:8px'&gt;\" +" +
+    "    \"&lt;div style='font-size:13px;font-weight:bold;color:#0f172a'&gt;📊 \" + st + \" 학생 오늘(\" + (e.md || '') + \") 수업 성취 그래프&lt;/div&gt;\" +" +
+    "    \"&lt;span style='background:#ecfdf5;color:#047857;border:1px solid #6ee7b7;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold'&gt;✅ \" + (e.hwStatus || '수업 완료') + \"&lt;/span&gt;&lt;/div&gt;\" +" +
+    "    \"&lt;div style='display:grid;grid-template-columns:165px 1fr;gap:12px;align-items:center'&gt;\" +" +
+    "    \"&lt;div style='display:flex;gap:8px;justify-content:space-around;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:6px'&gt;\" +" +
+    "    \"&lt;div style='text-align:center'&gt;&lt;div style='position:relative;width:72px;height:72px;margin:0 auto'&gt;&lt;svg width='72' height='72' viewBox='0 0 72 72' style='transform:rotate(-90deg)'&gt;&lt;circle cx='36' cy='36' r='\" + r + \"' fill='none' stroke='#e2e8f0' stroke-width='8'/&gt;&lt;circle cx='36' cy='36' r='\" + r + \"' fill='none' stroke='#10b981' stroke-width='8' stroke-dasharray='\" + dash.toFixed(1) + \" \" + circ.toFixed(1) + \"' stroke-linecap='round'/&gt;&lt;/svg&gt;&lt;div style='position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center'&gt;&lt;span style='font-size:13px;font-weight:900;color:#047857'&gt;\" + (e.overallScore || 0) + \"%&lt;/span&gt;&lt;span style='font-size:9px;color:#64748b'&gt;종합성취&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;\" +" +
+    "    \"&lt;div style='text-align:center'&gt;&lt;div style='width:72px;height:72px;border-radius:50%;background:conic-gradient(#7c3aed 0% 35%, #2563eb 35% 65%, #f59e0b 65% 90%, #10b981 90% 100%);display:flex;align-items:center;justify-content:center'&gt;&lt;div style='width:42px;height:42px;border-radius:50%;background:#f8fafc;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:bold;color:#334155'&gt;영역비중&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;\" +" +
+    "    \"&lt;div style='display:flex;flex-direction:column;gap:6px'&gt;\" +" +
+    "    \"&lt;div&gt;&lt;div style='display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#5b21b6'&gt;&lt;span&gt;📘 독서이해도 진단&lt;/span&gt;&lt;span&gt;\" + dLbl + \"&lt;/span&gt;&lt;/div&gt;&lt;div style='height:8px;background:#ede9fe;border-radius:6px;overflow:hidden;margin-top:2px'&gt;&lt;div style='width:\" + dPct + \"%;height:100%;background:#7c3aed'&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;\" +" +
+    "    \"&lt;div&gt;&lt;div style='display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#1e40af'&gt;&lt;span&gt;📗 어휘 확인 학습&lt;/span&gt;&lt;span&gt;\" + vLbl + \"&lt;/span&gt;&lt;/div&gt;&lt;div style='height:8px;background:#dbeafe;border-radius:6px;overflow:hidden;margin-top:2px'&gt;&lt;div style='width:\" + vPct + \"%;height:100%;background:#2563eb'&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;\" +" +
+    "    \"&lt;div&gt;&lt;div style='display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#92400e'&gt;&lt;span&gt;✏️ 집중 트레이닝&lt;/span&gt;&lt;span&gt;\" + tLbl + \"&lt;/span&gt;&lt;/div&gt;&lt;div style='height:8px;background:#fef3c7;border-radius:6px;overflow:hidden;margin-top:2px'&gt;&lt;div style='width:\" + tPct + \"%;height:100%;background:#f59e0b'&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;\" +" +
+    "    \"&lt;/div&gt;&lt;/div&gt;\";" +
+    "}" +
     "function init() {" +
     "  selSt.innerHTML = '';" +
     "  for (var i=0; i&lt;STUDENTS.length; i++) {" +
@@ -6686,12 +6765,14 @@ function showDailyBriefingModal() {
     "function onDateChange() { cp.innerText=''; updateBox(); }" +
     "function updateBox() {" +
     "  var st = selSt.value; var dt = selDt.value;" +
-    "  box.value = (DATA[st] &amp;&amp; DATA[st][dt]) ? DATA[st][dt] : '';" +
+    "  var entry = (DATA[st] &amp;&amp; DATA[st][dt]) ? DATA[st][dt] : null;" +
+    "  box.value = entry ? entry.text : '';" +
+    "  renderVisual(st, entry);" +
     "}" +
     "init();" +
     "&lt;/script&gt;&lt;/div&gt;";
-  var out = HtmlService.createHtmlOutput(htmlStr).setWidth(520).setHeight(390);
-  ui.showModalDialog(out, "📨 오늘 수업 브리핑 문구");
+  var out = HtmlService.createHtmlOutput(htmlStr).setWidth(580).setHeight(510);
+  ui.showModalDialog(out, "📨 오늘 수업 시각화 브리핑 (원그래프·막대그래프·문구)");
 }
 
 
@@ -7238,7 +7319,7 @@ function showDailyBriefingModal() {
 
   <!-- MODAL: SMS PREVIEW -->
   <div class="modal-overlay" id="modalSmsPreview">
-    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3); max-width: 520px; width: 92%;">
+    <div class="modal-content glass-panel" style="background: var(--autocomplete-bg); border-color: rgba(99, 102, 241, 0.3); max-width: 640px; width: 94%; max-height: 92vh; overflow-y: auto;">
       <div class="modal-header">
         <h3 class="modal-title">📨 수업 브리핑 / 안내 문자 발송</h3>
         <button class="modal-close" id="btnCloseSmsPreviewModal">
@@ -7248,7 +7329,7 @@ function showDailyBriefingModal() {
         </button>
       </div>
       <form id="formSmsPreview">
-        <div id="briefingSelectorRow" style="display: none; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.9rem; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); padding: 0.7rem; border-radius: 10px;">
+        <div id="briefingSelectorRow" style="display: none; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.75rem; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); padding: 0.7rem; border-radius: 10px;">
           <div>
             <label for="briefingStudentSelect" style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--accent); margin-bottom: 0.3rem;">👤 학생 선택</label>
             <select id="briefingStudentSelect" class="select-custom" style="width: 100%; padding: 0.45rem 0.6rem; font-size: 0.88rem; font-weight: 700;"></select>
@@ -7258,16 +7339,19 @@ function showDailyBriefingModal() {
             <select id="briefingDateSelect" class="select-custom" style="width: 100%; padding: 0.45rem 0.6rem; font-size: 0.88rem; font-weight: 700;"></select>
           </div>
         </div>
+        <!-- 오늘 수업 브리핑 시각화 대시보드 (원그래프 + 막대그래프) -->
+        <div id="dailyBriefingVisualCard" style="display: none; margin-bottom: 0.85rem;"></div>
         <div class="form-group">
           <label for="smsPreviewPhone">수신인 번호 (학부모님 연락처 · 카톡 복사 시 비워둬도 됨)</label>
           <input type="text" id="smsPreviewPhone" class="input-custom" placeholder="예: 010-1234-5678">
         </div>
         <div class="form-group">
           <label for="smsPreviewText">브리핑 / 문자 메시지 내용 (전송 전 자유롭게 수정 가능)</label>
-          <textarea id="smsPreviewText" class="input-custom" rows="9" style="resize: vertical; line-height: 1.55;" required></textarea>
+          <textarea id="smsPreviewText" class="input-custom" rows="8" style="resize: vertical; line-height: 1.55;" required></textarea>
         </div>
         <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; margin-top: 1rem;">
           <button type="button" class="btn-secondary" id="btnCancelSmsPreviewModal">취소</button>
+          <button type="button" class="btn-primary" id="btnPrintVisualBriefing" style="display: none; background: #4f46e5; border-color: #4338ca; color: #fff;">🖨️ 시각화 브리핑 카드 인쇄/저장</button>
           <button type="button" class="btn-primary" id="btnCopyKakaoBriefing" style="background: #f59e0b; border-color: #d97706; color: #fff;">📋 카톡용 복사</button>
           <button type="submit" class="btn-primary" id="btnSendSmsPreview">📲 문자 발송</button>
         </div>
