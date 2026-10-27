@@ -1411,7 +1411,13 @@ function doPost(e) {
   try {
     var postData = JSON.parse(e.postData.contents);
     
-    if (postData.action === "generateDailyAttendance") {
+    if (postData.action === "fixAndAlignLearningRecords") {
+      var sheetRec = vocabEnsureRecordSheet_(ss);
+      var res = alignLearningRecordColumnsBulk_(sheetRec);
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", result: res }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    else if (postData.action === "generateDailyAttendance") {
       generateDailyAttendance();
       return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -4125,8 +4131,20 @@ function vocabNormBook_(s) {
     .replace(/\[[^\]]*\]/g, "")
     .replace(/\((?:독서중|독서\s*대기|독서완료|요약하기|어휘학습|책소개|[^\)]*쪽|\d+\s*~\s*\d+)\)/g, "")
     .replace(/^(?:[1-6]-[1-4]\s*)?(?:노랑|초록|파랑|빨강|보라|주황|연두|하늘|분홍|남색|갈색)?\s*/, "")
-    .replace(/\s+/g, "")
+    .replace(/[^\w\uAC00-\uD7A3]/g, "")
     .toLowerCase();
+}
+
+function areBooksFuzzyMatch_(b1, b2) {
+  if (!b1 || !b2) return false;
+  var s1 = vocabNormBook_(b1);
+  var s2 = vocabNormBook_(b2);
+  if (s1 === s2) return true;
+  if ((s1.indexOf("인사") !== -1 || s1.indexOf("인싸") !== -1) &amp;&amp; (s2.indexOf("인사") !== -1 || s2.indexOf("인싸") !== -1)) {
+    if (s1.replace(/인사|인싸/g, "") === s2.replace(/인사|인싸/g, "")) return true;
+  }
+  if (s1.length &gt;= 5 &amp;&amp; s2.length &gt;= 5 &amp;&amp; (s1.indexOf(s2) !== -1 || s2.indexOf(s1) !== -1)) return true;
+  return false;
 }
 
 // ---------- 어휘 읽기 (학생앱이 요청) ----------
@@ -4414,6 +4432,98 @@ function getVerifiedOct26DailyRows_() {
 }
 
 // [핵심 규정 준수] [학습기록] 18열 시트의 헤더·열 위치 및 C열('완료'-&gt;'숙제완료')·D열/K열 오염·10/26 누락을 1회 일괄(Bulk) 정밀 보정
+function deduplicateLearningRecordsInMemory_(rows) {
+  var groups = {};
+  for (var i = 0; i &lt; rows.length; i++) {
+    var r = rows[i];
+    var dKey = r[0] ? vocabFmtDate_(r[0]) : "";
+    var nKey = String(r[1] || "").trim().replace(/\s+/g, "");
+    var key = dKey + "||" + nKey;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
+  }
+
+  var out = [];
+  var groupKeys = Object.keys(groups);
+  for (var g = 0; g &lt; groupKeys.length; g++) {
+    var grp = groups[groupKeys[g]];
+    if (grp.length === 1) {
+      out.push(grp[0]);
+      continue;
+    }
+
+    var trMap = {};
+    var bookMap = {};
+    var otherRows = [];
+
+    for (var j = 0; j &lt; grp.length; j++) {
+      var row = grp[j];
+      var bookName = String(row[5] || "").trim();
+      var normBook = vocabNormBook_(bookName);
+      var trName = String(row[11] || "").trim();
+      var trDetail = String(row[12] || "").trim();
+
+      if (normBook) {
+        var foundBKey = null;
+        for (var existB in bookMap) {
+          if (areBooksFuzzyMatch_(existB, normBook)) {
+            foundBKey = existB;
+            break;
+          }
+        }
+        if (!foundBKey) {
+          bookMap[normBook] = row.slice();
+        } else {
+          var curB = bookMap[foundBKey];
+          if (row[4] &amp;&amp; !curB[4]) curB[4] = row[4];
+          if (row[6] !== "" &amp;&amp; !curB[6]) curB[6] = row[6];
+          if (row[7] !== "" &amp;&amp; !curB[7]) curB[7] = row[7];
+          if (row[8] !== "" &amp;&amp; !curB[8]) curB[8] = row[8];
+          if (row[9] !== "" &amp;&amp; !curB[9]) curB[9] = row[9];
+          if (row[15] &amp;&amp; !curB[15]) curB[15] = row[15];
+          if (bookName.length &gt; curB[5].length) curB[5] = bookName;
+        }
+      } else if (trName) {
+        if (!trMap[trName]) {
+          trMap[trName] = row.slice();
+        } else {
+          var curT = trMap[trName];
+          if (trDetail.length &gt; String(curT[12] || "").length) {
+            curT[12] = trDetail;
+          }
+          if (row[13] !== "" &amp;&amp; row[13] !== 0) curT[13] = row[13];
+          if (row[14]) curT[14] = row[14];
+          if (row[15] &amp;&amp; !curT[15]) curT[15] = row[15];
+        }
+      } else {
+        otherRows.push(row);
+      }
+    }
+
+    var books = Object.keys(bookMap).map(function(k) { return bookMap[k]; });
+    var trainings = Object.keys(trMap).map(function(k) { return trMap[k]; });
+
+    if (books.length &gt; 0 &amp;&amp; trainings.length &gt; 0) {
+      var firstB = books[0];
+      var firstT = trainings.shift();
+      firstB[11] = firstT[11];
+      firstB[12] = firstT[12];
+      firstB[13] = firstT[13];
+      firstB[14] = firstT[14];
+      if (firstT[15] &amp;&amp; !firstB[15]) firstB[15] = firstT[15];
+      out.push(firstB);
+      for (var b = 1; b &lt; books.length; b++) out.push(books[b]);
+      for (var t = 0; t &lt; trainings.length; t++) out.push(trainings[t]);
+    } else {
+      for (var b2 = 0; b2 &lt; books.length; b2++) out.push(books[b2]);
+      for (var t2 = 0; t2 &lt; trainings.length; t2++) out.push(trainings[t2]);
+    }
+    for (var o = 0; o &lt; otherRows.length; o++) out.push(otherRows[o]);
+  }
+  return out;
+}
+
+// [핵심 규정 준수] [학습기록] 18열 시트의 헤더·열 위치 및 C열('완료'-&gt;'숙제완료')·D열/K열 오염·10/26 및 10/27 누락을 1회 일괄(Bulk) 정밀 보정
 function alignLearningRecordColumnsBulk_(sheet) {
   if (!sheet) return { processed: 0, shifted: 0, cleaned: 0, resultRows: 0 };
   vocabStyleRecordSheet_(sheet);
@@ -4429,7 +4539,6 @@ function alignLearningRecordColumnsBulk_(sheet) {
 
   for (var i = 0; i &lt; rawData.length; i++) {
     var r = rawData[i];
-    // 열 밀림 판별: B열에 날짜 패턴이 있고 C열이 날짜가 아닌 경우 (구버전 타임스탬프 삽입으로 한 칸씩 밀린 행)
     var isShifted = isLearningRecordDatePattern_(r[1]) &amp;&amp; !isLearningRecordDatePattern_(r[2]);
     if (isShifted) {
       shiftedCount++;
@@ -4439,7 +4548,6 @@ function alignLearningRecordColumnsBulk_(sheet) {
       if (!nameVal) continue;
       if (!shiftedStudentMap[nameVal]) shiftedStudentMap[nameVal] = [];
 
-      // 트레이닝 열 탐색 (11열 우선, 없으면 10열)
       var trName = String(r[11] || r[10] || "").trim();
       var trDetail = String(r[12] || r[11] || "").trim();
       var trErr = (r[13] !== "" &amp;&amp; r[13] !== undefined) ? r[13] : r[12];
@@ -4476,33 +4584,13 @@ function alignLearningRecordColumnsBulk_(sheet) {
           rate: r[8],
           wrongWords: String(r[17] || r[14] || "").trim()
         });
-      } else {
-        if (r[5]) {
-          shiftedStudentMap[nameVal].push({
-            date: dateVal,
-            type: "진단",
-            level: vocabNormLevel_(r[4]),
-            book: String(r[5] || "").trim(),
-            score: r[9]
-          });
-        }
-        if (trName) {
-          shiftedStudentMap[nameVal].push({
-            date: dateVal,
-            type: "트레이닝",
-            training: trName,
-            detail: trDetail,
-            errors: trErr,
-            understanding: trUnd
-          });
-        }
       }
     } else {
       var rDateStr = r[0] ? vocabFmtDate_(r[0]) : "";
       var rNameClean = String(r[1] || "").trim().replace(/\s+/g, "");
       var mStr = String(r[12] || "").trim();
 
-      // [0] 이전 테스트용 하드코딩 10/26 가짜 행(박지운, 김가온, 유예성, 김지원 및 가짜 차시 3건) 완전 제거
+      // [0] 이전 테스트용 하드코딩 10/26 가짜 행 완전 제거
       if (rDateStr.indexOf("-10-26") !== -1) {
         if (rNameClean === "박지운" || rNameClean === "김가온" || rNameClean === "유예성" || rNameClean === "김지원" ||
             (rNameClean === "김주은" &amp;&amp; mStr === "어휘 2단계 20차시") ||
@@ -4518,37 +4606,44 @@ function alignLearningRecordColumnsBulk_(sheet) {
       // 1) C열(숙제현황): "완료" -&gt; "숙제완료", "미완료" -&gt; "숙제미완"
       var rawHw = String(r[2] || "").trim();
       var normHw = vocabNormHwStatus_(rawHw);
-      if (rawHw !== normHw) {
-        r[2] = normHw;
-        cleanedCount++;
-      }
+      if (rawHw !== normHw) { r[2] = normHw; cleanedCount++; }
       // 2) D열(성실발자국)에 F열(도서명)이 그대로 중복 복사된 오염 제거
       var dStr = String(r[3] || "").trim();
       var fStr = String(r[5] || "").trim();
-      if (dStr &amp;&amp; fStr &amp;&amp; dStr === fStr) {
-        r[3] = "";
-        cleanedCount++;
-      }
-      // 3) E열(레벨구분) 정규화 ("4-4" -&gt; "4레벨", "기초 씨앗" -&gt; "기초")
+      if (dStr &amp;&amp; fStr &amp;&amp; dStr === fStr) { r[3] = ""; cleanedCount++; }
+      // 3) E열(레벨구분) 정규화
       var rawLv = String(r[4] || "").trim();
       var normLv = vocabNormLevel_(rawLv);
-      if (rawLv !== normLv) {
-        r[4] = normLv;
-        cleanedCount++;
-      }
+      if (rawLv !== normLv) { r[4] = normLv; cleanedCount++; }
       // 4) K열(독서발자국)에 M열(권수/차시)이 그대로 중복 복사된 오염 제거
       var kStr = String(r[10] || "").trim();
-      if (kStr &amp;&amp; mStr &amp;&amp; kStr === mStr) {
-        r[10] = "";
-        cleanedCount++;
-      }
-      // 5) O열(이해도) 정규화 ("어려웠어요" -&gt; "아직 헷갈려요")
+      if (kStr &amp;&amp; mStr &amp;&amp; kStr === mStr) { r[10] = ""; cleanedCount++; }
+      // 5) O열(이해도) 정규화
       var rawUnd = String(r[14] || "").trim();
       var normUnd = vocabNormUnderstanding_(rawUnd);
-      if (rawUnd !== normUnd) {
-        r[14] = normUnd;
+      if (rawUnd !== normUnd) { r[14] = normUnd; cleanedCount++; }
+
+      // 6) 트레이닝(L열/Col 11)과 권수/차시(M열/Col 12) 정규화 및 분리
+      var trCol = String(r[11] || "").trim();
+      var dtCol = String(r[12] || "").trim();
+      if (/^(복합|비문학|문학|문법)/.test(trCol)) {
+        if (!dtCol || dtCol === trCol) dtCol = trCol;
+        trCol = "문해력트레이닝";
+        cleanedCount++;
+      } else if (/^(\d+권|읽기|정독)/.test(trCol)) {
+        if (!dtCol || dtCol === trCol) dtCol = trCol;
+        trCol = "읽기트레이닝";
+        cleanedCount++;
+      } else if (/^독해/.test(trCol) &amp;&amp; trCol !== "독해밀도") {
+        if (!dtCol || dtCol === trCol) dtCol = trCol;
+        trCol = "독해트레이닝";
         cleanedCount++;
       }
+      dtCol = dtCol.replace(/^문해력트레이닝\s*/, "").replace(/^읽기트레이닝\s*/, "").replace(/일차차시/g, "11일차").replace(/(?:차시)+/g, "차시").trim();
+      if (trCol === dtCol &amp;&amp; (trCol === "문해력트레이닝" || trCol === "읽기트레이닝")) dtCol = "";
+      r[11] = trCol;
+      r[12] = dtCol;
+
       alignedData.push(r);
     }
   }
@@ -4560,6 +4655,13 @@ function alignLearningRecordColumnsBulk_(sheet) {
       var sn = sNames[s];
       vocabUpsertSingleStudentDayRecordsInMemory_(alignedData, sn, shiftedStudentMap[sn]);
     }
+  }
+
+  // [파편화 행 병합 (송한비 10줄-&gt;1줄, 심하윤 5줄-&gt;1줄, 정유하 9줄-&gt;2줄, 강동하 2줄-&gt;1줄, 이현우 2줄-&gt;1줄)]
+  var deduplicatedData = deduplicateLearningRecordsInMemory_(alignedData);
+  if (deduplicatedData.length !== alignedData.length) {
+    cleanedCount += (alignedData.length - deduplicatedData.length);
+    alignedData = deduplicatedData;
   }
 
   // 10/26(월) 수업완료 학생 기록이 누락되어 있으면 메모리에서 즉시 1회 일괄(Bulk) 복원
@@ -4578,6 +4680,49 @@ function alignLearningRecordColumnsBulk_(sheet) {
     }
   }
 
+  // [10/27(화) 누락 학생 복원 (학생수업관리/누적일일수업관리 및 오늘 출석부에서 일괄 수집)]
+  var ss = sheet.getParent();
+  var sheetAcc = ss.getSheetByName("학생수업관리") || ss.getSheetByName("누적일일수업관리");
+  var sheetDaily = ss.getSheetByName("오늘 출석부") || ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘출석부");
+  var syncCandidateRows = [];
+
+  if (sheetAcc &amp;&amp; sheetAcc.getLastRow() &gt;= 2) {
+    var accScan = Math.min(300, sheetAcc.getLastRow() - 1);
+    var accVals = sheetAcc.getRange(2, 1, accScan, 11).getDisplayValues();
+    for (var a = 0; a &lt; accVals.length; a++) {
+      var aDate = String(accVals[a][0] || "").trim();
+      if (aDate.indexOf("10/27") === 0 || aDate.indexOf("10/28") === 0) {
+        syncCandidateRows.push(accVals[a]);
+      }
+    }
+  }
+  if (sheetDaily &amp;&amp; sheetDaily.getLastRow() &gt;= 2) {
+    var dScan = sheetDaily.getLastRow() - 1;
+    var dVals = sheetDaily.getRange(2, 1, dScan, 11).getDisplayValues();
+    for (var b = 0; b &lt; dVals.length; b++) {
+      var bDate = String(dVals[b][0] || "").trim();
+      if (bDate.indexOf("10/27") === 0 || bDate.indexOf("10/28") === 0) {
+        syncCandidateRows.push(dVals[b]);
+      }
+    }
+  }
+
+  for (var c = 0; c &lt; syncCandidateRows.length; c++) {
+    var cRow = syncCandidateRows[c];
+    var cName = String(cRow[2] || "").trim().replace(/\s+/g, "");
+    if (!cName || cName === "이름") continue;
+    var cIso = parseDailyDateToIso_(cRow[0]);
+    var cRecs = parseDailyRowToLearningRecords_(cRow, cIso);
+    if (cRecs &amp;&amp; cRecs.length &gt; 0) {
+      var cRes = vocabUpsertSingleStudentDayRecordsInMemory_(alignedData, cName, cRecs);
+      if (cRes.added &gt; 0 || cRes.updated &gt; 0) cleanedCount++;
+    }
+  }
+
+  // 사후 재중복 방지
+  var finalDedup = deduplicateLearningRecordsInMemory_(alignedData);
+  alignedData = finalDedup;
+
   if (shiftedCount &gt; 0 || cleanedCount &gt; 0) {
     if (rawData.length &gt; alignedData.length) {
       sheet.getRange(2, 1, rawData.length, 18).clearContent();
@@ -4592,7 +4737,6 @@ function alignLearningRecordColumnsBulk_(sheet) {
   return { processed: rawData.length, shifted: shiftedCount, cleaned: cleanedCount, resultRows: alignedData.length };
 }
 
-// [메뉴 13번] [학습기록] 헤더 및 열 정렬 1회 일괄(Bulk) 보정
 function fixAndAlignLearningRecordHeadersAndRowsBulk() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheetRec = vocabEnsureRecordSheet_(ss);
@@ -4639,17 +4783,19 @@ function parseDailyDateToIso_(dateStr) {
 function parseDailyRowToLearningRecords_(row, isoDate) {
   var colD = String(row[3] || "").replace(/\s*\r?\n\s*/g, " ").trim();
   var status = String(row[4] || "").trim();
-  var colJ = String(row[9] || "").trim();
-  var colK = String(row[10] || "").trim();
+  var colH = String(row[7] || "").trim(); // Col H: 숫자 (예: 5-1)
+  var colI = String(row[8] || "").trim(); // Col I: 이벤트 (예: 5-1 초록 살아갈 용기에 대하여)
+  var colJ = String(row[9] || "").trim(); // Col J: 진단글쓰기/특별수업
+  var colK = String(row[10] || "").trim(); // Col K: 수업내용 및 특이사항
 
   // 결석·대기·보강대기·휴강 행 및 단순 결석 사유 메모는 [학습기록]에 넣지 않음
   if (status === "결석" || status === "대기" || status === "보강대기" || status === "휴강" || status === "취소") {
     return [];
   }
-  if (!colJ &amp;&amp; /^(당일\s*채널|결석\s*[-:]|보강\s*[-:]|연장\s*\()/.test(colK)) {
+  if (!colJ &amp;&amp; !colI &amp;&amp; /^(당일\s*채널|결석\s*[-:]|보강\s*[-:]|연장\s*\()/.test(colK)) {
     return [];
   }
-  if (!colJ &amp;&amp; !colK &amp;&amp; status !== "수업완료" &amp;&amp; status !== "보강완료" &amp;&amp; status !== "하원완료") {
+  if (!colJ &amp;&amp; !colK &amp;&amp; !colI &amp;&amp; status !== "수업완료" &amp;&amp; status !== "보강완료" &amp;&amp; status !== "하원완료") {
     return [];
   }
 
@@ -4664,6 +4810,52 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
 
   var booksMap = {};
   var trainings = [];
+
+  // 0. Col I &amp; Col H: 이벤트 / 도서 (강지호 등 H/I열에 기재된 도서명 및 레벨 완벽 파싱)
+  if (colI) {
+    var iEntries = colI.split(/[,;\n]+/).map(function(s) { return s.trim(); }).filter(Boolean);
+    iEntries.forEach(function(entry) {
+      if (/^(코스업|레벨업|진로검사|독서계획표|한자교재|스티커|친구|탐험가|고수|챔피언|마스터|달성)/.test(entry)) {
+        return;
+      }
+      var hasGeulwan = /글완|글쓰기완료|글쓰기완/.test(entry);
+      var raw = entry.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
+      var score = "";
+      var sm = raw.match(/^(.*?[^\d\s])\s*(\d{1,3})\s*(?:점|개)?$/);
+      if (sm) {
+        raw = sm[1].trim();
+        score = parseInt(sm[2], 10);
+      }
+      var level = "";
+      var lm = raw.match(/^([1-6](?:-[1-4])?|기초(?:\s*(?:씨앗|새싹|줄기|열매|꽃))?)\s*(?:초록띠?|노랑띠?|파랑띠?|주황띠?|빨강띠?|품띠|검정띠?|용띠)?\s*(.*)$/);
+      var title = raw;
+      if (lm) {
+        level = vocabNormLevel_(lm[1].trim());
+        title = lm[2].trim();
+      } else if (colH &amp;&amp; /^[1-6](?:-[1-4])?$/.test(colH)) {
+        level = vocabNormLevel_(colH);
+      }
+      title = title.replace(/^(?:초록띠?|노랑띠?|파랑띠?|주황띠?|빨강띠?|품띠|검정띠?|용띠)\s+/, "").trim();
+      if (title &amp;&amp; title.length &gt;= 2) {
+        var normKey = vocabNormBook_(title);
+        var foundKey = null;
+        for (var bk in booksMap) {
+          if (areBooksFuzzyMatch_(bk, normKey)) {
+            foundKey = bk;
+            break;
+          }
+        }
+        if (foundKey) {
+          if (level &amp;&amp; !booksMap[foundKey].level) booksMap[foundKey].level = level;
+          if (score !== "" &amp;&amp; !booksMap[foundKey].score) booksMap[foundKey].score = score;
+          if (hasGeulwan &amp;&amp; booksMap[foundKey].notes.indexOf("글완") === -1) booksMap[foundKey].notes.push("글완");
+        } else {
+          var initNotes = hasGeulwan ? ["글완"] : [];
+          booksMap[normKey] = { title: title, level: level, score: score !== "" ? score : "", notes: initNotes };
+        }
+      }
+    });
+  }
 
   // 1. Col J: 진단글쓰기 / 특별수업
   if (colJ) {
@@ -4686,9 +4878,22 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
       }
       title = title.replace(/^(?:초록띠?|노랑띠?|파랑띠?|주황띠?|빨강띠?|품띠|검정띠?|용띠)\s+/, "").trim();
       if (title) {
-        var normKey = title.replace(/\s+/g, "").toLowerCase();
+        var normKey = vocabNormBook_(title);
+        var foundKey = null;
+        for (var bk in booksMap) {
+          if (areBooksFuzzyMatch_(bk, normKey)) {
+            foundKey = bk;
+            break;
+          }
+        }
         var initNotes = hasGeulwan ? ["글완"] : [];
-        booksMap[normKey] = { title: title, level: level, score: score !== "" ? score : "", notes: initNotes };
+        if (foundKey) {
+          if (level &amp;&amp; !booksMap[foundKey].level) booksMap[foundKey].level = level;
+          if (score !== "" &amp;&amp; !booksMap[foundKey].score) booksMap[foundKey].score = score;
+          if (hasGeulwan &amp;&amp; booksMap[foundKey].notes.indexOf("글완") === -1) booksMap[foundKey].notes.push("글완");
+        } else {
+          booksMap[normKey] = { title: title, level: level, score: score !== "" ? score : "", notes: initNotes };
+        }
       }
     });
   }
@@ -4727,7 +4932,7 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
         return;
       }
 
-      // 어휘 요약 (신규 포맷: [어휘] 초5~6/학습10개/오답4개/재학습4개/ 『초5~6 필수어휘 01회차』 오답:... 및 구 포맷 모두 지원)
+      // 어휘 요약
       if (part.indexOf("[어휘]") === 0) {
         var vm1 = part.match(/^\[어휘\]\s*([^\/]+)\/학습\s*(\d+)개\/오답\s*(\d+)개(?:\/재학습\s*\d+개)?\/?\s*(?:『(.*?)』|([^\s]+))(?:\s*오답\s*:\s*(.*))?$/);
         if (vm1) {
@@ -4750,16 +4955,18 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
           });
           return;
         }
-        var vm2 = part.match(/^\[어휘\]\s*(?:『(.*?)』|(.*?))\s*(\d+)\/(\d+)\((\d+)%\)(?:\s*오답\s*:\s*(.*))?$/);
+        var vm2 = part.match(/^\[어휘\]\s*(?:『(.*?)』|(.*?))\s*(\d+)\/(\d+)\((?:\d+)%\)(?:\s*오답\s*:\s*(.*))?$/);
         if (vm2) {
           var bTitle = (vm2[1] || vm2[2] || "").trim();
+          var bTot = parseInt(vm2[4], 10);
+          var bCor = parseInt(vm2[3], 10);
           vocabRecords.push({
             date: isoDate,
             type: "어휘퀴즈",
             book: bTitle,
-            total: parseInt(vm2[4], 10),
-            firstCorrect: parseInt(vm2[3], 10),
-            rate: parseInt(vm2[5], 10),
+            total: bTot,
+            firstCorrect: bCor,
+            rate: bTot &gt; 0 ? Math.round((bCor / bTot) * 100) : 0,
             wrongWords: vm2[6] ? vocabCleanWrongWordsStr_(vm2[6]) : ""
           });
           return;
@@ -4791,6 +4998,11 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
           errCount = parseInt(errM2[2], 10);
         }
         var cleanDetail = rawDetail.replace(/\s*\(\d+\s*\/\s*\d+\)/, "").trim();
+        if (cleanDetail.indexOf(",") !== -1) {
+          var subParts = cleanDetail.split(",").map(function(s) { return s.trim(); }).filter(Boolean);
+          cleanDetail = subParts[subParts.length - 1];
+        }
+        cleanDetail = cleanDetail.replace(/일차차시/g, "11일차").replace(/(?:차시)+/g, "차시").trim();
 
         trainings.push({
           date: isoDate,
@@ -4845,15 +5057,22 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
         if (bracketTags.length) noteArr.push(bracketTags.join(" "));
         if (inlineFp) noteArr.push(inlineFp);
 
-        var normKey2 = candTitle.replace(/\s+/g, "").toLowerCase();
-        if (!booksMap[normKey2]) {
-          booksMap[normKey2] = { title: candTitle, level: "", score: "", notes: noteArr };
-        } else {
+        var normKey2 = vocabNormBook_(candTitle);
+        var foundKey2 = null;
+        for (var bk in booksMap) {
+          if (areBooksFuzzyMatch_(bk, normKey2)) {
+            foundKey2 = bk;
+            break;
+          }
+        }
+        if (foundKey2) {
           for (var na = 0; na &lt; noteArr.length; na++) {
-            if (booksMap[normKey2].notes.indexOf(noteArr[na]) === -1) {
-              booksMap[normKey2].notes.push(noteArr[na]);
+            if (booksMap[foundKey2].notes.indexOf(noteArr[na]) === -1) {
+              booksMap[foundKey2].notes.push(noteArr[na]);
             }
           }
+        } else {
+          booksMap[normKey2] = { title: candTitle, level: "", score: "", notes: noteArr };
         }
 
         // 인라인 독서발자국에 '어휘퀴즈 풀었어요.(10/7)' 형태가 있으면 어휘점수도 자동 추출
@@ -4865,7 +5084,7 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
             vocabRecords.push({
               date: isoDate,
               type: "어휘퀴즈",
-              level: booksMap[normKey2].level || "",
+              level: (foundKey2 ? booksMap[foundKey2].level : booksMap[normKey2].level) || "",
               book: candTitle,
               total: ivTot,
               firstCorrect: ivCor,
@@ -4883,7 +5102,7 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
     step4Memo = colD;
   }
 
-  // 수업완료/보강완료인데 J열·K열이 비어있는 학생(국어·정독·독서·교재확인 등)도 누락 없이 생성
+  // 수업완료/보강완료인데 J열·K열이 비어있는 학생도 누락 없이 생성
   if (!hwStatus &amp;&amp; !step1Memo &amp;&amp; !step2Memo &amp;&amp; !step3Memo &amp;&amp; !step4Memo &amp;&amp; !reflection &amp;&amp;
       Object.keys(booksMap).length === 0 &amp;&amp; trainings.length === 0 &amp;&amp; vocabRecords.length === 0) {
     if (status === "수업완료" || status === "보강완료" || status === "하원완료") {
@@ -4996,7 +5215,6 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
       while (clone.length &lt; 18) clone.push("");
       clone[0] = dObj;
       clone[1] = name;
-      // 기존 행 병합 시에도 C열('완료'-&gt;'숙제완료'), E열 레벨 정규화, D열 도서명 오염, K열 차시 오염 즉시 정화
       clone[2] = vocabNormHwStatus_(clone[2]);
       if (clone[3] &amp;&amp; clone[5] &amp;&amp; String(clone[3]).trim() === String(clone[5]).trim()) clone[3] = "";
       clone[4] = vocabNormLevel_(clone[4]);
@@ -5035,7 +5253,7 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         var targetIdx = -1;
         for (var s = 0; s &lt; studentRows.length; s++) {
           var rowBook = vocabNormBook_(studentRows[s][5]);
-          if ((normBook &amp;&amp; rowBook === normBook) || (!studentRows[s][5] &amp;&amp; studentRows[s][6] === "")) {
+          if ((normBook &amp;&amp; areBooksFuzzyMatch_(rowBook, normBook)) || (!studentRows[s][5] &amp;&amp; studentRows[s][6] === "")) {
             targetIdx = s;
             break;
           }
@@ -5059,7 +5277,7 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         var dIdxTarget = -1;
         for (var s2 = 0; s2 &lt; studentRows.length; s2++) {
           var existBook = vocabNormBook_(studentRows[s2][5]);
-          if (normDBook &amp;&amp; existBook === normDBook) {
+          if (normDBook &amp;&amp; areBooksFuzzyMatch_(existBook, normDBook)) {
             dIdxTarget = s2;
             break;
           }
@@ -5089,8 +5307,8 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         var tIdxTarget = -1;
         for (var s4 = 0; s4 &lt; studentRows.length; s4++) {
           var existTr = String(studentRows[s4][11] || "").trim();
-          var existDt = String(studentRows[s4][12] || "").trim();
-          if (existTr === trName &amp;&amp; existDt === trDetail &amp;&amp; trName !== "") {
+          // 동일 트레이닝 종목(문해력트레이닝 등)이면 같은 줄에 갱신/병합하여 불필요한 줄바꿈 방지
+          if (existTr === trName &amp;&amp; trName !== "") {
             tIdxTarget = s4;
             break;
           }
@@ -5101,7 +5319,12 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         if (tIdxTarget === -1) tIdxTarget = studentRows.length;
         var tRow = ensureRow(tIdxTarget);
         if (trName) tRow[11] = trName;
-        if (trDetail) tRow[12] = trDetail;
+        if (trDetail) {
+          var cleanDt = trDetail.replace(/^문해력트레이닝\s*/, "").replace(/^읽기트레이닝\s*/, "").trim();
+          if (cleanDt.length &gt;= String(tRow[12] || "").length) {
+            tRow[12] = cleanDt;
+          }
+        }
         var parsedErr = vocabParseErrorNum_(it.errors);
         if (parsedErr !== "") tRow[13] = parsedErr;
         if (it.understanding) tRow[14] = vocabNormUnderstanding_(it.understanding);
@@ -5136,7 +5359,6 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
   return { added: addedCount, updated: updatedCount };
 }
 
-// 방식 1: (날짜, 이름) 기준 첫 줄 가로 병합 + 최신 기록을 무조건 시트 최상단(2행)에 누적 기록! (단일 학생)
 function vocabUpsertStudentDayRecords_(sheet, name, records) {
   if (!name || !records || !records.length) return { added: 0, updated: 0 };
   var lastRow = sheet.getLastRow();

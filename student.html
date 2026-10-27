@@ -3874,7 +3874,13 @@
         return;
       }
 
-      d.items.push({ field, vol, session, errors });
+      // 기존 동일 종목이 있으면 갱신(중복 누적 방지), 없으면 추가
+      const existingIdx = d.items.findIndex(it => (it.field || "복합") === field);
+      if (existingIdx !== -1) {
+        d.items[existingIdx] = { field, vol, session, errors };
+      } else {
+        d.items.push({ field, vol, session, errors });
+      }
       
       // Reset draft inputs
       d.session = "";
@@ -3915,7 +3921,13 @@
         return;
       }
 
-      d.items.push({ field, errors, fixed });
+      // 기존 동일 종목이 있으면 갱신(중복 누적 방지), 없으면 추가
+      const existingIdx = d.items.findIndex(it => (it.field || "복합") === field);
+      if (existingIdx !== -1) {
+        d.items[existingIdx] = { field, errors, fixed };
+      } else {
+        d.items.push({ field, errors, fixed });
+      }
 
       // Reset draft inputs
       d.errors = "";
@@ -4240,11 +4252,23 @@
             items.push({ field: d.field || "복합", vol: d.vol || "1단계", session: d.session, errors: d.errors });
           }
 
-          const itemStrs = items.map(it => {
+          // 중복 누적 방지: 종목별로 최종 1개씩만 유지
+          const litMap = {};
+          items.forEach(it => {
+            const k = it.field || "복합";
+            litMap[k] = it;
+          });
+          const uniqueItems = Object.values(litMap);
+
+          const itemStrs = uniqueItems.map(it => {
             const sub = [];
             if (it.field) sub.push(it.field);
             if (it.vol) sub.push(it.vol);
-            if (it.session) sub.push(`${it.session}차시`);
+            if (it.session) {
+              const sClean = String(it.session).trim();
+              const sFormatted = (sClean.indexOf("차시") !== -1 || sClean.indexOf("일차") !== -1) ? sClean : `${sClean}차시`;
+              sub.push(sFormatted);
+            }
             if (it.errors) sub.push(`(${it.errors})`);
             return sub.join(" ");
           }).filter(Boolean);
@@ -4263,7 +4287,14 @@
             items.push({ field: d.field || "복합", errors: d.errors, fixed: d.fixed });
           }
 
-          const itemStrs = items.map(it => {
+          const fixMap = {};
+          items.forEach(it => {
+            const k = it.field || "복합";
+            fixMap[k] = it;
+          });
+          const uniqueFixItems = Object.values(fixMap);
+
+          const itemStrs = uniqueFixItems.map(it => {
             const sub = [];
             if (it.field) sub.push(it.field);
             if (it.errors) sub.push(`오답:${it.errors}`);

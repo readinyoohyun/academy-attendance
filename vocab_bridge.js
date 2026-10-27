@@ -565,8 +565,20 @@
         if (!items.length) {
           out.push({ date: date, type: '트레이닝', training: t, detail: '', errors: 0, understanding: under, literacyMemo: literacyMemo });
         } else {
+          // 중복 누적 방지: 종목별(비문학, 문학, 복합 등)로 최종 확정된 1건만 단일 레코드로 정제
+          var litMap = {};
           items.forEach(function (it) {
-            var det = [it.field, it.vol, it.session ? it.session + '차시' : ''].filter(Boolean).join(' ');
+            var k = it.field || '복합';
+            litMap[k] = it;
+          });
+          var uniqueItems = Object.keys(litMap).map(function(k) { return litMap[k]; });
+          uniqueItems.forEach(function (it) {
+            var rawSess = String(it.session || "").trim();
+            var sessPart = "";
+            if (rawSess) {
+              sessPart = (rawSess.indexOf("차시") !== -1 || rawSess.indexOf("일차") !== -1) ? rawSess : (rawSess + "차시");
+            }
+            var det = [it.field, it.vol, sessPart].filter(Boolean).join(' ');
             out.push({
               date: date,
               type: '트레이닝',
@@ -581,12 +593,18 @@
       } else if (t === '오답수정+선지분석') {
         var its = Array.isArray(d.items) ? d.items.slice() : [];
         if ((d.errors || d.fixed || d.field) && !its.some(function (it) { return it.field === d.field && it.errors === d.errors && it.fixed === d.fixed; })) {
-          its.push({ field: d.field || '복합', errors: d.errors, fixed: d.fixed });
+          items.push({ field: d.field || '복합', errors: d.errors, fixed: d.fixed });
         }
         if (!its.length) {
           out.push({ date: date, type: '트레이닝', training: t, detail: '', errors: 0, understanding: under, literacyMemo: literacyMemo });
         } else {
+          var fixMap = {};
           its.forEach(function (it) {
+            var k = it.field || '복합';
+            fixMap[k] = it;
+          });
+          var uniqueFixItems = Object.keys(fixMap).map(function(k) { return fixMap[k]; });
+          uniqueFixItems.forEach(function (it) {
             var det = [it.field, it.fixed ? '수정:' + it.fixed : ''].filter(Boolean).join(' ');
             out.push({
               date: date,
@@ -600,7 +618,12 @@
           });
         }
       } else {
-        var detailStr = [d.vol, d.session ? d.session + '차시' : ''].filter(Boolean).join(' ');
+        var rawSess2 = String(d.session || "").trim();
+        var sessPart2 = "";
+        if (rawSess2) {
+          sessPart2 = (rawSess2.indexOf("차시") !== -1 || rawSess2.indexOf("일차") !== -1) ? rawSess2 : (rawSess2 + "차시");
+        }
+        var detailStr = [d.vol, sessPart2].filter(Boolean).join(' ');
         out.push({
           date: date,
           type: '트레이닝',
