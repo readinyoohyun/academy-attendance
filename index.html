@@ -4463,6 +4463,127 @@ function deduplicateLearningRecordsInMemory_(rows) {
       var trName = String(row[11] || "").trim();
       var trDetail = String(row[12] || "").trim();
 
+      // 트레이닝명과 세부차시가 뒤바뀌거나 오염된 경우 정규화
+      if (/^(복합|비문학|문학|문법)/.test(trName)) {
+        if (!trDetail || trDetail === trName) trDetail = trName;
+        trName = "문해력트레이닝";
+      } else if (/^(\d+권|읽기|정독)/.test(trName)) {
+        if (!trDetail || trDetail === trName) trDetail = trName;
+        trName = "읽기트레이닝";
+      } else if (/^독해/.test(trName) &amp;&amp; trName !== "독해밀도") {
+        if (!trDetail || trDetail === trName) trDetail = trName;
+        trName = "독해트레이닝";
+      }
+
+      trDetail = trDetail
+        .replace(/^문해력트레이닝\s*/, "")
+        .replace(/^읽기트레이닝\s*/, "")
+        .replace(/일차차시/g, "일차")
+        .replace(/(?:차시)+/g, "차시")
+        .trim();
+
+      if (trName === trDetail &amp;&amp; (trName === "문해력트레이닝" || trName === "읽기트레이닝")) {
+        trDetail = "";
+      }
+
+      if (normBook) {
+        var foundBKey = null;
+        for (var existB in bookMap) {
+          if (areBooksFuzzyMatch_(existB, normBook)) {
+            foundBKey = existB;
+            break;
+          }
+        }
+        if (!foundBKey) {
+          var bClone = row.slice();
+          bClone[11] = trName;
+          bClone[12] = trDetail;
+          bookMap[normBook] = bClone;
+        } else {
+          var curB = bookMap[foundBKey];
+          if (row[4] &amp;&amp; !curB[4]) curB[4] = row[4];
+          if (row[6] !== "" &amp;&amp; !curB[6]) curB[6] = row[6];
+          if (row[7] !== "" &amp;&amp; !curB[7]) curB[7] = row[7];
+          if (row[8] !== "" &amp;&amp; !curB[8]) curB[8] = row[8];
+          if (row[9] !== "" &amp;&amp; !curB[9]) curB[9] = row[9];
+          if (row[15] &amp;&amp; !curB[15]) curB[15] = row[15];
+          if (bookName.length &gt; curB[5].length) curB[5] = bookName;
+        }
+      } else if (trName) {
+        if (!trMap[trName]) {
+          var tClone = row.slice();
+          tClone[11] = trName;
+          tClone[12] = trDetail;
+          trMap[trName] = tClone;
+        } else {
+          var curT = trMap[trName];
+          if (trDetail.length &gt; String(curT[12] || "").length || (row[14] &amp;&amp; !curT[14])) {
+            curT[12] = trDetail;
+          }
+          if (row[13] !== "" &amp;&amp; row[13] !== 0) curT[13] = row[13];
+          if (row[14] &amp;&amp; !curT[14]) curT[14] = row[14];
+          if (row[15] &amp;&amp; !curT[15]) curT[15] = row[15];
+        }
+      } else {
+        otherRows.push(row);
+      }
+    }
+
+    var books = Object.keys(bookMap).map(function(k) { return bookMap[k]; });
+    var trainings = Object.keys(trMap).map(function(k) { return trMap[k]; });
+
+    if (books.length &gt; 0 &amp;&amp; trainings.length &gt; 0) {
+      var firstB = books[0];
+      var firstT = trainings.shift();
+      firstB[11] = firstT[11];
+      firstB[12] = firstT[12];
+      firstB[13] = firstT[13];
+      firstB[14] = firstT[14];
+      if (firstT[15] &amp;&amp; !firstB[15]) firstB[15] = firstT[15];
+      out.push(firstB);
+      for (var b = 1; b &lt; books.length; b++) out.push(books[b]);
+      for (var t = 0; t &lt; trainings.length; t++) out.push(trainings[t]);
+    } else {
+      for (var b2 = 0; b2 &lt; books.length; b2++) out.push(books[b2]);
+      for (var t2 = 0; t2 &lt; trainings.length; t2++) out.push(trainings[t2]);
+    }
+    for (var o = 0; o &lt; otherRows.length; o++) out.push(otherRows[o]);
+  }
+  return out;
+}
+
+// [핵심 규정 준수] [학습기록] 18열 시트의 헤더·열 위치 및 C열('완료'-&gt;'숙제완료')·D열/K열 오염·10/26 누락을 1회 일괄(Bulk) 정밀 보정
+function deduplicateLearningRecordsInMemory_(rows) {
+  var groups = {};
+  for (var i = 0; i &lt; rows.length; i++) {
+    var r = rows[i];
+    var dKey = r[0] ? vocabFmtDate_(r[0]) : "";
+    var nKey = String(r[1] || "").trim().replace(/\s+/g, "");
+    var key = dKey + "||" + nKey;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
+  }
+
+  var out = [];
+  var groupKeys = Object.keys(groups);
+  for (var g = 0; g &lt; groupKeys.length; g++) {
+    var grp = groups[groupKeys[g]];
+    if (grp.length === 1) {
+      out.push(grp[0]);
+      continue;
+    }
+
+    var trMap = {};
+    var bookMap = {};
+    var otherRows = [];
+
+    for (var j = 0; j &lt; grp.length; j++) {
+      var row = grp[j];
+      var bookName = String(row[5] || "").trim();
+      var normBook = vocabNormBook_(bookName);
+      var trName = String(row[11] || "").trim();
+      var trDetail = String(row[12] || "").trim();
+
       if (normBook) {
         var foundBKey = null;
         for (var existB in bookMap) {
