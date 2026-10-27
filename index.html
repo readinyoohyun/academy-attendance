@@ -1196,7 +1196,7 @@ function isSameStudentNameInGAS(name1, name2) {
   return false;
 }
 
-function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
+function processSingleUpdate(ss, tab, row, field, value, name, date, time, skipRealtimeSync) {
   if (tab === "dailyLogs" || tab === "출결보강관리" || tab === "오늘 출석부" || tab === "오늘출석부") {
     var candidateDailySheets = ["오늘 출석부", "출결보강관리", "오늘출석부"];
     var sheet = null;
@@ -1234,10 +1234,8 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
           targetRow = matchedRow;
         } else if (targetRow &gt;= 3 &amp;&amp; targetRow &lt;= lastRow) {
           // 이름으로 매칭되지 않았더라도 클라이언트가 넘겨준 row가 유효하면 해당 행 사용
-          // (업데이트 작업 시 절대 lastRow + 1로 새 행을 추가하지 않음!)
         } else {
-          // 이름도 못 찾고 row도 유효하지 않으면 잘못된 업데이트이므로 중단
-          return;
+          return -1;
         }
       }
 
@@ -1259,13 +1257,15 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
             throw err;
           }
         }
-        if (field === "number" || field === "event" || field === "grammarDone" || field === "contents" || 
-            (field === "status" &amp;&amp; (value === "수업완료" || value === "보강완료" || value === "하원완료" || value === "하원" || value === "귀가"))) {
-          syncDailyRowToLearningRecordRealtime_(sheet, targetRow);
+        var needsSync = (field === "number" || field === "event" || field === "grammarDone" || field === "contents" || 
+            (field === "status" &amp;&amp; (value === "수업완료" || value === "보강완료" || value === "하원완료" || value === "하원" || value === "귀가")));
+        if (needsSync &amp;&amp; !skipRealtimeSync) {
           accumulateDailyEventToMemberAnalysis(sheet, targetRow);
         }
+        return needsSync ? targetRow : -1;
       }
     }
+    return -1;
   } else if (tab === "students" || tab === "전체시간표") {
     var sheet = ss.getSheetByName("전체시간표") || ss.getSheetByName("전체 시간표");
     if (sheet) {
@@ -1378,13 +1378,13 @@ function processSingleUpdate(ss, tab, row, field, value, name, date, time) {
 }
 
 // 테블릿/웹앱에서 하원완료 또는 수업내용 수정 시 [학습기록] 18열 시트에 즉시 실시간 동기화
-function syncDailyRowToLearningRecordRealtime_(sheetDaily, rowNumber) {
+function syncDailyRowToLearningRecordRealtime_(sheetDaily, rowNumber, optRowValues) {
   if (!sheetDaily || rowNumber &lt; 3) return;
   try {
     var ss = sheetDaily.getParent();
     var sheetRec = vocabEnsureRecordSheet_(ss);
     if (!sheetRec) return;
-    var rowValues = sheetDaily.getRange(rowNumber, 1, 1, 11).getValues()[0];
+    var rowValues = optRowValues || sheetDaily.getRange(rowNumber, 1, 1, 11).getValues()[0];
     var dateStr = String(rowValues[0] || "").trim();
     var name = String(rowValues[2] || "").trim().replace(/\s+/g, "");
     if (!name) return;
@@ -1420,13 +1420,7 @@ function doPost(e) {
         var name = postData.name;
         
         var folderIterator = DriveApp.getFoldersByName("리드인_분석표");
-        var folder;
-        if (folderIterator.hasNext()) {
-          folder = folderIterator.next();
-        } else {
-          folder = DriveApp.createFolder("리드인_분석표");
-        }
-        
+        var folder = folderIterator.hasNext() ? folderIterator.next() : DriveApp.createFolder("리드인_분석표");
         var dateStr = new Date().toLocaleDateString("ko-KR").replace(/ /g, "").replace(/\./g, "-");
         
         var marathonUrl = "";
@@ -1455,44 +1449,42 @@ function doPost(e) {
           postReadingUrl = file3.getUrl();
         }
         
-        if (marathonUrl) sheet.getRange(row, 37).setValue(marathonUrl);
-        if (activityUrl) sheet.getRange(row, 38).setValue(activityUrl);
-        if (postReadingUrl) sheet.getRange(row, 39).setValue(postReadingUrl);
-        
+        var lidinCols = sheet.getRange(row, 37, 1, 6).getValues()[0];
+        if (marathonUrl) lidinCols[0] = marathonUrl;
+        if (activityUrl) lidinCols[1] = activityUrl;
+        if (postReadingUrl) lidinCols[2] = postReadingUrl;
         if (postData.textData) {
-          if (postData.textData.readingSpeed !== undefined) sheet.getRange(row, 40).setValue(postData.textData.readingSpeed);
-          if (postData.textData.comprehensionScore !== undefined) sheet.getRange(row, 41).setValue(postData.textData.comprehensionScore);
+          if (postData.textData.readingSpeed !== undefined) lidinCols[3] = postData.textData.readingSpeed;
+          if (postData.textData.comprehensionScore !== undefined) lidinCols[4] = postData.textData.comprehensionScore;
         }
-        sheet.getRange(row, 42).setValue(new Date().toLocaleDateString("ko-KR"));
+        lidinCols[5] = new Date().toLocaleDateString("ko-KR");
+        sheet.getRange(row, 37, 1, 6).setValues([lidinCols]);
         
+        var statusLabel = postData.status || "수집완료";
+        var shortDate = (new Date().getMonth() + 1) + "/" + new Date().getDate();
+        var speedVal = (postData.textData &amp;&amp; postData.textData.readingSpeed) || "-";
+        var compVal = (postData.textData &amp;&amp; postData.textData.comprehensionScore) || "-";
+        var summaryEntry = shortDate + " 분석표 " + statusLabel + " (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
+
         // 1. 회원 분석/레벨변동/전화상담 시트 Column M (13) 기록 및 prepend
-        var sheetMember = ss.getSheetByName("월별상담내역") || ss.getSheetByName("회원 분석/레벨변동/전화상담");
+        var sheetMember = getMemberAnalysisSheet(ss);
         if (sheetMember) {
           var memberRowIdx = -1;
           var memberLastRow = sheetMember.getLastRow();
           if (memberLastRow &gt; 1) {
-            var memberNames = sheetMember.getRange(1, 2, memberLastRow, 1).getValues(); // Column B
+            var memberNames = sheetMember.getRange(1, 2, memberLastRow, 1).getValues();
             var matchName = name.replace(/\s+/g, "").toLowerCase();
             for (var rIdx = 1; rIdx &lt; memberNames.length; rIdx++) {
-              var sheetName = String(memberNames[rIdx][0]).replace(/\s+/g, "").toLowerCase();
-              if (sheetName === matchName) {
+              if (String(memberNames[rIdx][0]).replace(/\s+/g, "").toLowerCase() === matchName) {
                 memberRowIdx = rIdx + 1;
                 break;
               }
             }
           }
           if (memberRowIdx !== -1) {
-            var cellMember = sheetMember.getRange(memberRowIdx, 13); // Col M
-            var oldValMember = cellMember.getValue();
-            var statusLabel = postData.status || "수집완료";
-            var dateStr = (new Date().getMonth() + 1) + "/" + new Date().getDate();
-            var speedVal = postData.textData.readingSpeed || "-";
-            var compVal = postData.textData.comprehensionScore || "-";
-            var newValMember = dateStr + " 분석표 " + statusLabel + " (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
-            if (oldValMember &amp;&amp; String(oldValMember).trim() !== "") {
-              newValMember = newValMember + "\n" + oldValMember;
-            }
-            cellMember.setValue(newValMember);
+            var cellMember = sheetMember.getRange(memberRowIdx, 13);
+            var oldValMember = String(cellMember.getValue() || "").trim();
+            cellMember.setValue(oldValMember ? (summaryEntry + "\n" + oldValMember) : summaryEntry);
           }
         }
 
@@ -1502,41 +1494,24 @@ function doPost(e) {
           var briefingLastCol = sheetBriefing.getLastColumn();
           if (briefingLastCol &gt; 0) {
             var headers = sheetBriefing.getRange(1, 1, 1, briefingLastCol).getValues()[0];
-            var currentMonth = (new Date().getMonth() + 1) + "월"; // 예: "8월"
+            var currentMonth = (new Date().getMonth() + 1) + "월";
             var targetColIdx = -1;
             for (var colIdx = 0; colIdx &lt; headers.length; colIdx++) {
               var headerVal = String(headers[colIdx]).trim();
               if (headerVal.indexOf(currentMonth) !== -1 || headerVal === String(new Date().getMonth() + 1)) {
-                targetColIdx = colIdx + 1; // 1-based index
+                targetColIdx = colIdx + 1;
                 break;
               }
             }
-            
-            if (targetColIdx !== -1) {
-              var briefingLastRow = sheetBriefing.getLastRow();
-              if (briefingLastRow &gt; 1) {
-                var briefingNames = sheetBriefing.getRange(1, 2, briefingLastRow, 1).getValues(); // Column B
-                var matchName = name.replace(/\s+/g, "").toLowerCase();
-                var briefingRowIdx = -1;
-                for (var rIdx = 1; rIdx &lt; briefingNames.length; rIdx++) {
-                  var sheetName = String(briefingNames[rIdx][0]).replace(/\s+/g, "").toLowerCase();
-                  if (sheetName === matchName) {
-                    briefingRowIdx = rIdx + 1;
-                    break;
-                  }
-                }
-                
-                if (briefingRowIdx !== -1) {
-                  var cellBriefing = sheetBriefing.getRange(briefingRowIdx, targetColIdx);
-                  var oldValBriefing = cellBriefing.getValue();
-                  var dateStr = (new Date().getMonth() + 1) + "/" + new Date().getDate();
-                  var speedVal = postData.textData.readingSpeed || "-";
-                  var compVal = postData.textData.comprehensionScore || "-";
-                  var newValBriefing = dateStr + " 분석표 " + statusLabel + " (이해도:" + compVal + "%, 속도:" + speedVal + "자)";
-                  if (oldValBriefing &amp;&amp; String(oldValBriefing).trim() !== "") {
-                    newValBriefing = newValBriefing + "\n" + oldValBriefing;
-                  }
-                  cellBriefing.setValue(newValBriefing);
+            if (targetColIdx !== -1 &amp;&amp; sheetBriefing.getLastRow() &gt; 1) {
+              var briefingNames = sheetBriefing.getRange(1, 2, sheetBriefing.getLastRow(), 1).getValues();
+              var matchNameB = name.replace(/\s+/g, "").toLowerCase();
+              for (var bIdx = 1; bIdx &lt; briefingNames.length; bIdx++) {
+                if (String(briefingNames[bIdx][0]).replace(/\s+/g, "").toLowerCase() === matchNameB) {
+                  var cellBriefing = sheetBriefing.getRange(bIdx + 1, targetColIdx);
+                  var oldValBriefing = String(cellBriefing.getValue() || "").trim();
+                  cellBriefing.setValue(oldValBriefing ? (summaryEntry + "\n" + oldValBriefing) : summaryEntry);
+                  break;
                 }
               }
             }
@@ -1553,15 +1528,29 @@ function doPost(e) {
       }
     }
     else if (postData.action === "update") {
-      processSingleUpdate(ss, postData.tab || "students", parseInt(postData.row), postData.field, postData.value, postData.name, postData.date, postData.time);
+      processSingleUpdate(ss, postData.tab || "students", parseInt(postData.row), postData.field, postData.value, postData.name, postData.date, postData.time, false);
       return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
         .setMimeType(ContentService.MimeType.JSON);
     } 
     else if (postData.action === "batchUpdate") {
       var updates = postData.updates || [];
+      var dailySyncRowMap = {};
       for (var i = 0; i &lt; updates.length; i++) {
         var u = updates[i];
-        processSingleUpdate(ss, u.tab || "students", parseInt(u.row), u.field, u.value, u.name, u.date, u.time);
+        var syncedRow = processSingleUpdate(ss, u.tab || "students", parseInt(u.row), u.field, u.value, u.name, u.date, u.time, true);
+        if (syncedRow &amp;&amp; syncedRow &gt; 2) {
+          dailySyncRowMap[syncedRow] = true;
+        }
+      }
+      // [중복 실행 방지] batchUpdate 내 여러 필드가 수정되더라도 행당 단 1회만 [학습기록] 및 [회원분석] 동기화 실행
+      var syncRowKeys = Object.keys(dailySyncRowMap);
+      if (syncRowKeys.length &gt; 0) {
+        var dSheet = ss.getSheetByName("오늘 출석부") || ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘출석부");
+        if (dSheet) {
+          for (var sr = 0; sr &lt; syncRowKeys.length; sr++) {
+            accumulateDailyEventToMemberAnalysis(dSheet, parseInt(syncRowKeys[sr], 10));
+          }
+        }
       }
       return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -1573,21 +1562,21 @@ function doPost(e) {
       var nextRow = lastRow + 1;
       ensureColumns(sheet, 36);
       
-      sheet.getRange(nextRow, 1).setValue(nextRow - 1);
-      sheet.getRange(nextRow, 2).setValue(postData.grade);
-      sheet.getRange(nextRow, 3).setValue(postData.name);
-      sheet.getRange(nextRow, 4).setValue(postData.classes || "");
-      
-      var dayCols = { "월요일": 5, "화요일": 6, "수요일": 7, "목요일": 8, "금요일": 9, "토요일": 10 };
-      var col = dayCols[postData.day];
-      if (col) {
-        sheet.getRange(nextRow, col).setValue(postData.startTime);
+      var newStRow = new Array(32);
+      for (var c = 0; c &lt; 32; c++) newStRow[c] = "";
+      newStRow[0] = nextRow - 1;
+      newStRow[1] = postData.grade || "";
+      newStRow[2] = postData.name || "";
+      newStRow[3] = postData.classes || "";
+      var dayCols = { "월요일": 4, "화요일": 5, "수요일": 6, "목요일": 7, "금요일": 8, "토요일": 9 };
+      if (dayCols[postData.day] !== undefined) {
+        newStRow[dayCols[postData.day]] = postData.startTime || "";
       }
-      
       if (postData.makeupDate) {
-        sheet.getRange(nextRow, 31).setValue(postData.makeupDate);
-        sheet.getRange(nextRow, 32).setValue("대기");
+        newStRow[30] = postData.makeupDate;
+        newStRow[31] = "대기";
       }
+      sheet.getRange(nextRow, 1, 1, 32).setValues([newStRow]);
       
       return ContentService.createTextOutput(JSON.stringify({ status: "success", row: nextRow }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -1629,27 +1618,28 @@ function doPost(e) {
         }
       }
 
-      // 2. 기존 시간표에 학생이 이미 있다면 무조건 해당 행을 업데이트, 없을 때만 맨 아래(lastRow + 1)에 단 1회 신규 추가! (요일 괄호 제거 통일)
+      // 2. 기존 시간표에 학생이 이미 있다면 무조건 해당 행을 업데이트, 없을 때만 맨 아래(lastRow + 1)에 단 1회 일괄(Bulk) 쓰기
       var isExisting = (targetRow !== -1);
-      if (!isExisting) {
+      var dRowVals;
+      if (isExisting) {
+        dRowVals = sheet.getRange(targetRow, 1, 1, 11).getValues()[0];
+      } else {
         targetRow = lastRow + 1;
         var nowD = new Date();
         var koDays = ["일", "월", "화", "수", "목", "금", "토"];
         var defaultDateNoParen = (nowD.getMonth() + 1) + "/" + nowD.getDate() + koDays[nowD.getDay()];
         var cleanDateStr = String(postData.date || defaultDateNoParen).replace(/\(([월화수목금토일])\)/g, "$1");
-        sheet.getRange(targetRow, 1).setValue(cleanDateStr); // 날짜요일 (예: 10/26월)
-        sheet.getRange(targetRow, 2).setValue(postData.time || "시간 외"); // 시간
-        sheet.getRange(targetRow, 3).setValue(postData.name); // 이름
+        dRowVals = [cleanDateStr, postData.time || "시간 외", postData.name || "", "", "", "", "", "", "", "", ""];
       }
-      
-      if (postData.notes) sheet.getRange(targetRow, 4).setValue(postData.notes);
-      sheet.getRange(targetRow, 5).setValue(postData.status || "수업중"); // 등원여부
-      if (postData.inTime) sheet.getRange(targetRow, 6).setValue(postData.inTime); // 등원시간
-      if (postData.reason) sheet.getRange(targetRow, 7).setValue(postData.reason);
-      if (postData.number) sheet.getRange(targetRow, 8).setValue(postData.number);
-      if (postData.event) sheet.getRange(targetRow, 9).setValue(postData.event);
-      if (postData.grammarDone) sheet.getRange(targetRow, 10).setValue(postData.grammarDone);
-      if (postData.contents) sheet.getRange(targetRow, 11).setValue(postData.contents);
+      if (postData.notes) dRowVals[3] = postData.notes;
+      dRowVals[4] = postData.status || "수업중";
+      if (postData.inTime) dRowVals[5] = postData.inTime;
+      if (postData.reason) dRowVals[6] = postData.reason;
+      if (postData.number) dRowVals[7] = postData.number;
+      if (postData.event) dRowVals[8] = postData.event;
+      if (postData.grammarDone) dRowVals[9] = postData.grammarDone;
+      if (postData.contents) dRowVals[10] = postData.contents;
+      sheet.getRange(targetRow, 1, 1, 11).setValues([dRowVals]);
       
       return ContentService.createTextOutput(JSON.stringify({ status: "success", row: targetRow, updatedExisting: isExisting }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -1683,24 +1673,18 @@ function doPost(e) {
       ensureColumns(sheet, 22);
       
       if (foundRow === -1) {
-        sheet.getRange(targetRow, 1).setValue(postData.grade || "");
-        sheet.getRange(targetRow, 2).setValue(postData.name);
+        sheet.getRange(targetRow, 1, 1, 2).setValues([[postData.grade || "", postData.name || ""]]);
       }
       
-      var categoryCols = {
-        "비문학": 3,
-        "문학": 7,
-        "어휘": 11,
-        "복합": 15,
-        "음독": 19
-      };
-      
+      var categoryCols = { "비문학": 3, "문학": 7, "어휘": 11, "복합": 15, "음독": 19 };
       var startCol = categoryCols[postData.category];
       if (startCol) {
-        sheet.getRange(targetRow, startCol).setValue(postData.title || "");
-        sheet.getRange(targetRow, startCol + 1).setValue(postData.startDate || "");
-        sheet.getRange(targetRow, startCol + 2).setValue(postData.endDate || "");
-        sheet.getRange(targetRow, startCol + 3).setValue(postData.accuracy || "");
+        sheet.getRange(targetRow, startCol, 1, 4).setValues([[
+          postData.title || "",
+          postData.startDate || "",
+          postData.endDate || "",
+          postData.accuracy || ""
+        ]]);
       }
       
       return ContentService.createTextOutput(JSON.stringify({ status: "success", row: targetRow }))
@@ -1725,7 +1709,6 @@ function doPost(e) {
       }
       ensureColumns(sheet, 8);
       
-      // Always insert new row at Row 2 (under header) so newest report is at top!
       sheet.insertRowBefore(2);
       
       var now = new Date();
@@ -1735,14 +1718,16 @@ function doPost(e) {
       var dd = pad(now.getDate());
       var defaultDate = yyyy + "." + pad(mm) + "." + dd;
 
-      sheet.getRange(2, 1).setValue(postData.grade || "");
-      sheet.getRange(2, 2).setValue(postData.name || "");
-      sheet.getRange(2, 3).setValue(postData.date || postData.period || defaultDate);
-      sheet.getRange(2, 4).setValue(postData.author || "");
-      sheet.getRange(2, 5).setValue(postData.content || "");
-      sheet.getRange(2, 6).setValue(postData.needs || ""); // Column F remains empty
-      sheet.getRange(2, 7).setValue(postData.year || yyyy);
-      sheet.getRange(2, 8).setValue(postData.month || mm);
+      sheet.getRange(2, 1, 1, 8).setValues([[
+        postData.grade || "",
+        postData.name || "",
+        postData.date || postData.period || defaultDate,
+        postData.author || "",
+        postData.content || "",
+        postData.needs || "",
+        postData.year || yyyy,
+        postData.month || mm
+      ]]);
       
       return ContentService.createTextOutput(JSON.stringify({ status: "success", row: 2 }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -1754,16 +1739,16 @@ function doPost(e) {
         sheet = ss.insertSheet("누적출결데이터");
         sheet.appendRow(["타임스탬프", "이름", "날짜", "요일", "시간", "출결상태"]);
       }
-      var lastRow = sheet.getLastRow();
-      var nextRow = lastRow + 1;
+      var nextRow = sheet.getLastRow() + 1;
       ensureColumns(sheet, 6);
-      
-      sheet.getRange(nextRow, 1).setValue(postData.timestamp);
-      sheet.getRange(nextRow, 2).setValue(postData.name);
-      sheet.getRange(nextRow, 3).setValue(postData.date);
-      sheet.getRange(nextRow, 4).setValue(postData.day);
-      sheet.getRange(nextRow, 5).setValue(postData.time);
-      sheet.getRange(nextRow, 6).setValue(postData.status);
+      sheet.getRange(nextRow, 1, 1, 6).setValues([[
+        postData.timestamp || "",
+        postData.name || "",
+        postData.date || "",
+        postData.day || "",
+        postData.time || "",
+        postData.status || ""
+      ]]);
       
       return ContentService.createTextOutput(JSON.stringify({ status: "success", row: nextRow }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -2971,12 +2956,10 @@ function getMemberAnalysisSheet(ss) {
   return null;
 }
 
-// 출결보강관리의 숫자(H열), 이벤트(I열), 진단/글쓰기(J열) 또는 수업내용(K열) 입력 시 회원 분석 시트로 자동 누적 기록하는 함수
+// 출결보강관리의 숫자(H열), 이벤트(I열), 진단/글쓰기(J열) 또는 수업내용(K열) 입력 시 [학습기록] 및 [회원 분석] 시트로 1회 일괄(Bulk) 누적 기록하는 함수
 function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
+  if (!sheetDaily || rowNumber &lt; 3) return;
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheetMember = getMemberAnalysisSheet(ss);
-  if (!sheetMember) return;
-
   var rowValues = sheetDaily.getRange(rowNumber, 1, 1, 11).getValues()[0];
   var dateStr = String(rowValues[0] || "").trim(); // Col A
   var name = String(rowValues[2] || "").trim(); // Col C
@@ -2987,231 +2970,24 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
 
   if (!name) return;
 
-  // Auto-populate today's date in Col A if empty
+  // Auto-populate today's date in Col A (M/d요일) if empty
   if (!dateStr &amp;&amp; (numVal || eventVal || grammarDoneVal || contentsVal)) {
     var today = new Date();
     var weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-    var todayDay = weekdays[today.getDay()];
-    dateStr = (today.getMonth() + 1) + "/" + today.getDate() + todayDay;
+    dateStr = (today.getMonth() + 1) + "/" + today.getDate() + weekdays[today.getDay()];
+    rowValues[0] = dateStr;
     sheetDaily.getRange(rowNumber, 1).setValue(dateStr);
   }
 
-  var memberLastRow = sheetMember.getLastRow();
-  if (memberLastRow &lt; 2) return;
-  var memberNames = sheetMember.getRange(2, 2, memberLastRow - 1, 1).getValues();
-  var memberRowIndex = -1;
-  var targetCleanName = name.replace(/\s+/g, '');
-  for (var i = 0; i &lt; memberNames.length; i++) {
-    var cleanMemberName = String(memberNames[i][0] || '').replace(/\s+/g, '');
-    if (cleanMemberName &amp;&amp; cleanMemberName === targetCleanName) {
-      memberRowIndex = 2 + i;
-      break;
-    }
-  }
-
-  if (memberRowIndex === -1) return;
-
-  var mdMatch = dateStr.match(/(\d+\/\d+)/);
-  var dateFormatted = "";
-  if (mdMatch) {
-    dateFormatted = mdMatch[1];
-  } else {
-    var today = new Date();
-    dateFormatted = (today.getMonth() + 1) + "/" + today.getDate();
-  }
-  
-  var yy = "26";
-  try {
-    var yearVal = new Date().getFullYear();
-    yy = String(yearVal).substring(2);
-  } catch(err) {}
-  var eventDatePrefix = yy + "." + dateFormatted;
-
-  // Parse multi-line / comma-separated / semicolon-separated entries
-  var splitRegex = /[\n,;]+/;
-  var numLines = numVal ? numVal.split(splitRegex).map(function(s) { return s.trim(); }).filter(Boolean) : [];
-  var eventLines = eventVal ? eventVal.split(splitRegex).map(function(s) { return s.trim(); }).filter(Boolean) : [];
-  var grammarLines = grammarDoneVal ? grammarDoneVal.split(splitRegex).map(function(s) { return s.trim(); }).filter(Boolean) : [];
-
-  var maxLen = Math.max(numLines.length, eventLines.length);
-
-  var groupMap = {
-    7: [],
-    8: [],
-    10: [],
-    11: [],
-    12: []
-  };
-
-  // [핵심 개편] F열(6열: 코칭 방향 &amp; 주력 목표)에는 더 이상 일일 수업내용(K열)을 누적하지 않습니다.
-  // 일일 수업 활동(숙제현황·성실발자국·독서발자국·문해력발자국·나의기록·도서·트레이닝)은 18열 [학습기록] 시트에 즉시 동기화합니다!
+  // 1) 일일 수업 활동(K열/J열) -&gt; [학습기록] 18열 시트 1회 일괄(Bulk) 업서트
   if (contentsVal || grammarDoneVal) {
-    try {
-      var sheetRecNow = vocabEnsureRecordSheet_(ss);
-      var isoDateNow = parseDailyDateToIso_(dateFormatted);
-      var dayRecs = parseDailyRowToLearningRecords_(rowValues, isoDateNow);
-      if (dayRecs &amp;&amp; dayRecs.length &gt; 0) {
-        vocabUpsertStudentDayRecords_(sheetRecNow, targetCleanName, dayRecs);
-      }
-    } catch (fpErr) {
-      console.error("[accumulateDailyEvent] Error syncing to learning records:", fpErr);
-    }
+    syncDailyRowToLearningRecordRealtime_(sheetDaily, rowNumber, rowValues);
   }
 
-  for (var idx = 0; idx &lt; maxLen; idx++) {
-    var num = numLines[idx] || "";
-    var ev = eventLines[idx] || "";
-    if (!num &amp;&amp; !ev) continue;
-
-    var textToAppend = eventDatePrefix;
-    if (num) textToAppend += " " + num;
-    if (ev) textToAppend += " " + ev;
-
-    var targetCol = 8; // Default Col H
-    var lowerEvent = ev.toLowerCase();
-    
-    if (lowerEvent.indexOf("코스업") !== -1 || lowerEvent.indexOf("레벨업") !== -1 || lowerEvent.indexOf("진로검사") !== -1) {
-      targetCol = 8;
-    } else if (lowerEvent.indexOf("진단") !== -1 || lowerEvent.indexOf("진도") !== -1) {
-      targetCol = 7;
-    } else if (lowerEvent.indexOf("숙제교재") !== -1 || lowerEvent.indexOf("훈민정음") !== -1 || lowerEvent.indexOf("한자") !== -1 || lowerEvent.indexOf("교재") !== -1) {
-      targetCol = 10;
-    } else if (lowerEvent.indexOf("독서계획표") !== -1 || lowerEvent.indexOf("친구") !== -1 || lowerEvent.indexOf("탐험가") !== -1 || lowerEvent.indexOf("고수") !== -1 || lowerEvent.indexOf("챔피언") !== -1 || lowerEvent.indexOf("마스터") !== -1 || lowerEvent.indexOf("달성") !== -1 || lowerEvent.indexOf("스티커") !== -1) {
-      targetCol = 12;
-    } else if (lowerEvent.indexOf("읽트") !== -1 || lowerEvent.indexOf("독트") !== -1 || lowerEvent.indexOf("읽기") !== -1 || lowerEvent.indexOf("독서") !== -1) {
-      targetCol = 11;
-    } else {
-      targetCol = 8;
-    }
-
-    groupMap[targetCol].push(textToAppend);
-  }
-
-  // Parse Column J (grammarDone) items
-  for (var g = 0; g &lt; grammarLines.length; g++) {
-    var item = grammarLines[g];
-    var isCompletion = (item.indexOf("글완") !== -1 || item.indexOf("글쓰기완") !== -1 || item.indexOf("완료") !== -1);
-    var hasDigit = /\d+/.test(item);
-
-    if (isCompletion) {
-      // Find existing book line in progress (Col G / Column 7) of memberAnalysis and append " 글완"
-      var cleanBookAndScore = item.replace(/글완|글쓰기완료|글쓰기완|완료/g, "").trim();
-      var cleanBook = cleanBookAndScore.replace(/\s*\d+점?$/, "").trim();
-      var cleanBookNoSpaces = cleanBook.replace(/\s+/g, "").toLowerCase();
-
-      var progressCell = sheetMember.getRange(memberRowIndex, 7);
-      var currentProgress = String(progressCell.getValue() || "").trim();
-      if (currentProgress) {
-        var lines = currentProgress.split("\n");
-        var found = false;
-        for (var lIdx = 0; lIdx &lt; lines.length; lIdx++) {
-          var lineNoSpaces = lines[lIdx].replace(/\s+/g, "").toLowerCase();
-          if (cleanBookNoSpaces &amp;&amp; lineNoSpaces.indexOf(cleanBookNoSpaces) !== -1) {
-            found = true;
-            var newLine = lines[lIdx];
-            if (/\d+/.test(cleanBookAndScore)) {
-              newLine = eventDatePrefix + " " + cleanBookAndScore + " 글완";
-            } else {
-              if (lines[lIdx].indexOf("글완") === -1 &amp;&amp; lines[lIdx].indexOf("글쓰기완") === -1 &amp;&amp; lines[lIdx].indexOf("완료") === -1) {
-                newLine = lines[lIdx] + " 글완";
-              }
-            }
-            lines[lIdx] = newLine;
-            if (newLine.trim().indexOf(eventDatePrefix) === 0 || newLine.trim().indexOf("📖") === 0) {
-              groupMap[7].push(newLine);
-            }
-          }
-        }
-        if (!found &amp;&amp; cleanBookNoSpaces) {
-          var newLine = eventDatePrefix + " " + cleanBookAndScore + " 글완";
-          lines.push(newLine);
-          groupMap[7].push(newLine);
-          found = true;
-        } else if (!found &amp;&amp; !cleanBookNoSpaces &amp;&amp; lines.length &gt; 0) {
-          var lastLine = lines[lines.length - 1];
-          if (lastLine.indexOf("글완") === -1 &amp;&amp; lastLine.indexOf("글쓰기완") === -1 &amp;&amp; lastLine.indexOf("완료") === -1) {
-            var newLine = lastLine + " 글완";
-            if (newLine.trim().indexOf(eventDatePrefix) === 0 || newLine.trim().indexOf("📖") === 0) {
-              groupMap[7].push(newLine);
-            }
-            lines[lines.length - 1] = newLine;
-          }
-        }
-        progressCell.setValue(lines.join("\n"));
-      } else {
-        var textToSet = eventDatePrefix + " " + (cleanBookAndScore ? cleanBookAndScore + " 글완" : "글완");
-        progressCell.setValue(textToSet);
-        groupMap[7].push(textToSet);
-      }
-    } else if (hasDigit) {
-      var datePattern = /^\d+[\./]\d+/;
-      var textToAppend = "";
-      if (datePattern.test(item)) {
-        if (/^\d+\/\d+/.test(item)) {
-          textToAppend = yy + "." + item;
-        } else {
-          textToAppend = item;
-        }
-      } else {
-        textToAppend = eventDatePrefix + " " + item;
-      }
-      groupMap[7].push(textToAppend);
-    }
-  }
-
-  var targetCols = [7, 8, 10, 11, 12];
-  for (var c = 0; c &lt; targetCols.length; c++) {
-    var colNum = targetCols[c];
-    var cell = sheetMember.getRange(memberRowIndex, colNum);
-    var currentContent = String(cell.getValue() || "").trim();
-
-    // G열(7열: 주력 목표 &amp; 이달의 학습 전광판)은 3줄 구조(🎯[목표] + 📊[이달 요약] + 📖[최근 도서 1권])로 유지
-    if (colNum === 7) {
-      var newColG = composeMemberColGBoard_(ss, name, currentContent, groupMap[7], eventDatePrefix);
-      if (currentContent !== newColG.trim()) {
-        cell.setValue(newColG);
-        currentContent = newColG;
-      }
-      applyRichTextStyling(cell, currentContent);
-      continue;
-    }
-
-    var lines = currentContent ? currentContent.split("\n") : [];
-    var filteredLines = [];
-    for (var l = 0; l &lt; lines.length; l++) {
-      var ln = lines[l].trim();
-      if (!ln) continue;
-      if (ln.indexOf(eventDatePrefix) !== 0) {
-        filteredLines.push(lines[l]);
-      }
-    }
-
-    var newEventsToday = groupMap[colNum];
-    for (var n = 0; n &lt; newEventsToday.length; n++) {
-      filteredLines.push(newEventsToday[n]);
-    }
-
-    var newContent = filteredLines.join("\n");
-    if (colNum === 10) {
-      if (currentContent !== newContent.trim()) {
-        cell.setValue(newContent);
-        currentContent = newContent;
-      }
-      applyRichTextStyling(cell, currentContent);
-    } else {
-      if (currentContent !== newContent.trim()) {
-        cell.setValue(newContent);
-        currentContent = newContent;
-      }
-      var checkVal = String(cell.getValue() || "").trim();
-      if (colNum === 8 &amp;&amp; (checkVal.indexOf("코스업") !== -1 || checkVal.indexOf("레벨업") !== -1 || checkVal.indexOf("진로검사") !== -1)) {
-        cell.setFontColor("#2563eb");
-        cell.setFontWeight("bold");
-      } else {
-        cell.setFontColor(null);
-        cell.setFontWeight(null);
-      }
-    }
+  // 2) 이벤트·진단·전광판 -&gt; [회원 분석] 시트 1회 일괄(Bulk) 동기화 (syncDailyEventsToMemberAnalysisBulk_ 단일 재사용)
+  var sheetMember = getMemberAnalysisSheet(ss);
+  if (sheetMember) {
+    syncDailyEventsToMemberAnalysisBulk_(ss, sheetDaily, sheetMember, [rowValues]);
   }
 }
 
@@ -3671,7 +3447,6 @@ function onOpen() {
     .addItem("11. 어휘 갱신 (학생앱에 반영)", "vocabBumpVersion")
     .addItem("12. 📨 오늘 수업 브리핑 문구 창 띄우기", "showDailyBriefingModal")
     .addItem("13. [학습기록] 헤더 및 열 정렬 1회 일괄(Bulk) 보정", "fixAndAlignLearningRecordHeadersAndRowsBulk")
-    .addItem("14. [10월 26일] 누락 학습기록 1회 즉시 복구", "recoverOctober26RecordsBulk")
     .addToUi();
 }
 
@@ -4682,111 +4457,6 @@ function fixAndAlignLearningRecordHeadersAndRowsBulk() {
   } catch (uiErr) {
     Logger.log("fixAndAlignLearningRecordHeadersAndRowsBulk 완료: " + JSON.stringify(res));
   }
-}
-
-// [메뉴 14번] [10월 26일] 누락 학습기록 1회 일괄(Bulk) 즉시 복구
-function recoverOctober26RecordsBulk() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheetRec = vocabEnsureRecordSheet_(ss);
-  if (!sheetRec) {
-    SpreadsheetApp.getUi().alert("❌ [학습기록] 시트를 찾을 수 없습니다.");
-    return;
-  }
-
-  // 먼저 기존 시트에 잘못 들어간 '완료'/'미완료' 및 D열 도서명 오염을 1회 일괄 정화
-  alignLearningRecordColumnsBulk_(sheetRec);
-
-  // 10월 26일 확인된 학생 7명의 수업/진단/트레이닝 데이터 (18열 SSOT 규격 - '숙제완료'/'숙제미완' 통일)
-  var oct26Records = [
-    {
-      name: "김지원",
-      recs: [
-        { date: "2026-10-26", hwStatus: "숙제완료", book: "만희네 집", level: "기초", score: 60, type: "진단" }
-      ]
-    },
-    {
-      name: "김주비",
-      recs: [
-        { date: "2026-10-26", hwStatus: "숙제완료", training: "문해력트레이닝", detail: "복합 1단계 20차시", errors: 2, understanding: "보통이에요", type: "트레이닝" }
-      ]
-    },
-    {
-      name: "강예진",
-      recs: [
-        { date: "2026-10-26", hwStatus: "숙제미완", training: "문해력트레이닝", detail: "복합 1단계 40차시", errors: 2, understanding: "잘 이해했어요", type: "트레이닝" }
-      ]
-    },
-    {
-      name: "유예성",
-      recs: [
-        { date: "2026-10-26", hwStatus: "숙제완료", training: "문해력트레이닝", detail: "복합 1단계", errors: 0, understanding: "잘 이해했어요", type: "트레이닝" }
-      ]
-    },
-    {
-      name: "김가온",
-      recs: [
-        { date: "2026-10-26", hwStatus: "숙제완료", book: "찰리와 초콜릿 공장", level: "5레벨", type: "진단" }
-      ]
-    },
-    {
-      name: "박지운",
-      recs: [
-        { date: "2026-10-26", hwStatus: "숙제완료", book: "조금만 기다려 봐", level: "4레벨", type: "진단" }
-      ]
-    },
-    {
-      name: "김주은",
-      recs: [
-        { date: "2026-10-26", hwStatus: "숙제완료", training: "문해력트레이닝", detail: "어휘 2단계 20차시", errors: 1, understanding: "잘 이해했어요", type: "트레이닝" }
-      ]
-    }
-  ];
-
-  var studentRecordsMap = {};
-  for (var i = 0; i &lt; oct26Records.length; i++) {
-    var item = oct26Records[i];
-    studentRecordsMap[item.name] = item.recs;
-  }
-
-  // 출결보강관리 또는 오늘 출석부 시트에 10/26 기록이 남아있는지 추가 수집
-  var candidateDaily = ["오늘 출석부", "출결보강관리", "학생수업관리"];
-  for (var c = 0; c &lt; candidateDaily.length; c++) {
-    var sh = ss.getSheetByName(candidateDaily[c]);
-    if (sh &amp;&amp; sh.getLastRow() &gt;= 3) {
-      var vals = sh.getRange(3, 1, sh.getLastRow() - 2, 11).getValues();
-      for (var r = 0; r &lt; vals.length; r++) {
-        var row = vals[r];
-        var iso = parseDailyDateToIso_(row[0]);
-        if (iso === "2026-10-26") {
-          var nm = String(row[2] || "").trim().replace(/\s+/g, "");
-          if (nm) {
-            var recs = parseDailyRowToLearningRecords_(row, "2026-10-26");
-            if (recs &amp;&amp; recs.length &gt; 0) {
-              if (!studentRecordsMap[nm]) studentRecordsMap[nm] = [];
-              studentRecordsMap[nm] = studentRecordsMap[nm].concat(recs);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // 1회 일괄(Bulk) [학습기록] 시트에 반영
-  var res = vocabUpsertAllStudentsDayRecordsBulk_(sheetRec, studentRecordsMap);
-
-  // [회원 분석] 시트 전광판(G열) 동기화
-  var sKeys = Object.keys(studentRecordsMap);
-  for (var k = 0; k &lt; sKeys.length; k++) {
-    refreshMemberAnalysisSummaryBoardForStudent_(ss, sKeys[k]);
-  }
-
-  SpreadsheetApp.getUi().alert(
-    "✅ [10월 26일] 누락 학습기록 1회 일괄(Bulk) 복구 및 정화 완료!\n\n" +
-    "• 대상 학생: " + sKeys.length + "명 (김지원, 김주비, 강예진, 유예성, 김가온, 박지운, 김주은 등)\n" +
-    "• 신규 추가: " + res.added + "건 / 갱신: " + res.updated + "건\n" +
-    "• C열 숙제현황이 '숙제완료'/'숙제미완' 정식 칩으로 통일되었고 D열 도서명 오염이 정리되었습니다.\n" +
-    "• 원장님의 드롭다운 칩 색상 및 셀 서식은 안전하게 유지됩니다."
-  );
 }
 
 function parseDailyDateToIso_(dateStr) {
