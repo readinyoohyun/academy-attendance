@@ -653,6 +653,25 @@
     return Promise.all(p.map(function (x) { return send(x.name, x.records); }));
   };
 
+  function sessionIsoDate(parsed) {
+    if (parsed && parsed.savedAt) {
+      var d = new Date(Number(parsed.savedAt));
+      if (!isNaN(d.getTime())) {
+        var m = d.getMonth() + 1, day = d.getDate();
+        return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+      }
+    }
+    if (parsed && parsed.date) {
+      var mMd = String(parsed.date).match(/(\d{1,2})[\/\.](\d{1,2})/);
+      if (mMd) {
+        var yr = new Date().getFullYear();
+        var mm = parseInt(mMd[1], 10), dd = parseInt(mMd[2], 10);
+        return yr + '-' + (mm < 10 ? '0' + mm : mm) + '-' + (dd < 10 ? '0' + dd : dd);
+      }
+    }
+    return today();
+  }
+
   function flushSavedBrowserSessions() {
     try {
       for (var i = 0; i < localStorage.length; i++) {
@@ -662,10 +681,15 @@
           var raw = localStorage.getItem(k);
           if (!raw) continue;
           var parsed = JSON.parse(raw);
-          if (parsed && parsed.student && parsed.missions) {
-            var recs = B.buildCheckoutRecords(parsed.student, parsed.missions, today());
+          if (parsed && parsed.student && parsed.missions && !parsed.vocabFlushed) {
+            var iso = sessionIsoDate(parsed);
+            var recs = B.buildCheckoutRecords(parsed.student, parsed.missions, iso);
             if (recs.length) {
               send(cleanName(parsed.student), recs);
+              if (k.indexOf('last_completed_session_') === 0) {
+                parsed.vocabFlushed = true;
+                try { localStorage.setItem(k, JSON.stringify(parsed)); } catch (e) {}
+              }
             }
           }
         }
