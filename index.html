@@ -596,12 +596,18 @@
               
             </div>
           </div>
-<!-- SECTION AI-REPORT: AI 종합 분석 리포트 생성기 -->
+<!-- SECTION AI-REPORT: 기간별 학습 시각화 분석지 & 브리핑 생성기 -->
           <div class="glass-panel" style="padding: 1.5rem; margin-top: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem;">
-              <h3 style="font-family: var(--font-title); font-size: 1.15rem; color: var(--accent); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                📊 AI 학업 성취 종합 분석 리포트 생성기
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h3 style="font-family: var(--font-title); font-size: 1.15rem; color: var(--accent); font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                📊 기간별 학습 시각화 분석지 & 학부모 브리핑
               </h3>
+              <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                <button type="button" class="btn-secondary btn-period-preset" data-preset="1w" style="padding: 0.25rem 0.6rem; font-size: 0.76rem; height: auto;">최근 1주</button>
+                <button type="button" class="btn-secondary btn-period-preset" data-preset="2w" style="padding: 0.25rem 0.6rem; font-size: 0.76rem; height: auto;">최근 2주</button>
+                <button type="button" class="btn-secondary btn-period-preset" data-preset="1m" style="padding: 0.25rem 0.6rem; font-size: 0.76rem; height: auto;">최근 1개월</button>
+                <button type="button" class="btn-secondary btn-period-preset" data-preset="this_month" style="padding: 0.25rem 0.6rem; font-size: 0.76rem; height: auto;">이번 달</button>
+              </div>
             </div>
             
             <div style="display: flex; flex-direction: column; gap: 1rem;">
@@ -641,30 +647,43 @@
                   </button>
                 </div>
               </div>
+
+              <!-- 실시간 기간 학습 시각화 대시보드 ([학습기록] + [오늘 출석부] + [누적 기록] 자동 집계) -->
+              <div id="crmPeriodVisualDashboard" style="padding: 1rem; border-radius: 12px; background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(99, 102, 241, 0.25);">
+                <div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 0.5rem;">학생과 분석 기간을 선택하면 기간 내 독서·어휘·트레이닝·숙제 시각화 분석표가 자동으로 표시됩니다.</div>
+              </div>
               
               <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-weight: 600;">LMS 리포트 이미지 또는 PDF 업로드 (최대 5개)</label>
-                <div id="crmAiReportDropzone" class="dropzone-custom" style="border: 2px dashed rgba(99, 102, 241, 0.4); border-radius: 12px; padding: 2rem; text-align: center; background: rgba(99, 102, 241, 0.02); cursor: pointer; transition: all 0.2s;">
-                  <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color: var(--accent); margin: 0 auto 0.5rem auto;">
+                <label style="font-weight: 600;">LMS 리포트 이미지 또는 PDF 업로드 (선택 · AI 정밀 판독용 최대 5개)</label>
+                <div id="crmAiReportDropzone" class="dropzone-custom" style="border: 2px dashed rgba(99, 102, 241, 0.4); border-radius: 12px; padding: 1.35rem; text-align: center; background: rgba(99, 102, 241, 0.02); cursor: pointer; transition: all 0.2s;">
+                  <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color: var(--accent); margin: 0 auto 0.35rem auto;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-secondary);">리드인 독서 로그, 읽기 트레이닝 결과, PDF 분석 리포트 파일들을 마우스로 끌어다 놓으세요.</span>
-                  <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.4rem 0 0 0;">또는 클릭하여 파일 선택 (PNG, JPG, JPEG, PDF)</p>
+                  <span style="font-size: 0.86rem; font-weight: 500; color: var(--text-secondary);">시트 데이터만으로도 즉시 분석지 생성이 가능하며, 리드인 캡처/PDF가 있으면 끌어다 놓으세요.</span>
+                  <p style="font-size: 0.74rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">클릭하여 파일 선택 (PNG, JPG, JPEG, PDF)</p>
                   <input type="file" id="crmAiReportFileInput" multiple accept="image/*,application/pdf" style="display: none;">
                 </div>
-                <div id="crmAiReportFileList" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem;">
+                <div id="crmAiReportFileList" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem;">
                   <!-- Uploaded image thumbnails go here -->
                 </div>
               </div>
               
               <div class="form-group" style="margin-bottom: 0;">
-                <label for="crmAiReportExtraInput">원장님 추가 지시사항 / 반영 코멘트 (선택)</label>
-                <textarea id="crmAiReportExtraInput" class="input-custom" rows="2" placeholder="AI 리포트에 반영하고 싶으신 원장님만의 생각이나 피드백을 적어주세요. (예: 최근 찬열이의 태도가 개선되었으나 어휘 학습에 조금 더 치중해야 함)"></textarea>
+                <label for="crmAiReportExtraInput">원장님 추가 지시사항 / 학부모 브리핑 코멘트 (선택)</label>
+                <textarea id="crmAiReportExtraInput" class="input-custom" rows="2" placeholder="분석지 총평 및 학부모 카톡/문자 브리핑에 함께 넣을 원장님 코멘트를 적어주세요."></textarea>
               </div>
               
-              <button id="btnCrmGenerateAiReport" class="btn-primary" style="background: var(--accent); border-color: rgba(99, 102, 241, 0.4); font-weight: 700; height: 45px;">
-                ⚡ AI 학업 성취 종합 분석 리포트 생성
-              </button>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.65rem;">
+                <button type="button" id="btnCrmInstantDataReport" class="btn-primary" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); border-color: rgba(59, 130, 246, 0.5); font-weight: 700; height: 45px;">
+                  📊 기간 데이터 시각화 분석지 즉시 생성
+                </button>
+                <button type="button" id="btnCrmPeriodBriefing" class="btn-primary" style="background: linear-gradient(135deg, #059669, #047857); border-color: rgba(16, 185, 129, 0.5); font-weight: 700; height: 45px;">
+                  💬 선택 기간 종합 브리핑 발송 (카톡/문자)
+                </button>
+                <button type="button" id="btnCrmGenerateAiReport" class="btn-primary" style="background: var(--accent); border-color: rgba(99, 102, 241, 0.4); font-weight: 700; height: 45px;">
+                  🤖 AI 심층 문장 첨삭 리포트 생성 (Gemini)
+                </button>
+              </div>
 
               <!-- Saved Reports Section -->
               <div id="crmAiReportSavedListSection" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--panel-border); display: none;">
@@ -822,7 +841,6 @@
               </button>
             </div>
             <pre class="code-content" id="gasCodeBlock">
-
 function ensureColumns(sheet, requiredCols) {
   if (!sheet) return;
   var maxCols = sheet.getMaxColumns();
@@ -1109,36 +1127,40 @@ function doGet(e) {
     }
   }
 
-  // 9. 학습기록 18열 (learningRecords - 상단 2행부터 최신 500행 원장앱 연동 및 수업 브리핑용)
-  var sheetRec = ss.getSheetByName(RECORD_SHEET);
+  // 9. 학습기록 18열 (learningRecords - 상단 2행부터 최신 1500행 원장앱 연동·기간별 분석·수업 브리핑용)
+  var sheetRec = vocabEnsureRecordSheet_(ss);
   var learningRecordsData = [];
   if (sheetRec &amp;&amp; sheetRec.getLastRow() &gt;= 2) {
     var h1Check = String(sheetRec.getRange(1, 1).getValue() || "").trim();
     if (h1Check === "날짜") {
       var lastRecRow = sheetRec.getLastRow();
-      var numRecRows = Math.min(lastRecRow - 1, 500);
+      var numRecRows = Math.min(lastRecRow - 1, 1500);
       var recVals = sheetRec.getRange(2, 1, numRecRows, 18).getDisplayValues();
       for (var rIdx = 0; rIdx &lt; recVals.length; rIdx++) {
         var rv = recVals[rIdx];
         var rName = String(rv[1] || "").trim();
         if (!rName) continue;
+        var rawStep1 = String(rv[3] || "").trim();
+        var rawBook = String(rv[5] || "").trim();
+        var rawStep2 = String(rv[10] || "").trim();
+        var rawDetail = String(rv[12] || "").trim();
         learningRecordsData.push({
           row: 2 + rIdx,
           date: String(rv[0] || "").trim(),
           name: rName,
-          hwStatus: String(rv[2] || "").trim(),
-          step1Memo: String(rv[3] || "").trim(),
+          hwStatus: vocabNormHwStatus_(rv[2]),
+          step1Memo: (rawStep1 &amp;&amp; rawStep1 === rawBook) ? "" : rawStep1,
           level: String(rv[4] || "").trim(),
-          book: String(rv[5] || "").trim(),
+          book: rawBook,
           vocabTotal: String(rv[6] || "").trim(),
           vocabCorrect: String(rv[7] || "").trim(),
           vocabRate: String(rv[8] || "").trim(),
           diagScore: String(rv[9] || "").trim(),
-          step2Memo: String(rv[10] || "").trim(),
+          step2Memo: (rawStep2 &amp;&amp; rawStep2 === rawDetail) ? "" : rawStep2,
           training: String(rv[11] || "").trim(),
-          detail: String(rv[12] || "").trim(),
+          detail: rawDetail,
           errors: String(rv[13] || "").trim(),
-          understanding: String(rv[14] || "").trim(),
+          understanding: vocabNormUnderstanding_(rv[14]),
           literacyMemo: String(rv[15] || "").trim(),
           reflection: String(rv[16] || "").trim(),
           wrongWords: String(rv[17] || "").trim()
@@ -4142,6 +4164,71 @@ function vocabNum_(v) {
   return isFinite(n) ? n : "";
 }
 
+// [숙제현황 단일 규격 정규화] "완료"-&gt;"숙제완료", "미완료"/"미완"-&gt;"숙제미완", "학원에서 풀기"-&gt;"학원에서풀기"
+function vocabNormHwStatus_(v) {
+  var s = String(v || "").trim();
+  if (!s) return "";
+  var noSpace = s.replace(/\s+/g, "");
+  if (noSpace === "완료" || noSpace === "숙제완료") return "숙제완료";
+  if (noSpace === "미완료" || noSpace === "미완" || noSpace === "숙제미완료" || noSpace === "숙제미완") return "숙제미완";
+  if (noSpace === "미지참" || noSpace === "교재미지참") return "미지참";
+  if (noSpace === "학원에서풀기" || noSpace === "학원풀이") return "학원에서풀기";
+  return s;
+}
+
+// [이해도 단일 규격 정규화] "어려웠어요" -&gt; "아직 헷갈려요" 등 드롭다운 칩과 일치
+function vocabNormUnderstanding_(v) {
+  var s = String(v || "").trim();
+  if (!s) return "";
+  if (s === "어려웠어요" || s === "헷갈려요") return "아직 헷갈려요";
+  return s;
+}
+
+// [드롭다운 칩 색상 영구 보존] C(3:숙제현황), E(5:레벨구분), L(12:트레이닝), O(15:이해도) 열의 기존 드롭다운 규칙이 있으면
+// PASTE_DATA_VALIDATION으로만 전파하여 원장님이 설정한 드롭다운 칩 배경·글자 색상을 100% 보존하고, 아예 없을 때만 초기 생성
+function vocabPreserveOrInitDropdowns_(sheet, targetRowCount) {
+  if (!sheet) return;
+  var lastRow = Math.max(sheet.getLastRow(), targetRowCount || 2, 2);
+  var numRows = Math.max(1, lastRow - 1);
+  var dropdownSpecs = [
+    { col: 3, list: HW_STATUS_LIST },
+    { col: 5, list: VOCAB_LEVELS },
+    { col: 12, list: TRAINING_TYPE_LIST },
+    { col: 15, list: UNDERSTANDING_LIST }
+  ];
+  var scanRows = Math.min(numRows, 25);
+  for (var i = 0; i &lt; dropdownSpecs.length; i++) {
+    var spec = dropdownSpecs[i];
+    var col = spec.col;
+    var targetRange = sheet.getRange(2, col, numRows, 1);
+    var rules = sheet.getRange(2, col, scanRows, 1).getDataValidations();
+    var donorRow = -1;
+    var allHaveRule = (scanRows === numRows);
+    for (var r = 0; r &lt; rules.length; r++) {
+      if (rules[r][0] != null) {
+        if (donorRow === -1) donorRow = 2 + r;
+      } else {
+        allHaveRule = false;
+      }
+    }
+    if (donorRow !== -1) {
+      if (!allHaveRule || numRows &gt; scanRows) {
+        sheet.getRange(donorRow, col, 1, 1).copyTo(
+          targetRange,
+          SpreadsheetApp.CopyPasteType.PASTE_DATA_VALIDATION,
+          false
+        );
+      }
+    } else {
+      var initRule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(spec.list, true)
+        .setAllowInvalid(true)
+        .build();
+      targetRange.setDataValidation(initRule);
+    }
+  }
+}
+
 // 오답 개수 문자열 결합 버그('10/2' -&gt; 102, '10080') 방지 파서
 function vocabParseErrorNum_(v) {
   if (v === "" || v === null || v === undefined) return "";
@@ -4340,8 +4427,8 @@ function vocabStyleRecordSheet_(sheet) {
   sheet.getRange(2, 12, dataRows, 1).setHorizontalAlignment("center");
   sheet.getRange(2, 14, dataRows, 2).setHorizontalAlignment("center");
 
-  // [원장님 서식 영구 보존] 데이터 행(2행~)의 사용자 드롭다운 칩 색상 및 셀 배경 서식을
-  // 절대 덮어쓰지 않도록 setBackground 및 setDataValidation 강제 덮어쓰기 코드를 완전히 배제합니다.
+  // [원장님 서식 영구 보존] 기존 드롭다운 칩 색상 규칙이 있으면 PASTE_DATA_VALIDATION으로 보존·전파
+  vocabPreserveOrInitDropdowns_(sheet, maxRows);
 }
 
 function vocabIsTimeLikeValue_(val) {
@@ -4406,31 +4493,50 @@ function vocabEnsureRecordSheet_(ss) {
     if (h2 !== "이름" || h3 !== "숙제현황") {
       vocabStyleRecordSheet_(sheet);
     }
-    // [자동 자가치유 (Self-Healing)] 2행 B열에 날짜가 들어가 있는 등 열 밀림이 감지되면 즉시 1회 일괄(Bulk) 보정
+    // [자동 자가치유 (Self-Healing)] 열 밀림 또는 C열('완료'/'미완료')·D열 도서명 오염 감지 시 즉시 1회 일괄(Bulk) 보정
     var lastRow = sheet.getLastRow();
     if (lastRow &gt;= 2) {
-      var checkB2 = sheet.getRange(2, 2).getValue();
-      if (isLearningRecordDatePattern_(checkB2)) {
+      var sampleCount = Math.min(lastRow - 1, 15);
+      var sample = sheet.getRange(2, 1, sampleCount, 13).getValues();
+      var needsHeal = false;
+      for (var sr = 0; sr &lt; sample.length; sr++) {
+        var rowS = sample[sr];
+        var cVal = String(rowS[2] || "").trim();
+        var dVal = String(rowS[3] || "").trim();
+        var fVal = String(rowS[5] || "").trim();
+        var kVal = String(rowS[10] || "").trim();
+        var mVal = String(rowS[12] || "").trim();
+        if (isLearningRecordDatePattern_(rowS[1]) ||
+            cVal === "완료" || cVal === "미완료" || cVal === "미완" || cVal === "학원에서 풀기" ||
+            (dVal &amp;&amp; fVal &amp;&amp; dVal === fVal) ||
+            (kVal &amp;&amp; mVal &amp;&amp; kVal === mVal)) {
+          needsHeal = true;
+          break;
+        }
+      }
+      if (needsHeal) {
         alignLearningRecordColumnsBulk_(sheet);
       }
     }
     vocabSortRecordSheetNewestFirst_(sheet);
+    vocabPreserveOrInitDropdowns_(sheet, sheet.getLastRow());
   }
   return sheet;
 }
 
-// [핵심 규정 준수] [학습기록] 18열 시트의 헤더 및 데이터 열 위치를 1회 일괄(Bulk)로 정밀 보정
+// [핵심 규정 준수] [학습기록] 18열 시트의 헤더·열 위치 및 C열('완료'-&gt;'숙제완료')·D열/K열 오염을 1회 일괄(Bulk) 정밀 보정
 function alignLearningRecordColumnsBulk_(sheet) {
-  if (!sheet) return { processed: 0, shifted: 0, resultRows: 0 };
+  if (!sheet) return { processed: 0, shifted: 0, cleaned: 0, resultRows: 0 };
   vocabStyleRecordSheet_(sheet);
   var lastRow = sheet.getLastRow();
-  if (lastRow &lt; 2) return { processed: 0, shifted: 0, resultRows: 0 };
+  if (lastRow &lt; 2) return { processed: 0, shifted: 0, cleaned: 0, resultRows: 0 };
 
   // 1회 일괄(Bulk) 메모리 로드
   var rawData = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
   var alignedData = [];
   var shiftedStudentMap = {};
   var shiftedCount = 0;
+  var cleanedCount = 0;
 
   for (var i = 0; i &lt; rawData.length; i++) {
     var r = rawData[i];
@@ -4448,7 +4554,7 @@ function alignLearningRecordColumnsBulk_(sheet) {
       var trName = String(r[11] || r[10] || "").trim();
       var trDetail = String(r[12] || r[11] || "").trim();
       var trErr = (r[13] !== "" &amp;&amp; r[13] !== undefined) ? r[13] : r[12];
-      var trUnd = String(r[14] || r[13] || "").trim();
+      var trUnd = vocabNormUnderstanding_(r[14] || r[13] || "");
 
       if (typeVal === "일일요약") {
         shiftedStudentMap[nameVal].push({ date: dateVal, type: "일일요약" });
@@ -4503,6 +4609,35 @@ function alignLearningRecordColumnsBulk_(sheet) {
         }
       }
     } else {
+      // [기존 행 자가치유]
+      // 1) C열(숙제현황): "완료" -&gt; "숙제완료", "미완료" -&gt; "숙제미완"
+      var rawHw = String(r[2] || "").trim();
+      var normHw = vocabNormHwStatus_(rawHw);
+      if (rawHw !== normHw) {
+        r[2] = normHw;
+        cleanedCount++;
+      }
+      // 2) D열(성실발자국)에 F열(도서명)이 그대로 중복 복사된 오염 제거
+      var dStr = String(r[3] || "").trim();
+      var fStr = String(r[5] || "").trim();
+      if (dStr &amp;&amp; fStr &amp;&amp; dStr === fStr) {
+        r[3] = "";
+        cleanedCount++;
+      }
+      // 3) K열(독서발자국)에 M열(권수/차시)이 그대로 중복 복사된 오염 제거
+      var kStr = String(r[10] || "").trim();
+      var mStr = String(r[12] || "").trim();
+      if (kStr &amp;&amp; mStr &amp;&amp; kStr === mStr) {
+        r[10] = "";
+        cleanedCount++;
+      }
+      // 4) O열(이해도) 정규화 ("어려웠어요" -&gt; "아직 헷갈려요")
+      var rawUnd = String(r[14] || "").trim();
+      var normUnd = vocabNormUnderstanding_(rawUnd);
+      if (rawUnd !== normUnd) {
+        r[14] = normUnd;
+        cleanedCount++;
+      }
       alignedData.push(r);
     }
   }
@@ -4514,16 +4649,20 @@ function alignLearningRecordColumnsBulk_(sheet) {
       var sn = sNames[s];
       vocabUpsertSingleStudentDayRecordsInMemory_(alignedData, sn, shiftedStudentMap[sn]);
     }
+  }
 
-    // 1회 일괄(Bulk) 시트 반영 (기존 잔여 행 깨끗이 정리)
-    sheet.getRange(2, 1, Math.max(rawData.length, alignedData.length), 18).clearContent();
+  if (shiftedCount &gt; 0 || cleanedCount &gt; 0) {
+    if (shiftedCount &gt; 0 &amp;&amp; rawData.length &gt; alignedData.length) {
+      sheet.getRange(2, 1, rawData.length, 18).clearContent();
+    }
     if (alignedData.length &gt; 0) {
       sheet.getRange(2, 1, alignedData.length, 18).setValues(alignedData);
     }
     vocabSortRecordSheetNewestFirst_(sheet);
   }
+  vocabPreserveOrInitDropdowns_(sheet, alignedData.length + 1);
 
-  return { processed: rawData.length, shifted: shiftedCount, resultRows: alignedData.length };
+  return { processed: rawData.length, shifted: shiftedCount, cleaned: cleanedCount, resultRows: alignedData.length };
 }
 
 // [메뉴 13번] [학습기록] 헤더 및 열 정렬 1회 일괄(Bulk) 보정
@@ -4533,11 +4672,12 @@ function fixAndAlignLearningRecordHeadersAndRowsBulk() {
   var res = alignLearningRecordColumnsBulk_(sheetRec);
   try {
     SpreadsheetApp.getUi().alert(
-      "✅ [학습기록] 18열 헤더 및 데이터 열 정렬 완료!\n\n" +
+      "✅ [학습기록] 18열 헤더·드롭다운 규격 및 데이터 열 정렬 완료!\n\n" +
       "• 점검 데이터: " + res.processed + "행\n" +
       "• 밀린 열 자동 보정: " + res.shifted + "건\n" +
+      "• 숙제현황(완료→숙제완료) 및 발자국 열 정화: " + (res.cleaned || 0) + "건\n" +
       "• 최종 정렬된 학습기록: " + res.resultRows + "행\n\n" +
-      "헤더(A:날짜, B:이름, C:숙제현황, D:성실발자국, E:레벨구분, F:도서명, J:진단점수, L:트레이닝 등)와 데이터 내용이 100% 일치하도록 보정되었습니다. ✨"
+      "원장님의 드롭다운 칩 색상은 그대로 보존되며 빨간 경고 삼각형이 모두 제거되었습니다. ✨"
     );
   } catch (uiErr) {
     Logger.log("fixAndAlignLearningRecordHeadersAndRowsBulk 완료: " + JSON.stringify(res));
@@ -4553,48 +4693,51 @@ function recoverOctober26RecordsBulk() {
     return;
   }
 
-  // 10월 26일 확인된 학생 7명의 수업/진단/트레이닝 데이터 (18열 SSOT 규격)
+  // 먼저 기존 시트에 잘못 들어간 '완료'/'미완료' 및 D열 도서명 오염을 1회 일괄 정화
+  alignLearningRecordColumnsBulk_(sheetRec);
+
+  // 10월 26일 확인된 학생 7명의 수업/진단/트레이닝 데이터 (18열 SSOT 규격 - '숙제완료'/'숙제미완' 통일)
   var oct26Records = [
     {
       name: "김지원",
       recs: [
-        { date: "2026-10-26", hwStatus: "완료", book: "만희네 집", level: "기초", score: 60, type: "진단" }
+        { date: "2026-10-26", hwStatus: "숙제완료", book: "만희네 집", level: "기초", score: 60, type: "진단" }
       ]
     },
     {
       name: "김주비",
       recs: [
-        { date: "2026-10-26", hwStatus: "완료", training: "문해력트레이닝", detail: "복합 1단계 20차시", errors: 2, understanding: "보통이에요", type: "트레이닝" }
+        { date: "2026-10-26", hwStatus: "숙제완료", training: "문해력트레이닝", detail: "복합 1단계 20차시", errors: 2, understanding: "보통이에요", type: "트레이닝" }
       ]
     },
     {
       name: "강예진",
       recs: [
-        { date: "2026-10-26", hwStatus: "미완료", training: "문해력트레이닝", detail: "복합 1단계 40차시", errors: 2, understanding: "잘 이해했어요", type: "트레이닝" }
+        { date: "2026-10-26", hwStatus: "숙제미완", training: "문해력트레이닝", detail: "복합 1단계 40차시", errors: 2, understanding: "잘 이해했어요", type: "트레이닝" }
       ]
     },
     {
       name: "유예성",
       recs: [
-        { date: "2026-10-26", hwStatus: "완료", training: "문해력트레이닝", detail: "복합 1단계", errors: 0, understanding: "잘 이해했어요", type: "트레이닝" }
+        { date: "2026-10-26", hwStatus: "숙제완료", training: "문해력트레이닝", detail: "복합 1단계", errors: 0, understanding: "잘 이해했어요", type: "트레이닝" }
       ]
     },
     {
       name: "김가온",
       recs: [
-        { date: "2026-10-26", hwStatus: "완료", book: "찰리와 초콜릿 공장", level: "5레벨", type: "진단" }
+        { date: "2026-10-26", hwStatus: "숙제완료", book: "찰리와 초콜릿 공장", level: "5레벨", type: "진단" }
       ]
     },
     {
       name: "박지운",
       recs: [
-        { date: "2026-10-26", hwStatus: "완료", book: "조금만 기다려 봐", level: "4레벨", type: "진단" }
+        { date: "2026-10-26", hwStatus: "숙제완료", book: "조금만 기다려 봐", level: "4레벨", type: "진단" }
       ]
     },
     {
       name: "김주은",
       recs: [
-        { date: "2026-10-26", hwStatus: "완료", training: "문해력트레이닝", detail: "어휘 2단계 20차시", errors: 1, understanding: "잘 이해했어요", type: "트레이닝" }
+        { date: "2026-10-26", hwStatus: "숙제완료", training: "문해력트레이닝", detail: "어휘 2단계 20차시", errors: 1, understanding: "잘 이해했어요", type: "트레이닝" }
       ]
     }
   ];
@@ -4638,10 +4781,10 @@ function recoverOctober26RecordsBulk() {
   }
 
   SpreadsheetApp.getUi().alert(
-    "✅ [10월 26일] 누락 학습기록 1회 일괄(Bulk) 복구 완료!\n\n" +
+    "✅ [10월 26일] 누락 학습기록 1회 일괄(Bulk) 복구 및 정화 완료!\n\n" +
     "• 대상 학생: " + sKeys.length + "명 (김지원, 김주비, 강예진, 유예성, 김가온, 박지운, 김주은 등)\n" +
     "• 신규 추가: " + res.added + "건 / 갱신: " + res.updated + "건\n" +
-    "• [학습기록] 시트 최상단(2026-10-25 바로 위)에 정렬되었습니다.\n" +
+    "• C열 숙제현황이 '숙제완료'/'숙제미완' 정식 칩으로 통일되었고 D열 도서명 오염이 정리되었습니다.\n" +
     "• 원장님의 드롭다운 칩 색상 및 셀 서식은 안전하게 유지됩니다."
   );
 }
@@ -4718,9 +4861,9 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
     var parts = colK.split("|").map(function(s) { return s.trim(); }).filter(Boolean);
     parts.forEach(function(part) {
       // 숙제 점검
-      var hwMatch = part.match(/^(숙제완료|숙제미완|미지참|학원에서\s*풀기)(?:\s*\((.*?)\))?(?:\s*\[성실발자국:\s*(.*?)\])?/);
+      var hwMatch = part.match(/^(숙제완료|숙제미완|숙제미완료|완료|미완료|미완|미지참|학원에서\s*풀기)(?:\s*\((.*?)\))?(?:\s*\[성실발자국:\s*(.*?)\])?/);
       if (hwMatch) {
-        hwStatus = hwMatch[1];
+        hwStatus = vocabNormHwStatus_(hwMatch[1]);
         if (hwMatch[2]) step1Memo = hwMatch[2].trim();
         if (hwMatch[3]) step1Memo = (step1Memo ? step1Memo + " / " : "") + hwMatch[3].trim();
         return;
@@ -4755,12 +4898,12 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
       }
 
       // 집중 트레이닝
-      var trMatch = part.match(/^(문해력트레이닝|문해력|오답수정\+선지분석|읽기트레이닝|독해트레이닝|듣기트레이닝|독해밀도|개념밀도|독서트레이닝)(?:\[(.*?)\])?(?:\s*\[(잘 이해했어요|보통이에요|어려웠어요)\])?(?:\s*\[문해력발자국:\s*(.*?)\])?/);
+      var trMatch = part.match(/^(문해력트레이닝|문해력|오답수정\+선지분석|읽기트레이닝|독해트레이닝|듣기트레이닝|독해밀도|개념밀도|독서트레이닝)(?:\[(.*?)\])?(?:\s*\[(잘 이해했어요|보통이에요|아직 헷갈려요|어려웠어요)\])?(?:\s*\[문해력발자국:\s*(.*?)\])?/);
       if (trMatch) {
         var trType = trMatch[1];
         if (trType === "문해력") trType = "문해력트레이닝";
         var trDetail = trMatch[2] || "";
-        var trUnder = trMatch[3] || "";
+        var trUnder = vocabNormUnderstanding_(trMatch[3] || "");
         var trLit = trMatch[4] || "";
 
         var errCount = "";
@@ -4824,7 +4967,7 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
     records.push({
       date: isoDate,
       type: "일일요약",
-      hwStatus: hwStatus,
+      hwStatus: vocabNormHwStatus_(hwStatus),
       step1Memo: step1Memo,
       step2Memo: step2Memo,
       literacyMemo: [step3Memo, step4Memo].filter(Boolean).join(" / "),
@@ -4933,6 +5076,11 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
       while (clone.length &lt; 18) clone.push("");
       clone[0] = dObj;
       clone[1] = name;
+      // 기존 행 병합 시에도 C열('완료'-&gt;'숙제완료'), D열 도서명 오염, K열 차시 오염 즉시 정화
+      clone[2] = vocabNormHwStatus_(clone[2]);
+      if (clone[3] &amp;&amp; clone[5] &amp;&amp; String(clone[3]).trim() === String(clone[5]).trim()) clone[3] = "";
+      if (clone[10] &amp;&amp; clone[12] &amp;&amp; String(clone[10]).trim() === String(clone[12]).trim()) clone[10] = "";
+      clone[14] = vocabNormUnderstanding_(clone[14]);
       studentRows.push(clone);
     }
     if (!studentRows.length) {
@@ -4952,7 +5100,7 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
 
       if (type === "일일요약") {
         var r0 = ensureRow(0);
-        if (it.hwStatus) r0[2] = String(it.hwStatus).trim();
+        if (it.hwStatus) r0[2] = vocabNormHwStatus_(it.hwStatus);
         if (it.step1Memo) r0[3] = String(it.step1Memo).trim();
         if (it.step2Memo &amp;&amp; !r0[10]) r0[10] = String(it.step2Memo).trim();
         if (it.literacyMemo &amp;&amp; !r0[15]) r0[15] = String(it.literacyMemo).trim();
@@ -5005,8 +5153,8 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         }
         if (dIdxTarget === -1) dIdxTarget = studentRows.length;
         var dRow = ensureRow(dIdxTarget);
-        if (it.hwStatus &amp;&amp; !dRow[2]) dRow[2] = String(it.hwStatus).trim();
-        if (dBook &amp;&amp; !dRow[3]) dRow[3] = dBook;
+        if (it.hwStatus &amp;&amp; !dRow[2]) dRow[2] = vocabNormHwStatus_(it.hwStatus);
+        if (it.step1Memo &amp;&amp; !dRow[3]) dRow[3] = String(it.step1Memo).trim();
         if (it.level &amp;&amp; !dRow[4]) dRow[4] = String(it.level).trim();
         if (dBook &amp;&amp; !dRow[5]) dRow[5] = dBook;
         if (it.score !== "" &amp;&amp; it.score !== undefined) dRow[9] = vocabNum_(it.score);
@@ -5031,15 +5179,15 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         }
         if (tIdxTarget === -1) tIdxTarget = studentRows.length;
         var tRow = ensureRow(tIdxTarget);
-        if (trDetail &amp;&amp; !tRow[10]) tRow[10] = trDetail;
         if (trName) tRow[11] = trName;
         if (trDetail) tRow[12] = trDetail;
         var parsedErr = vocabParseErrorNum_(it.errors);
         if (parsedErr !== "") tRow[13] = parsedErr;
-        if (it.understanding) tRow[14] = String(it.understanding).trim();
+        if (it.understanding) tRow[14] = vocabNormUnderstanding_(it.understanding);
         if (it.literacyMemo) tRow[15] = String(it.literacyMemo).trim();
-        if (it.hwStatus &amp;&amp; !tRow[2]) tRow[2] = String(it.hwStatus).trim();
+        if (it.hwStatus &amp;&amp; !tRow[2]) tRow[2] = vocabNormHwStatus_(it.hwStatus);
         if (it.step1Memo &amp;&amp; !tRow[3]) tRow[3] = String(it.step1Memo).trim();
+        if (it.step2Memo &amp;&amp; !tRow[10]) tRow[10] = String(it.step2Memo).trim();
         if (it.reflection &amp;&amp; !tRow[16]) tRow[16] = String(it.reflection).trim();
       }
     }
@@ -5076,6 +5224,7 @@ function vocabUpsertStudentDayRecords_(sheet, name, records) {
   if (allData.length &gt; 0) {
     sheet.getRange(2, 1, allData.length, 18).setValues(allData);
     vocabSortRecordSheetNewestFirst_(sheet);
+    vocabPreserveOrInitDropdowns_(sheet, allData.length + 1);
   }
   return res;
 }
@@ -5103,6 +5252,7 @@ function vocabUpsertAllStudentsDayRecordsBulk_(sheet, studentRecordsMap) {
   if (allData.length &gt; 0) {
     sheet.getRange(2, 1, allData.length, 18).setValues(allData);
     vocabSortRecordSheetNewestFirst_(sheet);
+    vocabPreserveOrInitDropdowns_(sheet, allData.length + 1);
   }
 
   return { added: totalAdded, updated: totalUpdated };
@@ -5842,18 +5992,21 @@ function vocabMakeAnalysisReportPdf() {
       var dStr = vocabFmtDate_(dObj);
       dateSet[dStr] = true;
 
-      var hw = String(v[2] || "").trim();
+      var hw = vocabNormHwStatus_(v[2]);
+      var lv = String(v[4] || "").trim();
+      var bk = String(v[5] || "").trim();
       var step1 = String(v[3] || "").trim();
+      if (step1 &amp;&amp; bk &amp;&amp; step1 === bk) step1 = "";
       if (hw === "숙제완료") hwDoneCount++;
       else if (hw) hwOtherCount++;
 
-      var lv = String(v[4] || "").trim();
-      var bk = String(v[5] || "").trim();
       var gTot = vocabNum_(v[6]);
       var hCor = vocabNum_(v[7]);
       var iRate = vocabNum_(v[8]);
       var jScore = vocabNum_(v[9]);
       var kStep2 = String(v[10] || "").trim();
+      var mDetRaw = String(v[12] || "").trim();
+      if (kStep2 &amp;&amp; mDetRaw &amp;&amp; kStep2 === mDetRaw) kStep2 = "";
       var rWrong = vocabCleanWrongWordsStr_(v[17]);
 
       if (bk) bookSet[vocabNormBook_(bk) || bk] = true;
@@ -5893,9 +6046,9 @@ function vocabMakeAnalysisReportPdf() {
       }
 
       var lTr = String(v[11] || "").trim();
-      var mDet = String(v[12] || "").trim();
+      var mDet = mDetRaw;
       var nErr = vocabParseErrorNum_(v[13]);
-      var oUnd = String(v[14] || "").trim();
+      var oUnd = vocabNormUnderstanding_(v[14]);
       var pMemo = String(v[15] || "").trim();
       if (lTr) {
         if (!trByType[lTr]) {
@@ -6222,7 +6375,6 @@ function showDailyBriefingModal() {
   var out = HtmlService.createHtmlOutput(htmlStr).setWidth(520).setHeight(390);
   ui.showModalDialog(out, "📨 오늘 수업 브리핑 문구");
 }
-
 
 
 
@@ -6810,9 +6962,10 @@ function showDailyBriefingModal() {
     <div class="ai-report-paper">
       
       <!-- Top Actions Row (Hidden during printing) -->
-      <div class="ai-report-buttons-panel" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.8rem; background: #f8fafc; padding: 0.8rem; border-radius: 6px; box-sizing: border-box; width: 100%;">
-        <span style="font-size: 0.9rem; font-weight: 600; color: #1e3a8a;">📄 학부모용 AI 학업 분석 리포트 미리보기 (A4 규격)</span>
-        <div style="display: flex; gap: 0.5rem;">
+      <div class="ai-report-buttons-panel" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.8rem; background: #f8fafc; padding: 0.8rem; border-radius: 6px; box-sizing: border-box; width: 100%; flex-wrap: wrap; gap: 0.5rem;">
+        <span style="font-size: 0.9rem; font-weight: 600; color: #1e3a8a;">📄 학부모용 학습 분석지 미리보기 (클릭하여 문구 직접 수정 가능 · A4 규격)</span>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="btn-primary" id="btnAiReportSendBriefing" style="background: #0ea5e9; border-color: #0ea5e9; height: 36px; padding: 0 0.9rem; font-size: 0.85rem; color: white; cursor: pointer; border-radius: 6px; font-weight: 600;">💬 기간 브리핑 발송 (카톡/문자)</button>
           <button class="btn-primary" id="btnCrmSaveAiReport" style="background: #10b981; border-color: #10b981; height: 36px; padding: 0 1rem; font-size: 0.85rem; color: white; cursor: pointer; border-radius: 6px; font-weight: 600;">💾 리포트 저장 완료</button>
           <button class="btn-primary" id="btnCrmPrintAiReport" style="background: #1e3a8a; border-color: #1e3a8a; height: 36px; padding: 0 1rem; font-size: 0.85rem; color: white; cursor: pointer; border-radius: 6px; font-weight: 600;">🖨️ A4 인쇄 / PDF 저장</button>
           <button class="btn-secondary" id="btnCrmCloseAiReport" style="background: #e2e8f0; border-color: #cbd5e1; color: #475569; height: 36px; padding: 0 1rem; font-size: 0.85rem; cursor: pointer; border-radius: 6px; font-weight: 600;">닫기</button>

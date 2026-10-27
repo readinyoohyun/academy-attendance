@@ -300,8 +300,14 @@ class SMSManager {
     const wrongWordsAll = [];
 
     dayRecs.forEach(r => {
-      if (r.hwStatus && !hwStatus) hwStatus = r.hwStatus;
-      if (r.step1Memo && !step1Memo) step1Memo = r.step1Memo;
+      let normHw = String(r.hwStatus || "").trim();
+      if (normHw === "완료") normHw = "숙제완료";
+      else if (normHw === "미완료" || normHw === "미완") normHw = "숙제미완";
+      else if (normHw === "학원에서 풀기") normHw = "학원에서풀기";
+      if (normHw && !hwStatus) hwStatus = normHw;
+
+      const cleanStep1 = (r.step1Memo && r.book && String(r.step1Memo).trim() === String(r.book).trim()) ? "" : String(r.step1Memo || "").trim();
+      if (cleanStep1 && !step1Memo) step1Memo = cleanStep1;
       if (r.reflection && !reflection) reflection = r.reflection;
 
       if (r.book || r.vocabTotal || r.diagScore) {
@@ -312,7 +318,8 @@ class SMSManager {
           sub.push(`어휘학습 ${r.vocabTotal}문항 중 ${r.vocabCorrect || 0}개 정답(${r.vocabRate || 0}%)`);
         }
         if (sub.length) bLine += ` — ${sub.join(" / ")}`;
-        if (r.step2Memo) bLine += `\n  └ 독서발자국: "${r.step2Memo}"`;
+        const cleanStep2 = (r.step2Memo && r.detail && String(r.step2Memo).trim() === String(r.detail).trim()) ? "" : String(r.step2Memo || "").trim();
+        if (cleanStep2) bLine += `\n  └ 독서발자국: "${cleanStep2}"`;
         books.push(bLine);
       }
       if (r.wrongWords) {
@@ -562,6 +569,92 @@ class SMSManager {
     }
 
     populateDatesAndRender(activeStudent, preferredDate);
+  }
+
+  buildPeriodBriefingMessage(studentName, startStr, endStr, extraSummary = "") {
+    const agg = this.app.crmManager
+      ? this.app.crmManager.aggregateStudentPeriodData(studentName, startStr, endStr)
+      : null;
+
+    const periodLabel = `${(startStr || "").replace(/-/g, ".")} ~ ${(endStr || "").replace(/-/g, ".")}`;
+    const lines = [];
+    lines.push(`[${this.app.academyName || "독서와국어"} 기간별 종합 학습 브리핑 📊]`);
+    lines.push(`안녕하세요, ${studentName} 학부모님! ${periodLabel} 기간 동안 학원에서 진행한 독서·어휘·문해력 종합 성취 내역을 안내드립니다.`);
+    lines.push("");
+
+    if (agg && agg.lessonDays > 0) {
+      lines.push(`📌 1. 기간 핵심 성취 요약 (${agg.lessonDays}일 수업)`);
+      lines.push(`• 숙제 성실도: 완료 ${agg.hwDoneCount}회${agg.hwRate > 0 ? ` (성실도 ${agg.hwRate}%)` : ""}${agg.hwOtherCount > 0 ? ` / 미완·기타 ${agg.hwOtherCount}회` : ""}`);
+      if (agg.bookCount > 0 || agg.diagCount > 0) {
+        lines.push(`• 독서 & 진단: 총 ${agg.bookCount}권 학습${agg.diagCount > 0 ? ` · 독서이해도 평균 ${agg.diagAvg}점 (최고 ${agg.diagMax}점)` : ""}`);
+      }
+      if (agg.vocabCount > 0) {
+        lines.push(`• 어휘 확인 학습: ${agg.vocabCount}회 실시 · 평균 첫 정답률 ${agg.vocabAvg}% (최고 ${agg.vocabMax}%)`);
+      }
+      if (agg.trTotalCount > 0) {
+        lines.push(`• 집중 트레이닝: 총 ${agg.trTotalCount}회 실시 (잘 이해함 ${agg.undGood}회 / 보통 ${agg.undMid}회${agg.undLow > 0 ? ` / 보충필요 ${agg.undLow}회` : ""})`);
+      }
+
+      if (agg.bookRows && agg.bookRows.length > 0) {
+        lines.push("");
+        lines.push(`📚 2. 기간 내 주요 학습 도서 & 진단 성취`);
+        agg.bookRows.slice(0, 6).forEach(b => {
+          const parts = [];
+          if (b.dScore !== "" && b.dScore !== undefined) parts.push(`진단 ${b.dScore}점`);
+          if (b.vRate !== "" && b.vRate !== undefined) parts.push(`어휘 ${b.vRate}%`);
+          lines.push(`• [${b.date}] ${b.book || "어휘 학습"}${b.level ? `(${b.level})` : ""}${parts.length ? ` — ${parts.join(" · ")}` : ""}`);
+          if (b.step2) lines.push(`  └ 독서발자국: "${b.step2}"`);
+        });
+      }
+
+      if (agg.trSummary && agg.trSummary.length > 0) {
+        lines.push("");
+        lines.push(`✏️ 3. 영역별 집중 트레이닝 진행 현황`);
+        agg.trSummary.forEach(t => {
+          lines.push(`• ${t.type}: ${t.count}회 실시${t.avgErr !== "-" ? ` (평균 오답 ${t.avgErr}개)` : ""}${t.details && t.details !== "-" ? ` — ${t.details}` : ""}`);
+        });
+      }
+
+      if (agg.wrongWords && agg.wrongWords.length > 0) {
+        lines.push("");
+        lines.push(`📝 4. 기간 내 집중 복습 어휘: ${agg.wrongWords.slice(0, 12).join(", ")}${agg.wrongWords.length > 12 ? ` 외 ${agg.wrongWords.length - 12}개` : ""}`);
+      }
+
+      if (agg.footprints && agg.footprints.length > 0) {
+        lines.push("");
+        lines.push(`🌱 5. 학생 자기주도 발자국 & 수업 다짐`);
+        agg.footprints.slice(0, 4).forEach(fp => {
+          lines.push(`• [${fp.date}] ${fp.text}`);
+        });
+      }
+    } else {
+      lines.push(`• 선택하신 기간(${periodLabel}) 동안 정규 독서 및 국어 문해력 수업을 성실히 수행하였습니다.`);
+    }
+
+    if (extraSummary && extraSummary.trim()) {
+      lines.push("");
+      lines.push(`🧭 원장님 종합 코칭 소견`);
+      lines.push(extraSummary.trim());
+    } else if (agg && agg.coachingNote) {
+      lines.push("");
+      lines.push(`🧭 중점 지도 방향: ${agg.coachingNote}`);
+    }
+
+    lines.push("");
+    lines.push(`가정에서도 우리 ${studentName} 학생이 꾸준히 성장할 수 있도록 따뜻한 칭찬과 격려 부탁드립니다. 감사합니다! 🌿`);
+    return lines.join("\n");
+  }
+
+  showPeriodBriefingModal(studentName, startStr, endStr, extraSummary = "") {
+    const selectorRow = document.getElementById("briefingSelectorRow");
+    if (selectorRow) selectorRow.style.display = "none";
+    const cleanTarget = (studentName || "").replace(/\s+/g, "");
+    const memberRec = (this.app.state.memberAnalysis || []).find(
+      m => (m.name || "").replace(/\s+/g, "") === cleanTarget
+    );
+    const phone = memberRec ? (memberRec.phone || "").trim() : "";
+    const message = this.buildPeriodBriefingMessage(studentName, startStr, endStr, extraSummary);
+    this.openSmsModalWithContent(`📊 기간 종합 학습 브리핑 발송 / 카톡 복사 (${studentName})`, phone, message);
   }
 
   openSmsModalWithContent(titleText, phone, message) {

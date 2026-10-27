@@ -1094,6 +1094,7 @@ class CRMManager {
     if (startInput && endInput && savedStart && savedEnd) {
       startInput.value = savedStart;
       endInput.value = savedEnd;
+      this.renderPeriodVisualSummary();
       return; // 복원 성공 시 종료
     }
 
@@ -1146,6 +1147,7 @@ class CRMManager {
           if (isYmd(startYmd) && isYmd(endYmd)) {
             startInput.value = startYmd;
             endInput.value = endYmd;
+            this.renderPeriodVisualSummary();
             return; // 복원 성공 시 함수 종료
           }
         }
@@ -1157,6 +1159,7 @@ class CRMManager {
       const pad = (n) => String(n).padStart(2, '0');
       endInput.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
       startInput.value = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
+      this.renderPeriodVisualSummary();
     }
   }
 
@@ -1661,22 +1664,22 @@ class CRMManager {
       });
     });
 
-    // 3. Sort chronologically (newest first).
+    // 3. Sort chronologically (newest first, including year).
+    const curYear = new Date().getFullYear();
     const parseLogDateToVal = (dateStr) => {
       if (!dateStr) return 0;
-      // Handle YYYY-MM-DD
-      const ymdMatch = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+      const ymdMatch = String(dateStr).match(/(\d{4})[\.\/-](\d{1,2})[\.\/-](\d{1,2})/);
       if (ymdMatch) {
+        const year = parseInt(ymdMatch[1], 10);
         const month = parseInt(ymdMatch[2], 10);
         const day = parseInt(ymdMatch[3], 10);
-        return month * 100 + day;
+        return year * 10000 + month * 100 + day;
       }
-      // Handle M/D or M.D
-      const mdMatch = dateStr.match(/(\d+)[\/\.-](\d+)/);
+      const mdMatch = String(dateStr).match(/(\d{1,2})[\/\.-](\d{1,2})/);
       if (mdMatch) {
         const month = parseInt(mdMatch[1], 10);
         const day = parseInt(mdMatch[2], 10);
-        return month * 100 + day;
+        return curYear * 10000 + month * 100 + day;
       }
       return 0;
     };
@@ -1870,12 +1873,13 @@ class CRMManager {
     const cycleSelect = document.getElementById("crmAiReportCycle");
     const extraInput = document.getElementById("crmAiReportExtraInput");
 
-    // 원장님 입력 보존용 이벤트 리스너 등록 (학생별로 저장)
+    // 원장님 입력 보존용 이벤트 리스너 등록 (학생별로 저장 + 기간 변경 시 시각화 대시보드 즉시 갱신)
     if (periodStart) {
       periodStart.addEventListener("change", () => {
         if (this.currentCrmStudentName) {
           localStorage.setItem(`crm_ai_report_start_${this.currentCrmStudentName}`, periodStart.value);
         }
+        this.renderPeriodVisualSummary();
       });
     }
     if (periodEnd) {
@@ -1883,6 +1887,7 @@ class CRMManager {
         if (this.currentCrmStudentName) {
           localStorage.setItem(`crm_ai_report_end_${this.currentCrmStudentName}`, periodEnd.value);
         }
+        this.renderPeriodVisualSummary();
       });
     }
     if (cycleSelect) {
@@ -1900,12 +1905,46 @@ class CRMManager {
       });
     }
 
+    // 빠른 기간 선택 프리셋 버튼 바인딩 (최근 1주 / 2주 / 1개월 / 이번 달)
+    document.querySelectorAll(".btn-period-preset").forEach(btn => {
+      btn.onclick = () => {
+        if (!periodStart || !periodEnd) return;
+        const preset = btn.getAttribute("data-preset");
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        const endIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        let startIso = endIso;
+        if (preset === "7d") {
+          const d = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+          startIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+          if (cycleSelect) cycleSelect.value = "weekly";
+        } else if (preset === "14d") {
+          const d = new Date(now.getTime() - 13 * 24 * 60 * 60 * 1000);
+          startIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+          if (cycleSelect) cycleSelect.value = "biweekly";
+        } else if (preset === "30d") {
+          const d = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+          startIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+          if (cycleSelect) cycleSelect.value = "monthly";
+        } else if (preset === "this_month") {
+          startIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
+          if (cycleSelect) cycleSelect.value = "monthly";
+        }
+        periodStart.value = startIso;
+        periodEnd.value = endIso;
+        if (this.currentCrmStudentName) {
+          localStorage.setItem(`crm_ai_report_start_${this.currentCrmStudentName}`, startIso);
+          localStorage.setItem(`crm_ai_report_end_${this.currentCrmStudentName}`, endIso);
+        }
+        this.renderPeriodVisualSummary();
+      };
+    });
+
     if (periodStart && periodEnd) {
       const today = new Date();
       const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
       
       const pad = (n) => String(n).padStart(2, '0');
-      // 기본값은 restoreCrmAiReportDatesForStudent에서 복원하므로, 없을 때를 대비한 초깃값만 설정
       if (!periodEnd.value) {
         periodEnd.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
       }
@@ -1914,7 +1953,26 @@ class CRMManager {
       }
     }
     
-    // AI 리포트 생성 버튼 바인딩
+    // 1) 시트 학습기록으로 즉시 시각화 분석표 생성 (0초, 이미지/AI 없이도 작동)
+    const btnInstant = document.getElementById("btnCrmInstantDataReport");
+    if (btnInstant) {
+      btnInstant.onclick = () => this.generateDataDrivenReport();
+    }
+
+    // 2) 선택 기간 종합 브리핑 발송 / 카톡 복사
+    const btnPeriodBrief = document.getElementById("btnCrmPeriodBriefing");
+    if (btnPeriodBrief) {
+      btnPeriodBrief.onclick = () => {
+        const name = this.currentCrmStudentName;
+        if (!name) return;
+        const start = periodStart ? periodStart.value : "";
+        const end = periodEnd ? periodEnd.value : "";
+        const extra = extraInput ? extraInput.value.trim() : "";
+        this.app.smsManager.showPeriodBriefingModal(name, start, end, extra);
+      };
+    }
+
+    // 3) AI 리포트 생성 버튼 바인딩
     const btnGen = document.getElementById("btnCrmGenerateAiReport");
     if (btnGen) {
       btnGen.onclick = () => this.generateAiReport();
@@ -1933,6 +1991,25 @@ class CRMManager {
     if (btnPrint) {
       btnPrint.onclick = () => {
         window.print();
+      };
+    }
+
+    // 모달 내 기간 브리핑 발송 버튼 바인딩
+    const btnModalBrief = document.getElementById("btnAiReportSendBriefing");
+    if (btnModalBrief) {
+      btnModalBrief.onclick = () => {
+        const name = document.getElementById("aiReportStudentName")?.innerText.trim() || this.currentCrmStudentName;
+        if (!name) return;
+        const start = periodStart ? periodStart.value : "";
+        const end = periodEnd ? periodEnd.value : "";
+        // 모달 내 작성된 총평이나 인사말을 브리핑 하단 코칭 소견으로 함께 포함
+        let commentText = "";
+        const secs = document.querySelectorAll("#aiReportSectionsContainer .ai-report-section");
+        if (secs.length > 0) {
+          const lastTextarea = secs[secs.length - 1].querySelector(".ai-report-textarea");
+          if (lastTextarea) commentText = lastTextarea.innerText.trim();
+        }
+        this.app.smsManager.showPeriodBriefingModal(name, start, end, commentText);
       };
     }
 
@@ -2004,8 +2081,6 @@ class CRMManager {
         }
       };
     }
-    
-
 
     // 💡 A4 성적표 내의 수치 수정 시 실시간 그래프 반응 로직
     const statValIds = [
@@ -2038,6 +2113,411 @@ class CRMManager {
         };
       }
     });
+  }
+
+  // [핵심 엔진] 선택된 기간(startStr ~ endStr) 동안의 [학습기록] 18열 + [회원 분석] + [교재단계관리] 데이터를 정밀 집계
+  aggregateStudentPeriodData(name, startStr, endStr) {
+    const cleanTarget = String(name || "").replace(/\s+/g, "");
+    const toIso = (s) => {
+      if (!s) return "";
+      const str = String(s).trim();
+      const mFull = str.match(/^(\d{4})[\.\/-]\s*(\d{1,2})[\.\/-]\s*(\d{1,2})/);
+      if (mFull) {
+        return `${mFull[1]}-${String(mFull[2]).padStart(2, "0")}-${String(mFull[3]).padStart(2, "0")}`;
+      }
+      const mMd = str.match(/^(\d{1,2})[\/\.](\d{1,2})/);
+      if (mMd) {
+        const y = new Date().getFullYear();
+        return `${y}-${String(mMd[1]).padStart(2, "0")}-${String(mMd[2]).padStart(2, "0")}`;
+      }
+      return str.slice(0, 10);
+    };
+
+    const startIso = toIso(startStr) || "2000-01-01";
+    const endIso = toIso(endStr) || "2099-12-31";
+
+    const allRecs = (this.app.state.learningRecords || []).filter(r => {
+      if ((r.name || "").replace(/\s+/g, "") !== cleanTarget) return false;
+      const dIso = toIso(r.date);
+      return dIso && dIso >= startIso && dIso <= endIso;
+    });
+
+    const dateSet = new Set();
+    const hwByDate = {};
+    const bookSet = new Set();
+    const bookRows = [];
+    const diagScores = [];
+    const vocabRates = [];
+    let vocabWrongTotal = 0;
+    const wrongWordsSet = new Set();
+    const trByType = {};
+    const trOrder = [];
+    const trRows = [];
+    let undGood = 0, undMid = 0, undLow = 0;
+    const footprints = [];
+    let latestLevel = "";
+
+    allRecs.forEach(r => {
+      const dIso = toIso(r.date);
+      const md = dIso.length >= 10 ? dIso.slice(5) : dIso;
+      if (dIso) dateSet.add(dIso);
+
+      let hw = String(r.hwStatus || "").trim();
+      if (hw === "완료") hw = "숙제완료";
+      else if (hw === "미완료" || hw === "미완") hw = "숙제미완";
+      else if (hw === "학원에서 풀기") hw = "학원에서풀기";
+      if (hw && !hwByDate[dIso]) hwByDate[dIso] = hw;
+
+      const lv = String(r.level || "").trim();
+      if (lv && !latestLevel) latestLevel = lv;
+
+      const bk = String(r.book || "").trim();
+      let step1 = String(r.step1Memo || "").trim();
+      if (step1 && bk && step1 === bk) step1 = "";
+
+      const vTot = r.vocabTotal !== "" && r.vocabTotal !== undefined ? Number(r.vocabTotal) : "";
+      const vCor = r.vocabCorrect !== "" && r.vocabCorrect !== undefined ? Number(r.vocabCorrect) : "";
+      const vRateRaw = r.vocabRate !== "" && r.vocabRate !== undefined ? Number(r.vocabRate) : "";
+      const dScore = r.diagScore !== "" && r.diagScore !== undefined ? Number(r.diagScore) : "";
+
+      const trDet = String(r.detail || "").trim();
+      let step2 = String(r.step2Memo || "").trim();
+      if (step2 && trDet && step2 === trDet) step2 = "";
+
+      const wrongStr = String(r.wrongWords || "").trim();
+      if (bk) bookSet.add(bk.replace(/\s+/g, "").toLowerCase());
+
+      let vRate = "";
+      if (typeof vTot === "number" && !isNaN(vTot) && vTot > 0) {
+        vRate = (typeof vRateRaw === "number" && !isNaN(vRateRaw))
+          ? vRateRaw
+          : (typeof vCor === "number" && !isNaN(vCor) ? Math.round((vCor / vTot) * 100) : "");
+        if (vRate !== "") vocabRates.push(vRate);
+        if (typeof vCor === "number" && !isNaN(vCor)) vocabWrongTotal += Math.max(0, vTot - vCor);
+      }
+
+      if (typeof dScore === "number" && !isNaN(dScore) && dScore > 0) {
+        diagScores.push(dScore);
+      }
+
+      if (bk || vRate !== "" || (typeof dScore === "number" && !isNaN(dScore)) || step2 || wrongStr) {
+        bookRows.push({
+          date: md,
+          level: lv,
+          book: bk,
+          vTotal: vTot,
+          vCorr: vCor,
+          vRate: vRate,
+          dScore: (typeof dScore === "number" && !isNaN(dScore)) ? dScore : "",
+          step2: step2,
+          wrong: wrongStr
+        });
+      }
+
+      if (wrongStr) {
+        wrongStr.split(",").forEach(w => {
+          const cw = w.trim();
+          if (cw && cw !== "짝짓기" && cw !== "(짝짓기)") wrongWordsSet.add(cw);
+        });
+      }
+
+      const trType = String(r.training || "").trim();
+      const errVal = r.errors !== "" && r.errors !== undefined && !isNaN(Number(r.errors)) ? Number(r.errors) : "";
+      let und = String(r.understanding || "").trim();
+      if (und === "어려웠어요" || und === "헷갈려요") und = "아직 헷갈려요";
+      const litMemo = String(r.literacyMemo || "").trim();
+
+      if (trType) {
+        if (!trByType[trType]) {
+          trByType[trType] = { type: trType, count: 0, errs: [], details: [] };
+          trOrder.push(trType);
+        }
+        trByType[trType].count++;
+        if (errVal !== "") trByType[trType].errs.push(errVal);
+        if (trDet && trByType[trType].details.length < 4 && !trByType[trType].details.includes(trDet)) {
+          trByType[trType].details.push(trDet);
+        }
+        if (und === "잘 이해했어요") undGood++;
+        else if (und === "보통이에요") undMid++;
+        else if (und === "아직 헷갈려요") undLow++;
+
+        trRows.push({
+          date: md,
+          type: trType,
+          detail: trDet,
+          err: errVal,
+          und: und,
+          memo: litMemo
+        });
+      }
+
+      const refl = String(r.reflection || "").trim();
+      const fpParts = [];
+      if (step1) fpParts.push(`[성실발자국] ${step1}`);
+      if (step2) fpParts.push(`[독서발자국] ${step2}`);
+      if (litMemo) fpParts.push(`[문해력발자국] ${litMemo}`);
+      if (refl) fpParts.push(`[나의 다짐] "${refl}"`);
+      if (fpParts.length > 0) {
+        footprints.push({ date: md, text: fpParts.join(" · ") });
+      }
+    });
+
+    let hwDoneCount = 0, hwOtherCount = 0;
+    Object.values(hwByDate).forEach(h => {
+      if (h === "숙제완료") hwDoneCount++;
+      else if (h) hwOtherCount++;
+    });
+    const hwTotalChecked = hwDoneCount + hwOtherCount;
+    const hwRate = hwTotalChecked > 0 ? Math.round((hwDoneCount / hwTotalChecked) * 100) : (dateSet.size > 0 ? 100 : 0);
+
+    const vocabCount = vocabRates.length;
+    const vocabAvg = vocabCount ? Math.round((vocabRates.reduce((a, b) => a + b, 0) / vocabCount) * 10) / 10 : 0;
+    const vocabMax = vocabCount ? Math.max(...vocabRates) : 0;
+    const vocabMin = vocabCount ? Math.min(...vocabRates) : 0;
+
+    const diagCount = diagScores.length;
+    const diagAvg = diagCount ? Math.round((diagScores.reduce((a, b) => a + b, 0) / diagCount) * 10) / 10 : 0;
+    const diagMax = diagCount ? Math.max(...diagScores) : 0;
+
+    const trSummary = trOrder.map(tKey => {
+      const tg = trByType[tKey];
+      const avgErr = tg.errs.length ? Math.round((tg.errs.reduce((a, b) => a + b, 0) / tg.errs.length) * 10) / 10 : "-";
+      return {
+        type: tg.type,
+        count: tg.count,
+        avgErr: avgErr,
+        details: tg.details.join(", ") || "-"
+      };
+    });
+
+    const memberRec = (this.app.state.memberAnalysis || []).find(
+      m => m && m.name && m.name.replace(/\s+/g, "") === cleanTarget
+    );
+    const goalText = memberRec ? String(memberRec.progress || "").trim() : "";
+    const coachingNote = memberRec ? String(memberRec.notes || "").trim() : "";
+    if (!latestLevel && memberRec && memberRec.levelUp) {
+      latestLevel = String(memberRec.levelUp).trim();
+    }
+
+    const promptLines = [];
+    promptLines.push(`- 기간 내 수업 참여 일수: ${dateSet.size}일 (숙제완료 ${hwDoneCount}회, 미완/기타 ${hwOtherCount}회, 성실도 ${hwRate}%)`);
+    promptLines.push(`- 학습 도서 수: ${bookSet.size}권 / 독서이해도 진단: ${diagCount}회 실시 (평균 ${diagAvg}점, 최고 ${diagMax}점)`);
+    promptLines.push(`- 어휘 확인 학습: ${vocabCount}회 실시 (평균 첫 정답률 ${vocabAvg}%, 최고 ${vocabMax}%, 총 오답 ${vocabWrongTotal}개)`);
+    promptLines.push(`- 4단계 집중 트레이닝: 총 ${trRows.length}회 실시 (이해도: 잘 이해했어요 ${undGood}회, 보통이에요 ${undMid}회, 아직 헷갈려요 ${undLow}회)`);
+    if (bookRows.length > 0) {
+      promptLines.push(`- 도서 및 어휘 상세 내역:\n` + bookRows.slice(0, 12).map(b =>
+        `  * [${b.date}] ${b.book || "어휘학습"}(${b.level || "-"}): 진단 ${b.dScore !== "" ? b.dScore + "점" : "-"}, 어휘 ${b.vRate !== "" ? b.vRate + "%" : "-"}${b.step2 ? `, 독서발자국: "${b.step2}"` : ""}`
+      ).join("\n"));
+    }
+    if (trSummary.length > 0) {
+      promptLines.push(`- 영역별 트레이닝 요약:\n` + trSummary.map(t =>
+        `  * ${t.type}: ${t.count}회 (평균 오답 ${t.avgErr}개, 진도: ${t.details})`
+      ).join("\n"));
+    }
+    if (wrongWordsSet.size > 0) {
+      promptLines.push(`- 기간 내 복습 대상 틀린 어휘: ${Array.from(wrongWordsSet).slice(0, 20).join(", ")}`);
+    }
+    if (footprints.length > 0) {
+      promptLines.push(`- 학생 발자국 및 다짐 기록:\n` + footprints.slice(0, 8).map(fp => `  * [${fp.date}] ${fp.text}`).join("\n"));
+    }
+
+    return {
+      lessonDays: dateSet.size,
+      hwDoneCount,
+      hwOtherCount,
+      hwRate,
+      bookCount: bookSet.size,
+      diagCount,
+      diagAvg,
+      diagMax,
+      vocabCount,
+      vocabAvg,
+      vocabMax,
+      vocabMin,
+      vocabWrongTotal,
+      wrongWords: Array.from(wrongWordsSet),
+      trTotalCount: trRows.length,
+      undGood,
+      undMid,
+      undLow,
+      bookRows,
+      trSummary,
+      trRows,
+      footprints,
+      latestLevel,
+      goalText,
+      coachingNote,
+      promptSummaryText: promptLines.join("\n")
+    };
+  }
+
+  // [기간별 시각화 대시보드] 시작일~종료일 변경 시 해당 기간의 [학습기록] 18열 데이터를 카드로 즉시 시각화
+  renderPeriodVisualSummary() {
+    const container = document.getElementById("crmPeriodVisualDashboard");
+    if (!container) return;
+    const name = this.currentCrmStudentName;
+    if (!name) {
+      container.style.display = "none";
+      return;
+    }
+    const start = document.getElementById("crmAiReportPeriodStart")?.value || "";
+    const end = document.getElementById("crmAiReportPeriodEnd")?.value || "";
+    const agg = this.aggregateStudentPeriodData(name, start, end);
+
+    container.style.display = "block";
+    if (agg.lessonDays === 0) {
+      container.innerHTML = `
+        <div style="padding: 1rem; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px dashed rgba(148,163,184,0.3); text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+          📅 선택하신 기간(<strong>${this.escapeHtml(start)} ~ ${this.escapeHtml(end)}</strong>)에 저장된 <strong>[학습기록]</strong> 데이터가 없습니다. 기간을 조정하거나 위 프리셋 버튼을 눌러보세요.
+        </div>
+      `;
+      return;
+    }
+
+    const bookTagsHtml = agg.bookRows.slice(0, 6).map(b => {
+      const sub = [];
+      if (b.dScore !== "") sub.push(`진단 ${b.dScore}점`);
+      if (b.vRate !== "") sub.push(`어휘 ${b.vRate}%`);
+      return `<span style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#bfdbfe; padding:0.22rem 0.55rem; border-radius:6px; font-size:0.76rem;">
+        <strong>${this.escapeHtml(b.book || "어휘학습")}</strong>${sub.length ? ` <span style="color:#93c5fd;">(${sub.join("·")})</span>` : ""}
+      </span>`;
+    }).join(" ");
+
+    const trTagsHtml = agg.trSummary.map(t =>
+      `<span style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#a7f3d0; padding:0.22rem 0.55rem; border-radius:6px; font-size:0.76rem;">
+        <strong>${this.escapeHtml(t.type)}</strong> ${t.count}회${t.avgErr !== "-" ? ` (평균오답 ${t.avgErr}개)` : ""}
+      </span>`
+    ).join(" ");
+
+    const wrongHtml = agg.wrongWords.length > 0
+      ? `<div style="margin-top:0.55rem; font-size:0.76rem; color:#fed7aa;">📝 <strong>복습 어휘(${agg.wrongWords.length}개):</strong> ${this.escapeHtml(agg.wrongWords.slice(0, 12).join(", "))}${agg.wrongWords.length > 12 ? ` 외 ${agg.wrongWords.length - 12}개` : ""}</div>`
+      : "";
+
+    container.innerHTML = `
+      <div style="background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 1rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+          <span style="font-size:0.86rem; font-weight:700; color:#e2e8f0;">
+            📊 선택 기간(${this.escapeHtml(start.replace(/-/g, "."))} ~ ${this.escapeHtml(end.replace(/-/g, "."))}) [학습기록] 18열 실시간 집계
+          </span>
+          <span style="font-size:0.75rem; color:#93c5fd; background:rgba(37,99,235,0.2); padding:0.18rem 0.6rem; border-radius:12px; font-weight:600;">
+            총 ${agg.lessonDays}일 수업 데이터 연동됨
+          </span>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap:0.65rem;">
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.65rem 0.8rem;">
+            <div style="font-size:0.72rem; color:#94a3b8; font-weight:600;">✅ 수업 참여 · 숙제 성실도</div>
+            <div style="font-size:1.05rem; font-weight:800; color:#f8fafc; margin-top:0.2rem;">수업 ${agg.lessonDays}일 · 완료 ${agg.hwDoneCount}회</div>
+            <div style="height:5px; background:rgba(255,255,255,0.1); border-radius:3px; margin-top:0.4rem; overflow:hidden;">
+              <div style="width:${agg.hwRate}%; height:100%; background:#10b981;"></div>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.65rem 0.8rem;">
+            <div style="font-size:0.72rem; color:#94a3b8; font-weight:600;">📘 독서이해도 진단 (${agg.bookCount}권)</div>
+            <div style="font-size:1.05rem; font-weight:800; color:#60a5fa; margin-top:0.2rem;">${agg.diagCount > 0 ? `평균 ${agg.diagAvg}점 (최고 ${agg.diagMax}점)` : `학습도서 ${agg.bookCount}권`}</div>
+            <div style="height:5px; background:rgba(255,255,255,0.1); border-radius:3px; margin-top:0.4rem; overflow:hidden;">
+              <div style="width:${agg.diagCount > 0 ? Math.min(100, agg.diagAvg) : Math.min(100, agg.bookCount * 20)}%; height:100%; background:#3b82f6;"></div>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.65rem 0.8rem;">
+            <div style="font-size:0.72rem; color:#94a3b8; font-weight:600;">📗 어휘 확인 학습 (${agg.vocabCount}회)</div>
+            <div style="font-size:1.05rem; font-weight:800; color:#34d399; margin-top:0.2rem;">${agg.vocabCount > 0 ? `평균 ${agg.vocabAvg}% (오답 ${agg.vocabWrongTotal}개)` : "기록 없음"}</div>
+            <div style="height:5px; background:rgba(255,255,255,0.1); border-radius:3px; margin-top:0.4rem; overflow:hidden;">
+              <div style="width:${agg.vocabCount > 0 ? Math.min(100, agg.vocabAvg) : 0}%; height:100%; background:#10b981;"></div>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.65rem 0.8rem;">
+            <div style="font-size:0.72rem; color:#94a3b8; font-weight:600;">✏️ 집중 트레이닝 (${agg.trTotalCount}회)</div>
+            <div style="font-size:1.05rem; font-weight:800; color:#fbbf24; margin-top:0.2rem;">잘이해 ${agg.undGood} · 보통 ${agg.undMid}${agg.undLow > 0 ? ` · 보충 ${agg.undLow}` : ""}</div>
+            <div style="height:5px; background:rgba(255,255,255,0.1); border-radius:3px; margin-top:0.4rem; overflow:hidden;">
+              <div style="width:${agg.trTotalCount > 0 ? Math.min(100, Math.round(((agg.undGood + agg.undMid * 0.8) / agg.trTotalCount) * 100)) : 0}%; height:100%; background:#f59e0b;"></div>
+            </div>
+          </div>
+        </div>
+        ${(bookTagsHtml || trTagsHtml) ? `<div style="display:flex; flex-wrap:wrap; gap:0.35rem; margin-top:0.7rem;">${bookTagsHtml} ${trTagsHtml}</div>` : ""}
+        ${wrongHtml}
+      </div>
+    `;
+  }
+
+  // [즉시 시각화 분석표 생성] Gemini API나 이미지 업로드 없이도 [학습기록] 18열 데이터만으로 A4 시각화 분석표를 0초 만에 즉시 생성
+  generateDataDrivenReport() {
+    const name = this.currentCrmStudentName;
+    if (!name) {
+      alert("조회할 학생을 먼저 선택해 주세요.");
+      return;
+    }
+    const start = document.getElementById("crmAiReportPeriodStart")?.value || "";
+    const end = document.getElementById("crmAiReportPeriodEnd")?.value || "";
+    const extra = document.getElementById("crmAiReportExtraInput")?.value.trim() || "";
+    const student = this.app.state.students.find(s => s.name.replace(/\s+/g, "") === name.replace(/\s+/g, ""));
+    const grade = student ? student.grade : "초등학생";
+    const agg = this.aggregateStudentPeriodData(name, start, end);
+
+    const compScore = agg.diagCount > 0 ? Math.round(agg.diagAvg) : (agg.vocabCount > 0 ? Math.round(agg.vocabAvg) : 88);
+    const vocabScore = agg.vocabCount > 0 ? Math.round(agg.vocabAvg) : compScore;
+    const readSpeed = (student && parseInt(student.lidinReadingSpeed, 10)) || 460;
+    const trAcc = agg.trTotalCount > 0
+      ? Math.max(70, Math.min(98, 100 - Math.round((agg.trRows.reduce((s, r) => s + (Number(r.err) || 0), 0) / agg.trTotalCount) * 6)))
+      : 86;
+
+    const bookListStr = agg.bookRows.length > 0
+      ? agg.bookRows.map(b => `『${b.book || "어휘학습"}』${b.level ? `(${b.level})` : ""}${b.dScore !== "" ? ` [진단 ${b.dScore}점]` : ""}${b.vRate !== "" ? ` [어휘 ${b.vRate}%]` : ""}`).join(", ")
+      : "정규 과정 도서";
+
+    const trListStr = agg.trSummary.length > 0
+      ? agg.trSummary.map(t => `${t.type} ${t.count}회(${t.details}, 평균 오답 ${t.avgErr}개)`).join(", ")
+      : "문해력 및 독해 집중 훈련";
+
+    const fpStr = agg.footprints.length > 0
+      ? agg.footprints.slice(0, 5).map(f => `[${f.date}] ${f.text}`).join("\n")
+      : "매 수업 성실한 태도로 자기주도 학습 기록을 남기며 참여하였습니다.";
+
+    const report = {
+      title: "기간별 학업 성취 종합 분석 리포트",
+      introMessage: `안녕하세요, ${this.app.academyName || "독서와국어"}입니다. ${name} 학생이 ${start.replace(/-/g, ".")} ~ ${end.replace(/-/g, ".")} 기간 동안 학원에서 수행한 독서이해도 진단, 어휘 확인 학습, 4단계 집중 트레이닝 및 자기주도 발자국을 종합 분석한 리포트입니다.`,
+      stats: {
+        level: agg.latestLevel || "",
+        comprehension: compScore,
+        readSpeed: readSpeed,
+        vocab: vocabScore,
+        fact: Math.min(100, Math.max(65, compScore + 4)),
+        infer: trAcc,
+        critique: agg.hwRate || 90
+      },
+      periodVisualData: agg,
+      sections: [
+        {
+          title: "1. 수업 참여 및 숙제 성실도 분석",
+          text: `조회 기간(${start.replace(/-/g, ".")} ~ ${end.replace(/-/g, ".")}) 동안 총 ${agg.lessonDays}일의 수업에 참여하였으며, 숙제 완료 ${agg.hwDoneCount}회(성실도 ${agg.hwRate}%)를 기록하였습니다. ${agg.hwRate >= 85 ? "가정에서의 과제 수행과 등원 후 준비 태도가 매우 안정적이며 자기주도적 학습 습관이 탄탄하게 자리잡고 있습니다." : "과제 이행 편차를 줄이고 매 수업 전 핵심 분량을 꾸준히 완수할 수 있도록 1:1 성실도 점검을 병행하고 있습니다."}`
+        },
+        {
+          title: "2. 독서이해도 진단 및 완독 도서 성취도",
+          text: `기간 내 총 ${agg.bookCount}권의 도서(${bookListStr})를 학습하였으며, 독서이해도 진단 평균 ${agg.diagCount > 0 ? agg.diagAvg + "점(최고 " + agg.diagMax + "점)" : compScore + "점 수준"}의 성취를 보였습니다. 글의 중심 내용과 세부 줄거리를 정확히 파악하며 정독하는 습관을 기르고 있습니다.`
+        },
+        {
+          title: "3. 어휘 확인 학습 및 복습 어휘 분석",
+          text: agg.vocabCount > 0
+            ? `도서 및 필수 어휘 퀴즈를 총 ${agg.vocabCount}회 실시하여 평균 첫 정답률 ${agg.vocabAvg}%(최고 ${agg.vocabMax}%)를 달성하였습니다.${agg.wrongWords.length > 0 ? ` 기간 내 헷갈렸던 어휘(${agg.wrongWords.slice(0, 10).join(", ")})는 문맥 속 예문과 함께 즉석 재학습을 완료하였으며, 오답 복습지로 2차 확인을 진행합니다.` : " 첫 시도에서 대부분의 어휘 뜻을 정확히 변별하는 우수한 어휘력을 보여주었습니다."}`
+            : `독서 전후 문맥 속에서 핵심 어휘의 정확한 의미를 파악하고 유의어·활용형을 익히는 어휘 확장 훈련을 꾸준히 진행하였습니다.`
+        },
+        {
+          title: "4. 4단계 집중 트레이닝 및 문해력 성취",
+          text: agg.trTotalCount > 0
+            ? `기간 내 ${trListStr} 등 총 ${agg.trTotalCount}회의 집중 트레이닝을 수행하였습니다. 학생 자기 점검 결과 '잘 이해했어요' ${agg.undGood}회, '보통이에요' ${agg.undMid}회${agg.undLow > 0 ? `, '아직 헷갈려요' ${agg.undLow}회` : ""}로 나타났으며, 오답 문항에 대해서는 선지 근거 찾기와 오답노트 교정을 통해 추론적 독해력을 강화하였습니다.`
+            : `지문의 핵심 문장 밑줄 긋기와 문단별 중심 생각 요약 훈련을 통해 비문학·문학 지문 분석력을 체계적으로 다지고 있습니다.`
+        },
+        {
+          title: "5. 나의 시간, 나의 기록 (발자국 & 자기주도 태도)",
+          text: fpStr
+        },
+        {
+          title: "6. 원장 총평 및 향후 맞춤 코칭 방향",
+          text: `${extra ? extra + "\n" : ""}${agg.coachingNote ? agg.coachingNote + " " : ""}${name} 학생이 다음 단계 도서와 문해력 교재에서도 흔들림 없는 정독 습관과 어휘 적용력을 발휘할 수 있도록 학원에서 1:1 밀착 코칭을 이어가겠습니다. 가정에서도 따뜻한 칭찬과 응원 부탁드립니다.`
+        }
+      ]
+    };
+
+    this.renderAiReportPreview(report, start, end, name, grade);
   }
 
   // 파일 업로드 핸들러 (이미지 및 PDF 지원)
@@ -2129,9 +2609,10 @@ class CRMManager {
     const cycle = document.getElementById("crmAiReportCycle").value;
     const start = document.getElementById("crmAiReportPeriodStart").value;
     const end = document.getElementById("crmAiReportPeriodEnd").value;
+    const agg = this.aggregateStudentPeriodData(name, start, end);
 
-    if (this.crmAiReportImages.length === 0 && cycle !== 'lidin_report') {
-      alert("❌ 리포트 작성을 위해 최소 1개 이상의 LMS 보고서 캡처 이미지를 드롭존에 업로드해 주세요!");
+    if (this.crmAiReportImages.length === 0 && cycle !== 'lidin_report' && agg.lessonDays === 0) {
+      alert("❌ 선택하신 기간에 학습기록 데이터가 없고 업로드된 이미지도 없습니다.\n기간을 조정하시거나 LMS 캡처 이미지를 업로드해 주세요.");
       return;
     }
     
@@ -2140,32 +2621,20 @@ class CRMManager {
     btnGen.innerHTML = "⏳ AI 성적표 판독 및 종합 코멘트 집필 중 (약 10초)...";
     btnGen.disabled = true;
     
-    // [자동 수집 연동] 만약 리드인 템플릿인데 데이터를 미리 수집하지 않았다면 생성 클릭 시 자동 실행
+    // [자동 수집 연동] 리드인 템플릿일 때 로컬 에이전트가 켜져 있으면 보조 수집 시도, 꺼져 있어도 시트 기간 집계 데이터(agg)로 즉시 진행
     if (cycle === 'lidin_report' && !this.tempLidinScrapedData) {
-      btnGen.innerHTML = "⏳ 리드인 독서활동 분석 데이터 조회 중...";
       try {
-        const res = await fetch(`http://localhost:3010/fetch-analysis?name=${encodeURIComponent(name)}&startDate=${start}&endDate=${end}`);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 1800);
+        const res = await fetch(`http://localhost:3010/fetch-analysis?name=${encodeURIComponent(name)}&startDate=${start}&endDate=${end}`, { signal: controller.signal });
+        clearTimeout(timer);
         const json = await res.json();
-        if (json.success) {
+        if (json && json.success) {
           this.tempLidinScrapedData = json.data;
-        } else {
-          throw new Error(json.error || "수집기 응답 실패");
         }
-      } catch (e) {
-        console.error("Auto fetch Lidin text data failed:", e);
-        btnGen.innerHTML = originalText;
-        btnGen.disabled = false;
-        alert(`❌ 리드인 성적 자동 수집 실패: ${e.message || "에이전트 연결 오류"}\n\n우측 상단의 [🔄 리드인 성적 가져오기] 버튼을 클릭해 먼저 데이터를 수집 완료해 주세요. (로컬에서 readin-agent가 켜져 있어야 합니다.)`);
-        return;
+      } catch (_) {
+        // 로컬 에이전트 미실행 시 시트 [학습기록]·[출석부] 기간 집계(agg)로 진행
       }
-    }
-
-    // 최종 안전 검사: 수집된 성적 데이터가 없는데 생성하려고 하면 차단
-    if (cycle === 'lidin_report' && !this.tempLidinScrapedData) {
-      btnGen.innerHTML = originalText;
-      btnGen.disabled = false;
-      alert("❌ 리드인 분석표 성적 데이터가 존재하지 않습니다.\n\n먼저 우측 상단의 [🔄 리드인 성적 가져오기] 버튼을 클릭하여 수집을 완료해 주세요.");
-      return;
     }
 
     try {
@@ -2236,16 +2705,16 @@ class CRMManager {
       }
   
       
-      // [리드인 성적 주입] 크롤링된 실 성적 변수 정의
-      const speedVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.readingSpeed : 0;
-      const compVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.comprehensionScore : 0;
-      const vocabVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.vocabScore : 0;
-      const factVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.factScore !== undefined) ? this.tempLidinScrapedData.textData.factScore : 0;
-      const inferVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.inferScore !== undefined) ? this.tempLidinScrapedData.textData.inferScore : 0;
-      const critiqueVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.critiqueScore !== undefined) ? this.tempLidinScrapedData.textData.critiqueScore : 0;
-      const booksCount = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.postReadingCount : 0;
-      const rawLevel = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.level !== undefined) ? this.tempLidinScrapedData.textData.level : "기록 없음";
-      const levelVal = String(rawLevel).includes("레벨") ? rawLevel : `${rawLevel}레벨`;
+      // [리드인 성적 주입] 크롤링된 실 성적 또는 [학습기록] 기간 집계 데이터 폴백
+      const speedVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.readingSpeed : (agg.stats.readSpeed || 0);
+      const compVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.comprehensionScore : (agg.stats.comprehension || 0);
+      const vocabVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.vocabScore : (agg.stats.vocab || 0);
+      const factVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.factScore !== undefined) ? this.tempLidinScrapedData.textData.factScore : (agg.stats.fact || 0);
+      const inferVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.inferScore !== undefined) ? this.tempLidinScrapedData.textData.inferScore : (agg.stats.infer || 0);
+      const critiqueVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.critiqueScore !== undefined) ? this.tempLidinScrapedData.textData.critiqueScore : (agg.stats.critique || 0);
+      const booksCount = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? this.tempLidinScrapedData.textData.postReadingCount : (agg.books.length || 0);
+      const rawLevel = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData && this.tempLidinScrapedData.textData.level !== undefined) ? this.tempLidinScrapedData.textData.level : "맞춤 과정";
+      const levelVal = String(rawLevel).includes("레벨") || String(rawLevel).includes("과정") ? rawLevel : `${rawLevel}레벨`;
       const speedAlertVal = (this.tempLidinScrapedData && this.tempLidinScrapedData.textData) ? (this.tempLidinScrapedData.textData.speedAlert || "") : "";
 
       const textbookRec = this.app.state.textbooks.find(t => t && t.name && t.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
@@ -2337,6 +2806,9 @@ ${pastReportsReference}
 [원장님 추가 요구사항]:
 ${extra || '없음'}
 
+[시트 [학습기록] 기간 정밀 집계 데이터 (매우 중요! 실제 읽은 도서, 숙제 수행률, 어휘 정답률, 트레이닝 기록을 본문에 반드시 구체적으로 반영하세요)]:
+${agg.promptSummaryText}
+
 [구글 시트 연동 데이터 (출결 및 진도)]:
 - 출결 및 일지 기록:
 ${logsSummary}
@@ -2414,6 +2886,9 @@ ${textbookSummary}
 
 [원장님 추가 요구사항]:
 ${extra || '없음'}
+
+[시트 [학습기록] 기간 정밀 집계 데이터 (매우 중요! 실제 읽은 도서, 숙제 수행률, 어휘 정답률, 트레이닝 기록을 본문에 반드시 구체적으로 반영하세요)]:
+${agg.promptSummaryText}
 
 [구글 시트 연동 데이터 (출결 및 진도)]:
 - 출결 및 일지 기록:
@@ -2516,7 +2991,7 @@ ${textbookSummary}
         }
       };
       
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
       
       let response;
       let lastError;
@@ -2711,7 +3186,7 @@ ${textbookSummary}
     if (report.introMessage) {
       const introDiv = document.createElement("div");
       introDiv.className = "ai-report-section";
-      introDiv.style.marginBottom = "0.8rem";
+      introDiv.style.marginBottom = "0.6rem";
       introDiv.style.padding = "0.5rem 0.8rem";
       introDiv.style.background = "#f1f5f9";
       introDiv.style.borderRadius = "6px";
@@ -2721,6 +3196,35 @@ ${textbookSummary}
         <div class="ai-report-textarea" contenteditable="true" style="font-weight: 600; color: #1e293b; outline: none; white-space: pre-wrap; padding: 0.2rem; min-height: auto;">${report.introMessage.trim()}</div>
       `;
       sectionsContainer.appendChild(introDiv);
+    }
+
+    // [기간 시각화 요약 카드] 시트 [학습기록]에 데이터가 존재하면 한눈에 보는 기간 활동 요약표 삽입
+    const agg = this.aggregateStudentPeriodData(name, start, end);
+    if (agg && agg.lessonDays > 0) {
+      const summaryBox = document.createElement("div");
+      summaryBox.className = "ai-report-section";
+      summaryBox.style.marginBottom = "0.6rem";
+      summaryBox.style.padding = "0.55rem 0.75rem";
+      summaryBox.style.background = "#f8fafc";
+      summaryBox.style.border = "1px solid #cbd5e1";
+      summaryBox.style.borderRadius = "8px";
+
+      const bookBadges = agg.books.map(b => `${b.title}(${b.status})`).join(" · ") || "기록 없음";
+      const trainingBadges = agg.trainings.map(t => `${t.type} ${t.detail}`).slice(0, 4).join(" · ") || "기록 없음";
+      const wrongBadges = agg.wrongWords.slice(0, 6).join(", ") || "없음(전 문항 정답)";
+
+      summaryBox.innerHTML = `
+        <div style="font-size: 0.78rem; font-weight: 800; color: #1e3a8a; margin-bottom: 0.35rem; display: flex; justify-content: space-between; align-items: center;">
+          <span>📊 기간 내 핵심 학습 활동 지표 (${startDot} ~ ${endDot})</span>
+          <span style="font-size: 0.72rem; color: #475569; font-weight: 700;">출석 ${agg.lessonDays}회 | 숙제수행 ${agg.hwTotal > 0 ? agg.hwRate + '%' : '-'} | 어휘정답 ${agg.vocabAvg !== null ? agg.vocabAvg + '%' : '-'}</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.75rem; font-size: 0.74rem; color: #334155; line-height: 1.4;">
+          <div><strong style="color:#0f172a;">📚 읽은 도서(${agg.books.length}권):</strong> <span contenteditable="true">${bookBadges}</span></div>
+          <div><strong style="color:#0f172a;">⚡ 트레이닝(${agg.trainings.length}회):</strong> <span contenteditable="true">${trainingBadges}</span></div>
+          <div style="grid-column: 1 / -1;"><strong style="color:#0f172a;">🔤 집중 복습 어휘:</strong> <span contenteditable="true">${wrongBadges}</span></div>
+        </div>
+      `;
+      sectionsContainer.appendChild(summaryBox);
     }
     
     let sections = [];

@@ -426,8 +426,17 @@
 
   function normalizeHwStatus(hw) {
     var s = String(hw || '').trim().replace(/\s+/g, '');
-    if (s === '숙제완료' || s === '숙제미완' || s === '미지참' || s === '학원에서풀기') return s;
+    if (s === '완료' || s === '숙제완료') return '숙제완료';
+    if (s === '미완료' || s === '미완' || s === '숙제미완료' || s === '숙제미완') return '숙제미완';
+    if (s === '미지참' || s === '교재미지참') return '미지참';
+    if (s === '학원에서풀기' || s === '학원풀이') return '학원에서풀기';
     return String(hw || '').trim();
+  }
+
+  function normalizeUnderstanding(u) {
+    var s = String(u || '').trim();
+    if (s === '어려웠어요' || s === '헷갈려요') return '아직 헷갈려요';
+    return s;
   }
 
   // ---------- 결과 저장 (어휘오답 도배 줄 생성 중단, 어휘퀴즈 1줄에 틀린어휘 통합) ----------
@@ -547,7 +556,7 @@
     var details = missions.trainingDetails || {};
     (missions.trainingTypes || []).forEach(function (t) {
       var d = details[t] || {};
-      var under = String(d.understanding || missions.trainingUnderstanding || '').trim();
+      var under = normalizeUnderstanding(d.understanding || missions.trainingUnderstanding || '');
       if (t === '문해력트레이닝') {
         var items = Array.isArray(d.items) ? d.items.slice() : [];
         if ((d.session || d.errors || d.field || d.vol) && !items.some(function (it) { return it.field === d.field && it.vol === d.vol && it.session === d.session && it.errors === d.errors; })) {

@@ -422,6 +422,7 @@ class AttendanceApp {
       memberAnalysis: [],
       attendanceLogs: [],
       accumulatedLogs: [],
+      learningRecords: [],
       briefings: []
     };
 
@@ -530,6 +531,7 @@ class AttendanceApp {
         if (!this.state.memberAnalysis) this.state.memberAnalysis = [];
         if (!this.state.attendanceLogs) this.state.attendanceLogs = [];
         if (!this.state.accumulatedLogs) this.state.accumulatedLogs = [];
+        if (!this.state.learningRecords) this.state.learningRecords = [];
         if (!this.state.briefings) this.state.briefings = [];
         
         this.students = this.state.students;
@@ -606,6 +608,7 @@ class AttendanceApp {
       memberAnalysis: JSON.parse(JSON.stringify(INITIAL_MEMBER_ANALYSIS)),
       attendanceLogs: JSON.parse(JSON.stringify(INITIAL_ATTENDANCE_LOGS)),
       accumulatedLogs: JSON.parse(JSON.stringify(INITIAL_ACCUMULATED_LOGS)),
+      learningRecords: [],
       briefings: []
     };
     this.students = this.state.students;
