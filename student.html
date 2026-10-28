@@ -373,12 +373,23 @@
             <h3 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
               <span>집중 트레이닝</span>
             </h3>
-            <p class="text-xs sm:text-sm text-indigo-950 font-bold">읽기, 독해, 듣기, 문해력 트레이닝 진행 내역과 권 수, 차시, 오답 개수를 기록합니다.</p>
+            <p class="text-xs sm:text-sm text-indigo-950 font-bold">읽기, 독해, 듣기, 문해력 트레이닝(독해/어휘 문항·오답 세분화) 진행 내역을 기록합니다.</p>
           </div>
+        </div>
+        <!-- 서랍 4: 독해밀도 OMR 채점 & 배정교재 바로가기 버튼 -->
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button type="button" onclick="if(window.ReadTrackBridge){ReadTrackBridge.openOmrModal();}else{alert('독해밀도 모듈을 불러오는 중입니다.');}"
+                  class="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-indigo-700 to-violet-700 hover:from-indigo-800 hover:to-violet-800 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95 whitespace-nowrap">
+            <span>📖</span>
+            <span>독해밀도 OMR 채점 시작</span>
+          </button>
         </div>
       </div>
 
       <div class="p-5 sm:p-6">
+        <!-- 독해밀도 채점 완료 배너 -->
+        <div id="readtrackCompletedBanner" class="hidden mb-4 p-3.5 bg-violet-50 border-2 border-violet-300 rounded-2xl text-xs sm:text-sm text-violet-950 font-bold"></div>
+
         <!-- 1. 종목 다중 선택 (복수 선택 가능) -->
         <div class="mb-4">
           <label class="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
@@ -443,9 +454,10 @@
 
           <div class="flex items-center gap-2 mb-3">
             <!-- Event Dropdown -->
-            <select id="eventSetSelect"
+            <select id="eventSetSelect" onchange="if(typeof handleEventSetSelectChange==='function') handleEventSetSelectChange(this.value)"
                     class="flex-1 min-w-0 p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
               <option value="">터치해서 목록보기</option>
+              <option value="문해력교재완성">문해력교재완성 (독해밀도 완북)</option>
               <option value="코스업">코스업</option>
               <option value="레벨업">레벨업</option>
               <option value="읽트완료">읽트완료</option>
@@ -459,8 +471,8 @@
               <option value="정독완료">정독완료</option>
             </select>
 
-            <!-- Number Input (숫자 입력) -->
-            <input type="text" id="eventNumberInput" placeholder="숫자 입력"
+            <!-- Number Input (숫자/교재명 입력) -->
+            <input type="text" id="eventNumberInput" placeholder="단계/교재명 입력"
                    class="w-24 sm:w-28 p-2.5 bg-slate-800 border border-amber-400/50 rounded-xl text-xs font-bold text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-slate-500 shadow-inner" />
 
             <button type="button" onclick="addSetEventItem()" 
@@ -800,6 +812,9 @@
       teacherOverrideApproved: false,
       students: [],
       dailyLogs: [],
+      learningRecords: [],
+      memberAnalysis: [],
+      textbooks: [],
       todayDay: "",
       todayDateStr: "",
       sheetDateStr: "",
@@ -811,6 +826,7 @@
       missions: {
         books: [], // { order, genre, level, course, title, score, status, memo }
         vocabResults: [], // [어휘] 오늘 푼 어휘 퀴즈 결과 { bookId, title, level, total, firstCorrect, rate, wrongWords }
+        readtrackResults: [], // [독해밀도] 오늘 푼 문해력 OMR/트레이닝 결과 { textbookTitle, category, session, readTotal, readWrong, litVocabTotal, litVocabWrong, litAccuracy }
         noteBookTitle: "", // [6번] 글쓰기 대상 도서명
         recentDiagnosedBook: "", // [6번] 최근 이전 진단 도서명
         noteStatus: "작성안함",
@@ -946,6 +962,9 @@
           const parsed = JSON.parse(cached);
           state.students = parsed.students || [];
           state.dailyLogs = parsed.dailyLogs || [];
+          state.learningRecords = parsed.learningRecords || [];
+          state.memberAnalysis = parsed.memberAnalysis || [];
+          state.textbooks = parsed.textbooks || [];
           initClock();
 
           populateStudentsDatalist();
@@ -1105,13 +1124,21 @@
           state.students = data.students || [];
           state.dailyLogs = data.dailyLogs || [];
           state.learningRecords = data.learningRecords || [];
+          state.memberAnalysis = data.memberAnalysis || [];
+          state.textbooks = data.textbooks || [];
           initClock();
           
           localStorage.setItem("academy_attendance_state", JSON.stringify({
             students: state.students,
             dailyLogs: state.dailyLogs,
-            learningRecords: state.learningRecords
+            learningRecords: state.learningRecords,
+            memberAnalysis: state.memberAnalysis,
+            textbooks: state.textbooks
           }));
+
+          if (state.currentStudent && window.ReadTrackBridge && typeof ReadTrackBridge.issueStudentSessionTag === 'function') {
+            ReadTrackBridge.issueStudentSessionTag(state.currentStudent);
+          }
 
           populateStudentsDatalist();
           return true;
@@ -1831,6 +1858,18 @@
         if (viewLogin) viewLogin.classList.add("hidden");
         if (viewDash) viewDash.classList.remove("hidden");
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // 【순서 2】 학생 1회 로그인 시 공용 이름표(StudentSessionTag) 자동 발급 (재로그인 제로)
+        try {
+          if (window.ReadTrackBridge && typeof ReadTrackBridge.issueStudentSessionTag === "function") {
+            ReadTrackBridge.issueStudentSessionTag(student);
+          }
+          if (typeof renderReadTrackBanner === "function") {
+            renderReadTrackBanner();
+          }
+        } catch (rtErr) {
+          console.warn("ReadTrack session tag warning:", rtErr);
+        }
 
         updateProgress();
         saveActiveSession(student, dailyLog);
@@ -3863,30 +3902,67 @@
       const vEl = document.getElementById("literacyVolSelect");
       const sEl = document.getElementById("literacySessionInput");
       const eEl = document.getElementById("literacyErrorsInput");
+      const rTEl = document.getElementById("literacyReadTotalInput");
+      const rWEl = document.getElementById("literacyReadWrongInput");
+      const vTEl = document.getElementById("literacyVocabTotalInput");
+      const vWEl = document.getElementById("literacyVocabWrongInput");
 
-      const field = fEl ? fEl.value : (d.field || "복합");
+      const field = fEl ? fEl.value : (d.field || "비문학");
       const vol = vEl ? vEl.value : (d.vol || "1단계");
       const session = sEl ? sEl.value.trim() : (d.session || "");
-      const errors = eEl ? eEl.value.trim() : (d.errors || "");
+      const rT = rTEl && rTEl.value !== "" ? Number(rTEl.value) : (d.readTotal !== undefined && d.readTotal !== "" ? Number(d.readTotal) : "");
+      const rW = rWEl && rWEl.value !== "" ? Number(rWEl.value) : (d.readWrong !== undefined && d.readWrong !== "" ? Number(d.readWrong) : "");
+      const vT = vTEl && vTEl.value !== "" ? Number(vTEl.value) : (d.litVocabTotal !== undefined && d.litVocabTotal !== "" ? Number(d.litVocabTotal) : "");
+      const vW = vWEl && vWEl.value !== "" ? Number(vWEl.value) : (d.litVocabWrong !== undefined && d.litVocabWrong !== "" ? Number(d.litVocabWrong) : "");
 
-      if (!session && !errors && !field) {
+      const totalQ = (Number(rT) || 0) + (Number(vT) || 0);
+      const totalWFromSplit = (rW !== "" || vW !== "") ? ((Number(rW) || 0) + (Number(vW) || 0)) : "";
+      let errors = eEl ? eEl.value.trim() : (d.errors || "");
+      if (totalQ > 0) {
+        errors = `${totalQ}/${totalWFromSplit !== "" ? totalWFromSplit : 0}`;
+      } else if (totalWFromSplit !== "" && !errors) {
+        errors = String(totalWFromSplit);
+      }
+      const litAccuracy = totalQ > 0 ? Math.round(((totalQ - (Number(totalWFromSplit) || 0)) / totalQ) * 100) : "";
+
+      if (!session && !errors && !field && totalQ === 0) {
         alert("문해력 세부 기록(차시, 문항수/오답개수 등)을 입력해 주세요.");
         return;
       }
 
-      // 기존 동일 종목이 있으면 갱신(중복 누적 방지), 없으면 추가
-      const existingIdx = d.items.findIndex(it => (it.field || "복합") === field);
+      const itemObj = {
+        field,
+        vol,
+        session,
+        errors,
+        readTotal: rT,
+        readWrong: rW,
+        litVocabTotal: vT,
+        litVocabWrong: vW,
+        litAccuracy: litAccuracy
+      };
+
+      // 기존 동일 종목+교재가 있으면 갱신(중복 누적 방지), 없으면 추가
+      const existingIdx = d.items.findIndex(it => (it.field || "복합") === field && (it.vol || "") === vol);
       if (existingIdx !== -1) {
-        d.items[existingIdx] = { field, vol, session, errors };
+        d.items[existingIdx] = itemObj;
       } else {
-        d.items.push({ field, vol, session, errors });
+        d.items.push(itemObj);
       }
       
       // Reset draft inputs
       d.session = "";
       d.errors = "";
+      d.readTotal = "";
+      d.readWrong = "";
+      d.litVocabTotal = "";
+      d.litVocabWrong = "";
       if (sEl) sEl.value = "";
       if (eEl) eEl.value = "";
+      if (rTEl) rTEl.value = "";
+      if (rWEl) rWEl.value = "";
+      if (vTEl) vTEl.value = "";
+      if (vWEl) vWEl.value = "";
 
       renderTrainingCards();
       updateProgress();
@@ -3972,25 +4048,56 @@
         let contentHtml = "";
 
         if (conf.isLiteracy) {
-          // 문해력 트레이닝 전용 (원장님 요청 4개 항목 + 다중 추가 지원)
+          // 문해력 트레이닝 전용 ([방안 A] 독해밀도 151권+ 배정교재 선택 + 독해/어휘 문항·오답 세분화 지원)
           const fieldOpts = ['<option value=""' + (!detail.field ? ' selected' : '') + '>분야</option>'].concat(conf.fields.map(f => `<option value="${f}" ${detail.field === f ? 'selected' : ''}>${f}</option>`)).join("");
-          const volOpts = ['<option value=""' + (!detail.vol ? ' selected' : '') + '>단계/권</option>'].concat(conf.options.map(v => `<option value="${v}" ${detail.vol === v ? 'selected' : ''}>${v}</option>`)).join("");
+          
+          const assignedList = (window.ReadTrackBridge && state.currentStudent)
+            ? ReadTrackBridge.getStudentAssignedBooksFromState(state.currentStudent.name)
+            : [];
+          const allRtBooks = (window.ReadTrackBridge && typeof ReadTrackBridge.getAllTextbooks === "function")
+            ? ReadTrackBridge.getAllTextbooks()
+            : [];
+
+          let volOptGroups = `<option value="" ${!detail.vol ? 'selected' : ''}>교재명 또는 단계 선택</option>`;
+          if (assignedList.length > 0) {
+            volOptGroups += `<optgroup label="📌 나의 배정 교재 (최우선)">` +
+              assignedList.map(b => `<option value="${b.title}" ${detail.vol === b.title ? 'selected' : ''}>[배정·${b.category}] ${b.title}</option>`).join("") +
+              `</optgroup>`;
+          }
+          volOptGroups += `<optgroup label="🎯 기본 단계 (단독 사용)">` +
+            conf.options.map(v => `<option value="${v}" ${detail.vol === v ? 'selected' : ''}>${v}</option>`).join("") +
+            `</optgroup>`;
+          if (allRtBooks.length > 0) {
+            const filterCat = detail.field || "";
+            const filteredRt = filterCat && filterCat !== "복합"
+              ? allRtBooks.filter(b => b.category === filterCat || b.sheetCategory === filterCat)
+              : allRtBooks;
+            volOptGroups += `<optgroup label="📖 독해밀도 마스터 교재 (${filteredRt.length}권)">` +
+              filteredRt.map(b => `<option value="${b.title}" ${detail.vol === b.title ? 'selected' : ''}>[${b.category}] ${b.title}</option>`).join("") +
+              `</optgroup>`;
+          }
 
           let registeredHtml = "";
           if (detail.items && detail.items.length > 0) {
             registeredHtml = `
               <div class="p-3 bg-indigo-50/80 rounded-xl border border-indigo-200/80 mb-3">
                 <div class="text-[11px] font-bold text-indigo-900 mb-1.5 flex items-center justify-between">
-                  <span>📋 등록된 세부 기록 (${detail.items.length}건):</span>
-                  <span class="text-[10px] text-slate-500 font-normal">다중 기록 완료</span>
+                  <span>📋 등록된 문해력 세부 기록 (${detail.items.length}건):</span>
+                  <span class="text-[10px] text-indigo-700 font-bold">구글시트 L~W열 & 문해력교재관리 자동연동</span>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
-                  ${detail.items.map((it, idx) => `
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-indigo-300 rounded-lg text-xs font-semibold text-indigo-900 shadow-xs">
-                      <span><strong>${it.field || '기본'}</strong> ${it.vol || ''} ${it.session ? it.session + '차시' : ''} ${it.errors ? `(${it.errors})` : ''}</span>
-                      <button type="button" onclick="removeLiteracyItem(${idx})" class="text-indigo-400 hover:text-red-500 font-bold ml-1 text-sm leading-none" title="삭제">✕</button>
-                    </span>
-                  `).join("")}
+                  ${detail.items.map((it, idx) => {
+                    const hasSplit = (it.readTotal !== undefined && it.readTotal !== "") || (it.litVocabTotal !== undefined && it.litVocabTotal !== "");
+                    const splitBadge = hasSplit
+                      ? ` [독해 ${it.readTotal || 0}/${it.readWrong || 0} · 어휘 ${it.litVocabTotal || 0}/${it.litVocabWrong || 0}${it.litAccuracy !== undefined && it.litAccuracy !== "" ? ` · ${it.litAccuracy}%` : ""}]`
+                      : (it.errors ? ` (${it.errors})` : "");
+                    return `
+                      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-semibold text-indigo-900 shadow-xs">
+                        <span><strong>${it.field || '비문학'}</strong> ${it.vol || ''} ${it.session ? it.session + '차시' : ''}<span class="text-indigo-600 font-extrabold">${splitBadge}</span></span>
+                        <button type="button" onclick="removeLiteracyItem(${idx})" class="text-indigo-400 hover:text-red-500 font-bold ml-1 text-sm leading-none" title="삭제">✕</button>
+                      </span>
+                    `;
+                  }).join("")}
                 </div>
               </div>
             `;
@@ -3998,35 +4105,68 @@
 
           contentHtml = `
             ${registeredHtml}
-            <div class="grid grid-cols-4 gap-1.5 sm:gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-2">
               <div>
                 <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">1. 분야</label>
-                <select id="literacyFieldSelect" onchange="updateTrainingDetail('${type}', 'field', this.value)"
+                <select id="literacyFieldSelect" onchange="updateTrainingDetail('${type}', 'field', this.value); renderTrainingCards();"
                         class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
                   ${fieldOpts}
                 </select>
               </div>
-              <div>
-                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">2. 단계/권</label>
+              <div class="sm:col-span-2">
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">2. 교재명 / 단계 (배정교재·151권 연동)</label>
                 <select id="literacyVolSelect" onchange="updateTrainingDetail('${type}', 'vol', this.value)"
-                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
-                  ${volOpts}
+                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-indigo-300 rounded-xl text-xs sm:text-sm font-bold text-indigo-950 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
+                  ${volOptGroups}
                 </select>
               </div>
               <div>
-                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">3. 차시</label>
+                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">3. 차시(강)</label>
                 <input type="text" id="literacySessionInput" value="${detail.session || ''}" placeholder="예: 3"
                        oninput="updateTrainingDetail('${type}', 'session', this.value.trim(), 500)"
                        class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
               </div>
+            </div>
+
+            <!-- [방안 A] 구글시트 S~W열 1:1 매칭 세분화 입력칸 (독해문항/오답, 어휘문항/오답) -->
+            <div class="p-3 bg-white rounded-xl border border-indigo-200 grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
               <div>
-                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1 truncate">4. 오답개수 (틀린 수)</label>
-                <input type="text" id="literacyErrorsInput" value="${detail.errors || ''}" placeholder="예: 2 (또는 10/2)"
+                <label class="block text-[10px] sm:text-[11px] font-extrabold text-blue-800 mb-1 truncate">📘 독해문항수(S열)</label>
+                <input type="number" id="literacyReadTotalInput" min="0" value="${detail.readTotal !== undefined ? detail.readTotal : ''}" placeholder="예: 4"
+                       oninput="updateTrainingDetail('${type}', 'readTotal', this.value.trim(), 500); autoCalcLiteracyAccuracyUI();"
+                       class="w-full px-2 py-1.5 bg-blue-50/50 border border-blue-200 rounded-lg text-xs font-extrabold text-center text-slate-900" />
+              </div>
+              <div>
+                <label class="block text-[10px] sm:text-[11px] font-extrabold text-red-600 mb-1 truncate">📘 독해오답수(T열)</label>
+                <input type="number" id="literacyReadWrongInput" min="0" value="${detail.readWrong !== undefined ? detail.readWrong : ''}" placeholder="예: 1"
+                       oninput="updateTrainingDetail('${type}', 'readWrong', this.value.trim(), 500); autoCalcLiteracyAccuracyUI();"
+                       class="w-full px-2 py-1.5 bg-red-50/50 border border-red-200 rounded-lg text-xs font-extrabold text-center text-red-600" />
+              </div>
+              <div>
+                <label class="block text-[10px] sm:text-[11px] font-extrabold text-emerald-800 mb-1 truncate">📗 어휘문항수(U열)</label>
+                <input type="number" id="literacyVocabTotalInput" min="0" value="${detail.litVocabTotal !== undefined ? detail.litVocabTotal : ''}" placeholder="예: 1"
+                       oninput="updateTrainingDetail('${type}', 'litVocabTotal', this.value.trim(), 500); autoCalcLiteracyAccuracyUI();"
+                       class="w-full px-2 py-1.5 bg-emerald-50/50 border border-emerald-200 rounded-lg text-xs font-extrabold text-center text-slate-900" />
+              </div>
+              <div>
+                <label class="block text-[10px] sm:text-[11px] font-extrabold text-red-600 mb-1 truncate">📗 어휘오답수(V열)</label>
+                <input type="number" id="literacyVocabWrongInput" min="0" value="${detail.litVocabWrong !== undefined ? detail.litVocabWrong : ''}" placeholder="예: 0"
+                       oninput="updateTrainingDetail('${type}', 'litVocabWrong', this.value.trim(), 500); autoCalcLiteracyAccuracyUI();"
+                       class="w-full px-2 py-1.5 bg-red-50/50 border border-red-200 rounded-lg text-xs font-extrabold text-center text-red-600" />
+              </div>
+              <div class="col-span-2 sm:col-span-1">
+                <label class="block text-[10px] sm:text-[11px] font-bold text-slate-600 mb-1 truncate">총오답(N열)/정답률(W)</label>
+                <input type="text" id="literacyErrorsInput" value="${detail.errors || ''}" placeholder="자동계산 (예: 5/1)"
                        oninput="updateTrainingDetail('${type}', 'errors', this.value.trim(), 500)"
-                       class="w-full px-2 py-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+                       class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-center text-indigo-700" />
               </div>
             </div>
-            <div class="flex justify-end pt-1">
+
+            <div class="flex flex-wrap justify-between items-center gap-2 pt-1">
+              <button type="button" onclick="if(window.ReadTrackBridge){ReadTrackBridge.openOmrModal({ initialBookTitle: document.getElementById('literacyVolSelect') ? document.getElementById('literacyVolSelect').value : '' });}"
+                      class="px-3.5 py-2 bg-violet-100 hover:bg-violet-200 text-violet-900 border border-violet-300 text-xs font-extrabold rounded-xl transition flex items-center gap-1.5">
+                <span>📖</span> <span>독해밀도 OMR 자동채점기로 입력</span>
+              </button>
               <button type="button" onclick="addLiteracyItem()" 
                       class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-95">
                 <span>➕</span> <span>세부기록 추가 (다중 선택/기록)</span>
@@ -4237,6 +4377,137 @@
       updateProgress(syncDelay);
     }
 
+    function autoCalcLiteracyAccuracyUI() {
+      const rTEl = document.getElementById("literacyReadTotalInput");
+      const rWEl = document.getElementById("literacyReadWrongInput");
+      const vTEl = document.getElementById("literacyVocabTotalInput");
+      const vWEl = document.getElementById("literacyVocabWrongInput");
+      const eEl = document.getElementById("literacyErrorsInput");
+      if (!eEl) return;
+      const rT = rTEl && rTEl.value !== "" ? Number(rTEl.value) : 0;
+      const rW = rWEl && rWEl.value !== "" ? Number(rWEl.value) : 0;
+      const vT = vTEl && vTEl.value !== "" ? Number(vTEl.value) : 0;
+      const vW = vWEl && vWEl.value !== "" ? Number(vWEl.value) : 0;
+      const totalQ = rT + vT;
+      const totalW = rW + vW;
+      if (totalQ > 0) {
+        const acc = Math.round(((totalQ - totalW) / totalQ) * 100);
+        eEl.value = `${totalQ}/${totalW} (${acc}%)`;
+        updateTrainingDetail("문해력트레이닝", "errors", `${totalQ}/${totalW}`, 500);
+        updateTrainingDetail("문해력트레이닝", "litAccuracy", acc, 500);
+      }
+    }
+
+    function handleEventSetSelectChange(val) {
+      const numInput = document.getElementById("eventNumberInput");
+      if (!numInput) return;
+      if (val === "문해력교재완성") {
+        // 현재 진행중인 문해력 교재명이 있으면 자동으로 채워줌
+        let bookName = "";
+        const litDetail = state.missions.trainingDetails && state.missions.trainingDetails["문해력트레이닝"];
+        if (litDetail && Array.isArray(litDetail.items) && litDetail.items.length > 0) {
+          bookName = litDetail.items[litDetail.items.length - 1].vol || "";
+        } else if (litDetail && litDetail.vol) {
+          bookName = litDetail.vol;
+        } else if (window.ReadTrackBridge && state.currentStudent) {
+          const assigned = ReadTrackBridge.getStudentAssignedBooksFromState(state.currentStudent.name);
+          if (assigned && assigned.length > 0) bookName = assigned[0].title;
+        }
+        if (bookName && !numInput.value.trim()) {
+          numInput.value = bookName;
+        }
+        numInput.placeholder = "완북 교재명 입력";
+      } else {
+        numInput.placeholder = "단계/교재명 입력";
+      }
+    }
+
+    function renderReadTrackBanner() {
+      const banner = document.getElementById("readtrackCompletedBanner");
+      if (!banner) return;
+      const results = (state.missions && Array.isArray(state.missions.readtrackResults)) ? state.missions.readtrackResults : [];
+      if (results.length === 0) {
+        banner.classList.add("hidden");
+        banner.innerHTML = "";
+        return;
+      }
+      banner.classList.remove("hidden");
+      banner.innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="px-2.5 py-0.5 bg-violet-700 text-white rounded-full text-[11px] font-black">독해밀도 채점완료 (${results.length}건)</span>
+            ${results.map(r => `
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-violet-300 rounded-lg text-xs font-extrabold text-violet-950">
+                <span>[${r.category || '문해력'}] <b>${r.textbookTitle}</b> ${r.session}차시</span>
+                <span class="text-indigo-700">(독해 ${r.readTotal}/${r.readWrong} · 어휘 ${r.litVocabTotal}/${r.litVocabWrong} · <b>${r.litAccuracy}%</b>)</span>
+              </span>
+            `).join("")}
+          </div>
+          <button type="button" onclick="if(window.ReadTrackBridge) ReadTrackBridge.openLiteracyReportModal(state.currentStudent ? state.currentStudent.name : '');"
+                  class="px-3 py-1.5 bg-violet-700 hover:bg-violet-800 text-white rounded-lg text-xs font-extrabold whitespace-nowrap">
+            📊 나의 문해력 전용 분석표 보기
+          </button>
+        </div>
+      `;
+    }
+
+    window.applyReadTrackResultToStudentApp = function(record) {
+      if (!record) return;
+      if (!Array.isArray(state.missions.readtrackResults)) state.missions.readtrackResults = [];
+      const existingRIdx = state.missions.readtrackResults.findIndex(r => r.textbookTitle === record.textbookTitle && Number(r.session) === Number(record.session));
+      if (existingRIdx !== -1) state.missions.readtrackResults[existingRIdx] = record;
+      else state.missions.readtrackResults.push(record);
+
+      if (!Array.isArray(state.missions.trainingTypes)) state.missions.trainingTypes = [];
+      if (!state.missions.trainingTypes.includes("문해력트레이닝")) {
+        state.missions.trainingTypes.push("문해력트레이닝");
+      }
+      if (!state.missions.trainingDetails) state.missions.trainingDetails = {};
+      if (!state.missions.trainingDetails["문해력트레이닝"]) {
+        state.missions.trainingDetails["문해력트레이닝"] = { items: [], understanding: "이해잘됨" };
+      }
+      const d = state.missions.trainingDetails["문해력트레이닝"];
+      if (!Array.isArray(d.items)) d.items = [];
+      if (!d.understanding) {
+        d.understanding = record.litAccuracy >= 75 ? "이해잘됨" : "헷갈림";
+      }
+
+      const itemObj = {
+        field: record.category || "비문학",
+        vol: record.textbookTitle || "독해밀도",
+        session: String(record.session || 1),
+        errors: `${record.totalQuestions}/${record.totalWrong}`,
+        readTotal: record.readTotal,
+        readWrong: record.readWrong,
+        litVocabTotal: record.litVocabTotal,
+        litVocabWrong: record.litVocabWrong,
+        litAccuracy: record.litAccuracy,
+        isCompleted: !!record.isCompleted
+      };
+
+      const existIdx = d.items.findIndex(it => it.vol === itemObj.vol && String(it.session) === String(itemObj.session));
+      if (existIdx !== -1) d.items[existIdx] = itemObj;
+      else d.items.push(itemObj);
+
+      // 완북 체크 시 4단계 성장 기록 [문해력교재완성] 자동 추가
+      if (record.isCompleted) {
+        if (!Array.isArray(state.missions.setEvents)) state.missions.setEvents = [];
+        const hasComp = state.missions.setEvents.some(ev => ev.event === "문해력교재완성" && ev.number === record.textbookTitle);
+        if (!hasComp) {
+          state.missions.setEvents.push({ event: "문해력교재완성", number: record.textbookTitle });
+          renderSetEventItems();
+        }
+      }
+
+      renderReadTrackBanner();
+      renderTrainingTypeButtons();
+      renderTrainingCards();
+      updateProgress(100);
+      try {
+        if (typeof syncMissionsRealtime === "function") syncMissionsRealtime("readtrack");
+      } catch (e) {}
+    };
+
     function buildTrainingSummaryString() {
       const types = state.missions.trainingTypes || [];
       if (types.length === 0) return "";
@@ -4248,14 +4519,24 @@
 
         if (t === "문해력트레이닝") {
           const items = (d.items && Array.isArray(d.items)) ? [...d.items] : [];
-          if ((d.session || d.errors) && !items.some(it => it.session === d.session && it.errors === d.errors)) {
-            items.push({ field: d.field || "복합", vol: d.vol || "1단계", session: d.session, errors: d.errors });
+          if ((d.session || d.errors || d.readTotal || d.litVocabTotal) && !items.some(it => it.session === d.session && it.errors === d.errors)) {
+            items.push({
+              field: d.field || "비문학",
+              vol: d.vol || "1단계",
+              session: d.session,
+              errors: d.errors,
+              readTotal: d.readTotal,
+              readWrong: d.readWrong,
+              litVocabTotal: d.litVocabTotal,
+              litVocabWrong: d.litVocabWrong,
+              litAccuracy: d.litAccuracy
+            });
           }
 
-          // 중복 누적 방지: 종목별로 최종 1개씩만 유지
+          // 중복 누적 방지: 종목+교재별로 유지
           const litMap = {};
           items.forEach(it => {
-            const k = it.field || "복합";
+            const k = (it.field || "복합") + "_" + (it.vol || "");
             litMap[k] = it;
           });
           const uniqueItems = Object.values(litMap);
@@ -4269,7 +4550,12 @@
               const sFormatted = (sClean.indexOf("차시") !== -1 || sClean.indexOf("일차") !== -1) ? sClean : `${sClean}차시`;
               sub.push(sFormatted);
             }
-            if (it.errors) sub.push(`(${it.errors})`);
+            const hasSplit = (it.readTotal !== undefined && it.readTotal !== "") || (it.litVocabTotal !== undefined && it.litVocabTotal !== "");
+            if (hasSplit) {
+              sub.push(`(독해${it.readTotal || 0}/${it.readWrong || 0}·어휘${it.litVocabTotal || 0}/${it.litVocabWrong || 0}${it.litAccuracy !== undefined && it.litAccuracy !== "" ? `·${it.litAccuracy}%` : ""})`);
+            } else if (it.errors) {
+              sub.push(`(${it.errors})`);
+            }
             return sub.join(" ");
           }).filter(Boolean);
 
@@ -5625,7 +5911,9 @@
   <script src="vocab_db.js?v=7"></script>
   <script src="vocab_engine.js?v=7"></script>
   <script src="vocab_ui.js?v=7"></script>
-  <script src="vocab_bridge.js?v=7"></script>
+  <script src="vocab_bridge.js?v=8"></script>
+  <!-- 서랍 4: 독해밀도(ReadTrack) 151권 교재 & OMR 자동채점 & 문해력 전용 분석표 브릿지 -->
+  <script src="readtrack_bridge.js?v=1"></script>
 
 </body>
 </html>

@@ -40,6 +40,15 @@
         </svg>
         오늘 출석부 생성
       </button>
+      <button class="btn-primary" id="btnSyncReadTrackBulk" onclick="window.ReadTrackBridge && window.ReadTrackBridge.syncAllStudentsFromReadTrack()" style="padding: 0.5rem 1.05rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.45rem; background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 20px; border: none; cursor: pointer; color: white; font-weight: 700; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);" title="독해밀도(ReadTrack) 학생 아이디 및 배정 교재를 1초 만에 구글시트 회원분석/문해력교재관리에 일괄 동기화합니다">
+        🔄 독해밀도 ID·배정교재 1초 동기화
+      </button>
+      <button class="btn-primary" id="btnOpenReadTrackReportHeader" onclick="window.ReadTrackBridge && window.ReadTrackBridge.openLiteracyReportModal(document.getElementById('crmStudentName') && document.getElementById('crmStudentName').childNodes[0] ? document.getElementById('crmStudentName').childNodes[0].textContent.trim() : '')" style="padding: 0.5rem 1.05rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.45rem; background: linear-gradient(135deg, #0d9488, #0f766e); border-radius: 20px; border: none; cursor: pointer; color: white; font-weight: 700; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.28);" title="독해밀도 문해력 전용 분석표 열기 및 시트 생성">
+        📖 문해력 전용 분석표
+      </button>
+      <button class="btn-primary" id="btnOpenFastAnswerEditor" onclick="window.ReadTrackBridge && window.ReadTrackBridge.openFastAnswerEditorModal()" style="padding: 0.5rem 1.0rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.4rem; background: #334155; border-radius: 20px; border: 1px solid #475569; cursor: pointer; color: #f8fafc; font-weight: 700;" title="200권 문해력 교재 정답/영역 초고속 일괄 입력기">
+        ⚡ 200권 정답 입력기
+      </button>
       
       <!-- Tab Controls -->
       <nav class="nav-tabs" style="margin: 0;">
@@ -287,6 +296,7 @@
               <!-- Quick Stats Summary -->
               <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
                 <button id="btnCrmDailyBriefingTop" class="btn-primary" style="padding: 0.6rem 1.1rem; font-size: 0.9rem; font-weight: 700; background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); border-color: #60a5fa; color: #ffffff; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);">📨 오늘 수업 브리핑 발송</button>
+                <button id="btnCrmLiteracyReportTop" type="button" onclick="window.ReadTrackBridge && window.ReadTrackBridge.openLiteracyReportModal(document.getElementById('crmStudentName') && document.getElementById('crmStudentName').childNodes[0] ? document.getElementById('crmStudentName').childNodes[0].textContent.trim() : '')" class="btn-primary" style="padding: 0.6rem 1.1rem; font-size: 0.9rem; font-weight: 700; background: linear-gradient(135deg, #0d9488 0%, #4f46e5 100%); border: none; border-radius: 8px; color: #ffffff; cursor: pointer; box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);">📖 독해밀도 문해력 분석표</button>
                 <div style="text-align: center;">
                   <span style="display: block; font-size: 0.8rem; color: var(--text-muted);">이번 달 출석률</span>
                   <strong id="crmAttendanceRateText" style="font-size: 1.5rem; color: var(--color-regular);">92%</strong>
@@ -841,6 +851,7 @@
               </button>
             </div>
             <pre class="code-content" id="gasCodeBlock">
+
 function ensureColumns(sheet, requiredCols) {
   if (!sheet) return;
   var maxCols = sheet.getMaxColumns();
@@ -1127,15 +1138,16 @@ function doGet(e) {
     }
   }
 
-  // 9. 학습기록 18열 (learningRecords - 상단 2행부터 최신 1500행 원장앱 연동·기간별 분석·수업 브리핑용)
+  // 9. 학습기록 23열 ([방안 A]: 기존 A~R 18열 + S:독해문항수, T:독해오답수, U:어휘문항수, V:어휘오답수, W:문해력정답률)
   var sheetRec = vocabEnsureRecordSheet_(ss);
   var learningRecordsData = [];
   if (sheetRec &amp;&amp; sheetRec.getLastRow() &gt;= 2) {
+    ensureColumns(sheetRec, 23);
     var h1Check = String(sheetRec.getRange(1, 1).getValue() || "").trim();
     if (h1Check === "날짜") {
       var lastRecRow = sheetRec.getLastRow();
       var numRecRows = Math.min(lastRecRow - 1, 1500);
-      var recVals = sheetRec.getRange(2, 1, numRecRows, 18).getDisplayValues();
+      var recVals = sheetRec.getRange(2, 1, numRecRows, 23).getDisplayValues();
       for (var rIdx = 0; rIdx &lt; recVals.length; rIdx++) {
         var rv = recVals[rIdx];
         var rName = String(rv[1] || "").trim();
@@ -1163,7 +1175,12 @@ function doGet(e) {
           understanding: vocabNormUnderstanding_(rv[14]),
           literacyMemo: String(rv[15] || "").trim(),
           reflection: String(rv[16] || "").trim(),
-          wrongWords: String(rv[17] || "").trim()
+          wrongWords: String(rv[17] || "").trim(),
+          readTotal: String(rv[18] || "").trim(),
+          readWrong: String(rv[19] || "").trim(),
+          litVocabTotal: String(rv[20] || "").trim(),
+          litVocabWrong: String(rv[21] || "").trim(),
+          litAccuracy: String(rv[22] || "").trim()
         });
       }
     }
@@ -1830,6 +1847,18 @@ function doPost(e) {
         }
       }
       return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    else if (postData.action === "syncReadTrackStudentsBulk") {
+      var syncRes = handleSyncReadTrackStudentsBulk_(ss, postData.items || []);
+      return ContentService.createTextOutput(JSON.stringify(syncRes))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    else if (postData.action === "buildLiteracyAnalysisSheet") {
+      var litRepRes = vocabBuildLiteracyAnalysisSheet_(ss, postData.studentName || "");
+      return ContentService.createTextOutput(JSON.stringify(litRepRes))
         .setMimeType(ContentService.MimeType.JSON);
     }
   } catch (error) {
@@ -3967,13 +3996,15 @@ function runMakeupBankRecovery() {
 var VOCAB_SHEET = "어휘";
 var RECORD_SHEET = "학습기록";
 var ANALYSIS_SHEET = "학생분석표";
+var LITERACY_ANALYSIS_SHEET = "문해력전용분석표";
 var VOCAB_HEADERS = ["어휘ID", "구분", "책", "도서ID", "어휘", "활용형", "뜻", "예문", "출처", "사용"];
-// [18열 개편 확정] A~R열 (시간·상세JSON·기록ID 제거, 첫 줄 가로 병합 + 추가 활동 시 2·3번째 줄 확장)
+// [[방안 A] 23열 확장 확정] 기존 A~R열(1~18열) 100% 보존 + 우측 끝 S~W열(19~23열: 독해문항수, 독해오답수, 어휘문항수, 어휘오답수, 문해력정답률) 추가
 var RECORD_HEADERS = [
   "날짜", "이름", "숙제현황", "성실발자국", "레벨구분", "도서명/어휘학습",
   "어휘문제", "어휘정답", "어휘정답률", "진단점수", "독서발자국",
   "트레이닝", "권수/차시", "오답개수", "이해도", "문해력발자국",
-  "나의 시간, 나의 기록", "틀린어휘"
+  "나의 시간, 나의 기록", "틀린어휘",
+  "독해문항수", "독해오답수", "어휘문항수", "어휘오답수", "문해력정답률"
 ];
 var VOCAB_LEVELS = ["기초", "1레벨", "2레벨", "3레벨", "4레벨", "5레벨", "6레벨", "초1~2", "초3~4", "초5~6", "중1~3"];
 var HW_STATUS_LIST = ["숙제완료", "숙제미완", "미지참", "학원에서풀기"];
@@ -4253,8 +4284,9 @@ function handleVocabGet(e) {
   return vocabJson_(out);
 }
 
-// ---------- 학습기록 18열 시트 준비 · 서식 · 기존 17열 자동 마이그레이션 ----------
+// ---------- 학습기록 23열([방안 A]) 시트 준비 · 서식 · 기존 18열 호환 ----------
 function vocabStyleRecordSheet_(sheet) {
+  ensureColumns(sheet, 23);
   var maxRows = Math.max(sheet.getMaxRows(), 500);
   sheet.getRange(1, 1, 1, RECORD_HEADERS.length)
     .setValues([RECORD_HEADERS])
@@ -4263,10 +4295,11 @@ function vocabStyleRecordSheet_(sheet) {
     .setFontColor("#ffffff")
     .setHorizontalAlignment("center")
     .setVerticalAlignment("middle");
+  sheet.getRange(1, 19, 1, 5).setBackground("#312e81");
   sheet.setFrozenRows(1);
   sheet.setRowHeight(1, 34);
 
-  var widths = [95, 78, 100, 145, 78, 165, 68, 68, 78, 72, 145, 115, 125, 68, 105, 150, 175, 165];
+  var widths = [95, 78, 100, 145, 78, 165, 68, 68, 78, 72, 145, 115, 145, 68, 105, 150, 175, 165, 76, 76, 76, 76, 86];
   for (var c = 0; c &lt; widths.length; c++) {
     sheet.setColumnWidth(c + 1, widths[c]);
   }
@@ -4278,6 +4311,7 @@ function vocabStyleRecordSheet_(sheet) {
   sheet.getRange(2, 7, dataRows, 4).setHorizontalAlignment("center");
   sheet.getRange(2, 12, dataRows, 1).setHorizontalAlignment("center");
   sheet.getRange(2, 14, dataRows, 2).setHorizontalAlignment("center");
+  sheet.getRange(2, 19, dataRows, 5).setHorizontalAlignment("center");
 
   // [원장님 서식 영구 보존] 기존 드롭다운 칩 색상 규칙이 있으면 PASTE_DATA_VALIDATION으로 보존·전파
   vocabPreserveOrInitDropdowns_(sheet, maxRows);
@@ -4293,8 +4327,9 @@ function vocabIsTimeLikeValue_(val) {
 // [학습기록] 시트의 행들을 최신 날짜·최신 입력이 무조건 상단(2행)에 오도록 정렬 (같은 날짜·학생의 다중 행 순서는 보존)
 function vocabSortRecordSheetNewestFirst_(sheet) {
   if (!sheet || sheet.getLastRow() &lt; 3) return;
+  ensureColumns(sheet, 23);
   var lastRow = sheet.getLastRow();
-  var allData = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
+  var allData = sheet.getRange(2, 1, lastRow - 1, 23).getValues();
   var needsSort = false;
   for (var chk = 1; chk &lt; allData.length; chk++) {
     var prevD = allData[chk - 1][0] ? vocabFmtDate_(allData[chk - 1][0]) : "";
@@ -4326,7 +4361,7 @@ function vocabSortRecordSheetNewestFirst_(sheet) {
       sortedRows.push(blocks[b].rows[rIdx]);
     }
   }
-  sheet.getRange(2, 1, sortedRows.length, 18).setValues(sortedRows);
+  sheet.getRange(2, 1, sortedRows.length, 23).setValues(sortedRows);
 }
 
 function vocabEnsureRecordSheet_(ss) {
@@ -4340,9 +4375,11 @@ function vocabEnsureRecordSheet_(ss) {
     sheet = ss.insertSheet(RECORD_SHEET);
     vocabStyleRecordSheet_(sheet);
   } else {
+    ensureColumns(sheet, 23);
     var h2 = String(sheet.getRange(1, 2).getValue() || "").trim();
     var h3 = String(sheet.getRange(1, 3).getValue() || "").trim();
-    if (h2 !== "이름" || h3 !== "숙제현황") {
+    var h19 = String(sheet.getRange(1, 19).getValue() || "").trim();
+    if (h2 !== "이름" || h3 !== "숙제현황" || h19 !== "독해문항수") {
       vocabStyleRecordSheet_(sheet);
     }
     // [자동 자가치유 (Self-Healing)] 열 밀림, C열('완료'/'미완료')·D열/K열 오염, 또는 10/26 누락 감지 시 즉시 1회 일괄(Bulk) 보정
@@ -4615,6 +4652,11 @@ function deduplicateLearningRecordsInMemory_(rows) {
           if (row[13] !== "" &amp;&amp; row[13] !== 0) curT[13] = row[13];
           if (row[14]) curT[14] = row[14];
           if (row[15] &amp;&amp; !curT[15]) curT[15] = row[15];
+          if (row[18] !== "" &amp;&amp; row[18] !== undefined) curT[18] = row[18];
+          if (row[19] !== "" &amp;&amp; row[19] !== undefined) curT[19] = row[19];
+          if (row[20] !== "" &amp;&amp; row[20] !== undefined) curT[20] = row[20];
+          if (row[21] !== "" &amp;&amp; row[21] !== undefined) curT[21] = row[21];
+          if (row[22] !== "" &amp;&amp; row[22] !== undefined) curT[22] = row[22];
         }
       } else {
         otherRows.push(row);
@@ -4632,6 +4674,11 @@ function deduplicateLearningRecordsInMemory_(rows) {
       firstB[13] = firstT[13];
       firstB[14] = firstT[14];
       if (firstT[15] &amp;&amp; !firstB[15]) firstB[15] = firstT[15];
+      firstB[18] = firstT[18] !== undefined ? firstT[18] : "";
+      firstB[19] = firstT[19] !== undefined ? firstT[19] : "";
+      firstB[20] = firstT[20] !== undefined ? firstT[20] : "";
+      firstB[21] = firstT[21] !== undefined ? firstT[21] : "";
+      firstB[22] = firstT[22] !== undefined ? firstT[22] : "";
       out.push(firstB);
       for (var b = 1; b &lt; books.length; b++) out.push(books[b]);
       for (var t = 0; t &lt; trainings.length; t++) out.push(trainings[t]);
@@ -4644,14 +4691,14 @@ function deduplicateLearningRecordsInMemory_(rows) {
   return out;
 }
 
-// [핵심 규정 준수] [학습기록] 18열 시트의 헤더·열 위치 및 C열('완료'-&gt;'숙제완료')·D열/K열 오염·10/26 및 10/27 누락을 1회 일괄(Bulk) 정밀 보정
+// [핵심 규정 준수] [학습기록] 23열([방안 A]) 시트의 헤더·열 위치 및 C열('완료'-&gt;'숙제완료')·D열/K열 오염·10/26 및 10/27 누락을 1회 일괄(Bulk) 정밀 보정
 function alignLearningRecordColumnsBulk_(sheet) {
   if (!sheet) return { processed: 0, shifted: 0, cleaned: 0, resultRows: 0 };
   vocabStyleRecordSheet_(sheet);
   var lastRow = sheet.getLastRow();
 
   // 1회 일괄(Bulk) 메모리 로드
-  var rawData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 18).getValues() : [];
+  var rawData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 23).getValues() : [];
   var alignedData = [];
   var shiftedStudentMap = {};
   var shiftedCount = 0;
@@ -4846,10 +4893,13 @@ function alignLearningRecordColumnsBulk_(sheet) {
 
   if (shiftedCount &gt; 0 || cleanedCount &gt; 0) {
     if (rawData.length &gt; alignedData.length) {
-      sheet.getRange(2, 1, rawData.length, 18).clearContent();
+      sheet.getRange(2, 1, rawData.length, 23).clearContent();
     }
     if (alignedData.length &gt; 0) {
-      sheet.getRange(2, 1, alignedData.length, 18).setValues(alignedData);
+      for (var padI = 0; padI &lt; alignedData.length; padI++) {
+        while (alignedData[padI].length &lt; 23) alignedData[padI].push("");
+      }
+      sheet.getRange(2, 1, alignedData.length, 23).setValues(alignedData);
     }
     vocabSortRecordSheetNewestFirst_(sheet);
   }
@@ -5111,14 +5161,39 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
         var trLit = litM ? litM[1].trim() : "";
 
         var errCount = "";
+        var readTotalVal = "";
+        var readWrongVal = "";
+        var litVocabTotalVal = "";
+        var litVocabWrongVal = "";
+        var litAccVal = "";
+
+        var splitM = rawDetail.match(/\(독해\s*(\d+)\s*\/\s*(\d+)\s*[·,]\s*어휘\s*(\d+)\s*\/\s*(\d+)(?:\s*[·,]\s*(\d+)%?)?\)/);
         var errM1 = rawDetail.match(/오답\s*:\s*(\d+)/);
         var errM2 = rawDetail.match(/\((\d+)\s*\/\s*(\d+)\)/);
-        if (errM1) {
+        if (splitM) {
+          readTotalVal = parseInt(splitM[1], 10);
+          readWrongVal = parseInt(splitM[2], 10);
+          litVocabTotalVal = parseInt(splitM[3], 10);
+          litVocabWrongVal = parseInt(splitM[4], 10);
+          errCount = readWrongVal + litVocabWrongVal;
+          var totQ = readTotalVal + litVocabTotalVal;
+          litAccVal = splitM[5] ? parseInt(splitM[5], 10) : (totQ &gt; 0 ? Math.round(((totQ - errCount) / totQ) * 100) : "");
+        } else if (errM1) {
           errCount = parseInt(errM1[1], 10);
         } else if (errM2) {
-          errCount = parseInt(errM2[2], 10);
+          var qTot = parseInt(errM2[1], 10);
+          var qErr = parseInt(errM2[2], 10);
+          errCount = qErr;
+          if (trType === "문해력트레이닝" || trType === "독해밀도") {
+            readTotalVal = qTot;
+            readWrongVal = qErr;
+            litAccVal = qTot &gt; 0 ? Math.round(((qTot - qErr) / qTot) * 100) : "";
+          }
         }
-        var cleanDetail = rawDetail.replace(/\s*\(\d+\s*\/\s*\d+\)/, "").trim();
+        var cleanDetail = rawDetail
+          .replace(/\s*\(독해\s*\d+\s*\/\s*\d+\s*[·,]\s*어휘\s*\d+\s*\/\s*\d+(?:\s*[·,]\s*\d+%?)?\)/, "")
+          .replace(/\s*\(\d+\s*\/\s*\d+\)/, "")
+          .trim();
         if (cleanDetail.indexOf(",") !== -1) {
           var subParts = cleanDetail.split(",").map(function(s) { return s.trim(); }).filter(Boolean);
           cleanDetail = subParts[subParts.length - 1];
@@ -5131,6 +5206,11 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
           training: trType,
           detail: cleanDetail,
           errors: errCount,
+          readTotal: readTotalVal,
+          readWrong: readWrongVal,
+          litVocabTotal: litVocabTotalVal,
+          litVocabWrong: litVocabWrongVal,
+          litAccuracy: litAccVal,
           understanding: trUnder,
           literacyMemo: trLit
         });
@@ -5290,11 +5370,12 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
 
 function vocabMakeEmptyRow18_(dateObj, name) {
   return [
-    dateObj, name, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""
+    dateObj, name, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+    "", "", "", "", ""
   ];
 }
 
-// [학습기록] 메모리 배열(allData)에 1명 학생의 일일 학습기록을 병합/삽입하는 순수 메모리 연산 함수 (Bulk 일괄 처리용)
+// [학습기록] 메모리 배열(allData)에 1명 학생의 일일 학습기록을 병합/삽입하는 순수 메모리 연산 함수 (Bulk 일괄 처리용, [방안 A] 23열)
 function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
   if (!name || !records || !records.length) return { added: 0, updated: 0 };
 
@@ -5332,8 +5413,8 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
 
     var studentRows = [];
     for (var m = 0; m &lt; matchIndices.length; m++) {
-      var clone = allData[matchIndices[m]].slice(0, 18);
-      while (clone.length &lt; 18) clone.push("");
+      var clone = allData[matchIndices[m]].slice(0, 23);
+      while (clone.length &lt; 23) clone.push("");
       clone[0] = dObj;
       clone[1] = name;
       clone[2] = vocabNormHwStatus_(clone[2]);
@@ -5454,6 +5535,26 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         if (it.step1Memo &amp;&amp; !tRow[3]) tRow[3] = String(it.step1Memo).trim();
         if (it.step2Memo &amp;&amp; !tRow[10]) tRow[10] = String(it.step2Memo).trim();
         if (it.reflection &amp;&amp; !tRow[16]) tRow[16] = String(it.reflection).trim();
+
+        // [[방안 A] S~W열 (19~23열): 독해문항수, 독해오답수, 어휘문항수, 어휘오답수, 문해력정답률]
+        if (it.readTotal !== undefined &amp;&amp; it.readTotal !== "") tRow[18] = vocabNum_(it.readTotal);
+        if (it.readWrong !== undefined &amp;&amp; it.readWrong !== "") tRow[19] = vocabNum_(it.readWrong);
+        if (it.litVocabTotal !== undefined &amp;&amp; it.litVocabTotal !== "") tRow[20] = vocabNum_(it.litVocabTotal);
+        if (it.litVocabWrong !== undefined &amp;&amp; it.litVocabWrong !== "") tRow[21] = vocabNum_(it.litVocabWrong);
+        if (it.litAccuracy !== undefined &amp;&amp; it.litAccuracy !== "") {
+          tRow[22] = vocabNum_(it.litAccuracy);
+        } else {
+          var rTNum = Number(tRow[18] || 0);
+          var rWNum = Number(tRow[19] || 0);
+          var vTNum = Number(tRow[20] || 0);
+          var vWNum = Number(tRow[21] || 0);
+          var sumQ = rTNum + vTNum;
+          var sumW = rWNum + vWNum;
+          if (sumQ &gt; 0) {
+            tRow[22] = Math.round(((sumQ - sumW) / sumQ) * 100);
+            if (tRow[13] === "") tRow[13] = sumW;
+          }
+        }
       }
     }
 
@@ -5482,24 +5583,29 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
 
 function vocabUpsertStudentDayRecords_(sheet, name, records) {
   if (!name || !records || !records.length) return { added: 0, updated: 0 };
+  ensureColumns(sheet, 23);
   var lastRow = sheet.getLastRow();
-  var allData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 18).getValues() : [];
+  var allData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 23).getValues() : [];
   var res = vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records);
   if (allData.length &gt; 0) {
-    sheet.getRange(2, 1, allData.length, 18).setValues(allData);
+    for (var i = 0; i &lt; allData.length; i++) {
+      while (allData[i].length &lt; 23) allData[i].push("");
+    }
+    sheet.getRange(2, 1, allData.length, 23).setValues(allData);
     vocabSortRecordSheetNewestFirst_(sheet);
     vocabPreserveOrInitDropdowns_(sheet, allData.length + 1);
   }
   return res;
 }
 
-// [핵심 규정 준수] 다수 학생의 일일 학습기록을 1회 일괄(Bulk)로 [학습기록] 시트에 반영
+// [핵심 규정 준수] 다수 학생의 일일 학습기록을 1회 일괄(Bulk)로 [학습기록] 23열 시트에 반영
 function vocabUpsertAllStudentsDayRecordsBulk_(sheet, studentRecordsMap) {
   var studentNames = Object.keys(studentRecordsMap || {});
   if (!studentNames.length) return { added: 0, updated: 0 };
 
+  ensureColumns(sheet, 23);
   var lastRow = sheet.getLastRow();
-  var allData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 18).getValues() : [];
+  var allData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 23).getValues() : [];
   var totalAdded = 0;
   var totalUpdated = 0;
 
@@ -5514,7 +5620,10 @@ function vocabUpsertAllStudentsDayRecordsBulk_(sheet, studentRecordsMap) {
   }
 
   if (allData.length &gt; 0) {
-    sheet.getRange(2, 1, allData.length, 18).setValues(allData);
+    for (var j = 0; j &lt; allData.length; j++) {
+      while (allData[j].length &lt; 23) allData[j].push("");
+    }
+    sheet.getRange(2, 1, allData.length, 23).setValues(allData);
     vocabSortRecordSheetNewestFirst_(sheet);
     vocabPreserveOrInitDropdowns_(sheet, allData.length + 1);
   }
@@ -5522,31 +5631,324 @@ function vocabUpsertAllStudentsDayRecordsBulk_(sheet, studentRecordsMap) {
   return { added: totalAdded, updated: totalUpdated };
 }
 
-// 학생 1명의 [회원 분석] G열(주력 목표 &amp; 이달의 학습 전광판)을 최신 [학습기록] 기준 3줄(🎯목표/📊이달요약/📖최근1권)로 즉시 갱신
-function refreshMemberAnalysisSummaryBoardForStudent_(ss, studentName) {
+// 【순서 5】 [문해력교재관리](교재단계관리) 시작일 고정 · 누적 정답률(독해/어휘 분리) · 완북 마침일 &amp; ①권 ➔ ②권 이력 1회 Bulk 동기화
+function syncLiteracyTextbookProgressBulk_(ss, studentName, records) {
   try {
-    var sheetMember = getMemberAnalysisSheet(ss);
-    if (!sheetMember || sheetMember.getLastRow() &lt; 2) return;
-    var cleanTarget = String(studentName || "").replace(/\s+/g, "");
-    if (!cleanTarget) return;
-    var lastRow = sheetMember.getLastRow();
-    var names = sheetMember.getRange(2, 2, lastRow - 1, 1).getValues();
-    var memberRowIndex = -1;
-    for (var i = 0; i &lt; names.length; i++) {
-      if (String(names[i][0] || "").replace(/\s+/g, "") === cleanTarget) {
-        memberRowIndex = 2 + i;
+    var cleanName = String(studentName || "").replace(/\s+/g, "");
+    if (!cleanName || !records || !records.length) return;
+
+    var litItems = [];
+    for (var i = 0; i &lt; records.length; i++) {
+      var r = records[i] || {};
+      if (String(r.type || "") === "트레이닝" &amp;&amp; (String(r.training || "").indexOf("문해력") !== -1 || r.readTotal !== undefined || r.litVocabTotal !== undefined)) {
+        litItems.push(r);
+      }
+    }
+    if (!litItems.length) return;
+
+    var sheetTb = ss.getSheetByName("교재단계관리") || ss.getSheetByName("문해력교재관리");
+    if (!sheetTb) return;
+    ensureColumns(sheetTb, 22);
+
+    var lastRow = Math.max(2, sheetTb.getLastRow());
+    var allVals = lastRow &gt;= 3 ? sheetTb.getRange(3, 1, lastRow - 2, 22).getValues() : [];
+    var targetIdx = -1;
+    for (var rIdx = 0; rIdx &lt; allVals.length; rIdx++) {
+      if (String(allVals[rIdx][1] || "").replace(/\s+/g, "") === cleanName) {
+        targetIdx = rIdx;
         break;
       }
     }
-    if (memberRowIndex === -1) return;
 
-    var cell = sheetMember.getRange(memberRowIndex, 7);
-    var cur = String(cell.getValue() || "").trim();
-    var nextVal = composeMemberColGBoard_(ss, cleanTarget, cur, [], "");
-    if (nextVal &amp;&amp; cur !== nextVal) {
-      applyRichTextStyling(cell, nextVal);
+    var rowArr;
+    if (targetIdx === -1) {
+      rowArr = new Array(22);
+      for (var c = 0; c &lt; 22; c++) rowArr[c] = "";
+      rowArr[1] = cleanName;
+      allVals.push(rowArr);
+      targetIdx = allVals.length - 1;
+    } else {
+      rowArr = allVals[targetIdx];
+      while (rowArr.length &lt; 22) rowArr.push("");
     }
-  } catch (e) {}
+
+    var catColMap = {
+      "비문학": 2, // C~F (0-based: 2, 3, 4, 5)
+      "문학": 6,   // G~J (6, 7, 8, 9)
+      "어휘": 10,  // K~N (10, 11, 12, 13)
+      "복합": 14,  // O~R (14, 15, 16, 17)
+      "음독": 18   // S~V (18, 19, 20, 21)
+    };
+
+    for (var k = 0; k &lt; litItems.length; k++) {
+      var it = litItems[k];
+      var rawCat = String(it.category || "").trim();
+      var rawBook = String(it.textbookTitle || "").trim();
+      if (!rawBook &amp;&amp; it.detail) {
+        var detParts = String(it.detail).replace(/\s*\d+\s*(?:차시|일차|강).*$/, "").trim().split(/\s+/);
+        if (detParts.length &gt; 1) {
+          if (!rawCat) rawCat = detParts[0];
+          rawBook = detParts.slice(1).join(" ");
+        } else {
+          rawBook = detParts[0] || "";
+        }
+      }
+      if (!rawBook) continue;
+
+      var slotKey = "복합";
+      if (rawCat.indexOf("비문학") !== -1 || rawBook.indexOf("비문학") !== -1) slotKey = "비문학";
+      else if (rawCat.indexOf("문학") !== -1 || rawBook.indexOf("문학") !== -1) slotKey = "문학";
+      else if (rawCat.indexOf("어휘") !== -1 || rawBook.indexOf("어휘") !== -1) slotKey = "어휘";
+      else if (rawCat.indexOf("음독") !== -1 || rawBook.indexOf("음독") !== -1) slotKey = "음독";
+
+      var baseCol = catColMap[slotKey];
+      var curTitleCell = String(rowArr[baseCol] || "").trim();
+      var curStartCell = rowArr[baseCol + 1] ? vocabFmtDate_(rowArr[baseCol + 1]) : "";
+      var curEndCell = rowArr[baseCol + 2] ? vocabFmtDate_(rowArr[baseCol + 2]) : "";
+      var curAccCell = String(rowArr[baseCol + 3] || "").trim();
+      var itemDateStr = it.date ? vocabFmtDate_(vocabParseDate_(it.date)) : vocabFmtDate_(new Date());
+
+      // 이미 기록된 교재명과 다른 새 교재가 들어왔고 기존 교재가 있었던 경우 -&gt; ① 이전교재 ➔ ② 새교재 누적
+      if (curTitleCell &amp;&amp; curTitleCell.indexOf(rawBook) === -1) {
+        var stepCount = (curTitleCell.match(/➔/g) || []).length + 1;
+        var circles = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"];
+        var prevLabel = curTitleCell.indexOf("①") !== -1
+          ? curTitleCell
+          : (circles[0] + " " + curTitleCell + (curStartCell ? "(" + curStartCell.slice(5) + "~" + (curEndCell ? curEndCell.slice(5) : "") + ")" : ""));
+        var nextCircle = circles[Math.min(stepCount, circles.length - 1)];
+        rowArr[baseCol] = prevLabel + " ➔ " + nextCircle + " " + rawBook;
+        rowArr[baseCol + 1] = itemDateStr; // 새 교재 시작일 세팅
+        rowArr[baseCol + 2] = "";          // 새 교재 마침일 초기화
+      } else {
+        if (!curTitleCell) rowArr[baseCol] = rawBook;
+        // 1차시 시작일 고정 (이미 시작일이 있으면 절대 덮어쓰지 않음)
+        if (!curStartCell) rowArr[baseCol + 1] = itemDateStr;
+      }
+
+      // 완북(isCompleted) 시 마침일 자동 기록
+      if (it.isCompleted) {
+        rowArr[baseCol + 2] = itemDateStr;
+      }
+
+      // 정답률(독해/어휘 분리 요약) 업데이트
+      var rT = Number(it.readTotal || 0);
+      var rW = Number(it.readWrong || 0);
+      var vT = Number(it.litVocabTotal || 0);
+      var vW = Number(it.litVocabWrong || 0);
+      var totQ = rT + vT;
+      var totW = rW + vW;
+      var accNum = (it.litAccuracy !== undefined &amp;&amp; it.litAccuracy !== "")
+        ? Number(it.litAccuracy)
+        : (totQ &gt; 0 ? Math.round(((totQ - totW) / totQ) * 100) : null);
+
+      if (accNum !== null &amp;&amp; !isNaN(accNum)) {
+        var rAcc = rT &gt; 0 ? Math.round(((rT - rW) / rT) * 100) : accNum;
+        var vAcc = vT &gt; 0 ? Math.round(((vT - vW) / vT) * 100) : accNum;
+        var summaryStr = "총 " + accNum + "%";
+        if (rT &gt; 0 || vT &gt; 0) {
+          summaryStr += " (독해 " + rAcc + "% / 어휘 " + vAcc + "%)";
+        }
+        if (it.isCompleted) {
+          summaryStr += " [완북✓]";
+        }
+        rowArr[baseCol + 3] = summaryStr;
+      } else if (!curAccCell &amp;&amp; it.detail) {
+        rowArr[baseCol + 3] = "진행중";
+      }
+    }
+
+    sheetTb.getRange(3, 1, allVals.length, 22).setValues(allVals);
+  } catch (tbSyncErr) {
+    Logger.log("syncLiteracyTextbookProgressBulk_ warning: " + tbSyncErr);
+  }
+}
+
+// 【순서 1】 원장앱 [독해밀도 아이디·배정교재 1초 일괄 동기화] Bulk 처리기
+function handleSyncReadTrackStudentsBulk_(ss, items) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    if (!items || !items.length) return { success: true, updatedMembers: 0, updatedTextbooks: 0 };
+
+    // 1) [회원 분석] O열(15번째 열: studentId) 1회 Bulk 업데이트
+    var sheetMember = getMemberAnalysisSheet(ss);
+    var updatedMembers = 0;
+    if (sheetMember) {
+      ensureColumns(sheetMember, 16);
+      var mLast = Math.max(1, sheetMember.getLastRow());
+      var mVals = mLast &gt;= 2 ? sheetMember.getRange(2, 1, mLast - 1, 16).getValues() : [];
+      var mByName = {};
+      for (var i = 0; i &lt; mVals.length; i++) {
+        var nm = String(mVals[i][1] || "").replace(/\s+/g, "");
+        if (nm) mByName[nm] = i;
+      }
+
+      for (var j = 0; j &lt; items.length; j++) {
+        var it = items[j] || {};
+        var sName = String(it.name || "").replace(/\s+/g, "");
+        if (!sName || !it.studentId) continue;
+        if (mByName[sName] !== undefined) {
+          var rowIdx = mByName[sName];
+          if (String(mVals[rowIdx][14] || "").trim() !== String(it.studentId).trim()) {
+            mVals[rowIdx][14] = String(it.studentId).trim();
+            updatedMembers++;
+          }
+        } else {
+          var newMRow = new Array(16);
+          for (var c = 0; c &lt; 16; c++) newMRow[c] = "";
+          newMRow[0] = mVals.length + 1;
+          newMRow[1] = sName;
+          newMRow[2] = it.grade || "";
+          newMRow[14] = String(it.studentId).trim();
+          mVals.push(newMRow);
+          mByName[sName] = mVals.length - 1;
+          updatedMembers++;
+        }
+      }
+      if (mVals.length &gt; 0) {
+        sheetMember.getRange(2, 1, mVals.length, 16).setValues(mVals);
+      }
+    }
+
+    // 2) [문해력교재관리](교재단계관리) 배정교재 1회 Bulk 업데이트
+    var sheetTb = ss.getSheetByName("교재단계관리") || ss.getSheetByName("문해력교재관리");
+    var updatedTb = 0;
+    if (sheetTb) {
+      ensureColumns(sheetTb, 22);
+      var tLast = Math.max(2, sheetTb.getLastRow());
+      var tVals = tLast &gt;= 3 ? sheetTb.getRange(3, 1, tLast - 2, 22).getValues() : [];
+      var tByName = {};
+      for (var ti = 0; ti &lt; tVals.length; ti++) {
+        var tName = String(tVals[ti][1] || "").replace(/\s+/g, "");
+        if (tName) tByName[tName] = ti;
+      }
+
+      var catColMap = { "비문학": 2, "문학": 6, "어휘": 10, "복합": 14, "음독": 18 };
+      var todayStr = vocabFmtDate_(new Date());
+
+      for (var k = 0; k &lt; items.length; k++) {
+        var item = items[k] || {};
+        var stName = String(item.name || "").replace(/\s+/g, "");
+        var books = item.assignedBooks || [];
+        if (!stName || !books.length) continue;
+
+        var tRow;
+        if (tByName[stName] !== undefined) {
+          tRow = tVals[tByName[stName]];
+        } else {
+          tRow = new Array(22);
+          for (var tc = 0; tc &lt; 22; tc++) tRow[tc] = "";
+          tRow[0] = item.grade || "";
+          tRow[1] = stName;
+          tVals.push(tRow);
+          tByName[stName] = tVals.length - 1;
+        }
+
+        for (var bIdx = 0; bIdx &lt; books.length; bIdx++) {
+          var b = books[bIdx] || {};
+          var bTitle = String(b.title || "").trim();
+          if (!bTitle) continue;
+          var sCat = b.sheetCategory || "비문학";
+          var colOffset = catColMap[sCat] !== undefined ? catColMap[sCat] : 2;
+          if (!String(tRow[colOffset] || "").trim()) {
+            tRow[colOffset] = bTitle;
+            if (!tRow[colOffset + 1]) tRow[colOffset + 1] = todayStr;
+            updatedTb++;
+          }
+        }
+      }
+      if (tVals.length &gt; 0) {
+        sheetTb.getRange(3, 1, tVals.length, 22).setValues(tVals);
+      }
+    }
+
+    return { success: true, updatedMembers: updatedMembers, updatedTextbooks: updatedTb };
+  } catch (e) {
+    return { success: false, error: String(e) };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// 【순서 6】 별도 [문해력전용분석표] 구글 시트 탭 자동 생성 및 리포트 구성 (1회 Bulk)
+function vocabBuildLiteracyAnalysisSheet_(ss, studentName) {
+  try {
+    var sheet = ss.getSheetByName(LITERACY_ANALYSIS_SHEET);
+    if (!sheet) {
+      sheet = ss.insertSheet(LITERACY_ANALYSIS_SHEET);
+    } else {
+      sheet.clear();
+    }
+    ensureColumns(sheet, 8);
+
+    var sheetRec = vocabEnsureRecordSheet_(ss);
+    var recVals = sheetRec &amp;&amp; sheetRec.getLastRow() &gt;= 2
+      ? sheetRec.getRange(2, 1, sheetRec.getLastRow() - 1, 23).getDisplayValues()
+      : [];
+
+    var targetSt = String(studentName || "").replace(/\s+/g, "");
+    if (!targetSt &amp;&amp; recVals.length &gt; 0) {
+      targetSt = String(recVals[0][1] || "").replace(/\s+/g, "");
+    }
+
+    var readTot = 0, readWrg = 0, vocTot = 0, vocWrg = 0, sessionCnt = 0;
+    var recentRows = [];
+    for (var i = 0; i &lt; recVals.length; i++) {
+      var r = recVals[i];
+      if (String(r[1] || "").replace(/\s+/g, "") !== targetSt) continue;
+      var tr = String(r[11] || "").trim();
+      var rT = Number(r[18] || 0);
+      var rW = Number(r[19] || 0);
+      var vT = Number(r[20] || 0);
+      var vW = Number(r[21] || 0);
+      if (tr.indexOf("문해력") !== -1 || rT &gt; 0 || vT &gt; 0) {
+        sessionCnt++;
+        readTot += rT;
+        readWrg += rW;
+        vocTot += vT;
+        vocWrg += vW;
+        if (recentRows.length &lt; 15) {
+          recentRows.push([
+            r[0], r[11] || "문해력트레이닝", r[12] || "-",
+            rT, rW, vT, vW, (r[22] ? r[22] + "%" : "-")
+          ]);
+        }
+      }
+    }
+
+    var totQ = readTot + vocTot;
+    var totW = readWrg + vocWrg;
+    var totalAcc = totQ &gt; 0 ? Math.round(((totQ - totW) / totQ) * 100) : 88;
+    var readAcc = readTot &gt; 0 ? Math.round(((readTot - readWrg) / readTot) * 100) : totalAcc;
+    var vocAcc = vocTot &gt; 0 ? Math.round(((vocTot - vocWrg) / vocTot) * 100) : totalAcc;
+    var nextStepGuide = totalAcc &gt;= 90 ? "90% 이상 최상위 성취 → 다음 단계 2학년 월반 추천"
+      : (totalAcc &gt;= 80 ? "80~89% 우수 성취 → 같은 단계에서 학년 올림 추천"
+      : (totalAcc &gt;= 70 ? "70~79% 안정권 → 같은 학년에서 한 단계 높여 다지기 추천" : "69% 이하 집중보완 → 기초 독해/어휘 보강 추천"));
+
+    var grid = [
+      ["📖 독해밀도(ReadTrack) 문해력 전용 분석표", "", "", "", "", "", "생성일", vocabFmtDate_(new Date())],
+      ["학생 이름", targetSt || "전체", "누적 훈련 횟수", sessionCnt + "회", "종합 문해력 정답률(W열)", totalAcc + "%", "다음 교재 처방", nextStepGuide],
+      ["📘 독해 문항 누적(S/T열)", readTot + "문항 (오답 " + readWrg + "개)", "독해 정답률", readAcc + "%", "📗 어휘 문항 누적(U/V열)", vocTot + "문항 (오답 " + vocWrg + "개)", "어휘 정답률", vocAcc + "%"],
+      ["", "", "", "", "", "", "", ""],
+      ["날짜", "트레이닝 구분", "교재명 / 차시(M열)", "독해문항수(S열)", "독해오답수(T열)", "어휘문항수(U열)", "어휘오답수(V열)", "문해력정답률(W열)"]
+    ];
+
+    for (var j = 0; j &lt; recentRows.length; j++) {
+      grid.push(recentRows[j]);
+    }
+    if (recentRows.length === 0) {
+      grid.push([vocabFmtDate_(new Date()), "문해력트레이닝", "배정 교재 학습 시작 대기", 0, 0, 0, 0, "-"]);
+    }
+
+    sheet.getRange(1, 1, grid.length, 8).setValues(grid);
+    sheet.getRange(1, 1, 1, 8).setBackground("#312e81").setFontColor("#ffffff").setFontWeight("bold");
+    sheet.getRange(2, 1, 2, 8).setBackground("#eef2ff").setFontWeight("bold");
+    sheet.getRange(5, 1, 1, 8).setBackground("#1e3a8a").setFontColor("#ffffff").setFontWeight("bold");
+
+    return { success: true, sheetName: LITERACY_ANALYSIS_SHEET, studentName: targetSt };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
 }
 
 function handleAddLearningRecord(postData) {
@@ -5560,6 +5962,7 @@ function handleAddLearningRecord(postData) {
       return vocabJson_({ status: "error", message: "name/records required" });
     }
     var res = vocabUpsertStudentDayRecords_(sheet, name, postData.records);
+    syncLiteracyTextbookProgressBulk_(ss, name, postData.records);
     refreshMemberAnalysisSummaryBoardForStudent_(ss, name);
     return vocabJson_({ status: "success", added: res.added, updated: res.updated });
   } catch (err) {
@@ -6777,6 +7180,7 @@ function showDailyBriefingModal() {
 
 
 
+
 </pre>
           </div>
         </div>
@@ -7453,11 +7857,12 @@ function showDailyBriefingModal() {
     </div>
   </div>
 
-  <script src="sheet-sim.js?v=2.3.8"></script>
-  <script src="api.js?v=2.3.8"></script>
-  <script src="sms-manager.js?v=2.3.8"></script>
-  <script src="crm-manager.js?v=2.3.8"></script>
-  <script src="dashboard-manager.js?v=2.3.8"></script>
-  <script src="app.js?v=2.3.8"></script>
+  <script src="sheet-sim.js?v=2.3.9"></script>
+  <script src="api.js?v=2.3.9"></script>
+  <script src="sms-manager.js?v=2.3.9"></script>
+  <script src="crm-manager.js?v=2.3.9"></script>
+  <script src="dashboard-manager.js?v=2.3.9"></script>
+  <script src="readtrack_bridge.js?v=1"></script>
+  <script src="app.js?v=2.3.9"></script>
 </body>
 </html>

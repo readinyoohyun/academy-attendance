@@ -387,7 +387,12 @@ class SheetSimulator {
             <th>문해력발자국 (P)</th>
             <th>나의 시간, 나의 기록 (Q)</th>
             <th style="background:#ffedd5 !important; color:#9a3412 !important;">틀린어휘 (R)</th>
-            <th>브리핑</th>
+            <th style="background:#e0e7ff !important; color:#312e81 !important;">독해문항수 (S)</th>
+            <th style="background:#fee2e2 !important; color:#991b1b !important;">독해오답수 (T)</th>
+            <th style="background:#dcfce7 !important; color:#166534 !important;">어휘문항수 (U)</th>
+            <th style="background:#fee2e2 !important; color:#991b1b !important;">어휘오답수 (V)</th>
+            <th style="background:#ede9fe !important; color:#4c1d95 !important;">문해력정답률 (W)</th>
+            <th>브리핑 / 분석</th>
           </tr>
         `;
       case "한명 검색":
@@ -1242,7 +1247,7 @@ class SheetSimulator {
           const trVal = row.training ? String(row.training).toLowerCase() : "";
           return nameVal.includes(query) || dateVal.includes(query) || bookVal.includes(query) || trVal.includes(query);
         });
-        if (recs.length === 0) return `<tr><td colspan="20" style="text-align:center; padding:2rem; color:var(--text-muted);">18열 학습기록 데이터가 없습니다. [구글시트 불러오기]를 눌러 동기화하세요.</td></tr>`;
+        if (recs.length === 0) return `<tr><td colspan="25" style="text-align:center; padding:2rem; color:var(--text-muted);">23열 학습기록 데이터가 없습니다. [구글시트 불러오기]를 눌러 동기화하세요.</td></tr>`;
 
         const sortedRecs = [...recs].reverse().slice(0, 150);
         return sortedRecs.map((row, idx) => {
@@ -1268,8 +1273,14 @@ class SheetSimulator {
               <td style="max-width:140px; font-size:0.82rem;">${this.escapeHtml(row.literacyMemo || '')}</td>
               <td style="max-width:160px; font-size:0.82rem;">${this.escapeHtml(row.reflection || '')}</td>
               <td style="max-width:150px; background:rgba(255,237,213,0.45); font-size:0.82rem; color:#9a3412;">${this.escapeHtml(row.wrongWords || '')}</td>
-              <td style="text-align:center;">
-                <button type="button" onclick="window.app && window.app.smsManager && window.app.smsManager.showDailyBriefingModal('${this.escapeHtml(row.name || '')}')" style="background:#2563eb; color:#fff; border:none; border-radius:4px; padding:0.25rem 0.5rem; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap;">📨 브리핑</button>
+              <td style="text-align:center; background:rgba(224,231,255,0.45); font-weight:700; color:#312e81;">${this.escapeHtml(row.readTotal || '')}</td>
+              <td style="text-align:center; background:rgba(254,226,226,0.45); font-weight:700; color:#dc2626;">${this.escapeHtml(row.readWrong || '')}</td>
+              <td style="text-align:center; background:rgba(220,252,231,0.45); font-weight:700; color:#166534;">${this.escapeHtml(row.litVocabTotal || '')}</td>
+              <td style="text-align:center; background:rgba(254,226,226,0.45); font-weight:700; color:#dc2626;">${this.escapeHtml(row.litVocabWrong || '')}</td>
+              <td style="text-align:center; background:rgba(237,233,254,0.6); font-weight:800; color:#4f46e5;">${row.litAccuracy ? `${this.escapeHtml(String(row.litAccuracy).replace(/%/g, ''))}%` : ''}</td>
+              <td style="text-align:center; white-space:nowrap;">
+                <button type="button" onclick="window.app && window.app.smsManager && window.app.smsManager.showDailyBriefingModal('${this.escapeHtml(row.name || '')}')" style="background:#2563eb; color:#fff; border:none; border-radius:4px; padding:0.25rem 0.45rem; font-size:0.73rem; font-weight:700; cursor:pointer; white-space:nowrap;">📨 브리핑</button>
+                <button type="button" onclick="window.ReadTrackBridge && window.ReadTrackBridge.openLiteracyReportModal('${this.escapeHtml(row.name || '')}', window.app)" style="background:#4f46e5; color:#fff; border:none; border-radius:4px; padding:0.25rem 0.45rem; font-size:0.73rem; font-weight:700; cursor:pointer; white-space:nowrap; margin-left:3px;">📖 문해력분석</button>
               </td>
             </tr>
           `;

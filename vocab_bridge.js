@@ -559,16 +559,27 @@
       var under = normalizeUnderstanding(d.understanding || missions.trainingUnderstanding || '');
       if (t === '문해력트레이닝') {
         var items = Array.isArray(d.items) ? d.items.slice() : [];
-        if ((d.session || d.errors || d.field || d.vol) && !items.some(function (it) { return it.field === d.field && it.vol === d.vol && it.session === d.session && it.errors === d.errors; })) {
-          items.push({ field: d.field || '비문학', vol: d.vol || '1단계', session: d.session, errors: d.errors });
+        if ((d.session || d.errors || d.field || d.vol || d.readTotal || d.litVocabTotal) && !items.some(function (it) { return it.field === d.field && it.vol === d.vol && it.session === d.session && it.errors === d.errors; })) {
+          items.push({
+            field: d.field || '비문학',
+            vol: d.vol || '1단계',
+            session: d.session,
+            errors: d.errors,
+            readTotal: d.readTotal,
+            readWrong: d.readWrong,
+            litVocabTotal: d.litVocabTotal,
+            litVocabWrong: d.litVocabWrong,
+            litAccuracy: d.litAccuracy,
+            isCompleted: d.isCompleted
+          });
         }
         if (!items.length) {
           out.push({ date: date, type: '트레이닝', training: t, detail: '', errors: 0, understanding: under, literacyMemo: literacyMemo });
         } else {
-          // 중복 누적 방지: 종목별(비문학, 문학, 복합 등)로 최종 확정된 1건만 단일 레코드로 정제
+          // 중복 누적 방지: 종목+교재별로 최종 확정된 레코드로 정제
           var litMap = {};
           items.forEach(function (it) {
-            var k = it.field || '복합';
+            var k = (it.field || '복합') + '_' + (it.vol || '');
             litMap[k] = it;
           });
           var uniqueItems = Object.keys(litMap).map(function(k) { return litMap[k]; });
@@ -576,15 +587,33 @@
             var rawSess = String(it.session || "").trim();
             var sessPart = "";
             if (rawSess) {
-              sessPart = (rawSess.indexOf("차시") !== -1 || rawSess.indexOf("일차") !== -1) ? rawSess : (rawSess + "차시");
+              sessPart = (rawSess.indexOf("차시") !== -1 || rawSess.indexOf("일차") !== -1 || rawSess.indexOf("강") !== -1) ? rawSess : (rawSess + "차시");
             }
             var det = [it.field, it.vol, sessPart].filter(Boolean).join(' ');
+            var rT = (it.readTotal !== undefined && it.readTotal !== "") ? Number(it.readTotal) : "";
+            var rW = (it.readWrong !== undefined && it.readWrong !== "") ? Number(it.readWrong) : "";
+            var vT = (it.litVocabTotal !== undefined && it.litVocabTotal !== "") ? Number(it.litVocabTotal) : "";
+            var vW = (it.litVocabWrong !== undefined && it.litVocabWrong !== "") ? Number(it.litVocabWrong) : "";
+            var totalQ = (Number(rT) || 0) + (Number(vT) || 0);
+            var totalW = (rW !== "" || vW !== "") ? ((Number(rW) || 0) + (Number(vW) || 0)) : parseErrorCount(it.errors);
+            var acc = (it.litAccuracy !== undefined && it.litAccuracy !== "")
+              ? Number(it.litAccuracy)
+              : (totalQ > 0 ? Math.round(((totalQ - totalW) / totalQ) * 100) : "");
             out.push({
               date: date,
               type: '트레이닝',
               training: t,
               detail: det,
-              errors: parseErrorCount(it.errors),
+              textbookTitle: it.vol || '',
+              category: it.field || '비문학',
+              session: rawSess,
+              errors: totalW,
+              readTotal: rT,
+              readWrong: rW,
+              litVocabTotal: vT,
+              litVocabWrong: vW,
+              litAccuracy: acc,
+              isCompleted: !!it.isCompleted,
               understanding: under,
               literacyMemo: literacyMemo
             });
