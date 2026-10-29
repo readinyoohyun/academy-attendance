@@ -1140,6 +1140,42 @@
             ReadTrackBridge.issueStudentSessionTag(state.currentStudent);
           }
 
+          // [자가복구] 오전 6시~오후 5시 59분 사이에 오늘 출석부 날짜가 이전 날짜(어제 등)로 멈춰 있으면 자동으로 누적 백업 및 오늘 출석부 생성 실행
+          try {
+            const nowKr = new Date();
+            const krHour = nowKr.getHours();
+            const isSunday = nowKr.getDay() === 0;
+            if (krHour >= 6 && krHour < 18 && !isSunday) {
+              const todayM = nowKr.getMonth() + 1;
+              const todayD = nowKr.getDate();
+              const todayKey = `${todayM}/${todayD}`;
+              let isStaleDailySheet = false;
+              if (!state.dailyLogs || state.dailyLogs.length === 0) {
+                isStaleDailySheet = (state.students && state.students.length > 0);
+              } else {
+                const firstDateStr = String(state.dailyLogs[0].date || '').trim();
+                const dm = firstDateStr.match(/(\d+)[\/\.](\d+)/);
+                if (dm) {
+                  const logM = parseInt(dm[1], 10);
+                  const logD = parseInt(dm[2], 10);
+                  if (logM !== todayM || logD !== todayD) {
+                    isStaleDailySheet = true;
+                  }
+                }
+              }
+              if (isStaleDailySheet && window._studentAutoRolloverDate !== todayKey) {
+                window._studentAutoRolloverDate = todayKey;
+                fetch(state.config.gasWebhookUrl, {
+                  method: "POST",
+                  headers: { "Content-Type": "text/plain;charset=utf-8" },
+                  body: JSON.stringify({ action: "generateDailyAttendance" })
+                }).then(() => {
+                  setTimeout(() => fetchFreshDataPromise(), 1500);
+                }).catch(() => {});
+              }
+            }
+          } catch (autoRollErr) {}
+
           populateStudentsDatalist();
           return true;
         }

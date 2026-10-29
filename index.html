@@ -960,7 +960,7 @@ function doGet(e) {
     }
   }
 
-  // 2. 출결보강관리 / 오늘 출석부 (dailyLogs)
+  // 2. 출결보강관리 / 오늘 출석부 (dailyLogs) + [자가복구] 낮 시간대(06:00~17:59) 이전 날짜 잔류 시 자동 백업 및 오늘 출석부 생성
   var candidateDailySheets = ["오늘 출석부", "출결보강관리", "오늘출석부"];
   var sheetDaily = null;
   for (var cIdx = 0; cIdx &lt; candidateDailySheets.length; cIdx++) {
@@ -974,6 +974,38 @@ function doGet(e) {
     for (var cIdx = 0; cIdx &lt; candidateDailySheets.length; cIdx++) {
       var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
       if (candidate) { sheetDaily = candidate; break; }
+    }
+  }
+  if (sheetDaily) {
+    try {
+      var nowKr = new Date();
+      var krHour = parseInt(Utilities.formatDate(nowKr, "Asia/Seoul", "H"), 10);
+      var krDayName = Utilities.formatDate(nowKr, "Asia/Seoul", "EEEE");
+      var isSunday = (krDayName.indexOf("Sunday") !== -1 || krDayName.indexOf("일") !== -1);
+      if (krHour &gt;= 6 &amp;&amp; krHour &lt; 18 &amp;&amp; !isSunday) {
+        var curM = parseInt(Utilities.formatDate(nowKr, "Asia/Seoul", "M"), 10);
+        var curD = parseInt(Utilities.formatDate(nowKr, "Asia/Seoul", "d"), 10);
+        var lrCheck = sheetDaily.getLastRow();
+        var needsAutoRollover = false;
+        if (lrCheck &lt; 3) {
+          needsAutoRollover = true;
+        } else {
+          var r3DateVal = String(sheetDaily.getRange(3, 1).getDisplayValue() || "").trim();
+          var r3Match = r3DateVal.match(/(\d+)[\/\.](\d+)/);
+          if (r3Match) {
+            var r3M = parseInt(r3Match[1], 10);
+            var r3D = parseInt(r3Match[2], 10);
+            if (r3M !== curM || r3D !== curD) {
+              needsAutoRollover = true;
+            }
+          }
+        }
+        if (needsAutoRollover) {
+          generateDailyAttendance();
+        }
+      }
+    } catch (autoRollErr) {
+      console.error("[doGet] Auto rollover check failed:", autoRollErr);
     }
   }
   var dailyLogsData = [];
@@ -1905,16 +1937,30 @@ function formatAbsentCell(cell, value) {
   }
 }
 
-// 매일 오전 6시 자동 실행용 일일 출석부 자동 생성 함수 (기존 기록 백업 후 초기화)
+// 매일 오전 6시 및 밤 9시 30분 자동 실행용 일일 출석부 자동 생성 함수 (기존 기록 백업 후 초기화)
 function generateDailyAttendance() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheetStudents = ss.getSheetByName("전체시간표") || ss.getSheetByName("전체 시간표");
   if (!sheetStudents) return;
   ensureColumns(sheetStudents, 36);
   
-  var sheetDaily = ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘 출석부");
+  var candidateDailySheets = ["오늘 출석부", "출결보강관리", "오늘출석부"];
+  var sheetDaily = null;
+  for (var cIdx = 0; cIdx &lt; candidateDailySheets.length; cIdx++) {
+    var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
+    if (candidate &amp;&amp; candidate.getLastRow() &gt; 2) {
+      sheetDaily = candidate;
+      break;
+    }
+  }
   if (!sheetDaily) {
-    sheetDaily = ss.insertSheet("출결보강관리");
+    for (var cIdx = 0; cIdx &lt; candidateDailySheets.length; cIdx++) {
+      var candidate = ss.getSheetByName(candidateDailySheets[cIdx]);
+      if (candidate) { sheetDaily = candidate; break; }
+    }
+  }
+  if (!sheetDaily) {
+    sheetDaily = ss.insertSheet("오늘 출석부");
     sheetDaily.appendRow([
       "날짜요일", "시간", "이름", "특이사항", "등원여부", "등원시간", "보강결석사유",
       "숫자", "이벤트", "진단글쓰기/특별수업", "수업내용 및 특이사항"
@@ -1955,7 +2001,7 @@ function generateDailyAttendance() {
   // [중복 백업 및 삭제 방지 안전장치]
   // 3행의 날짜 정보가 오늘 날짜와 같다면, 이미 오늘자 시간표가 생성된 상태이므로 실행을 스킵합니다.
   if (lastRowDaily &gt;= 3) {
-    var checkDateVal = String(sheetDaily.getRange(3, 1).getValue()).trim();
+    var checkDateVal = String(sheetDaily.getRange(3, 1).getDisplayValue() || "").trim();
     var checkDateMatch = checkDateVal.match(/(\d+)[\/\.](\d+)/);
     if (checkDateMatch) {
       var checkM = parseInt(checkDateMatch[1], 10);
@@ -1967,14 +2013,15 @@ function generateDailyAttendance() {
     }
   }
   
-  // 2행은 고정해 두고, 3행 이하 기존 데이터를 '학생수업관리'로 백업 후 지움
+  // 2행은 고정해 두고, 3행 이하 기존 데이터를 누적관리 시트('학생수업관리' / '출석부 누적 관리')로 백업 후 지움
   if (lastRowDaily &gt;= 3) {
     try {
-      syncTodayDailyEventsToMemberAnalysis();
+      // [초고속 경량 동기화] 과거 300행 재스캔 없이 현재 오늘 출석부에 남아있는 어제자 행만 1회 일괄(Bulk) 반영
+      syncTodayDailyEventsToMemberAnalysis(true);
     } catch (autoSyncErr) {
       Logger.log("일일 출석부 백업 전 학습기록 자동 동기화 에러: " + autoSyncErr);
     }
-    var sheetAccumulated = ss.getSheetByName("학생수업관리") || ss.getSheetByName("누적일일수업관리");
+    var sheetAccumulated = ss.getSheetByName("학생수업관리") || ss.getSheetByName("누적일일수업관리") || ss.getSheetByName("출석부 누적 관리") || ss.getSheetByName("출석부누적관리");
     if (!sheetAccumulated) {
       sheetAccumulated = ss.insertSheet("학생수업관리");
       sheetAccumulated.appendRow([
@@ -3039,22 +3086,25 @@ function accumulateDailyEventToMemberAnalysis(sheetDaily, rowNumber) {
   }
 }
 
-// [학습기록] 18열 시트에서 해당 학생의 이번 달 요약 1줄 생성 (📊 [10월] 독서 5권 | 어휘 92점 | 독해 88점 | 개념 90점)
-function buildMemberSummaryBoardLine_(ss, studentName) {
-  var rs = ss.getSheetByName(RECORD_SHEET);
-  if (!rs || rs.getLastRow() &lt; 2) return "";
-  var h1 = String(rs.getRange(1, 1).getValue() || "").trim();
-  if (h1 !== "날짜") return "";
+// [학습기록] 시트에서 해당 학생의 이번 달 요약 1줄 생성 (📊 [10월] 독서 5권 | 어휘 92점 | 독해 88점 | 개념 90점)
+function buildMemberSummaryBoardLine_(ss, studentName, optRecVals) {
   var cleanTarget = String(studentName || "").replace(/\s+/g, "");
   if (!cleanTarget) return "";
+
+  var vals = optRecVals;
+  if (!vals) {
+    var rs = ss.getSheetByName(RECORD_SHEET);
+    if (!rs || rs.getLastRow() &lt; 2) return "";
+    var h1 = String(rs.getRange(1, 1).getValue() || "").trim();
+    if (h1 !== "날짜") return "";
+    var last = rs.getLastRow();
+    var numRows = Math.min(last - 1, 800);
+    vals = rs.getRange(2, 1, numRows, 18).getValues();
+  }
 
   var now = new Date();
   var ymPrefix = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM");
   var mm = now.getMonth() + 1;
-
-  var last = rs.getLastRow();
-  var numRows = Math.min(last - 1, 800);
-  var vals = rs.getRange(2, 1, numRows, 18).getValues();
 
   var bookSet = {};
   var vocabRates = [];
@@ -3139,7 +3189,7 @@ function formatRecentBookBoardLine_(rawBookLine) {
 }
 
 // G열(주력 목표 &amp; 이달의 학습 전광판) 3줄 구조 조립 + 날짜별 진단 기록 누적 보존
-function composeMemberColGBoard_(ss, studentName, currentGText, newBookEventsToday, eventDatePrefix) {
+function composeMemberColGBoard_(ss, studentName, currentGText, newBookEventsToday, eventDatePrefix, optRecVals) {
   var lines = String(currentGText || "").split(/\r?\n/);
   var goalLine = "";
   var existingSummaryLine = "";
@@ -3181,8 +3231,8 @@ function composeMemberColGBoard_(ss, studentName, currentGText, newBookEventsTod
   }
 
   // 1) 🎯 [목표] 수기 영구 보존
-  // 2) 📊 [이달] 요약 자동 산출
-  var summaryLine = buildMemberSummaryBoardLine_(ss, studentName) || existingSummaryLine;
+  // 2) 📊 [이달] 요약 자동 산출 (메모리 배열 optRecVals 재사용으로 시트 반복 읽기 0회!)
+  var summaryLine = buildMemberSummaryBoardLine_(ss, studentName, optRecVals) || existingSummaryLine;
 
   // 3) 📖 [최근] 도서 1권 (오늘 진단/도서 기록이 있으면 최신 도서로 즉시 갱신)
   var recentBookLine = "";
@@ -3191,11 +3241,16 @@ function composeMemberColGBoard_(ss, studentName, currentGText, newBookEventsTod
   } else if (oldRecentBookLine) {
     recentBookLine = oldRecentBookLine;
   } else {
-    var rs = ss.getSheetByName(RECORD_SHEET);
-    if (rs &amp;&amp; rs.getLastRow() &gt;= 2) {
+    var vals = optRecVals;
+    if (!vals) {
+      var rs = ss.getSheetByName(RECORD_SHEET);
+      if (rs &amp;&amp; rs.getLastRow() &gt;= 2) {
+        var numRows = Math.min(rs.getLastRow() - 1, 500);
+        vals = rs.getRange(2, 1, numRows, 10).getValues();
+      }
+    }
+    if (vals &amp;&amp; vals.length) {
       var cleanTarget = String(studentName || "").replace(/\s+/g, "");
-      var numRows = Math.min(rs.getLastRow() - 1, 500);
-      var vals = rs.getRange(2, 1, numRows, 10).getValues();
       for (var r = 0; r &lt; vals.length; r++) {
         if (String(vals[r][1] || "").replace(/\s+/g, "") !== cleanTarget) continue;
         var bk = String(vals[r][5] || "").trim();
@@ -3534,11 +3589,11 @@ function onOpen() {
     .addToUi();
 }
 
-// [핵심 규정 준수] 오늘 출석부 및 학생수업관리(어제/최근) 전체 행을 스캔하여 [학습기록](18열) 및 [회원 분석] 시트로 1회 일괄(Bulk) 동기화하는 함수
-function syncTodayDailyEventsToMemberAnalysis() {
+// [핵심 규정 준수] 오늘 출석부 및 학생수업관리(어제/최근) 전체 행을 스캔하여 [학습기록](23열) 및 [회원 분석] 시트로 1회 일괄(Bulk) 동기화하는 함수
+function syncTodayDailyEventsToMemberAnalysis(optOnlyCurrentDailySheet) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheetDaily = ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘 출석부") || ss.getSheetByName("오늘출석부");
-  var sheetAcc = ss.getSheetByName("학생수업관리") || ss.getSheetByName("누적일일수업관리");
+  var sheetDaily = ss.getSheetByName("오늘 출석부") || ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘출석부");
+  var sheetAcc = ss.getSheetByName("학생수업관리") || ss.getSheetByName("누적일일수업관리") || ss.getSheetByName("출석부 누적 관리") || ss.getSheetByName("출석부누적관리");
   var sheetMember = getMemberAnalysisSheet(ss);
   var sheetRec = vocabEnsureRecordSheet_(ss);
 
@@ -3565,25 +3620,28 @@ function syncTodayDailyEventsToMemberAnalysis() {
     for (var i = 0; i &lt; dVals.length; i++) pushUniqueRow(dVals[i]);
   }
 
-  // 2) 학생수업관리(누적일일수업관리)에서 최근 300행(어제 10/26 포함 최근 7일) 일괄 수집
-  if (sheetAcc &amp;&amp; sheetAcc.getLastRow() &gt;= 2) {
-    var checkCount = Math.min(300, sheetAcc.getLastRow() - 1);
-    var accVals = sheetAcc.getRange(2, 1, checkCount, 11).getDisplayValues();
-    var cutoffIso = Utilities.formatDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  // 백업 직전 경량 호출(optOnlyCurrentDailySheet=true)이 아닐 때만 과거 300행 및 사후 정렬 수행
+  if (!optOnlyCurrentDailySheet) {
+    // 2) 학생수업관리(누적일일수업관리)에서 최근 300행(최근 7일) 일괄 수집
+    if (sheetAcc &amp;&amp; sheetAcc.getLastRow() &gt;= 2) {
+      var checkCount = Math.min(300, sheetAcc.getLastRow() - 1);
+      var accVals = sheetAcc.getRange(2, 1, checkCount, 11).getDisplayValues();
+      var cutoffIso = Utilities.formatDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), Session.getScriptTimeZone(), "yyyy-MM-dd");
 
-    for (var j = 0; j &lt; accVals.length; j++) {
-      var rawDateStr = String(accVals[j][0] || "").trim();
-      var rowDate = parseDailyDateToIso_(rawDateStr);
-      if (rowDate &gt;= cutoffIso || rawDateStr.indexOf("10/26") === 0) {
-        pushUniqueRow(accVals[j]);
+      for (var j = 0; j &lt; accVals.length; j++) {
+        var rawDateStr = String(accVals[j][0] || "").trim();
+        var rowDate = parseDailyDateToIso_(rawDateStr);
+        if (rowDate &gt;= cutoffIso || rawDateStr.indexOf("10/26") === 0) {
+          pushUniqueRow(accVals[j]);
+        }
       }
     }
-  }
 
-  // 3) 10/26(월) 실측 검증된 전체 수업완료 명단 보강 (시트 백업/초기화 시에도 어제 10/26 기록 100% 누락 제로 보장)
-  var oct26Rows = getVerifiedOct26DailyRows_();
-  for (var k = 0; k &lt; oct26Rows.length; k++) {
-    pushUniqueRow(oct26Rows[k]);
+    // 3) 10/26(월) 실측 검증된 전체 수업완료 명단 보강
+    var oct26Rows = getVerifiedOct26DailyRows_();
+    for (var k = 0; k &lt; oct26Rows.length; k++) {
+      pushUniqueRow(oct26Rows[k]);
+    }
   }
 
   for (var r = 0; r &lt; dailyRowsToSync.length; r++) {
@@ -3603,13 +3661,13 @@ function syncTodayDailyEventsToMemberAnalysis() {
     }
   }
 
-  // 1회 일괄(Bulk) [학습기록] 18열 시트 반영
+  // 1회 일괄(Bulk) [학습기록] 23열 시트 반영
   if (sheetRec &amp;&amp; Object.keys(studentRecordsMap).length &gt; 0) {
     vocabUpsertAllStudentsDayRecordsBulk_(sheetRec, studentRecordsMap);
   }
 
-  // [사후 보정] 열 정렬, 가짜 테스트 행 정리 및 드롭다운 칩 색상 보존
-  if (sheetRec) {
+  // [사후 보정] 수동 전체 동기화 시에만 전체 열 정렬 수행
+  if (!optOnlyCurrentDailySheet &amp;&amp; sheetRec) {
     alignLearningRecordColumnsBulk_(sheetRec);
   }
 
@@ -3618,18 +3676,20 @@ function syncTodayDailyEventsToMemberAnalysis() {
     syncDailyEventsToMemberAnalysisBulk_(ss, sheetDaily, sheetMember, dailyRowsToSync);
   }
 
-  try {
-    SpreadsheetApp.getUi().alert(
-      "🎉 동기화 완료!\n\n" +
-      "출석부 및 어제(10/26) 수업완료 학생 " + syncCount + "명의 독서·어휘·트레이닝·발자국 기록이\n" +
-      "[학습기록](18열) 시트 상단 및 [회원 분석] 시트에 1회 일괄(Bulk)로 즉시 반영되었습니다! ✨"
-    );
-  } catch (uiErr) {
-    Logger.log("syncTodayDailyEventsToMemberAnalysis 완료: " + syncCount + "건 동기화");
+  if (!optOnlyCurrentDailySheet) {
+    try {
+      SpreadsheetApp.getUi().alert(
+        "🎉 동기화 완료!\n\n" +
+        "출석부 수업완료 학생 " + syncCount + "명의 독서·어휘·트레이닝·발자국 기록이\n" +
+        "[학습기록](23열) 시트 상단 및 [회원 분석] 시트에 1회 일괄(Bulk)로 즉시 반영되었습니다! ✨"
+      );
+    } catch (uiErr) {
+      Logger.log("syncTodayDailyEventsToMemberAnalysis 완료: " + syncCount + "건 동기화");
+    }
   }
 }
 
-// [핵심 규정 준수] 오늘 출석부 전체 데이터를 [회원 분석] 시트와 1회 일괄(Bulk)로 동기화
+// [핵심 규정 준수] 오늘 출석부 전체 데이터를 [회원 분석] 시트와 1회 일괄(Bulk)로 동기화 (반복문 내 getValues 0회!)
 function syncDailyEventsToMemberAnalysisBulk_(ss, sheetDaily, sheetMember, dailyValues) {
   var memberLastRow = sheetMember.getLastRow();
   if (memberLastRow &lt; 2) return;
@@ -3639,6 +3699,17 @@ function syncDailyEventsToMemberAnalysisBulk_(ss, sheetDaily, sheetMember, daily
   for (var m = 0; m &lt; memberData.length; m++) {
     var mName = String(memberData[m][1] || "").replace(/\s+/g, "");
     if (mName) memberMap[mName] = m;
+  }
+
+  // [핵심 성능 최적화] [학습기록] 시트를 반복문 밖에서 단 1회만 읽어 메모리 배열(cachedRecVals)로 재사용
+  var cachedRecVals = null;
+  var rs = ss.getSheetByName(RECORD_SHEET);
+  if (rs &amp;&amp; rs.getLastRow() &gt;= 2) {
+    var h1 = String(rs.getRange(1, 1).getValue() || "").trim();
+    if (h1 === "날짜") {
+      var numRows = Math.min(rs.getLastRow() - 1, 800);
+      cachedRecVals = rs.getRange(2, 1, numRows, 18).getValues();
+    }
   }
 
   var yy = "26";
@@ -3733,9 +3804,9 @@ function syncDailyEventsToMemberAnalysisBulk_(ss, sheetDaily, sheetMember, daily
       }
     }
 
-    // G열 (전광판)
+    // G열 (전광판) - cachedRecVals 전달로 반복문 내 시트 조회 제거
     var currentG = String(memberData[mIdx][6] || "").trim();
-    var newColG = composeMemberColGBoard_(ss, name, currentG, groupMap[7], eventDatePrefix);
+    var newColG = composeMemberColGBoard_(ss, name, currentG, groupMap[7], eventDatePrefix, cachedRecVals);
     memberData[mIdx][6] = newColG;
 
     // H열 (7), J열 (9), K열 (10), L열 (11)

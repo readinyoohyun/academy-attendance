@@ -3,6 +3,7 @@
 // Proxy Google Apps Script calls through Vercel serverless function on non-file protocols
 if (typeof window !== 'undefined') {
   const originalFetch = window.fetch;
+  window.__directFetch = originalFetch.bind(window);
   window.fetch = function(input, init) {
     if (typeof input === 'string' && input.indexOf('https://script.google.com') === 0 && window.location.protocol !== 'file:') {
       const proxyUrl = `/api/sync?url=${encodeURIComponent(input)}`;
@@ -171,6 +172,41 @@ class SheetAPI {
           }
           
           this.updateDiagnosticWidget('success', '구글 시트와 정상적으로 동기화가 이루어졌습니다.');
+
+          // [자가복구] 오전 6시~오후 5시 59분 사이에 오늘 출석부 날짜가 이전 날짜(어제 등)로 멈춰 있으면 자동으로 누적 백업 및 오늘 출석부 생성 실행
+          try {
+            const nowKr = new Date();
+            const krHour = nowKr.getHours();
+            const isSunday = nowKr.getDay() === 0;
+            if (krHour >= 6 && krHour < 18 && !isSunday) {
+              const todayM = nowKr.getMonth() + 1;
+              const todayD = nowKr.getDate();
+              const todayKey = `${todayM}/${todayD}`;
+              let isStaleDailySheet = false;
+              if (!incomingDailyLogs || incomingDailyLogs.length === 0) {
+                isStaleDailySheet = (incomingStudents && incomingStudents.length > 0);
+              } else {
+                const firstDateStr = String(incomingDailyLogs[0].date || '').trim();
+                const dm = firstDateStr.match(/(\d+)[\/\.](\d+)/);
+                if (dm) {
+                  const logM = parseInt(dm[1], 10);
+                  const logD = parseInt(dm[2], 10);
+                  if (logM !== todayM || logD !== todayD) {
+                    isStaleDailySheet = true;
+                  }
+                }
+              }
+              if (isStaleDailySheet && this._autoRolloverTriggeredDate !== todayKey) {
+                this._autoRolloverTriggeredDate = todayKey;
+                console.log(`[Auto-Rollover] Stale dailyLogs detected (${incomingDailyLogs[0] && incomingDailyLogs[0].date} != ${todayKey}). Triggering generateDailyAttendance...`);
+                this.app.showToast("🔄 이전 출석부를 누적 관리 시트로 백업하고 오늘 출석부를 자동 생성합니다...");
+                this.forceGenerateDailyAttendance(true);
+              }
+            }
+          } catch (autoRollErr) {
+            console.warn("Auto rollover check error:", autoRollErr);
+          }
+
           if (isManual) {
             alert(`성공적으로 구글 시트에서 전체 데이터를 동기화했습니다!`);
           }
@@ -455,9 +491,9 @@ class SheetAPI {
     });
   }
 
-  forceGenerateDailyAttendance() {
+  forceGenerateDailyAttendance(isAuto = false) {
     if (!this.gasWebhookUrl) {
-      alert("구글 Apps Script URL이 설정되지 않았습니다.");
+      if (!isAuto) alert("구글 Apps Script URL이 설정되지 않았습니다.");
       return;
     }
     
@@ -468,27 +504,30 @@ class SheetAPI {
       loadBtn.disabled = true;
     }
 
-    fetch(this.gasWebhookUrl, {
+    const directFetch = (typeof window !== 'undefined' && window.__directFetch) ? window.__directFetch : fetch;
+
+    directFetch(this.gasWebhookUrl, {
       method: "POST",
-      mode: "no-cors",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "text/plain;charset=utf-8"
       },
       body: JSON.stringify({
         action: "generateDailyAttendance"
       })
     })
-    .then(() => {
-      this.app.showToast("출석부 생성 명령 전송 완료");
-      setTimeout(() => {
-        // Automatically sync to pull the newly generated dailyLogs!
-        this.fetchFromGoogleSheets(false);
-        alert("구글 시트에 출석부가 성공적으로 강제 생성 및 동기화되었습니다!");
-      }, 3000);
+    .then(async (res) => {
+      try { await res.text(); } catch (e) {}
+      this.app.showToast("✔️ 출석부 누적 백업 및 오늘 출석부 생성 완료!");
+      this.fetchFromGoogleSheets(false);
+      if (!isAuto) {
+        alert("구글 시트에 이전 출석부 누적 백업 및 오늘자 출석부 생성이 완료되었습니다!");
+      }
     })
     .catch(err => {
       console.error("Force generate attendance failed:", err);
-      alert("출석부 생성 요청 전송에 실패했습니다: " + err.message);
+      if (!isAuto) {
+        alert("출석부 생성 요청 전송에 실패했습니다: " + err.message);
+      }
     })
     .finally(() => {
       if (loadBtn) {
