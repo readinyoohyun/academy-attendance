@@ -4554,8 +4554,13 @@
         const shortName = t.replace("트레이닝", "");
 
         if (t === "문해력트레이닝") {
-          const items = (d.items && Array.isArray(d.items)) ? [...d.items] : [];
-          if ((d.session || d.errors || d.readTotal || d.litVocabTotal) && !items.some(it => it.session === d.session && it.errors === d.errors)) {
+          let items = (d.items && Array.isArray(d.items)) ? [...d.items] : [];
+          const hasDraftSess = String(d.session || "").trim() !== "";
+          const hasDraftScore = (d.errors !== undefined && String(d.errors).trim() !== "") ||
+                                (d.readTotal !== undefined && String(d.readTotal).trim() !== "") ||
+                                (d.litVocabTotal !== undefined && String(d.litVocabTotal).trim() !== "");
+          if ((hasDraftSess || (items.length === 0 && hasDraftScore)) &&
+              !items.some(it => it.field === d.field && it.vol === d.vol && String(it.session || "").trim() === String(d.session || "").trim())) {
             items.push({
               field: d.field || "비문학",
               vol: d.vol || "1단계",
@@ -4568,6 +4573,13 @@
               litAccuracy: d.litAccuracy
             });
           }
+          items = items.filter(it => {
+            const s = String(it.session || "").trim();
+            const hasSc = (it.errors !== undefined && String(it.errors).trim() !== "") ||
+                          (it.readTotal !== undefined && String(it.readTotal).trim() !== "") ||
+                          (it.litVocabTotal !== undefined && String(it.litVocabTotal).trim() !== "");
+            return s !== "" || hasSc;
+          });
 
           // 중복 누적 방지: 종목+교재별로 유지
           const litMap = {};
@@ -4583,7 +4595,7 @@
             if (it.vol) sub.push(it.vol);
             if (it.session) {
               const sClean = String(it.session).trim();
-              const sFormatted = (sClean.indexOf("차시") !== -1 || sClean.indexOf("일차") !== -1) ? sClean : `${sClean}차시`;
+              const sFormatted = (sClean.indexOf("차시") !== -1 || sClean.indexOf("일차") !== -1 || sClean.indexOf("강") !== -1) ? sClean : `${sClean}차시`;
               sub.push(sFormatted);
             }
             const hasSplit = (it.readTotal !== undefined && it.readTotal !== "") || (it.litVocabTotal !== undefined && it.litVocabTotal !== "");
@@ -4637,7 +4649,10 @@
           const prefix = (t === "읽기트레이닝") ? "읽트" : "독트";
           const volPart = d.vol ? `${d.vol}` : "";
           const sub = [];
-          if (d.session) sub.push(`${d.session}차시`);
+          if (d.session) {
+            const sClean2 = String(d.session).trim();
+            sub.push((sClean2.indexOf("차시") !== -1 || sClean2.indexOf("일차") !== -1) ? sClean2 : `${sClean2}차시`);
+          }
           if (d.errors) {
             const cleanErr = (String(d.errors).startsWith("(") && String(d.errors).endsWith(")")) ? d.errors : `(${d.errors})`;
             sub.push(cleanErr);
@@ -4653,7 +4668,10 @@
         } else {
           const sub = [];
           if (d.vol) sub.push(d.vol);
-          if (d.session) sub.push(`${d.session}차시`);
+          if (d.session) {
+            const sClean3 = String(d.session).trim();
+            sub.push((sClean3.indexOf("차시") !== -1 || sClean3.indexOf("일차") !== -1) ? sClean3 : `${sClean3}차시`);
+          }
           if (d.errors) sub.push(`(${d.errors})`);
           let res = sub.length > 0 ? `${shortName}(${sub.join(" ")})` : shortName;
           if (d.understanding) res += ` [${d.understanding}]`;
@@ -5947,9 +5965,9 @@
   <script src="vocab_db.js?v=7"></script>
   <script src="vocab_engine.js?v=7"></script>
   <script src="vocab_ui.js?v=7"></script>
-  <script src="vocab_bridge.js?v=8"></script>
+  <script src="vocab_bridge.js?v=9"></script>
   <!-- 서랍 4: 독해밀도(ReadTrack) 151권 교재 & OMR 자동채점 & 문해력 전용 분석표 브릿지 -->
-  <script src="readtrack_bridge.js?v=1"></script>
+  <script src="readtrack_bridge.js?v=2"></script>
 
 </body>
 </html>

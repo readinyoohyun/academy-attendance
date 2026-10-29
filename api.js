@@ -25,27 +25,37 @@ class SheetAPI {
     }, 500);
   }
 
-  updateDiagnosticWidget(status, detail) {
+  updateDiagnosticWidget(status, detail, gasVer = '') {
     const dot = document.getElementById("diagnosticStatusDot");
     const txt = document.getElementById("diagnosticStatusText");
     const widget = document.getElementById("diagnosticWidget");
     if (!widget) return;
 
-    const APP_VERSION = "v2.2.0";
+    const APP_VERSION = "v2.4.0";
+    const REQUIRED_GAS_VERSION = "2026.10.29-v2";
+    const isGasOutdated = status === 'success' && gasVer !== REQUIRED_GAS_VERSION;
 
     widget.onclick = () => {
       alert(`📊 [구글 시트 연동 실시간 진단]\n\n` +
             `• 프로그램 버전: ${APP_VERSION}\n` +
-            `• 상태: ${status === 'success' ? '정상 연결됨 🟢' : status === 'timeout' ? '연결 시간 초과 🟡' : '연동 실패/설정 오류 🔴'}\n` +
+            `• 시트 스크립트 버전: ${gasVer || '구버전 (업데이트 필요 ⚠️)'} (권장: ${REQUIRED_GAS_VERSION})\n` +
+            `• 상태: ${status === 'success' ? (isGasOutdated ? '연결됨 (시트 스크립트 업데이트 필요 ⚠️)' : '정상 연결됨 🟢') : status === 'timeout' ? '연결 시간 초과 🟡' : '연동 실패/설정 오류 🔴'}\n` +
             `• 웹앱 URL: ${this.gasWebhookUrl || '미설정됨'}\n` +
             `• 상세 정보: ${detail}\n` +
             `• 마지막 동기화 시도: ${new Date().toLocaleTimeString()}\n\n` +
-            `💡 팁: 무한 대기가 발생하거나 빨간색 표시가 뜨면 [연동 가이드] 탭의 지침에 따라 구글 시트의 최신 웹앱 URL을 복사하여 [패키지 설정]에 저장해 주세요.`);
+            (isGasOutdated
+              ? `⚠️ [중요 안내] 구글 시트의 Apps Script가 구버전입니다!\n[실제 구글 시트 연동 가이드] 탭에서 최신 코드를 복사하여 구글 시트 [확장 프로그램 > Apps Script]에 붙여넣고 [새 배포]를 진행해 주시면 출석부 자동 생성 및 학습기록 열 정렬이 완벽히 작동합니다.`
+              : `💡 팁: 무한 대기가 발생하거나 빨간색 표시가 뜨면 [연동 가이드] 탭의 지침에 따라 구글 시트의 최신 웹앱 URL을 복사하여 [패키지 설정]에 저장해 주세요.`));
     };
 
     if (status === 'success') {
-      if (dot) { dot.style.background = "#10b981"; }
-      if (txt) { txt.innerText = `정상 연결됨 (${APP_VERSION})`; txt.style.color = "#cbd5e1"; }
+      if (isGasOutdated) {
+        if (dot) { dot.style.background = "#f59e0b"; }
+        if (txt) { txt.innerText = `시트 스크립트 업데이트 필요 (${APP_VERSION})`; txt.style.color = "#fde68a"; }
+      } else {
+        if (dot) { dot.style.background = "#10b981"; }
+        if (txt) { txt.innerText = `정상 연결됨 (${APP_VERSION})`; txt.style.color = "#cbd5e1"; }
+      }
     } else if (status === 'timeout') {
       if (dot) { dot.style.background = "#eab308"; }
       if (txt) { txt.innerText = `연동 시간 초과 (15초) (${APP_VERSION})`; txt.style.color = "#fef08a"; }
@@ -53,6 +63,56 @@ class SheetAPI {
       if (dot) { dot.style.background = "#ef4444"; }
       if (txt) { txt.innerText = `연동 실패 / 오류 (${APP_VERSION})`; txt.style.color = "#fecaca"; }
     }
+  }
+
+  sanitizeLearningRecordsClientSide(records) {
+    if (!Array.isArray(records)) return [];
+    const VALID_TYPES = [
+      '읽기트레이닝', '문해력트레이닝', '독해트레이닝', '어휘트레이닝',
+      '학교공부트레이닝', '듣기트레이닝', '오답수정+선지분석'
+    ];
+    return records.map(rec => {
+      if (!rec || typeof rec !== 'object') return rec;
+      const r = Object.assign({}, rec);
+      Object.keys(r).forEach(k => {
+        if (String(r[k]).trim() === '-') r[k] = '';
+      });
+      let tr = String(r.training || '').trim();
+      let dt = String(r.detail || '').trim();
+      if (tr && !VALID_TYPES.includes(tr)) {
+        let inferred = '문해력트레이닝';
+        if (tr.indexOf('읽기트레이닝') === 0 || tr.indexOf('읽트') === 0 || /^\d+\s*권/.test(tr)) {
+          inferred = '읽기트레이닝';
+        } else if (tr.indexOf('독해트레이닝') === 0 || tr.indexOf('독해밀도') !== -1) {
+          inferred = '독해트레이닝';
+        } else if (tr.indexOf('어휘트레이닝') === 0) {
+          inferred = '어휘트레이닝';
+        } else if (tr.indexOf('학교공부') === 0 || tr.indexOf('내신') === 0) {
+          inferred = '학교공부트레이닝';
+        } else if (tr.indexOf('듣기') === 0) {
+          inferred = '듣기트레이닝';
+        } else if (tr.indexOf('오답') === 0 || tr.indexOf('선지') !== -1) {
+          inferred = '오답수정+선지분석';
+        }
+        const stripped = tr.replace(/^(읽기트레이닝|문해력트레이닝|독해트레이닝|어휘트레이닝|학교공부트레이닝|듣기트레이닝|오답수정\+선지분석|읽트)\s*/, '').trim();
+        if (!dt || dt === tr) {
+          dt = stripped || tr;
+        }
+        tr = inferred;
+      }
+      const sm = dt.match(/\(독해\s*(\d+)\s*\/\s*(\d+)(?:\s*[·,\s]\s*어휘\s*(\d+)\s*\/\s*(\d+))?(?:\s*[·,\s]\s*(\d+(?:\.\d+)?)%)?\)/);
+      if (sm) {
+        if (r.readTotal === '' || r.readTotal === undefined) r.readTotal = Number(sm[1]);
+        if (r.readWrong === '' || r.readWrong === undefined) r.readWrong = Number(sm[2]);
+        if (sm[3] !== undefined && (r.vocabTotal === '' || r.vocabTotal === undefined)) r.vocabTotal = Number(sm[3]);
+        if (sm[4] !== undefined && (r.vocabWrong === '' || r.vocabWrong === undefined)) r.vocabWrong = Number(sm[4]);
+        if (sm[5] !== undefined && (r.totalAccuracy === '' || r.totalAccuracy === undefined)) r.totalAccuracy = Number(sm[5]) + '%';
+        dt = dt.replace(sm[0], '').trim();
+      }
+      r.training = tr;
+      r.detail = dt;
+      return r;
+    });
   }
   
   get gasWebhookUrl() {
@@ -118,7 +178,7 @@ class SheetAPI {
             incomingAttendanceLogs = data.attendanceLogs || [];
             incomingAccumulatedLogs = data.accumulatedLogs || [];
             incomingBriefings = data.briefings || [];
-            incomingLearningRecords = data.learningRecords || [];
+            incomingLearningRecords = this.sanitizeLearningRecordsClientSide(data.learningRecords || []);
           }
 
           // Compare data to see if anything actually changed
@@ -171,7 +231,8 @@ class SheetAPI {
             console.log("No data change detected. Skipping re-render.");
           }
           
-          this.updateDiagnosticWidget('success', '구글 시트와 정상적으로 동기화가 이루어졌습니다.');
+          const remoteGasVersion = (data && !Array.isArray(data) && data.gasVersion) ? String(data.gasVersion) : '';
+          this.updateDiagnosticWidget('success', '구글 시트와 정상적으로 동기화가 이루어졌습니다.', remoteGasVersion);
 
           // [자가복구] 오전 6시~오후 5시 59분 사이에 오늘 출석부 날짜가 이전 날짜(어제 등)로 멈춰 있으면 자동으로 누적 백업 및 오늘 출석부 생성 실행
           try {

@@ -851,7 +851,6 @@
               </button>
             </div>
             <pre class="code-content" id="gasCodeBlock">
-
 function ensureColumns(sheet, requiredCols) {
   if (!sheet) return;
   var maxCols = sheet.getMaxColumns();
@@ -1188,6 +1187,9 @@ function doGet(e) {
         var rawBook = String(rv[5] || "").trim();
         var rawStep2 = String(rv[10] || "").trim();
         var rawDetail = String(rv[12] || "").trim();
+        if (rawStep1 === "-") rawStep1 = "";
+        if (rawStep2 === "-") rawStep2 = "";
+        var sanGet = vocabSanitizeTrainingRecord_(rv[11], rawDetail, rv[13], rv[18], rv[19], rv[20], rv[21], rv[22]);
         learningRecordsData.push({
           row: 2 + rIdx,
           date: String(rv[0] || "").trim(),
@@ -1195,30 +1197,31 @@ function doGet(e) {
           hwStatus: vocabNormHwStatus_(rv[2]),
           step1Memo: (rawStep1 &amp;&amp; rawStep1 === rawBook) ? "" : rawStep1,
           level: String(rv[4] || "").trim(),
-          book: rawBook,
-          vocabTotal: String(rv[6] || "").trim(),
-          vocabCorrect: String(rv[7] || "").trim(),
-          vocabRate: String(rv[8] || "").trim(),
-          diagScore: String(rv[9] || "").trim(),
-          step2Memo: (rawStep2 &amp;&amp; rawStep2 === rawDetail) ? "" : rawStep2,
-          training: String(rv[11] || "").trim(),
-          detail: rawDetail,
-          errors: String(rv[13] || "").trim(),
+          book: rawBook === "-" ? "" : rawBook,
+          vocabTotal: String(rv[6] || "").trim() === "-" ? "" : String(rv[6] || "").trim(),
+          vocabCorrect: String(rv[7] || "").trim() === "-" ? "" : String(rv[7] || "").trim(),
+          vocabRate: String(rv[8] || "").trim() === "-" ? "" : String(rv[8] || "").trim(),
+          diagScore: String(rv[9] || "").trim() === "-" ? "" : String(rv[9] || "").trim(),
+          step2Memo: (rawStep2 &amp;&amp; rawStep2 === sanGet.detail) ? "" : rawStep2,
+          training: sanGet.training,
+          detail: sanGet.detail,
+          errors: sanGet.errors !== "" ? String(sanGet.errors) : "",
           understanding: vocabNormUnderstanding_(rv[14]),
-          literacyMemo: String(rv[15] || "").trim(),
-          reflection: String(rv[16] || "").trim(),
-          wrongWords: String(rv[17] || "").trim(),
-          readTotal: String(rv[18] || "").trim(),
-          readWrong: String(rv[19] || "").trim(),
-          litVocabTotal: String(rv[20] || "").trim(),
-          litVocabWrong: String(rv[21] || "").trim(),
-          litAccuracy: String(rv[22] || "").trim()
+          literacyMemo: String(rv[15] || "").trim() === "-" ? "" : String(rv[15] || "").trim(),
+          reflection: String(rv[16] || "").trim() === "-" ? "" : String(rv[16] || "").trim(),
+          wrongWords: String(rv[17] || "").trim() === "-" ? "" : String(rv[17] || "").trim(),
+          readTotal: sanGet.readTotal !== "" ? String(sanGet.readTotal) : "",
+          readWrong: sanGet.readWrong !== "" ? String(sanGet.readWrong) : "",
+          litVocabTotal: sanGet.litVocabTotal !== "" ? String(sanGet.litVocabTotal) : "",
+          litVocabWrong: sanGet.litVocabWrong !== "" ? String(sanGet.litVocabWrong) : "",
+          litAccuracy: sanGet.litAccuracy !== "" ? String(sanGet.litAccuracy) : ""
         });
       }
     }
   }
 
   var responseObj = {
+    gasVersion: "2026.10.29-v2",
     students: studentsData,
     dailyLogs: dailyLogsData,
     textbooks: textbooksData,
@@ -4435,6 +4438,138 @@ function vocabSortRecordSheetNewestFirst_(sheet) {
   sheet.getRange(2, 1, sortedRows.length, 23).setValues(sortedRows);
 }
 
+// [학습기록 게이트키퍼] L열(트레이닝), M열(권수/차시), N열(오답개수), S~W열(독해/어휘 문항·오답·정답률) 강제 분리·정규화
+function vocabSanitizeTrainingRecord_(rawTr, rawDet, rawErr, rawRTotal, rawRWrong, rawVTotal, rawVWrong, rawAcc) {
+  var tr = String(rawTr || "").trim();
+  var dt = String(rawDet || "").trim();
+  if (tr === "-") tr = "";
+  if (dt === "-") dt = "";
+
+  if (!tr &amp;&amp; !dt) {
+    return { training: "", detail: "", errors: "", readTotal: "", readWrong: "", litVocabTotal: "", litVocabWrong: "", litAccuracy: "", fieldKey: "" };
+  }
+
+  var isStandardTr = (TRAINING_TYPE_LIST.indexOf(tr) !== -1);
+  if (!isStandardTr) {
+    if (tr === "문해력") {
+      tr = "문해력트레이닝";
+    } else if (tr === "읽트" || tr === "독서트레이닝") {
+      tr = "읽기트레이닝";
+    } else if (tr === "독트") {
+      tr = "독해트레이닝";
+    } else if (tr === "듣트" || tr === "듣기") {
+      tr = "듣기트레이닝";
+    } else {
+      if (!dt || dt === tr) {
+        dt = tr;
+      }
+      var probe = tr + " " + dt;
+      if (/오답수정|선지분석|수정\s*:/.test(probe)) {
+        tr = "오답수정+선지분석";
+      } else if (/^(?:읽트|읽기|정독|\d+\s*권|\d+\s*단계\s*\d+\s*호|[A-Z]단계)/.test(tr)) {
+        tr = "읽기트레이닝";
+      } else if (/^(?:독트|독해트레이닝)/.test(tr)) {
+        tr = "독해트레이닝";
+      } else if (/^(?:듣트|듣기)/.test(tr)) {
+        tr = "듣기트레이닝";
+      } else if (/^독해밀도/.test(tr)) {
+        tr = "독해밀도";
+      } else if (/^(?:개념밀도|처음한국사|처음세계사)/.test(tr)) {
+        tr = "개념밀도";
+      } else {
+        tr = "문해력트레이닝";
+      }
+    }
+  }
+
+  var rT = (rawRTotal !== undefined &amp;&amp; rawRTotal !== "" &amp;&amp; rawRTotal !== "-") ? vocabNum_(rawRTotal) : "";
+  var rW = (rawRWrong !== undefined &amp;&amp; rawRWrong !== "" &amp;&amp; rawRWrong !== "-") ? vocabNum_(rawRWrong) : "";
+  var vT = (rawVTotal !== undefined &amp;&amp; rawVTotal !== "" &amp;&amp; rawVTotal !== "-") ? vocabNum_(rawVTotal) : "";
+  var vW = (rawVWrong !== undefined &amp;&amp; rawVWrong !== "" &amp;&amp; rawVWrong !== "-") ? vocabNum_(rawVWrong) : "";
+  var acc = (rawAcc !== undefined &amp;&amp; rawAcc !== "" &amp;&amp; rawAcc !== "-") ? vocabNum_(rawAcc) : "";
+  var err = vocabParseErrorNum_(rawErr);
+
+  var splitM = dt.match(/\(독해\s*(\d+)\s*\/\s*(\d+)\s*[·,]\s*어휘\s*(\d+)\s*\/\s*(\d+)(?:\s*[·,]\s*(\d+)%?)?\)/);
+  if (splitM) {
+    if (rT === "") rT = parseInt(splitM[1], 10);
+    if (rW === "") rW = parseInt(splitM[2], 10);
+    if (vT === "") vT = parseInt(splitM[3], 10);
+    if (vW === "") vW = parseInt(splitM[4], 10);
+    if (acc === "" &amp;&amp; splitM[5]) acc = parseInt(splitM[5], 10);
+    dt = dt.replace(/\s*\(독해\s*\d+\s*\/\s*\d+\s*[·,]\s*어휘\s*\d+\s*\/\s*\d+(?:\s*[·,]\s*\d+%?)?\)/g, "").trim();
+  }
+
+  var slashM = dt.match(/\((\d+)\s*\/\s*(\d+)\)/);
+  if (slashM) {
+    var qTot = parseInt(slashM[1], 10);
+    var qErr = parseInt(slashM[2], 10);
+    if (err === "") err = qErr;
+    if ((tr === "문해력트레이닝" || tr === "독해밀도") &amp;&amp; rT === "") {
+      rT = qTot;
+      rW = qErr;
+    }
+    dt = dt.replace(/\s*\(\d+\s*\/\s*\d+\)/g, "").trim();
+  }
+
+  var errTextM = dt.match(/오답\s*:\s*(\d+)/);
+  if (errTextM &amp;&amp; err === "") {
+    err = parseInt(errTextM[1], 10);
+  }
+
+  var sumQ = (Number(rT) || 0) + (Number(vT) || 0);
+  var sumW = (rW !== "" || vW !== "") ? ((Number(rW) || 0) + (Number(vW) || 0)) : "";
+  if (sumQ &gt; 0) {
+    if (acc === "") acc = Math.round(((sumQ - (Number(sumW) || 0)) / sumQ) * 100);
+    if (err === "" &amp;&amp; sumW !== "") err = sumW;
+  }
+
+  dt = dt
+    .replace(/^(?:문해력트레이닝|문해력|읽기트레이닝|읽트|독해트레이닝|독트|듣기트레이닝|듣트)\s*/, "")
+    .replace(/일차차시/g, "일차")
+    .replace(/(?:차시)+/g, "차시")
+    .trim();
+  if (dt === tr) dt = "";
+
+  var fieldKey = tr;
+  if (tr === "문해력트레이닝" &amp;&amp; dt) {
+    var fm = dt.match(/^(비문학|복합|문학|문법|어휘|음독)/);
+    if (fm) {
+      fieldKey = tr + ":" + fm[1];
+    }
+  }
+
+  return {
+    training: tr,
+    detail: dt,
+    errors: err,
+    readTotal: rT,
+    readWrong: rW,
+    litVocabTotal: vT,
+    litVocabWrong: vW,
+    litAccuracy: acc,
+    fieldKey: fieldKey
+  };
+}
+
+// 미완성 파편('문학 1단계', '문학 5단계', '복합 1단계 1차시', '8권') 대비 완성된 권수/차시('문학 5단계 9차시', '복합 6권 1차시', '8권 2차시') 우선 판별
+function isBetterTrainingDetail_(candDt, curDt, candHasSplit, curHasSplit) {
+  var c = String(candDt || "").trim();
+  var u = String(curDt || "").trim();
+  if (!u) return true;
+  if (!c) return false;
+  if (candHasSplit &amp;&amp; !curHasSplit) return true;
+  if (!candHasSplit &amp;&amp; curHasSplit) return false;
+  var cHasSess = /(?:차시|일차|강|회)/.test(c);
+  var uHasSess = /(?:차시|일차|강|회)/.test(u);
+  if (cHasSess &amp;&amp; !uHasSess) return true;
+  if (!cHasSess &amp;&amp; uHasSess) return false;
+  var cIsDefault1 = /\b1단계(?:\s*1차시)?$/.test(c);
+  var uIsDefault1 = /\b1단계(?:\s*1차시)?$/.test(u);
+  if (!cIsDefault1 &amp;&amp; uIsDefault1) return true;
+  if (cIsDefault1 &amp;&amp; !uIsDefault1) return false;
+  return c.length &gt;= u.length;
+}
+
 function vocabEnsureRecordSheet_(ss) {
   var names = [RECORD_SHEET, "[" + RECORD_SHEET + "]", "학습기록", "[학습기록]", "학습 기록", "[학습 기록]"];
   var sheet = null;
@@ -4450,14 +4585,16 @@ function vocabEnsureRecordSheet_(ss) {
     var h2 = String(sheet.getRange(1, 2).getValue() || "").trim();
     var h3 = String(sheet.getRange(1, 3).getValue() || "").trim();
     var h19 = String(sheet.getRange(1, 19).getValue() || "").trim();
+    var needsHeal = false;
     if (h2 !== "이름" || h3 !== "숙제현황" || h19 !== "독해문항수") {
       vocabStyleRecordSheet_(sheet);
+      needsHeal = true;
     }
-    // [자동 자가치유 (Self-Healing)] 열 밀림, C열('완료'/'미완료')·D열/K열 오염, 또는 10/26 누락 감지 시 즉시 1회 일괄(Bulk) 보정
+    // [자동 자가치유 (Self-Healing)] 열 밀림, L열 비표준 트레이닝명('비문학...', '어휘...', '8권' 등), M열 '(독해...)', '-' 기호, 10/26 누락 감지 시 즉시 1회 일괄(Bulk) 보정
     var lastRow = sheet.getLastRow();
-    var needsHeal = (lastRow &lt; 20);
+    if (lastRow &lt; 20) needsHeal = true;
     if (lastRow &gt;= 2 &amp;&amp; !needsHeal) {
-      var sampleCount = Math.min(lastRow - 1, 40);
+      var sampleCount = Math.min(lastRow - 1, 60);
       var sample = sheet.getRange(2, 1, sampleCount, 15).getValues();
       var oct26Count = 0;
       for (var sr = 0; sr &lt; sample.length; sr++) {
@@ -4469,6 +4606,7 @@ function vocabEnsureRecordSheet_(ss) {
         var eVal = String(rowS[4] || "").trim();
         var fVal = String(rowS[5] || "").trim();
         var kVal = String(rowS[10] || "").trim();
+        var lVal = String(rowS[11] || "").trim();
         var mVal = String(rowS[12] || "").trim();
         if (dKeyS.indexOf("-10-26") !== -1) {
           oct26Count++;
@@ -4481,7 +4619,10 @@ function vocabEnsureRecordSheet_(ss) {
             cVal === "완료" || cVal === "미완료" || cVal === "미완" || cVal === "학원에서 풀기" ||
             (eVal &amp;&amp; eVal !== vocabNormLevel_(eVal)) ||
             (dVal &amp;&amp; fVal &amp;&amp; dVal === fVal) ||
-            (kVal &amp;&amp; mVal &amp;&amp; kVal === mVal)) {
+            (kVal &amp;&amp; mVal &amp;&amp; kVal === mVal) ||
+            (lVal &amp;&amp; TRAINING_TYPE_LIST.indexOf(lVal) === -1) ||
+            mVal.indexOf("(독해") !== -1 ||
+            dVal === "-" || kVal === "-" || lVal === "-" || mVal === "-") {
           needsHeal = true;
           break;
         }
@@ -4539,11 +4680,35 @@ function getVerifiedOct26DailyRows_() {
   ];
 }
 
-// [핵심 규정 준수] [학습기록] 18열 시트의 헤더·열 위치 및 C열('완료'-&gt;'숙제완료')·D열/K열 오염·10/26 누락을 1회 일괄(Bulk) 정밀 보정
+// [핵심 규정 준수] [학습기록] 23열([방안 A]) 파편화 행 병합 및 L열/M열/S~W열 100% 정규화 (단일 SSOT 함수)
 function deduplicateLearningRecordsInMemory_(rows) {
   var groups = {};
   for (var i = 0; i &lt; rows.length; i++) {
-    var r = rows[i];
+    var r = rows[i].slice(0, 23);
+    while (r.length &lt; 23) r.push("");
+    for (var colI = 0; colI &lt; 23; colI++) {
+      if (String(r[colI]).trim() === "-") r[colI] = "";
+    }
+    r[2] = vocabNormHwStatus_(r[2]);
+    if (r[3] &amp;&amp; r[5] &amp;&amp; String(r[3]).trim() === String(r[5]).trim()) r[3] = "";
+    r[4] = vocabNormLevel_(r[4]);
+    if (r[10] &amp;&amp; r[12] &amp;&amp; String(r[10]).trim() === String(r[12]).trim()) r[10] = "";
+    // K열(독서발자국) 내 중복 대괄호 태그('[책 소개 읽기,어휘지 완료] [책 소개 읽기,어휘지 완료]' 등) 정화
+    if (r[10]) {
+      r[10] = String(r[10]).replace(/(\[[^\]]+\])\s+\1/g, "$1").replace(/^독서\s*(?:대기|중|완료)\s*,\s*/, "").trim();
+    }
+    r[14] = vocabNormUnderstanding_(r[14]);
+
+    var san = vocabSanitizeTrainingRecord_(r[11], r[12], r[13], r[18], r[19], r[20], r[21], r[22]);
+    r[11] = san.training;
+    r[12] = san.detail;
+    if (san.errors !== "") r[13] = san.errors;
+    if (san.readTotal !== "") r[18] = san.readTotal;
+    if (san.readWrong !== "") r[19] = san.readWrong;
+    if (san.litVocabTotal !== "") r[20] = san.litVocabTotal;
+    if (san.litVocabWrong !== "") r[21] = san.litVocabWrong;
+    if (san.litAccuracy !== "") r[22] = san.litAccuracy;
+
     var dKey = r[0] ? vocabFmtDate_(r[0]) : "";
     var nKey = String(r[1] || "").trim().replace(/\s+/g, "");
     var key = dKey + "||" + nKey;
@@ -4564,35 +4729,77 @@ function deduplicateLearningRecordsInMemory_(rows) {
     var bookMap = {};
     var otherRows = [];
 
+    function upsertSingleSanitizedTr(trRow, sanT) {
+      if (!sanT.training) return;
+      var fKey = sanT.fieldKey || sanT.training;
+      if (fKey === "문해력트레이닝") {
+        for (var existK in trMap) {
+          if (existK.indexOf("문해력트레이닝:") === 0) {
+            fKey = existK;
+            break;
+          }
+        }
+      } else if (fKey.indexOf("문해력트레이닝:") === 0 &amp;&amp; trMap["문해력트레이닝"]) {
+        trMap[fKey] = trMap["문해력트레이닝"];
+        delete trMap["문해력트레이닝"];
+      }
+
+      if (!trMap[fKey]) {
+        var tClone = trRow.slice();
+        tClone[11] = sanT.training;
+        tClone[12] = sanT.detail;
+        trMap[fKey] = tClone;
+      } else {
+        var curT = trMap[fKey];
+        if (isBetterTrainingDetail_(sanT.detail, curT[12], trRow[18] !== "", curT[18] !== "")) {
+          curT[12] = sanT.detail;
+        }
+        if (trRow[13] !== "" &amp;&amp; trRow[13] !== 0) curT[13] = trRow[13];
+        else if (curT[13] === "" &amp;&amp; trRow[13] === 0) curT[13] = 0;
+        if (trRow[14] &amp;&amp; !curT[14]) curT[14] = trRow[14];
+        if (trRow[15] &amp;&amp; !curT[15]) curT[15] = trRow[15];
+        if (trRow[18] !== "" &amp;&amp; trRow[18] !== undefined) curT[18] = trRow[18];
+        if (trRow[19] !== "" &amp;&amp; trRow[19] !== undefined) curT[19] = trRow[19];
+        if (trRow[20] !== "" &amp;&amp; trRow[20] !== undefined) curT[20] = trRow[20];
+        if (trRow[21] !== "" &amp;&amp; trRow[21] !== undefined) curT[21] = trRow[21];
+        if (trRow[22] !== "" &amp;&amp; trRow[22] !== undefined) curT[22] = trRow[22];
+        if (trRow[2] &amp;&amp; !curT[2]) curT[2] = trRow[2];
+        if (trRow[3] &amp;&amp; !curT[3]) curT[3] = trRow[3];
+        if (trRow[10] &amp;&amp; !curT[10]) curT[10] = trRow[10];
+        if (trRow[16] &amp;&amp; !curT[16]) curT[16] = trRow[16];
+      }
+    }
+
+    function upsertTrRowInGroup(trRow) {
+      var sanT = vocabSanitizeTrainingRecord_(trRow[11], trRow[12], trRow[13], trRow[18], trRow[19], trRow[20], trRow[21], trRow[22]);
+      if (!sanT.training) return;
+      if (sanT.training === "문해력트레이닝" &amp;&amp; sanT.detail.indexOf(",") !== -1) {
+        var subItems = sanT.detail.split(/\s*,\s*/);
+        for (var sIdx = 0; sIdx &lt; subItems.length; sIdx++) {
+          var subDt = subItems[sIdx].trim();
+          if (!subDt) continue;
+          var subRow = trRow.slice();
+          if (sIdx &gt; 0) {
+            subRow[13] = "";
+            subRow[18] = "";
+            subRow[19] = "";
+            subRow[20] = "";
+            subRow[21] = "";
+            subRow[22] = "";
+          }
+          var subSan = vocabSanitizeTrainingRecord_("문해력트레이닝", subDt, subRow[13], subRow[18], subRow[19], subRow[20], subRow[21], subRow[22]);
+          upsertSingleSanitizedTr(subRow, subSan);
+        }
+        return;
+      }
+      upsertSingleSanitizedTr(trRow, sanT);
+    }
+
     for (var j = 0; j &lt; grp.length; j++) {
       var row = grp[j];
       var bookName = String(row[5] || "").trim();
       var normBook = vocabNormBook_(bookName);
       var trName = String(row[11] || "").trim();
-      var trDetail = String(row[12] || "").trim();
-
-      // 트레이닝명과 세부차시가 뒤바뀌거나 오염된 경우 정규화
-      if (/^(복합|비문학|문학|문법)/.test(trName)) {
-        if (!trDetail || trDetail === trName) trDetail = trName;
-        trName = "문해력트레이닝";
-      } else if (/^(\d+권|읽기|정독)/.test(trName)) {
-        if (!trDetail || trDetail === trName) trDetail = trName;
-        trName = "읽기트레이닝";
-      } else if (/^독해/.test(trName) &amp;&amp; trName !== "독해밀도") {
-        if (!trDetail || trDetail === trName) trDetail = trName;
-        trName = "독해트레이닝";
-      }
-
-      trDetail = trDetail
-        .replace(/^문해력트레이닝\s*/, "")
-        .replace(/^읽기트레이닝\s*/, "")
-        .replace(/일차차시/g, "일차")
-        .replace(/(?:차시)+/g, "차시")
-        .trim();
-
-      if (trName === trDetail &amp;&amp; (trName === "문해력트레이닝" || trName === "읽기트레이닝")) {
-        trDetail = "";
-      }
 
       if (normBook) {
         var foundBKey = null;
@@ -4604,165 +4811,121 @@ function deduplicateLearningRecordsInMemory_(rows) {
         }
         if (!foundBKey) {
           var bClone = row.slice();
-          bClone[11] = trName;
-          bClone[12] = trDetail;
+          bClone[11] = "";
+          bClone[12] = "";
+          bClone[13] = "";
+          bClone[14] = "";
+          bClone[18] = "";
+          bClone[19] = "";
+          bClone[20] = "";
+          bClone[21] = "";
+          bClone[22] = "";
           bookMap[normBook] = bClone;
         } else {
           var curB = bookMap[foundBKey];
+          if (row[2] &amp;&amp; !curB[2]) curB[2] = row[2];
+          if (row[3] &amp;&amp; !curB[3]) curB[3] = row[3];
           if (row[4] &amp;&amp; !curB[4]) curB[4] = row[4];
-          if (row[6] !== "" &amp;&amp; !curB[6]) curB[6] = row[6];
-          if (row[7] !== "" &amp;&amp; !curB[7]) curB[7] = row[7];
-          if (row[8] !== "" &amp;&amp; !curB[8]) curB[8] = row[8];
-          if (row[9] !== "" &amp;&amp; !curB[9]) curB[9] = row[9];
+          if (row[6] !== "" &amp;&amp; curB[6] === "") curB[6] = row[6];
+          if (row[7] !== "" &amp;&amp; curB[7] === "") curB[7] = row[7];
+          if (row[8] !== "" &amp;&amp; curB[8] === "") curB[8] = row[8];
+          if (row[9] !== "" &amp;&amp; curB[9] === "") curB[9] = row[9];
+          if (row[10] &amp;&amp; !curB[10]) curB[10] = row[10];
           if (row[15] &amp;&amp; !curB[15]) curB[15] = row[15];
+          if (row[16] &amp;&amp; !curB[16]) curB[16] = row[16];
+          if (row[17] &amp;&amp; !curB[17]) curB[17] = row[17];
           if (bookName.length &gt; curB[5].length) curB[5] = bookName;
         }
-      } else if (trName) {
-        if (!trMap[trName]) {
-          var tClone = row.slice();
-          tClone[11] = trName;
-          tClone[12] = trDetail;
-          trMap[trName] = tClone;
-        } else {
-          var curT = trMap[trName];
-          if (trDetail.length &gt; String(curT[12] || "").length || (row[14] &amp;&amp; !curT[14])) {
-            curT[12] = trDetail;
-          }
-          if (row[13] !== "" &amp;&amp; row[13] !== 0) curT[13] = row[13];
-          if (row[14] &amp;&amp; !curT[14]) curT[14] = row[14];
-          if (row[15] &amp;&amp; !curT[15]) curT[15] = row[15];
+        if (trName) {
+          upsertTrRowInGroup(row);
         }
+      } else if (trName) {
+        upsertTrRowInGroup(row);
       } else {
         otherRows.push(row);
       }
     }
 
-    var books = Object.keys(bookMap).map(function(k) { return bookMap[k]; });
     var trainings = Object.keys(trMap).map(function(k) { return trMap[k]; });
+    // 만약 같은 날 문해력트레이닝이 2개 이상인데 실제 교재(6권, 초등국어 등)가 존재하는 경우, 초기 폼 기본값('비문학 1단계 1차시' 무점수) 유령 행 자동 제거
+    var hasNonDefaultLit = trainings.some(function(tRow) {
+      return tRow[11] === "문해력트레이닝" &amp;&amp; (tRow[18] !== "" || !/^(?:비문학|복합)\s*1단계(?:\s*1차시)?$/.test(String(tRow[12] || "").trim()));
+    });
+    if (hasNonDefaultLit &amp;&amp; trainings.length &gt; 1) {
+      trainings = trainings.filter(function(tRow) {
+        if (tRow[11] !== "문해력트레이닝") return true;
+        var dtStr = String(tRow[12] || "").trim();
+        var isUnscoredDefault = (dtStr === "비문학 1단계 1차시" || dtStr === "비문학 1단계") &amp;&amp;
+                                tRow[18] === "" &amp;&amp; (tRow[13] === "" || tRow[13] === 0);
+        return !isUnscoredDefault;
+      });
+    }
+
+    var books = Object.keys(bookMap).map(function(k) { return bookMap[k]; });
+    var mergedGroupRows = [];
 
     if (books.length &gt; 0 &amp;&amp; trainings.length &gt; 0) {
-      var firstB = books[0];
-      var firstT = trainings.shift();
-      firstB[11] = firstT[11];
-      firstB[12] = firstT[12];
-      firstB[13] = firstT[13];
-      firstB[14] = firstT[14];
-      if (firstT[15] &amp;&amp; !firstB[15]) firstB[15] = firstT[15];
-      out.push(firstB);
-      for (var b = 1; b &lt; books.length; b++) out.push(books[b]);
-      for (var t = 0; t &lt; trainings.length; t++) out.push(trainings[t]);
-    } else {
-      for (var b2 = 0; b2 &lt; books.length; b2++) out.push(books[b2]);
-      for (var t2 = 0; t2 &lt; trainings.length; t2++) out.push(trainings[t2]);
-    }
-    for (var o = 0; o &lt; otherRows.length; o++) out.push(otherRows[o]);
-  }
-  return out;
-}
-
-// [핵심 규정 준수] [학습기록] 18열 시트의 헤더·열 위치 및 C열('완료'-&gt;'숙제완료')·D열/K열 오염·10/26 누락을 1회 일괄(Bulk) 정밀 보정
-function deduplicateLearningRecordsInMemory_(rows) {
-  var groups = {};
-  for (var i = 0; i &lt; rows.length; i++) {
-    var r = rows[i];
-    var dKey = r[0] ? vocabFmtDate_(r[0]) : "";
-    var nKey = String(r[1] || "").trim().replace(/\s+/g, "");
-    var key = dKey + "||" + nKey;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(r);
-  }
-
-  var out = [];
-  var groupKeys = Object.keys(groups);
-  for (var g = 0; g &lt; groupKeys.length; g++) {
-    var grp = groups[groupKeys[g]];
-    if (grp.length === 1) {
-      out.push(grp[0]);
-      continue;
-    }
-
-    var trMap = {};
-    var bookMap = {};
-    var otherRows = [];
-
-    for (var j = 0; j &lt; grp.length; j++) {
-      var row = grp[j];
-      var bookName = String(row[5] || "").trim();
-      var normBook = vocabNormBook_(bookName);
-      var trName = String(row[11] || "").trim();
-      var trDetail = String(row[12] || "").trim();
-
-      if (normBook) {
-        var foundBKey = null;
-        for (var existB in bookMap) {
-          if (areBooksFuzzyMatch_(existB, normBook)) {
-            foundBKey = existB;
-            break;
-          }
-        }
-        if (!foundBKey) {
-          bookMap[normBook] = row.slice();
+      var maxLen = Math.max(books.length, trainings.length);
+      for (var mIdx = 0; mIdx &lt; maxLen; mIdx++) {
+        if (mIdx &lt; books.length &amp;&amp; mIdx &lt; trainings.length) {
+          var bR = books[mIdx];
+          var tR = trainings[mIdx];
+          bR[11] = tR[11];
+          bR[12] = tR[12];
+          bR[13] = tR[13];
+          bR[14] = tR[14];
+          if (tR[15] &amp;&amp; !bR[15]) bR[15] = tR[15];
+          if (tR[16] &amp;&amp; !bR[16]) bR[16] = tR[16];
+          if (tR[2] &amp;&amp; !bR[2]) bR[2] = tR[2];
+          if (tR[3] &amp;&amp; !bR[3]) bR[3] = tR[3];
+          if (tR[10] &amp;&amp; !bR[10]) bR[10] = tR[10];
+          bR[18] = tR[18] !== undefined ? tR[18] : "";
+          bR[19] = tR[19] !== undefined ? tR[19] : "";
+          bR[20] = tR[20] !== undefined ? tR[20] : "";
+          bR[21] = tR[21] !== undefined ? tR[21] : "";
+          bR[22] = tR[22] !== undefined ? tR[22] : "";
+          mergedGroupRows.push(bR);
+        } else if (mIdx &lt; books.length) {
+          mergedGroupRows.push(books[mIdx]);
         } else {
-          var curB = bookMap[foundBKey];
-          if (row[4] &amp;&amp; !curB[4]) curB[4] = row[4];
-          if (row[6] !== "" &amp;&amp; !curB[6]) curB[6] = row[6];
-          if (row[7] !== "" &amp;&amp; !curB[7]) curB[7] = row[7];
-          if (row[8] !== "" &amp;&amp; !curB[8]) curB[8] = row[8];
-          if (row[9] !== "" &amp;&amp; !curB[9]) curB[9] = row[9];
-          if (row[15] &amp;&amp; !curB[15]) curB[15] = row[15];
-          if (bookName.length &gt; curB[5].length) curB[5] = bookName;
+          mergedGroupRows.push(trainings[mIdx]);
         }
-      } else if (trName) {
-        if (!trMap[trName]) {
-          trMap[trName] = row.slice();
-        } else {
-          var curT = trMap[trName];
-          if (trDetail.length &gt; String(curT[12] || "").length) {
-            curT[12] = trDetail;
-          }
-          if (row[13] !== "" &amp;&amp; row[13] !== 0) curT[13] = row[13];
-          if (row[14]) curT[14] = row[14];
-          if (row[15] &amp;&amp; !curT[15]) curT[15] = row[15];
-          if (row[18] !== "" &amp;&amp; row[18] !== undefined) curT[18] = row[18];
-          if (row[19] !== "" &amp;&amp; row[19] !== undefined) curT[19] = row[19];
-          if (row[20] !== "" &amp;&amp; row[20] !== undefined) curT[20] = row[20];
-          if (row[21] !== "" &amp;&amp; row[21] !== undefined) curT[21] = row[21];
-          if (row[22] !== "" &amp;&amp; row[22] !== undefined) curT[22] = row[22];
-        }
-      } else {
-        otherRows.push(row);
       }
+    } else if (books.length &gt; 0) {
+      for (var b2 = 0; b2 &lt; books.length; b2++) mergedGroupRows.push(books[b2]);
+    } else if (trainings.length &gt; 0) {
+      for (var t2 = 0; t2 &lt; trainings.length; t2++) mergedGroupRows.push(trainings[t2]);
     }
 
-    var books = Object.keys(bookMap).map(function(k) { return bookMap[k]; });
-    var trainings = Object.keys(trMap).map(function(k) { return trMap[k]; });
-
-    if (books.length &gt; 0 &amp;&amp; trainings.length &gt; 0) {
-      var firstB = books[0];
-      var firstT = trainings.shift();
-      firstB[11] = firstT[11];
-      firstB[12] = firstT[12];
-      firstB[13] = firstT[13];
-      firstB[14] = firstT[14];
-      if (firstT[15] &amp;&amp; !firstB[15]) firstB[15] = firstT[15];
-      firstB[18] = firstT[18] !== undefined ? firstT[18] : "";
-      firstB[19] = firstT[19] !== undefined ? firstT[19] : "";
-      firstB[20] = firstT[20] !== undefined ? firstT[20] : "";
-      firstB[21] = firstT[21] !== undefined ? firstT[21] : "";
-      firstB[22] = firstT[22] !== undefined ? firstT[22] : "";
-      out.push(firstB);
-      for (var b = 1; b &lt; books.length; b++) out.push(books[b]);
-      for (var t = 0; t &lt; trainings.length; t++) out.push(trainings[t]);
-    } else {
-      for (var b2 = 0; b2 &lt; books.length; b2++) out.push(books[b2]);
-      for (var t2 = 0; t2 &lt; trainings.length; t2++) out.push(trainings[t2]);
+    // otherRows(도서·트레이닝 없는 요약 행)의 숙제·발자국·소감 정보를 첫 행에 병합하여 불필요한 빈 행 생성 방지
+    if (mergedGroupRows.length &gt; 0) {
+      var primary = mergedGroupRows[0];
+      for (var o = 0; o &lt; otherRows.length; o++) {
+        var oR = otherRows[o];
+        if (oR[2] &amp;&amp; !primary[2]) primary[2] = oR[2];
+        if (oR[3] &amp;&amp; !primary[3]) primary[3] = oR[3];
+        if (oR[10] &amp;&amp; !primary[10]) primary[10] = oR[10];
+        if (oR[15] &amp;&amp; !primary[15]) primary[15] = oR[15];
+        if (oR[16] &amp;&amp; !primary[16]) primary[16] = oR[16];
+      }
+      for (var mg = 0; mg &lt; mergedGroupRows.length; mg++) out.push(mergedGroupRows[mg]);
+    } else if (otherRows.length &gt; 0) {
+      var baseOther = otherRows[0];
+      for (var o2 = 1; o2 &lt; otherRows.length; o2++) {
+        var oR2 = otherRows[o2];
+        if (oR2[2] &amp;&amp; !baseOther[2]) baseOther[2] = oR2[2];
+        if (oR2[3] &amp;&amp; !baseOther[3]) baseOther[3] = oR2[3];
+        if (oR2[10] &amp;&amp; !baseOther[10]) baseOther[10] = oR2[10];
+        if (oR2[15] &amp;&amp; !baseOther[15]) baseOther[15] = oR2[15];
+        if (oR2[16] &amp;&amp; !baseOther[16]) baseOther[16] = oR2[16];
+      }
+      out.push(baseOther);
     }
-    for (var o = 0; o &lt; otherRows.length; o++) out.push(otherRows[o]);
   }
   return out;
 }
 
-// [핵심 규정 준수] [학습기록] 23열([방안 A]) 시트의 헤더·열 위치 및 C열('완료'-&gt;'숙제완료')·D열/K열 오염·10/26 및 10/27 누락을 1회 일괄(Bulk) 정밀 보정
+// [핵심 규정 준수] [학습기록] 23열([방안 A]) 시트의 헤더·열 위치 및 L열/M열/S~W열 오염·10/26~10/29 누락을 1회 일괄(Bulk) 정밀 보정
 function alignLearningRecordColumnsBulk_(sheet) {
   if (!sheet) return { processed: 0, shifted: 0, cleaned: 0, resultRows: 0 };
   vocabStyleRecordSheet_(sheet);
@@ -4787,10 +4950,9 @@ function alignLearningRecordColumnsBulk_(sheet) {
       if (!nameVal) continue;
       if (!shiftedStudentMap[nameVal]) shiftedStudentMap[nameVal] = [];
 
-      var trName = String(r[11] || r[10] || "").trim();
-      var trDetail = String(r[12] || r[11] || "").trim();
-      var trErr = (r[13] !== "" &amp;&amp; r[13] !== undefined) ? r[13] : r[12];
-      var trUnd = vocabNormUnderstanding_(r[14] || r[13] || "");
+      // [재발방지] 구버전 17열 행에서는 Col K(r[10])가 트레이닝, Col L(r[11])이 권수/차시, Col M(r[12])이 오답개수, Col N(r[13])이 이해도
+      var sanShifted = vocabSanitizeTrainingRecord_(r[10], r[11], r[12], "", "", "", "", "");
+      var trUnd = vocabNormUnderstanding_(r[13] || r[14] || "");
 
       if (typeVal === "일일요약") {
         shiftedStudentMap[nameVal].push({ date: dateVal, type: "일일요약" });
@@ -4803,13 +4965,18 @@ function alignLearningRecordColumnsBulk_(sheet) {
           score: r[9],
           step2Memo: String(r[10] || "").trim()
         });
-      } else if (typeVal === "트레이닝" || trName) {
+      } else if (typeVal === "트레이닝" || sanShifted.training) {
         shiftedStudentMap[nameVal].push({
           date: dateVal,
           type: "트레이닝",
-          training: trName,
-          detail: trDetail,
-          errors: trErr,
+          training: sanShifted.training,
+          detail: sanShifted.detail,
+          errors: sanShifted.errors,
+          readTotal: sanShifted.readTotal,
+          readWrong: sanShifted.readWrong,
+          litVocabTotal: sanShifted.litVocabTotal,
+          litVocabWrong: sanShifted.litVocabWrong,
+          litAccuracy: sanShifted.litAccuracy,
           understanding: trUnd
         });
       } else if (typeVal === "어휘퀴즈" || typeVal === "어휘") {
@@ -4842,6 +5009,13 @@ function alignLearningRecordColumnsBulk_(sheet) {
       }
 
       // [기존 행 자가치유]
+      // 0) 빈칸에 찍힌 '-' 기호 전수 제거
+      for (var cIdx = 0; cIdx &lt; 23; cIdx++) {
+        if (String(r[cIdx]).trim() === "-") {
+          r[cIdx] = "";
+          cleanedCount++;
+        }
+      }
       // 1) C열(숙제현황): "완료" -&gt; "숙제완료", "미완료" -&gt; "숙제미완"
       var rawHw = String(r[2] || "").trim();
       var normHw = vocabNormHwStatus_(rawHw);
@@ -4862,26 +5036,21 @@ function alignLearningRecordColumnsBulk_(sheet) {
       var normUnd = vocabNormUnderstanding_(rawUnd);
       if (rawUnd !== normUnd) { r[14] = normUnd; cleanedCount++; }
 
-      // 6) 트레이닝(L열/Col 11)과 권수/차시(M열/Col 12) 정규화 및 분리
+      // 6) 트레이닝(L열/Col 11)과 권수/차시(M열/Col 12) 및 S~W열(독해/어휘 문항·오답·정답률) 게이트키퍼 정규화·분리
       var trCol = String(r[11] || "").trim();
       var dtCol = String(r[12] || "").trim();
-      if (/^(복합|비문학|문학|문법)/.test(trCol)) {
-        if (!dtCol || dtCol === trCol) dtCol = trCol;
-        trCol = "문해력트레이닝";
-        cleanedCount++;
-      } else if (/^(\d+권|읽기|정독)/.test(trCol)) {
-        if (!dtCol || dtCol === trCol) dtCol = trCol;
-        trCol = "읽기트레이닝";
-        cleanedCount++;
-      } else if (/^독해/.test(trCol) &amp;&amp; trCol !== "독해밀도") {
-        if (!dtCol || dtCol === trCol) dtCol = trCol;
-        trCol = "독해트레이닝";
+      var sanRow = vocabSanitizeTrainingRecord_(trCol, dtCol, r[13], r[18], r[19], r[20], r[21], r[22]);
+      if (sanRow.training !== trCol || sanRow.detail !== dtCol) {
         cleanedCount++;
       }
-      dtCol = dtCol.replace(/^문해력트레이닝\s*/, "").replace(/^읽기트레이닝\s*/, "").replace(/일차차시/g, "11일차").replace(/(?:차시)+/g, "차시").trim();
-      if (trCol === dtCol &amp;&amp; (trCol === "문해력트레이닝" || trCol === "읽기트레이닝")) dtCol = "";
-      r[11] = trCol;
-      r[12] = dtCol;
+      r[11] = sanRow.training;
+      r[12] = sanRow.detail;
+      if (sanRow.errors !== "" &amp;&amp; r[13] === "") { r[13] = sanRow.errors; cleanedCount++; }
+      if (sanRow.readTotal !== "" &amp;&amp; r[18] === "") { r[18] = sanRow.readTotal; cleanedCount++; }
+      if (sanRow.readWrong !== "" &amp;&amp; r[19] === "") { r[19] = sanRow.readWrong; cleanedCount++; }
+      if (sanRow.litVocabTotal !== "" &amp;&amp; r[20] === "") { r[20] = sanRow.litVocabTotal; cleanedCount++; }
+      if (sanRow.litVocabWrong !== "" &amp;&amp; r[21] === "") { r[21] = sanRow.litVocabWrong; cleanedCount++; }
+      if (sanRow.litAccuracy !== "" &amp;&amp; r[22] === "") { r[22] = sanRow.litAccuracy; cleanedCount++; }
 
       alignedData.push(r);
     }
@@ -4896,10 +5065,10 @@ function alignLearningRecordColumnsBulk_(sheet) {
     }
   }
 
-  // [파편화 행 병합 (송한비 10줄-&gt;1줄, 심하윤 5줄-&gt;1줄, 정유하 9줄-&gt;2줄, 강동하 2줄-&gt;1줄, 이현우 2줄-&gt;1줄)]
+  // [파편화 행 병합 (강지호 5줄-&gt;2줄, 정현준 4줄-&gt;1줄, 김민준 3줄-&gt;1줄 등)]
   var deduplicatedData = deduplicateLearningRecordsInMemory_(alignedData);
   if (deduplicatedData.length !== alignedData.length) {
-    cleanedCount += (alignedData.length - deduplicatedData.length);
+    cleanedCount += Math.abs(alignedData.length - deduplicatedData.length);
     alignedData = deduplicatedData;
   }
 
@@ -4919,7 +5088,7 @@ function alignLearningRecordColumnsBulk_(sheet) {
     }
   }
 
-  // [10/27(화) 누락 학생 복원 (학생수업관리/누적일일수업관리 및 오늘 출석부에서 일괄 수집)]
+  // [10/27(화)~10/29(목) 누락 학생 복원 (학생수업관리/누적일일수업관리 및 오늘 출석부에서 일괄 수집)]
   var ss = sheet.getParent();
   var sheetAcc = ss.getSheetByName("학생수업관리") || ss.getSheetByName("누적일일수업관리");
   var sheetDaily = ss.getSheetByName("오늘 출석부") || ss.getSheetByName("출결보강관리") || ss.getSheetByName("오늘출석부");
@@ -4930,7 +5099,7 @@ function alignLearningRecordColumnsBulk_(sheet) {
     var accVals = sheetAcc.getRange(2, 1, accScan, 11).getDisplayValues();
     for (var a = 0; a &lt; accVals.length; a++) {
       var aDate = String(accVals[a][0] || "").trim();
-      if (aDate.indexOf("10/27") === 0 || aDate.indexOf("10/28") === 0) {
+      if (aDate.indexOf("10/27") === 0 || aDate.indexOf("10/28") === 0 || aDate.indexOf("10/29") === 0) {
         syncCandidateRows.push(accVals[a]);
       }
     }
@@ -4940,7 +5109,7 @@ function alignLearningRecordColumnsBulk_(sheet) {
     var dVals = sheetDaily.getRange(2, 1, dScan, 11).getDisplayValues();
     for (var b = 0; b &lt; dVals.length; b++) {
       var bDate = String(dVals[b][0] || "").trim();
-      if (bDate.indexOf("10/27") === 0 || bDate.indexOf("10/28") === 0) {
+      if (bDate.indexOf("10/27") === 0 || bDate.indexOf("10/28") === 0 || bDate.indexOf("10/29") === 0) {
         syncCandidateRows.push(dVals[b]);
       }
     }
@@ -4960,6 +5129,9 @@ function alignLearningRecordColumnsBulk_(sheet) {
 
   // 사후 재중복 방지
   var finalDedup = deduplicateLearningRecordsInMemory_(alignedData);
+  if (finalDedup.length !== alignedData.length) {
+    cleanedCount += Math.abs(alignedData.length - finalDedup.length);
+  }
   alignedData = finalDedup;
 
   if (shiftedCount &gt; 0 || cleanedCount &gt; 0) {
@@ -5215,14 +5387,14 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
         }
       }
 
-      // 집중 트레이닝 ([이해도:잘 이해했어요], (7/0) 오답 0개, 단독 '문해력'/'읽트' 완벽 지원)
-      var trMatch = part.match(/^(문해력트레이닝|문해력|오답수정\+선지분석|읽기트레이닝|읽트|독해트레이닝|독트|듣기트레이닝|듣트|독해밀도|개념밀도|독서트레이닝)(?:\[(.*?)\])?(.*)$/);
+      // 집중 트레이닝 ([이해도:잘 이해했어요], (7/0) 오답 0개, 단독 '문해력'/'읽트', '읽트8권 2차시', '듣기(1단계 3차시)', 다중 항목 '문해력[item1, item2]' 완벽 지원)
+      var trMatch = part.match(/^(문해력트레이닝|문해력|오답수정\+선지분석|읽기트레이닝|읽트|독해트레이닝|독트|듣기트레이닝|듣트|듣기|독해밀도|개념밀도|독서트레이닝)(?:\[(.*?)\])?(.*)$/);
       if (trMatch) {
         var trType = trMatch[1];
         if (trType === "문해력") trType = "문해력트레이닝";
-        else if (trType === "읽트") trType = "읽기트레이닝";
+        else if (trType === "읽트" || trType === "독서트레이닝") trType = "읽기트레이닝";
         else if (trType === "독트") trType = "독해트레이닝";
-        else if (trType === "듣트") trType = "듣기트레이닝";
+        else if (trType === "듣트" || trType === "듣기") trType = "듣기트레이닝";
 
         var rawDetail = (trMatch[2] || "").trim();
         var trRest = (trMatch[3] || "").trim();
@@ -5231,60 +5403,55 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
         var trUnder = underM ? vocabNormUnderstanding_(underM[1]) : "";
         var trLit = litM ? litM[1].trim() : "";
 
-        var errCount = "";
-        var readTotalVal = "";
-        var readWrongVal = "";
-        var litVocabTotalVal = "";
-        var litVocabWrongVal = "";
-        var litAccVal = "";
-
-        var splitM = rawDetail.match(/\(독해\s*(\d+)\s*\/\s*(\d+)\s*[·,]\s*어휘\s*(\d+)\s*\/\s*(\d+)(?:\s*[·,]\s*(\d+)%?)?\)/);
-        var errM1 = rawDetail.match(/오답\s*:\s*(\d+)/);
-        var errM2 = rawDetail.match(/\((\d+)\s*\/\s*(\d+)\)/);
-        if (splitM) {
-          readTotalVal = parseInt(splitM[1], 10);
-          readWrongVal = parseInt(splitM[2], 10);
-          litVocabTotalVal = parseInt(splitM[3], 10);
-          litVocabWrongVal = parseInt(splitM[4], 10);
-          errCount = readWrongVal + litVocabWrongVal;
-          var totQ = readTotalVal + litVocabTotalVal;
-          litAccVal = splitM[5] ? parseInt(splitM[5], 10) : (totQ &gt; 0 ? Math.round(((totQ - errCount) / totQ) * 100) : "");
-        } else if (errM1) {
-          errCount = parseInt(errM1[1], 10);
-        } else if (errM2) {
-          var qTot = parseInt(errM2[1], 10);
-          var qErr = parseInt(errM2[2], 10);
-          errCount = qErr;
-          if (trType === "문해력트레이닝" || trType === "독해밀도") {
-            readTotalVal = qTot;
-            readWrongVal = qErr;
-            litAccVal = qTot &gt; 0 ? Math.round(((qTot - qErr) / qTot) * 100) : "";
+        // 만약 대괄호([ ]) 없이 '읽트8권 2차시 (10/2) 539자' 또는 '듣기(1단계 3차시)' 형태로 들어온 경우 trRest에서 세부차시 추출
+        if (!rawDetail &amp;&amp; trRest) {
+          var restBody = trRest
+            .replace(/\[(?:이해도\s*:\s*)?(?:잘 이해했어요|보통이에요|아직 헷갈려요|어려웠어요|헷갈려요)\]/g, "")
+            .replace(/\[문해력발자국\s*:\s*.*?\]/g, "")
+            .trim();
+          if (restBody.charAt(0) === "(" &amp;&amp; restBody.charAt(restBody.length - 1) === ")" &amp;&amp; !/^\(\d+\s*\/\s*\d+\)$/.test(restBody)) {
+            restBody = restBody.substring(1, restBody.length - 1).trim();
           }
+          rawDetail = restBody;
         }
-        var cleanDetail = rawDetail
-          .replace(/\s*\(독해\s*\d+\s*\/\s*\d+\s*[·,]\s*어휘\s*\d+\s*\/\s*\d+(?:\s*[·,]\s*\d+%?)?\)/, "")
-          .replace(/\s*\(\d+\s*\/\s*\d+\)/, "")
-          .trim();
-        if (cleanDetail.indexOf(",") !== -1) {
-          var subParts = cleanDetail.split(",").map(function(s) { return s.trim(); }).filter(Boolean);
-          cleanDetail = subParts[subParts.length - 1];
-        }
-        cleanDetail = cleanDetail.replace(/일차차시/g, "11일차").replace(/(?:차시)+/g, "차시").trim();
 
-        trainings.push({
-          date: isoDate,
-          type: "트레이닝",
-          training: trType,
-          detail: cleanDetail,
-          errors: errCount,
-          readTotal: readTotalVal,
-          readWrong: readWrongVal,
-          litVocabTotal: litVocabTotalVal,
-          litVocabWrong: litVocabWrongVal,
-          litAccuracy: litAccVal,
-          understanding: trUnder,
-          literacyMemo: trLit
-        });
+        // 괄호 밖의 최상위 쉼표(,)로 구분된 다중 교재 항목(예: '복합 6권 1차시 (독해6/0·어휘3/0·100%), 어휘 초등국어... 1A 1차시')을 개별 레코드로 분리
+        var detailItems = [];
+        if (rawDetail) {
+          var curChunk = "";
+          var pDepth = 0;
+          for (var chI = 0; chI &lt; rawDetail.length; chI++) {
+            var ch = rawDetail.charAt(chI);
+            if (ch === "(" || ch === "[") pDepth++;
+            else if (ch === ")" || ch === "]") pDepth = Math.max(0, pDepth - 1);
+            if (ch === "," &amp;&amp; pDepth === 0) {
+              if (curChunk.trim()) detailItems.push(curChunk.trim());
+              curChunk = "";
+            } else {
+              curChunk += ch;
+            }
+          }
+          if (curChunk.trim()) detailItems.push(curChunk.trim());
+        }
+        if (detailItems.length === 0) detailItems.push("");
+
+        for (var di = 0; di &lt; detailItems.length; di++) {
+          var sanParsed = vocabSanitizeTrainingRecord_(trType, detailItems[di], "", "", "", "", "", "");
+          trainings.push({
+            date: isoDate,
+            type: "트레이닝",
+            training: sanParsed.training || trType,
+            detail: sanParsed.detail,
+            errors: sanParsed.errors,
+            readTotal: sanParsed.readTotal,
+            readWrong: sanParsed.readWrong,
+            litVocabTotal: sanParsed.litVocabTotal,
+            litVocabWrong: sanParsed.litVocabWrong,
+            litAccuracy: sanParsed.litAccuracy,
+            understanding: trUnder,
+            literacyMemo: trLit
+          });
+        }
         if (trLit) step4Memo = (step4Memo ? step4Memo + " / " : "") + trLit;
         return;
       }
@@ -5575,13 +5742,36 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
       }
 
       if (type === "트레이닝") {
-        var trName = String(it.training || "").trim();
-        var trDetail = String(it.detail || "").trim();
+        var sanIn = vocabSanitizeTrainingRecord_(
+          it.training,
+          it.detail,
+          it.errors,
+          it.readTotal,
+          it.readWrong,
+          it.litVocabTotal,
+          it.litVocabWrong,
+          it.litAccuracy
+        );
+        var trName = sanIn.training;
+        var trDetail = sanIn.detail;
+        var inFieldKey = sanIn.fieldKey || trName;
         var tIdxTarget = -1;
+
         for (var s4 = 0; s4 &lt; studentRows.length; s4++) {
-          var existTr = String(studentRows[s4][11] || "").trim();
-          // 동일 트레이닝 종목(문해력트레이닝 등)이면 같은 줄에 갱신/병합하여 불필요한 줄바꿈 방지
-          if (existTr === trName &amp;&amp; trName !== "") {
+          var existSan = vocabSanitizeTrainingRecord_(
+            studentRows[s4][11],
+            studentRows[s4][12],
+            studentRows[s4][13],
+            studentRows[s4][18],
+            studentRows[s4][19],
+            studentRows[s4][20],
+            studentRows[s4][21],
+            studentRows[s4][22]
+          );
+          var existTr = existSan.training;
+          var existFieldKey = existSan.fieldKey || existTr;
+          // 동일 훈련종목+세부영역(예: 문해력트레이닝:문학, 문해력트레이닝:복합, 읽기트레이닝)이거나 기존 행의 세부차시가 비어있는 동일 종목이면 같은 줄에 갱신
+          if (existTr === trName &amp;&amp; trName !== "" &amp;&amp; (existFieldKey === inFieldKey || !existSan.detail || !trDetail)) {
             tIdxTarget = s4;
             break;
           }
@@ -5593,13 +5783,13 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         var tRow = ensureRow(tIdxTarget);
         if (trName) tRow[11] = trName;
         if (trDetail) {
-          var cleanDt = trDetail.replace(/^문해력트레이닝\s*/, "").replace(/^읽기트레이닝\s*/, "").trim();
-          if (cleanDt.length &gt;= String(tRow[12] || "").length) {
-            tRow[12] = cleanDt;
+          var candHasSplit = (sanIn.readTotal !== "" || sanIn.litVocabTotal !== "");
+          var curHasSplit = (tRow[18] !== "" || tRow[20] !== "");
+          if (isBetterTrainingDetail_(trDetail, tRow[12], candHasSplit, curHasSplit)) {
+            tRow[12] = trDetail;
           }
         }
-        var parsedErr = vocabParseErrorNum_(it.errors);
-        if (parsedErr !== "") tRow[13] = parsedErr;
+        if (sanIn.errors !== "") tRow[13] = sanIn.errors;
         if (it.understanding) tRow[14] = vocabNormUnderstanding_(it.understanding);
         if (it.literacyMemo) tRow[15] = String(it.literacyMemo).trim();
         if (it.hwStatus &amp;&amp; !tRow[2]) tRow[2] = vocabNormHwStatus_(it.hwStatus);
@@ -5608,12 +5798,12 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         if (it.reflection &amp;&amp; !tRow[16]) tRow[16] = String(it.reflection).trim();
 
         // [[방안 A] S~W열 (19~23열): 독해문항수, 독해오답수, 어휘문항수, 어휘오답수, 문해력정답률]
-        if (it.readTotal !== undefined &amp;&amp; it.readTotal !== "") tRow[18] = vocabNum_(it.readTotal);
-        if (it.readWrong !== undefined &amp;&amp; it.readWrong !== "") tRow[19] = vocabNum_(it.readWrong);
-        if (it.litVocabTotal !== undefined &amp;&amp; it.litVocabTotal !== "") tRow[20] = vocabNum_(it.litVocabTotal);
-        if (it.litVocabWrong !== undefined &amp;&amp; it.litVocabWrong !== "") tRow[21] = vocabNum_(it.litVocabWrong);
-        if (it.litAccuracy !== undefined &amp;&amp; it.litAccuracy !== "") {
-          tRow[22] = vocabNum_(it.litAccuracy);
+        if (sanIn.readTotal !== "") tRow[18] = sanIn.readTotal;
+        if (sanIn.readWrong !== "") tRow[19] = sanIn.readWrong;
+        if (sanIn.litVocabTotal !== "") tRow[20] = sanIn.litVocabTotal;
+        if (sanIn.litVocabWrong !== "") tRow[21] = sanIn.litVocabWrong;
+        if (sanIn.litAccuracy !== "") {
+          tRow[22] = sanIn.litAccuracy;
         } else {
           var rTNum = Number(tRow[18] || 0);
           var rWNum = Number(tRow[19] || 0);
@@ -5628,6 +5818,9 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
         }
       }
     }
+
+    // 당일 학생 행들의 L열/M열/S~W열 정규화 및 파편 행 즉시 병합
+    studentRows = deduplicateLearningRecordsInMemory_(studentRows);
 
     if (matchIndices.length &gt; 0) {
       for (var rm = matchIndices.length - 1; rm &gt;= 0; rm--) {
@@ -5656,11 +5849,15 @@ function vocabUpsertStudentDayRecords_(sheet, name, records) {
   if (!name || !records || !records.length) return { added: 0, updated: 0 };
   ensureColumns(sheet, 23);
   var lastRow = sheet.getLastRow();
-  var allData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 23).getValues() : [];
+  var prevCount = lastRow &gt;= 2 ? (lastRow - 1) : 0;
+  var allData = prevCount &gt; 0 ? sheet.getRange(2, 1, prevCount, 23).getValues() : [];
   var res = vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records);
   if (allData.length &gt; 0) {
     for (var i = 0; i &lt; allData.length; i++) {
       while (allData[i].length &lt; 23) allData[i].push("");
+    }
+    if (prevCount &gt; allData.length) {
+      sheet.getRange(2, 1, prevCount, 23).clearContent();
     }
     sheet.getRange(2, 1, allData.length, 23).setValues(allData);
     vocabSortRecordSheetNewestFirst_(sheet);
@@ -5676,7 +5873,8 @@ function vocabUpsertAllStudentsDayRecordsBulk_(sheet, studentRecordsMap) {
 
   ensureColumns(sheet, 23);
   var lastRow = sheet.getLastRow();
-  var allData = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 23).getValues() : [];
+  var prevCount = lastRow &gt;= 2 ? (lastRow - 1) : 0;
+  var allData = prevCount &gt; 0 ? sheet.getRange(2, 1, prevCount, 23).getValues() : [];
   var totalAdded = 0;
   var totalUpdated = 0;
 
@@ -5693,6 +5891,9 @@ function vocabUpsertAllStudentsDayRecordsBulk_(sheet, studentRecordsMap) {
   if (allData.length &gt; 0) {
     for (var j = 0; j &lt; allData.length; j++) {
       while (allData[j].length &lt; 23) allData[j].push("");
+    }
+    if (prevCount &gt; allData.length) {
+      sheet.getRange(2, 1, prevCount, 23).clearContent();
     }
     sheet.getRange(2, 1, allData.length, 23).setValues(allData);
     vocabSortRecordSheetNewestFirst_(sheet);
@@ -7248,7 +7449,6 @@ function showDailyBriefingModal() {
   var out = HtmlService.createHtmlOutput(htmlStr).setWidth(580).setHeight(510);
   ui.showModalDialog(out, "📨 오늘 수업 시각화 브리핑 (원그래프·막대그래프·문구)");
 }
-
 
 
 

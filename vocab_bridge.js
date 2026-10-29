@@ -553,13 +553,32 @@
     });
 
     // 4) 3단계 집중 트레이닝 (문해력트레이닝 내 비문학·문학·문법 등 다중 항목도 각각 1건씩 분리하여 통계 오류 0% 보장)
+    var VALID_TRAINING_TYPES = ['읽기트레이닝', '독해트레이닝', '듣기트레이닝', '문해력트레이닝', '오답수정+선지분석', '독해밀도', '개념밀도'];
+    function normalizeTrainingTypeName(rawT) {
+      var s = String(rawT || '').trim();
+      if (VALID_TRAINING_TYPES.indexOf(s) !== -1) return s;
+      if (s === '문해력' || /^(복합|비문학|문학|문법|어휘|음독)/.test(s)) return '문해력트레이닝';
+      if (s === '읽트' || /^(\d+권|읽기|정독)/.test(s)) return '읽기트레이닝';
+      if (s === '독트' || /^독해/.test(s)) return '독해트레이닝';
+      if (s === '듣트' || /^듣기/.test(s)) return '듣기트레이닝';
+      if (/오답수정|선지분석/.test(s)) return '오답수정+선지분석';
+      return '문해력트레이닝';
+    }
+
     var details = missions.trainingDetails || {};
-    (missions.trainingTypes || []).forEach(function (t) {
-      var d = details[t] || {};
+    (missions.trainingTypes || []).forEach(function (rawT) {
+      var d = details[rawT] || {};
+      var t = normalizeTrainingTypeName(rawT);
       var under = normalizeUnderstanding(d.understanding || missions.trainingUnderstanding || '');
       if (t === '문해력트레이닝') {
         var items = Array.isArray(d.items) ? d.items.slice() : [];
-        if ((d.session || d.errors || d.field || d.vol || d.readTotal || d.litVocabTotal) && !items.some(function (it) { return it.field === d.field && it.vol === d.vol && it.session === d.session && it.errors === d.errors; })) {
+        var hasDraftSession = String(d.session || '').trim() !== '';
+        var hasDraftScore = (d.errors !== undefined && String(d.errors).trim() !== '') ||
+                            (d.readTotal !== undefined && String(d.readTotal).trim() !== '') ||
+                            (d.litVocabTotal !== undefined && String(d.litVocabTotal).trim() !== '');
+        // [재발방지] 차시(session)가 입력되었거나, 확정 목록(items)이 비어있는데 문항/오답 점수가 입력된 경우에만 드래프트 항목 합류 (기본값 '비문학 1단계' 유령 합류 및 드롭다운 변경 중 파편화 원천 차단)
+        if ((hasDraftSession || (items.length === 0 && hasDraftScore)) &&
+            !items.some(function (it) { return it.field === d.field && it.vol === d.vol && String(it.session || '').trim() === String(d.session || '').trim(); })) {
           items.push({
             field: d.field || '비문학',
             vol: d.vol || '1단계',
@@ -573,8 +592,18 @@
             isCompleted: d.isCompleted
           });
         }
+        // 미완성 중간 파편(차시도 없고 점수도 없는 단순 드롭다운 변경값) 필터링
+        items = items.filter(function (it) {
+          var s = String(it.session || '').trim();
+          var hasSc = (it.errors !== undefined && String(it.errors).trim() !== '') ||
+                      (it.readTotal !== undefined && String(it.readTotal).trim() !== '') ||
+                      (it.litVocabTotal !== undefined && String(it.litVocabTotal).trim() !== '');
+          return s !== '' || hasSc;
+        });
         if (!items.length) {
-          out.push({ date: date, type: '트레이닝', training: t, detail: '', errors: 0, understanding: under, literacyMemo: literacyMemo });
+          if (under || literacyMemo) {
+            out.push({ date: date, type: '트레이닝', training: t, detail: '', errors: 0, understanding: under, literacyMemo: literacyMemo });
+          }
         } else {
           // 중복 누적 방지: 종목+교재별로 최종 확정된 레코드로 정제
           var litMap = {};
@@ -621,11 +650,14 @@
         }
       } else if (t === '오답수정+선지분석') {
         var its = Array.isArray(d.items) ? d.items.slice() : [];
-        if ((d.errors || d.fixed || d.field) && !its.some(function (it) { return it.field === d.field && it.errors === d.errors && it.fixed === d.fixed; })) {
-          items.push({ field: d.field || '복합', errors: d.errors, fixed: d.fixed });
+        var hasFixInput = String(d.errors || '').trim() !== '' || String(d.fixed || '').trim() !== '';
+        if (hasFixInput && !its.some(function (it) { return it.field === d.field && it.errors === d.errors && it.fixed === d.fixed; })) {
+          its.push({ field: d.field || '복합', errors: d.errors, fixed: d.fixed });
         }
         if (!its.length) {
-          out.push({ date: date, type: '트레이닝', training: t, detail: '', errors: 0, understanding: under, literacyMemo: literacyMemo });
+          if (under || literacyMemo) {
+            out.push({ date: date, type: '트레이닝', training: t, detail: '', errors: 0, understanding: under, literacyMemo: literacyMemo });
+          }
         } else {
           var fixMap = {};
           its.forEach(function (it) {
@@ -653,6 +685,10 @@
           sessPart2 = (rawSess2.indexOf("차시") !== -1 || rawSess2.indexOf("일차") !== -1) ? rawSess2 : (rawSess2 + "차시");
         }
         var detailStr = [d.vol, sessPart2].filter(Boolean).join(' ');
+        // 권수(vol)만 고르고 아직 차시(session)를 입력하지 않은 중간 상태에서는 불필요한 파편 전송 방지
+        if (d.vol && !rawSess2 && !d.errors && !under) {
+          return;
+        }
         out.push({
           date: date,
           type: '트레이닝',
