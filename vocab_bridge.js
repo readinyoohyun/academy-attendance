@@ -558,10 +558,10 @@
     function normalizeTrainingTypeName(rawT) {
       var s = String(rawT || '').trim();
       if (VALID_TRAINING_TYPES.indexOf(s) !== -1) return s;
+      if (s === '듣트' || /^(듣기|문학교훈|시사상식|인물역사|고사성어)/.test(s)) return '듣기트레이닝';
       if (s === '문해력' || /^(복합|비문학|문학|문법|어휘|음독)/.test(s)) return '문해력트레이닝';
       if (s === '읽트' || /^(\d+권|읽기|정독)/.test(s)) return '읽기트레이닝';
       if (s === '독트' || /^독해/.test(s)) return '독해트레이닝';
-      if (s === '듣트' || /^듣기/.test(s)) return '듣기트레이닝';
       if (/오답수정|선지분석/.test(s)) return '오답수정+선지분석';
       return '문해력트레이닝';
     }

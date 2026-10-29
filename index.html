@@ -4334,12 +4334,12 @@ function vocabSanitizeTrainingRecord_(rawTr, rawDet, rawErr, rawRTotal, rawRWron
       var probe = tr + " " + dt;
       if (/오답수정|선지분석|수정\s*:/.test(probe)) {
         tr = "오답수정+선지분석";
+      } else if (/^(?:듣트|듣기|문학교훈|시사상식|인물역사|고사성어)/.test(tr) || /^(?:문학교훈|시사상식|인물역사|고사성어)/.test(dt)) {
+        tr = "듣기트레이닝";
       } else if (/^(?:읽트|읽기|정독|\d+\s*권|\d+\s*단계\s*\d+\s*호|[A-Z]단계)/.test(tr)) {
         tr = "읽기트레이닝";
       } else if (/^(?:독트|독해트레이닝)/.test(tr)) {
         tr = "독해트레이닝";
-      } else if (/^(?:듣트|듣기)/.test(tr)) {
-        tr = "듣기트레이닝";
       } else if (/^독해밀도/.test(tr)) {
         tr = "독해밀도";
       } else if (/^(?:개념밀도|처음한국사|처음세계사)/.test(tr)) {
@@ -4348,6 +4348,8 @@ function vocabSanitizeTrainingRecord_(rawTr, rawDet, rawErr, rawRTotal, rawRWron
         tr = "문해력트레이닝";
       }
     }
+  } else if (tr === "문해력트레이닝" &amp;&amp; /^(?:문학교훈|시사상식|인물역사|고사성어)(?:\s|$)/.test(dt)) {
+    tr = "듣기트레이닝";
   }
 
   var rT = (rawRTotal !== undefined &amp;&amp; rawRTotal !== "" &amp;&amp; rawRTotal !== "-") ? vocabNum_(rawRTotal) : "";
@@ -4462,6 +4464,30 @@ function normalizeRecordRow_(rawRow) {
   var normLv = vocabNormLevel_(rawLv);
   if (rawLv !== normLv) { r[4] = normLv; changed = true; }
 
+  // F열(도서명)에 어휘 결과 문자열('초1~2/학습10개/오답0개/... &gt;&gt;코멘트')이 잘못 들어간 경우 E~I열 및 K열로 자동 복구
+  var fStr = String(r[5] || "").trim();
+  if (fStr.indexOf("/학습") !== -1) {
+    var vFixM = fStr.match(/^(?:\[어휘\]\s*)?([^\/]+)\/학습\s*(\d+)개\/오답\s*(\d+)개(?:\/재학습\s*\d+개)?\/?\s*(?:『(.*?)』|([^\s&gt;]+))(?:\s*오답\s*:\s*([^&gt;]+?))?(?:\s*&gt;&gt;\s*(.*))?$/);
+    if (vFixM) {
+      var vfTot = parseInt(vFixM[2], 10) || 0;
+      var vfWr = parseInt(vFixM[3], 10) || 0;
+      var vfCor = Math.max(0, vfTot - vfWr);
+      r[4] = vocabNormLevel_(vFixM[1]);
+      r[5] = (vFixM[4] || vFixM[5] || "").trim();
+      r[6] = vfTot;
+      r[7] = vfCor;
+      r[8] = vfTot &gt; 0 ? Math.round((vfCor / vfTot) * 100) : 0;
+      if (vFixM[6] &amp;&amp; !r[17]) r[17] = vocabCleanWrongWordsStr_(vFixM[6]);
+      var vfMemo = (vFixM[7] || "").trim();
+      if (String(r[10] || "").trim() === "[어휘]") r[10] = vfMemo;
+      else if (vfMemo) r[10] = (r[10] ? r[10] + " / " : "") + vfMemo;
+      changed = true;
+    }
+  } else if (String(r[10] || "").trim() === "[어휘]") {
+    r[10] = "";
+    changed = true;
+  }
+
   if (r[10] &amp;&amp; r[12] &amp;&amp; String(r[10]).trim() === String(r[12]).trim()) {
     r[10] = "";
     changed = true;
@@ -4531,6 +4557,7 @@ function vocabEnsureRecordSheet_(ss) {
             (eVal &amp;&amp; eVal !== vocabNormLevel_(eVal)) ||
             (dVal &amp;&amp; fVal &amp;&amp; dVal === fVal) ||
             (kVal &amp;&amp; mVal &amp;&amp; kVal === mVal) ||
+            fVal.indexOf("/학습") !== -1 || kVal === "[어휘]" ||
             (lVal &amp;&amp; TRAINING_TYPE_LIST.indexOf(lVal) === -1) ||
             mVal.indexOf("(독해") !== -1 ||
             dVal === "-" || kVal === "-" || lVal === "-" || mVal === "-") {
@@ -5003,7 +5030,7 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
 
       // 어휘 요약
       if (part.indexOf("[어휘]") === 0) {
-        var vm1 = part.match(/^\[어휘\]\s*([^\/]+)\/학습\s*(\d+)개\/오답\s*(\d+)개(?:\/재학습\s*\d+개)?\/?\s*(?:『(.*?)』|([^\s]+))(?:\s*오답\s*:\s*(.*))?$/);
+        var vm1 = part.match(/^\[어휘\]\s*([^\/]+)\/학습\s*(\d+)개\/오답\s*(\d+)개(?:\/재학습\s*\d+개)?\/?\s*(?:『(.*?)』|([^\s&gt;]+))(?:\s*오답\s*:\s*([^&gt;]+?))?(?:\s*&gt;&gt;\s*(.*))?$/);
         if (vm1) {
           var vLv = vocabNormLevel_(vm1[1]);
           var vTotal = parseInt(vm1[2], 10) || 0;
@@ -5012,6 +5039,7 @@ function parseDailyRowToLearningRecords_(row, isoDate) {
           var vRate = vTotal &gt; 0 ? Math.round((vFirst / vTotal) * 100) : 0;
           var vBook = (vm1[4] || vm1[5] || "").trim();
           var vWrongWords = vm1[6] ? vocabCleanWrongWordsStr_(vm1[6]) : "";
+          if (vm1[7]) step2Memo = (step2Memo ? step2Memo + " / " : "") + vm1[7].trim();
           vocabRecords.push({
             date: isoDate,
             type: "어휘퀴즈",

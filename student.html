@@ -4409,7 +4409,11 @@
     function updateTrainingDetail(type, field, val, syncDelay = 0) {
       if (!state.missions.trainingDetails) state.missions.trainingDetails = {};
       if (!state.missions.trainingDetails[type]) state.missions.trainingDetails[type] = { vol: "", session: "", errors: "", fixed: "", understanding: "" };
-      state.missions.trainingDetails[type][field] = val;
+      const d = state.missions.trainingDetails[type];
+      if (type === "문해력트레이닝" && field === "field" && d.field !== val) {
+        d.vol = ""; d.session = ""; d.errors = ""; d.readTotal = ""; d.readWrong = ""; d.litVocabTotal = ""; d.litVocabWrong = ""; d.litAccuracy = "";
+      }
+      d[field] = val;
       updateProgress(syncDelay);
     }
 
