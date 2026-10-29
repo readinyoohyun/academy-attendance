@@ -32,7 +32,7 @@ class SheetAPI {
     if (!widget) return;
 
     const APP_VERSION = "v2.4.0";
-    const REQUIRED_GAS_VERSION = "2026.10.29-v2";
+    const REQUIRED_GAS_VERSION = "2026.10.29-v3";
     const isGasOutdated = status === 'success' && gasVer !== REQUIRED_GAS_VERSION;
 
     widget.onclick = () => {
@@ -234,15 +234,25 @@ class SheetAPI {
           const remoteGasVersion = (data && !Array.isArray(data) && data.gasVersion) ? String(data.gasVersion) : '';
           this.updateDiagnosticWidget('success', '구글 시트와 정상적으로 동기화가 이루어졌습니다.', remoteGasVersion);
 
-          // [자가복구] 오전 6시~오후 5시 59분 사이에 오늘 출석부 날짜가 이전 날짜(어제 등)로 멈춰 있으면 자동으로 누적 백업 및 오늘 출석부 생성 실행
+          // [자가복구] 오전 6시~오후 9시 29분(당일 출석부) 및 오후 9시 30분 이후(다음 수업일 출석부) 자동 백업·생성 보장
           try {
             const nowKr = new Date();
             const krHour = nowKr.getHours();
-            const isSunday = nowKr.getDay() === 0;
-            if (krHour >= 6 && krHour < 18 && !isSunday) {
-              const todayM = nowKr.getMonth() + 1;
-              const todayD = nowKr.getDate();
-              const todayKey = `${todayM}/${todayD}`;
+            const krMin = nowKr.getMinutes();
+            const isEveningNextDay = (krHour > 21) || (krHour === 21 && krMin >= 30);
+            const isDaytime = (krHour >= 6 && !isEveningNextDay);
+
+            if (isEveningNextDay || (isDaytime && nowKr.getDay() !== 0)) {
+              const targetDate = new Date(nowKr.getTime());
+              if (isEveningNextDay) {
+                targetDate.setDate(targetDate.getDate() + 1);
+              }
+              if (targetDate.getDay() === 0) {
+                targetDate.setDate(targetDate.getDate() + 1);
+              }
+              const targetM = targetDate.getMonth() + 1;
+              const targetD = targetDate.getDate();
+              const targetKey = `${targetM}/${targetD}_${isEveningNextDay ? 'next' : 'today'}`;
               let isStaleDailySheet = false;
               if (!incomingDailyLogs || incomingDailyLogs.length === 0) {
                 isStaleDailySheet = (incomingStudents && incomingStudents.length > 0);
@@ -252,15 +262,15 @@ class SheetAPI {
                 if (dm) {
                   const logM = parseInt(dm[1], 10);
                   const logD = parseInt(dm[2], 10);
-                  if (logM !== todayM || logD !== todayD) {
+                  if (logM !== targetM || logD !== targetD) {
                     isStaleDailySheet = true;
                   }
                 }
               }
-              if (isStaleDailySheet && this._autoRolloverTriggeredDate !== todayKey) {
-                this._autoRolloverTriggeredDate = todayKey;
-                console.log(`[Auto-Rollover] Stale dailyLogs detected (${incomingDailyLogs[0] && incomingDailyLogs[0].date} != ${todayKey}). Triggering generateDailyAttendance...`);
-                this.app.showToast("🔄 이전 출석부를 누적 관리 시트로 백업하고 오늘 출석부를 자동 생성합니다...");
+              if (isStaleDailySheet && this._autoRolloverTriggeredDate !== targetKey) {
+                this._autoRolloverTriggeredDate = targetKey;
+                console.log(`[Auto-Rollover] Stale dailyLogs detected (${incomingDailyLogs[0] && incomingDailyLogs[0].date} != ${targetM}/${targetD}). Triggering generateDailyAttendance...`);
+                this.app.showToast(`🔄 이전 출석부를 누적 관리 시트로 백업하고 ${targetM}/${targetD} 출석부를 자동 생성합니다...`);
                 this.forceGenerateDailyAttendance(true);
               }
             }

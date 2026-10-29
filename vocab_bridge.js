@@ -488,8 +488,9 @@
     }).join(' / ');
   };
 
-  // ---------- 하원 시: 18열 방식 1(첫 줄 가로 병합 + 추가 활동 시 2·3번째 줄 확장) 전체 데이터 구성 ----------
+  // ---------- 하원 시: 23열 방식 1(첫 줄 가로 병합 + 추가 활동 시 2·3번째 줄 확장) 전체 데이터 구성 ----------
   B.buildCheckoutRecords = function (student, missions, date) {
+    date = date || today();
     var name = cleanName(student);
     var out = [];
     if (!missions) return out;
@@ -715,7 +716,15 @@
 
   B.checkout = function (student, missions) {
     var recs = B.buildCheckoutRecords(student, missions, today());
-    if (recs.length) send(cleanName(student), recs);
+    if (recs.length) return send(cleanName(student), recs);
+    return Promise.resolve();
+  };
+
+  B.queuePendingRecords = function (studentName, records) {
+    if (!studentName || !Array.isArray(records) || !records.length) return;
+    var p = loadPending();
+    p.push({ name: String(studentName).replace(/\s+/g, ''), records: records });
+    savePending(p);
   };
 
   // ---------- 전송 (no-cors: 응답을 읽을 수 없으므로 네트워크 오류일 때만 보관해 두었다가 다시 보냄) ----------

@@ -5258,14 +5258,36 @@
       targetLog.grammarDone = finalColJ;
       targetLog.contents = finalContents;
 
-      // 로컬에 즉시 보존 + 입력 멈춘 뒤 1.5초 후 [학습기록] 18열 시트에도 자동 동기화!
+      state.missions.hwBook = hwBook;
+      state.missions.step1Memo = step1Memo;
+      state.missions.step2Memo = step2Memo;
+      state.missions.step3Memo = step3Memo;
+      state.missions.step4Memo = step4Memo;
+      state.missions.studentReflection = reflection;
+
+      // 로컬에 즉시 보존 + 입력 멈춘 뒤 1.5초 후 [오늘 출석부] 및 [학습기록] 23열 시트 단일 패킷 동기화!
       saveActiveSession(student, targetLog);
       showLiveSyncStatus();
       if (window._learningRecordLiveSyncTimer) clearTimeout(window._learningRecordLiveSyncTimer);
       window._learningRecordLiveSyncTimer = setTimeout(() => {
         try {
-          if (state.currentStudent && state.missions && window.VocabBridge) {
-            VocabBridge.checkout(state.currentStudent, state.missions);
+          if (state.isCheckingOut || !state.currentStudent || !state.missions) return;
+          const liveStudent = state.currentStudent;
+          const liveLog = state.currentDailyLog || targetLog;
+          const liveRecords = (window.VocabBridge && typeof VocabBridge.buildCheckoutRecords === "function")
+            ? VocabBridge.buildCheckoutRecords(liveStudent, state.missions)
+            : [];
+          if (liveLog && liveLog.row) {
+            const effectiveDate = liveLog.date || state.todayDateStr;
+            const liveUpdates = [
+              { tab: "dailyLogs", row: liveLog.row, field: "number", value: liveLog.number || "", name: liveStudent.name, date: effectiveDate, time: liveLog.time },
+              { tab: "dailyLogs", row: liveLog.row, field: "event", value: liveLog.event || "", name: liveStudent.name, date: effectiveDate, time: liveLog.time },
+              { tab: "dailyLogs", row: liveLog.row, field: "grammarDone", value: liveLog.grammarDone || "", name: liveStudent.name, date: effectiveDate, time: liveLog.time },
+              { tab: "dailyLogs", row: liveLog.row, field: "contents", value: liveLog.contents || "", name: liveStudent.name, date: effectiveDate, time: liveLog.time }
+            ];
+            sendBatchUpdates(liveUpdates, 2, liveRecords, liveStudent.name);
+          } else if (liveRecords.length > 0 && window.VocabBridge) {
+            VocabBridge.checkout(liveStudent, state.missions);
           }
         } catch (e) {}
       }, 1500);
@@ -5401,10 +5423,14 @@
       const student = state.currentStudent;
       const cleanName = (student.name || '').trim().replace(/\s+/g, '');
 
-      // [핵심 해결 1] 대기 중인 모든 실시간 저장 타이머 즉시 강제 취소! (덮어쓰기 원천 차단)
+      // [핵심 해결 1] 대기 중인 모든 실시간 저장 타이머 즉시 강제 취소! (덮어쓰기 및 중복 충돌 원천 차단)
       if (realtimeSyncTimer) {
         clearTimeout(realtimeSyncTimer);
         realtimeSyncTimer = null;
+      }
+      if (window._learningRecordLiveSyncTimer) {
+        clearTimeout(window._learningRecordLiveSyncTimer);
+        window._learningRecordLiveSyncTimer = null;
       }
 
       // [핵심 해결 2] 하원 진행 중 플래그 활성화 (이후 어떠한 자동 저장도 시트를 '수업중'으로 되돌리지 못함)
@@ -5568,20 +5594,31 @@
       const scheduledTime = (targetLog && targetLog.time) ? targetLog.time : getStudentScheduledTime(student);
 
       // [당일 재로그인 대비] 하원 완료된 세션 백업 저장 (당일 재로그인 시 100% 자동 복원)
+      state.missions.hwBook = hwBook;
+      state.missions.step1Memo = step1Memo;
+      state.missions.step2Memo = step2Memo;
+      state.missions.step3Memo = step3Memo;
+      state.missions.step4Memo = step4Memo;
+      state.missions.studentReflection = reflection;
+
+      let checkoutRecords = [];
       try {
-        state.missions.hwBook = hwBook;
-        state.missions.step1Memo = step1Memo;
-        state.missions.step2Memo = step2Memo;
-        state.missions.step3Memo = step3Memo;
-        state.missions.step4Memo = step4Memo;
-        state.missions.studentReflection = reflection;
-        const lastSessionKey = "last_completed_session_" + cleanName + "_" + state.todayDateStr;
+        if (window.VocabBridge && typeof VocabBridge.buildCheckoutRecords === "function") {
+          checkoutRecords = VocabBridge.buildCheckoutRecords(student, state.missions);
+        }
+      } catch (e) {
+        console.warn("[vocab] buildCheckoutRecords error:", e);
+      }
+
+      const lastSessionKey = "last_completed_session_" + cleanName + "_" + state.todayDateStr;
+      try {
         localStorage.setItem(lastSessionKey, JSON.stringify({
           date: state.todayDateStr,
           student: student,
           dailyLogRow: targetLog ? targetLog.row : (state.currentDailyLog ? state.currentDailyLog.row : null),
           inTime: state.currentInTime,
           missions: JSON.parse(JSON.stringify(state.missions || {})),
+          vocabFlushed: true,
           savedAt: Date.now()
         }));
       } catch (e) {
@@ -5622,9 +5659,10 @@
       localStorage.removeItem("recent_diagnosed_book_" + student.name);
       state.missions.recentDiagnosedBook = "";
 
-      // [핵심] 백그라운드 비동기 구글 시트 저장 및 상태 업데이트 (지연 없이 즉시 발송)
+      // [핵심] 백그라운드 비동기 구글 시트 단일 패킷 저장 ([오늘 출석부] + [학습기록 23열] + [교재단계관리] + [회원 분석] 동시 원자적 처리)
       (async () => {
         try {
+          let ok = false;
           const updates = [];
           if (targetLog && targetLog.row) {
             targetLog.status = "수업완료";
@@ -5640,7 +5678,7 @@
             updates.push({ tab: "dailyLogs", row: targetLog.row, field: "grammarDone", value: finalColJ || "", name: student.name, date: effectiveDate, time: targetLog.time });
             updates.push({ tab: "dailyLogs", row: targetLog.row, field: "contents", value: finalContents || "", name: student.name, date: effectiveDate, time: targetLog.time });
 
-            await sendBatchUpdates(updates);
+            ok = await sendBatchUpdates(updates, 3, checkoutRecords, student.name);
           } else {
             const newRow = getSafeNextDailyLogRow(student.name);
             const effectiveDate = state.todayDateStr;
@@ -5661,7 +5699,10 @@
             };
             state.dailyLogs.push(targetLog);
 
-            await sendNewLog(targetLog);
+            ok = await sendNewLog(targetLog, 3, checkoutRecords);
+          }
+          if (!ok && checkoutRecords.length > 0 && window.VocabBridge && typeof VocabBridge.queuePendingRecords === "function") {
+            VocabBridge.queuePendingRecords(student.name, checkoutRecords);
           }
           state.currentDailyLog = targetLog;
 
@@ -5671,19 +5712,11 @@
           }));
         } catch (err) {
           console.error("[submitAllMissions] Checkout save error:", err);
+          if (checkoutRecords.length > 0 && window.VocabBridge && typeof VocabBridge.queuePendingRecords === "function") {
+            VocabBridge.queuePendingRecords(student.name, checkoutRecords);
+          }
         }
       })();
-
-      // [어휘 및 통합 학습기록] 숙제현황 + 발자국 메모 + 도서/진단 + 트레이닝 + 나의기록을 [학습기록] 18열 시트로 전송
-      try {
-        state.missions.hwBook = hwBook;
-        state.missions.step1Memo = step1Memo;
-        state.missions.step2Memo = step2Memo;
-        state.missions.step3Memo = step3Memo;
-        state.missions.step4Memo = step4Memo;
-        state.missions.studentReflection = reflection;
-        if (window.VocabBridge) VocabBridge.checkout(student, state.missions);
-      } catch (e) { console.warn("[vocab] checkout error:", e); }
 
       // [즉각 반응!] 0초 만에 꽃다발 폭죽 터지고 정확히 3초 뒤 로그인 화면으로 자동 이동!
       showCelebration(student.name);
@@ -5857,18 +5890,23 @@
     }
 
     // 14. Network Communication Helpers
-    async function sendBatchUpdates(updates, retries = 3) {
+    async function sendBatchUpdates(updates, retries = 3, learningRecords = null, studentName = "") {
       if (!state.config.gasWebhookUrl || !updates || updates.length === 0) return false;
 
-      const payload = JSON.stringify({
+      const bodyObj = {
         action: "batchUpdate",
         updates: updates
-      });
+      };
+      if (Array.isArray(learningRecords) && learningRecords.length > 0) {
+        bodyObj.learningRecords = learningRecords;
+        bodyObj.studentName = studentName || (updates[0] && updates[0].name) || "";
+      }
+      const payload = JSON.stringify(bodyObj);
 
       for (let attempt = 1; attempt <= retries; attempt++) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 6000);
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
           await fetch(state.config.gasWebhookUrl, {
             method: "POST",
             mode: "no-cors",
@@ -5890,10 +5928,10 @@
       return false;
     }
 
-    async function sendNewLog(log, retries = 3) {
+    async function sendNewLog(log, retries = 3, learningRecords = null) {
       if (!state.config.gasWebhookUrl || !log) return false;
 
-      const payload = JSON.stringify({
+      const bodyObj = {
         action: "addDailyLog",
         date: log.date,
         time: log.time,
@@ -5906,12 +5944,17 @@
         event: log.event,
         grammarDone: log.grammarDone,
         contents: log.contents
-      });
+      };
+      if (Array.isArray(learningRecords) && learningRecords.length > 0) {
+        bodyObj.learningRecords = learningRecords;
+        bodyObj.studentName = log.name || "";
+      }
+      const payload = JSON.stringify(bodyObj);
 
       for (let attempt = 1; attempt <= retries; attempt++) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 6000);
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
           await fetch(state.config.gasWebhookUrl, {
             method: "POST",
             mode: "no-cors",
@@ -5965,7 +6008,7 @@
   <script src="vocab_db.js?v=7"></script>
   <script src="vocab_engine.js?v=7"></script>
   <script src="vocab_ui.js?v=7"></script>
-  <script src="vocab_bridge.js?v=9"></script>
+  <script src="vocab_bridge.js?v=10"></script>
   <!-- 서랍 4: 독해밀도(ReadTrack) 151권 교재 & OMR 자동채점 & 문해력 전용 분석표 브릿지 -->
   <script src="readtrack_bridge.js?v=2"></script>
 
