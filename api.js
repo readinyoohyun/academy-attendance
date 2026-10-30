@@ -25,15 +25,17 @@ class SheetAPI {
     }, 500);
   }
 
-  updateDiagnosticWidget(status, detail, gasVer = '') {
+  updateDiagnosticWidget(status, detail, gasVer = '', syncWarning = null) {
     const dot = document.getElementById("diagnosticStatusDot");
     const txt = document.getElementById("diagnosticStatusText");
     const widget = document.getElementById("diagnosticWidget");
     if (!widget) return;
 
     const APP_VERSION = "v2.4.0";
-    const REQUIRED_GAS_VERSION = "2026.10.29-v3";
+    const REQUIRED_GAS_VERSION = "2026.10.30-v1";
     const isGasOutdated = status === 'success' && gasVer !== REQUIRED_GAS_VERSION;
+    // 시트 스크립트가 알려준 경고(날짜 전환 보류·헤더 불일치 등): '시스템알림' 시트에 자세한 기록이 있음
+    const warnMsg = (syncWarning && syncWarning.msg) ? String(syncWarning.msg) : '';
 
     widget.onclick = () => {
       alert(`📊 [구글 시트 연동 실시간 진단]\n\n` +
@@ -42,6 +44,7 @@ class SheetAPI {
             `• 상태: ${status === 'success' ? (isGasOutdated ? '연결됨 (시트 스크립트 업데이트 필요 ⚠️)' : '정상 연결됨 🟢') : status === 'timeout' ? '연결 시간 초과 🟡' : '연동 실패/설정 오류 🔴'}\n` +
             `• 웹앱 URL: ${this.gasWebhookUrl || '미설정됨'}\n` +
             `• 상세 정보: ${detail}\n` +
+            (warnMsg ? `• ⚠️ 시트 경고: ${warnMsg}\n  (구글 시트의 [시스템알림] 시트에서 기록을 확인하세요)\n` : '') +
             `• 마지막 동기화 시도: ${new Date().toLocaleTimeString()}\n\n` +
             (isGasOutdated
               ? `⚠️ [중요 안내] 구글 시트의 Apps Script가 구버전입니다!\n[실제 구글 시트 연동 가이드] 탭에서 최신 코드를 복사하여 구글 시트 [확장 프로그램 > Apps Script]에 붙여넣고 [새 배포]를 진행해 주시면 출석부 자동 생성 및 학습기록 열 정렬이 완벽히 작동합니다.`
@@ -53,8 +56,13 @@ class SheetAPI {
         if (dot) { dot.style.background = "#f59e0b"; }
         if (txt) { txt.innerText = `시트 스크립트 업데이트 필요 (${APP_VERSION})`; txt.style.color = "#fde68a"; }
       } else {
-        if (dot) { dot.style.background = "#10b981"; }
-        if (txt) { txt.innerText = `정상 연결됨 (${APP_VERSION})`; txt.style.color = "#cbd5e1"; }
+        if (warnMsg) {
+          if (dot) { dot.style.background = "#f59e0b"; }
+          if (txt) { txt.innerText = `시트 확인 필요 - 클릭 (${APP_VERSION})`; txt.style.color = "#fde68a"; }
+        } else {
+          if (dot) { dot.style.background = "#10b981"; }
+          if (txt) { txt.innerText = `정상 연결됨 (${APP_VERSION})`; txt.style.color = "#cbd5e1"; }
+        }
       }
     } else if (status === 'timeout') {
       if (dot) { dot.style.background = "#eab308"; }
@@ -232,7 +240,8 @@ class SheetAPI {
           }
           
           const remoteGasVersion = (data && !Array.isArray(data) && data.gasVersion) ? String(data.gasVersion) : '';
-          this.updateDiagnosticWidget('success', '구글 시트와 정상적으로 동기화가 이루어졌습니다.', remoteGasVersion);
+          const remoteSyncWarning = (data && !Array.isArray(data) && data.syncWarning) ? data.syncWarning : null;
+          this.updateDiagnosticWidget('success', '구글 시트와 정상적으로 동기화가 이루어졌습니다.', remoteGasVersion, remoteSyncWarning);
 
           // [자가복구] 오전 6시~오후 9시 29분(당일 출석부) 및 오후 9시 30분 이후(다음 수업일 출석부) 자동 백업·생성 보장
           try {

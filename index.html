@@ -851,7 +851,6 @@
               </button>
             </div>
             <pre class="code-content" id="gasCodeBlock">
-
 function ensureColumns(sheet, requiredCols) {
   if (!sheet) return;
   var maxCols = sheet.getMaxColumns();
@@ -1347,8 +1346,17 @@ function doGet(e) {
     }
   }
 
+  var syncWarningData = null;
+  try {
+    var rawSyncWarning = PropertiesService.getScriptProperties().getProperty("systemWarning");
+    if (rawSyncWarning) syncWarningData = JSON.parse(rawSyncWarning);
+  } catch (swErr) {
+    syncWarningData = null;
+  }
+
   var responseObj = {
-    gasVersion: "2026.10.29-v3",
+    gasVersion: "2026.10.30-v1",
+    syncWarning: syncWarningData,
     students: studentsData,
     dailyLogs: dailyLogsData,
     textbooks: textbooksData,
@@ -2088,11 +2096,42 @@ function generateDailyAttendance(optForceEveningNextDay) {
   
   // 2행은 고정해 두고, 3행 이하 기존 데이터를 누적관리 시트('학생수업관리' / '출석부 누적 관리')로 백업 후 지움
   if (lastRowDaily &gt;= 3) {
+    // [날짜 전환 안전장치] 동기화 후 [학습기록]에 실제로 반영됐는지 확인하고, 실패하면 오늘 출석부를 지우지 않고 최대 3회까지 재시도
+    var rolloverSyncOk = true;
+    var rolloverSyncMsg = "";
     try {
       // [초고속 경량 동기화] 과거 300행 재스캔 없이 현재 오늘 출석부에 남아있는 어제자 행만 1회 일괄(Bulk) 반영
       syncTodayDailyEventsToMemberAnalysis(true);
+      var unsyncedNames = vocabFindUnsyncedDailyRows_(ss, sheetDaily);
+      if (unsyncedNames.length &gt; 0) {
+        rolloverSyncOk = false;
+        rolloverSyncMsg = "학습기록에 반영되지 않은 학생 " + unsyncedNames.length + "명(" + unsyncedNames.slice(0, 5).join(", ") + ")";
+      }
     } catch (autoSyncErr) {
       Logger.log("일일 출석부 백업 전 학습기록 자동 동기화 에러: " + autoSyncErr);
+      rolloverSyncOk = false;
+      rolloverSyncMsg = "동기화 오류: " + autoSyncErr;
+    }
+    var rolloverProps = PropertiesService.getScriptProperties();
+    if (rolloverSyncOk) {
+      rolloverProps.deleteProperty("rolloverSyncFails");
+      rolloverProps.deleteProperty("rolloverSyncFailAt");
+      vocabClearSystemAlert_("rolloverSync");
+    } else {
+      var rolloverFails = parseInt(rolloverProps.getProperty("rolloverSyncFails") || "0", 10) || 0;
+      var rolloverFailAt = parseInt(rolloverProps.getProperty("rolloverSyncFailAt") || "0", 10) || 0;
+      if (Date.now() - rolloverFailAt &gt;= 45000) {
+        rolloverFails++;
+        rolloverProps.setProperty("rolloverSyncFails", String(rolloverFails));
+        rolloverProps.setProperty("rolloverSyncFailAt", String(Date.now()));
+      }
+      if (rolloverFails &lt; 3) {
+        vocabLogSystemAlert_(ss, "경고", "날짜 전환 보류(" + rolloverFails + "/3): 학습기록 동기화 실패로 오늘 출석부를 지우지 않았습니다. " + rolloverSyncMsg, "rolloverSync");
+        return;
+      }
+      rolloverProps.deleteProperty("rolloverSyncFails");
+      rolloverProps.deleteProperty("rolloverSyncFailAt");
+      vocabLogSystemAlert_(ss, "오류", "학습기록 동기화가 3회 연속 실패해 누적 백업 후 날짜를 전환했습니다. 메뉴 7번을 실행해 학습기록을 복구하세요. " + rolloverSyncMsg, "rolloverSync");
     }
     var sheetAccumulated = getAccumulatedSheet_(ss);
     if (!sheetAccumulated) {
@@ -2114,6 +2153,22 @@ function generateDailyAttendance(optForceEveningNextDay) {
     dailyRange.copyTo(destRange, SpreadsheetApp.CopyPasteType.PASTE_VALUES, false);
     // 2. 서식 복사 (날짜/시간 포맷 및 색상, 폰트 스타일 복사)
     dailyRange.copyTo(destRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
+    
+    // [날짜 전환 안전장치] 백업 복사본이 원본과 같은지 확인한 뒤에만 삭제 (다르면 복사본을 되돌리고 중단)
+    var srcCheck = dailyRange.getValues();
+    var dstCheck = destRange.getValues();
+    var backupOk = srcCheck.length === dstCheck.length;
+    for (var bc = 0; backupOk &amp;&amp; bc &lt; srcCheck.length; bc++) {
+      for (var bk = 0; bk &lt; 11; bk++) {
+        if (String(srcCheck[bc][bk]) !== String(dstCheck[bc][bk])) { backupOk = false; break; }
+      }
+    }
+    if (!backupOk) {
+      sheetAccumulated.deleteRows(2, lastRowDaily - 2);
+      vocabLogSystemAlert_(ss, "오류", "날짜 전환 중단: 누적 백업 내용이 원본과 달라 오늘 출석부를 지우지 않았습니다. 잠시 후 자동 재시도됩니다.", "rolloverBackup");
+      return;
+    }
+    vocabClearSystemAlert_("rolloverBackup");
     
     // 3행 이하 기존 행들을 완전 삭제하여 초기화 (2행은 무조건 유지)
     var maxRows = sheetDaily.getMaxRows();
@@ -3554,6 +3609,7 @@ function onOpen() {
     .addItem("11. 어휘 갱신 (학생앱에 반영)", "vocabBumpVersion")
     .addItem("12. 📨 오늘 수업 브리핑 문구 창 띄우기", "showDailyBriefingModal")
     .addItem("13. [학습기록](23열) 헤더 및 열 정렬 1회 일괄(Bulk) 보정", "fixAndAlignLearningRecordHeadersAndRowsBulk")
+    .addItem("14. [학습기록] 헤더 점검 (읽기 전용)", "vocabCheckRecordHeadersMenu")
     .addToUi();
 }
 
@@ -3593,6 +3649,7 @@ function syncTodayDailyEventsToMemberAnalysis(optOnlyCurrentDailySheet) {
 
   if (!optOnlyCurrentDailySheet) {
     alignLearningRecordColumnsBulk_(vocabEnsureRecordSheet_(ss));
+    vocabClearSystemAlert_("rolloverSync");
     try {
       SpreadsheetApp.getUi().alert(
         "🎉 동기화 완료!\n\n" +
@@ -4271,14 +4328,15 @@ function vocabSortRecordSheetNewestFirst_(sheet) {
   if (!sheet || sheet.getLastRow() &lt; 3) return;
   ensureColumns(sheet, 23);
   var lastRow = sheet.getLastRow();
-  var allData = sheet.getRange(2, 1, lastRow - 1, 23).getValues();
+  var dateCol = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
   var needsSort = false;
-  for (var chk = 1; chk &lt; allData.length; chk++) {
-    var prevD = allData[chk - 1][0] ? vocabFmtDate_(allData[chk - 1][0]) : "";
-    var curD = allData[chk][0] ? vocabFmtDate_(allData[chk][0]) : "";
+  for (var chk = 1; chk &lt; dateCol.length; chk++) {
+    var prevD = dateCol[chk - 1][0] ? vocabFmtDate_(dateCol[chk - 1][0]) : "";
+    var curD = dateCol[chk][0] ? vocabFmtDate_(dateCol[chk][0]) : "";
     if (prevD &amp;&amp; curD &amp;&amp; prevD &lt; curD) { needsSort = true; break; }
   }
   if (!needsSort) return;
+  var allData = sheet.getRange(2, 1, lastRow - 1, 23).getValues();
 
   var blocks = [];
   var blockMap = {};
@@ -4530,17 +4588,21 @@ function vocabEnsureRecordSheet_(ss) {
     vocabStyleRecordSheet_(sheet);
   } else {
     ensureColumns(sheet, 23);
-    var h2 = String(sheet.getRange(1, 2).getValue() || "").trim();
-    var h3 = String(sheet.getRange(1, 3).getValue() || "").trim();
-    var h19 = String(sheet.getRange(1, 19).getValue() || "").trim();
+    // [헤더 점검] 표준이면 헤더를 건드리지 않고, 구버전(17·18열/빈 헤더)만 자동 변환하며, 알 수 없는 헤더는 덮어쓰지 않고 경고만 남김
+    var diag = vocabDiagnoseRecordHeaders_(sheet);
     var needsHeal = false;
-    if (h2 !== "이름" || h3 !== "숙제현황" || h19 !== "독해문항수") {
+    if (diag.kind === "legacy17" || diag.kind === "legacy18" || diag.kind === "empty") {
       vocabStyleRecordSheet_(sheet);
       needsHeal = true;
+      vocabLogSystemAlert_(ss, "안내", "[학습기록] 구버전 헤더(" + diag.kind + ")를 23열 표준으로 자동 변환했습니다.", "recordHeaderConv");
+    } else if (diag.kind === "unknown") {
+      vocabLogSystemAlert_(ss, "경고", "[학습기록] 헤더가 표준과 달라 헤더·열 보정을 건너뛰었습니다(덮어쓰지 않음): " + diag.text + " → 메뉴 14번으로 확인하세요.", "recordHeader");
+    } else {
+      vocabClearSystemAlert_("recordHeader");
     }
-    // [자동 자가치유 (Self-Healing)] 열 밀림, L열 비표준 트레이닝명, M열 '(독해...)', '-' 기호 감지 시에만 1회 일괄(Bulk) 보정
+    // [자동 자가치유 (Self-Healing)] 열 밀림, L열 비표준 트레이닝명, M열 '(독해...)', '-' 기호 감지 시에만 1회 일괄(Bulk) 보정 (표준 헤더일 때만)
     var lastRow = sheet.getLastRow();
-    if (lastRow &gt;= 2 &amp;&amp; !needsHeal) {
+    if (lastRow &gt;= 2 &amp;&amp; diag.kind === "standard") {
       var sampleCount = Math.min(lastRow - 1, 60);
       var sample = sheet.getRange(2, 1, sampleCount, 15).getValues();
       for (var sr = 0; sr &lt; sample.length; sr++) {
@@ -4568,11 +4630,141 @@ function vocabEnsureRecordSheet_(ss) {
     }
     if (needsHeal) {
       alignLearningRecordColumnsBulk_(sheet);
+      vocabPreserveOrInitDropdowns_(sheet, sheet.getLastRow());
     }
+    // 정렬이 이미 맞으면 날짜 열(A열)만 읽고 끝남 (패킷마다 전체 재정렬/드롭다운 재복사 없음)
     vocabSortRecordSheetNewestFirst_(sheet);
-    vocabPreserveOrInitDropdowns_(sheet, sheet.getLastRow());
   }
   return sheet;
+}
+
+// [헤더 점검] 헤더 비교용 정규화: 공백·쉼표·가운뎃점·슬래시·괄호 제거, '발자욱'→'발자국', 소문자
+function vocabNormHeaderName_(s) {
+  return String(s == null ? "" : s).replace(/발자욱/g, "발자국").replace(/[\s,·\/\\()\[\]]/g, "").toLowerCase();
+}
+
+// [헤더 점검] [학습기록] 1행 헤더 종류 판별(읽기 전용): standard(표준) / legacy17 / legacy18 / empty / unknown
+function vocabDiagnoseRecordHeaders_(sheet) {
+  var n = RECORD_HEADERS.length;
+  var actual = sheet.getRange(1, 1, 1, Math.max(n, sheet.getLastColumn())).getValues()[0];
+  var diffs = [];
+  var blankAll = true;
+  var tailBlank = true;
+  for (var i = 0; i &lt; n; i++) {
+    var a = vocabNormHeaderName_(actual[i]);
+    if (a) blankAll = false;
+    if (i &gt;= 18 &amp;&amp; a) tailBlank = false;
+    if (a !== vocabNormHeaderName_(RECORD_HEADERS[i])) {
+      diffs.push({ col: i + 1, letter: String.fromCharCode(65 + i), expected: RECORD_HEADERS[i], actual: String(actual[i] == null ? "" : actual[i]) });
+    }
+  }
+  var kind = "unknown";
+  if (!diffs.length) kind = "standard";
+  else if (blankAll) kind = "empty";
+  else if (vocabNormHeaderName_(actual[1]) === "이름" &amp;&amp; vocabNormHeaderName_(actual[2]) === "숙제현황" &amp;&amp; tailBlank) kind = "legacy18";
+  else if (vocabNormHeaderName_(actual[1]) === "날짜" &amp;&amp; vocabNormHeaderName_(actual[2]) === "이름") kind = "legacy17";
+  var parts = [];
+  for (var d = 0; d &lt; diffs.length &amp;&amp; d &lt; 5; d++) {
+    parts.push(diffs[d].letter + "열(표준:" + diffs[d].expected + " / 현재:" + (diffs[d].actual || "빈칸") + ")");
+  }
+  if (diffs.length &gt; 5) parts.push("외 " + (diffs.length - 5) + "건");
+  return { kind: kind, diffs: diffs, text: parts.join(", ") };
+}
+
+// [시스템 알림] '시스템알림' 시트에 기록(같은 구분·내용은 10분 내 중복 기록 안 함) + 원장앱 표시용 ScriptProperties 'systemWarning' 저장('안내' 수준은 표시 안 함)
+function vocabLogSystemAlert_(ss, level, message, key) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var nowMs = Date.now();
+    var prev = null;
+    try { prev = JSON.parse(props.getProperty("systemWarning") || "null"); } catch (pe) { prev = null; }
+    var isRepeat = !!(prev &amp;&amp; prev.key === key &amp;&amp; prev.msg === message &amp;&amp; (nowMs - prev.at) &lt; 10 * 60 * 1000);
+    if (level !== "안내") {
+      props.setProperty("systemWarning", JSON.stringify({ key: key, msg: message, at: isRepeat ? prev.at : nowMs }));
+    }
+    if (isRepeat) return;
+    var sh = ss.getSheetByName("시스템알림");
+    if (!sh) {
+      sh = ss.insertSheet("시스템알림");
+      sh.getRange(1, 1, 1, 4).setValues([["일시", "수준", "구분", "내용"]]);
+      sh.setFrozenRows(1);
+    }
+    var stamp = Utilities.formatDate(new Date(nowMs), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+    sh.getRange(Math.max(sh.getLastRow(), 1) + 1, 1, 1, 4).setValues([[stamp, level, key, message]]);
+  } catch (alertErr) {
+    Logger.log("시스템알림 기록 실패: " + alertErr);
+  }
+}
+
+// [시스템 알림] 같은 구분(key)의 경고가 해소되면 표시용 경고를 지움
+function vocabClearSystemAlert_(key) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var raw = props.getProperty("systemWarning");
+    if (!raw) return;
+    var cur = JSON.parse(raw);
+    if (cur &amp;&amp; cur.key === key) props.deleteProperty("systemWarning");
+  } catch (clearErr) {
+    Logger.log("시스템알림 해제 실패: " + clearErr);
+  }
+}
+
+// [날짜 전환 안전장치] 오늘 출석부(3행~)에서 [학습기록]에 있어야 하는데 아직 없는 학생 이름 목록 (읽기 전용 검증)
+function vocabFindUnsyncedDailyRows_(ss, sheetDaily) {
+  var lastRow = sheetDaily.getLastRow();
+  if (lastRow &lt; 3) return [];
+  var rows = sheetDaily.getRange(3, 1, lastRow - 2, 11).getDisplayValues();
+  var expected = {};
+  for (var r = 0; r &lt; rows.length; r++) {
+    var row = rows[r];
+    var name = String(row[2] || "").trim();
+    var statusVal = String(row[4] || "").trim();
+    var grammarDoneVal = String(row[9] || "").trim();
+    var contentsVal = String(row[10] || "").trim();
+    if (!name || name === "이름") continue;
+    if (!(contentsVal || grammarDoneVal || statusVal === "수업완료" || statusVal === "보강완료" || statusVal === "하원완료")) continue;
+    var records = parseDailyRowToLearningRecords_(row, parseDailyDateToIso_(String(row[0] || "").trim()));
+    if (!records || !records.length) continue;
+    for (var k = 0; k &lt; records.length; k++) {
+      if (String((records[k] || {}).type || "").trim() === "어휘오답") continue;
+      var key = vocabFmtDate_(vocabParseDate_(records[k].date)) + "||" + normName_(name);
+      if (!expected[key]) expected[key] = name;
+      break;
+    }
+  }
+  var have = {};
+  var sheetRec = getRecordSheetReadOnly_(ss);
+  if (sheetRec &amp;&amp; sheetRec.getLastRow() &gt;= 2) {
+    var ab = sheetRec.getRange(2, 1, sheetRec.getLastRow() - 1, 2).getValues();
+    for (var i = 0; i &lt; ab.length; i++) {
+      if (ab[i][0]) have[vocabFmtDate_(ab[i][0]) + "||" + normName_(ab[i][1])] = true;
+    }
+  }
+  var missing = [];
+  for (var ek in expected) {
+    if (!have[ek]) missing.push(expected[ek]);
+  }
+  return missing;
+}
+
+// [헤더 점검] 메뉴 14: [학습기록] 헤더가 표준 23열과 같은지 읽기 전용으로 점검
+function vocabCheckRecordHeadersMenu() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = getRecordSheetReadOnly_(ss);
+  var msg;
+  if (!sheet) {
+    msg = "[학습기록] 시트가 아직 없습니다. 메뉴 8번을 실행하면 표준 23열로 만들어집니다.";
+  } else {
+    var diag = vocabDiagnoseRecordHeaders_(sheet);
+    if (diag.kind === "standard") msg = "✅ [학습기록] 헤더가 표준 23열과 일치합니다. (아무것도 수정하지 않았습니다)";
+    else if (diag.kind === "unknown") msg = "⚠️ [학습기록] 헤더가 표준과 다릅니다. 자동 보정은 건너뛰고 있습니다.\n\n" + diag.text + "\n\n표준대로 맞추려면 메뉴 13번을 실행하세요.";
+    else msg = "ℹ️ [학습기록]이 구버전 형식(" + diag.kind + ")입니다. 다음 기록 저장 때 자동으로 23열로 변환되며, 메뉴 13번으로 바로 변환할 수도 있습니다.\n\n" + diag.text;
+  }
+  try {
+    SpreadsheetApp.getUi().alert(msg);
+  } catch (uiErr) {
+    Logger.log("vocabCheckRecordHeadersMenu: " + msg);
+  }
 }
 
 // [핵심 규정 준수] [학습기록] 23열([방안 A]) 파편화 행 병합 및 L열/M열/S~W열 100% 정규화 (단일 SSOT 함수)
@@ -4881,6 +5073,20 @@ function alignLearningRecordColumnsBulk_(sheet) {
 
 function fixAndAlignLearningRecordHeadersAndRowsBulk() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetRecPre = getRecordSheetReadOnly_(ss);
+  if (sheetRecPre) {
+    var diagPre = vocabDiagnoseRecordHeaders_(sheetRecPre);
+    if (diagPre.kind === "unknown") {
+      // 표준과 다른 헤더는 원장님이 확인한 경우에만 표준 23열로 덮어씀
+      try {
+        var uiPre = SpreadsheetApp.getUi();
+        var answerPre = uiPre.alert("[학습기록] 헤더가 표준과 다릅니다.\n\n" + diagPre.text + "\n\n표준 23열 헤더로 덮어쓰고 열을 정렬할까요?", uiPre.ButtonSet.YES_NO);
+        if (answerPre !== uiPre.Button.YES) return;
+      } catch (uiPreErr) {
+        return;
+      }
+    }
+  }
   var sheetRec = vocabEnsureRecordSheet_(ss);
   var res = alignLearningRecordColumnsBulk_(sheetRec);
   try {
@@ -5396,22 +5602,85 @@ function vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records) {
 function vocabUpsertStudentDayRecords_(sheet, name, records) {
   if (!name || !records || !records.length) return { added: 0, updated: 0 };
   ensureColumns(sheet, 23);
-  var lastRow = sheet.getLastRow();
-  var prevCount = lastRow &gt;= 2 ? (lastRow - 1) : 0;
-  var allData = prevCount &gt; 0 ? sheet.getRange(2, 1, prevCount, 23).getValues() : [];
-  var res = vocabUpsertSingleStudentDayRecordsInMemory_(allData, name, records);
-  if (allData.length &gt; 0) {
-    for (var i = 0; i &lt; allData.length; i++) {
-      while (allData[i].length &lt; 23) allData[i].push("");
-    }
-    if (prevCount &gt; allData.length) {
-      sheet.getRange(2, 1, prevCount, 23).clearContent();
-    }
-    sheet.getRange(2, 1, allData.length, 23).setValues(allData);
-    vocabSortRecordSheetNewestFirst_(sheet);
-    vocabPreserveOrInitDropdowns_(sheet, allData.length + 1);
+  var byDate = {};
+  var dateKeys = [];
+  for (var i = 0; i &lt; records.length; i++) {
+    var rec = records[i] || {};
+    if (String(rec.type || "").trim() === "어휘오답") continue;
+    var recKey = vocabFmtDate_(vocabParseDate_(rec.date));
+    if (!byDate[recKey]) { byDate[recKey] = []; dateKeys.push(recKey); }
+    byDate[recKey].push(rec);
   }
-  return res;
+  var added = 0;
+  var updated = 0;
+  for (var dIdx = 0; dIdx &lt; dateKeys.length; dIdx++) {
+    var dKey = dateKeys[dIdx];
+    // 날짜·이름(A:B열)만 읽어 이 학생의 해당 날짜 행 위치를 찾음 (전체 23열 재기록 없음)
+    var lastRow = sheet.getLastRow();
+    var keys = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, 2).getValues() : [];
+    var matchIdx = [];
+    for (var k = 0; k &lt; keys.length; k++) {
+      if (keys[k][0] &amp;&amp; vocabFmtDate_(keys[k][0]) === dKey &amp;&amp; normName_(keys[k][1]) === name) matchIdx.push(k);
+    }
+    var mini = [];
+    if (matchIdx.length &gt; 0) {
+      var spanFirst = matchIdx[0];
+      var span = sheet.getRange(spanFirst + 2, 1, matchIdx[matchIdx.length - 1] - spanFirst + 1, 23).getValues();
+      for (var mi = 0; mi &lt; matchIdx.length; mi++) mini.push(span[matchIdx[mi] - spanFirst]);
+    }
+    var res = vocabUpsertSingleStudentDayRecordsInMemory_(mini, name, byDate[dKey]);
+    added += res.added;
+    updated += res.updated;
+    for (var p = 0; p &lt; mini.length; p++) {
+      while (mini[p].length &lt; 23) mini[p].push("");
+    }
+    var oldCount = matchIdx.length;
+    var newCount = mini.length;
+    if (newCount === 0) continue;
+    var contiguous = oldCount &gt; 0 &amp;&amp; (matchIdx[oldCount - 1] - matchIdx[0] + 1 === oldCount);
+    var target;
+    var inserted = false;
+    if (contiguous) {
+      // 기존 행 자리에 그대로 덮어쓰고, 행 수가 달라진 만큼만 삽입/삭제
+      target = matchIdx[0] + 2;
+      if (newCount &gt; oldCount) {
+        sheet.insertRowsAfter(target + oldCount - 1, newCount - oldCount);
+        inserted = true;
+      } else if (newCount &lt; oldCount) {
+        sheet.deleteRows(target + newCount, oldCount - newCount);
+      }
+    } else {
+      // 신규 날짜(또는 흩어진 행): 기존 행은 제거하고 '날짜가 같거나 더 오래된 첫 행' 앞에 삽입 (최신순 유지)
+      for (var rm = oldCount - 1; rm &gt;= 0; rm--) {
+        sheet.deleteRows(matchIdx[rm] + 2, 1);
+        keys.splice(matchIdx[rm], 1);
+      }
+      var pos = keys.length;
+      for (var q = 0; q &lt; keys.length; q++) {
+        var qDate = keys[q][0] ? vocabFmtDate_(keys[q][0]) : "";
+        if (qDate &lt;= dKey) { pos = q; break; }
+      }
+      target = pos + 2;
+      if (pos &lt; keys.length) {
+        sheet.insertRowsBefore(target, newCount);
+      } else if (target + newCount - 1 &gt; sheet.getMaxRows()) {
+        sheet.insertRowsAfter(sheet.getMaxRows(), target + newCount - 1 - sheet.getMaxRows());
+      }
+      inserted = true;
+    }
+    sheet.getRange(target, 1, newCount, 23).setValues(mini);
+    if (inserted) {
+      // 삽입된 행에만 인접 데이터 행의 서식·드롭다운 규칙을 복사 (열 전체 재복사 없음)
+      var donorRow = (target + newCount &lt;= sheet.getLastRow()) ? (target + newCount) : (target - 1 &gt;= 2 ? target - 1 : 0);
+      if (donorRow) {
+        var donorRange = sheet.getRange(donorRow, 1, 1, 23);
+        var newRange = sheet.getRange(target, 1, newCount, 23);
+        donorRange.copyTo(newRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
+        donorRange.copyTo(newRange, SpreadsheetApp.CopyPasteType.PASTE_DATA_VALIDATION, false);
+      }
+    }
+  }
+  return { added: added, updated: updated };
 }
 
 // [핵심 규정 준수] 다수 학생의 일일 학습기록을 1회 일괄(Bulk)로 [학습기록] 23열 시트에 반영
@@ -7017,9 +7286,6 @@ function showDailyBriefingModal() {
   var out = HtmlService.createHtmlOutput(htmlStr).setWidth(580).setHeight(510);
   ui.showModalDialog(out, "📨 오늘 수업 시각화 브리핑 (원그래프·막대그래프·문구)");
 }
-
-
-
 </pre>
           </div>
         </div>
@@ -7697,7 +7963,7 @@ function showDailyBriefingModal() {
   </div>
 
   <script src="sheet-sim.js?v=2.4.0"></script>
-  <script src="api.js?v=2.3.9"></script>
+  <script src="api.js?v=2.4.1"></script>
   <script src="sms-manager.js?v=2.3.9"></script>
   <script src="crm-manager.js?v=2.4.0"></script>
   <script src="dashboard-manager.js?v=2.3.9"></script>
