@@ -925,7 +925,7 @@ function getConsultSheet_(ss) {
 
 function getRecordSheetReadOnly_(ss) {
   if (!ss) ss = SpreadsheetApp.getActiveSpreadsheet();
-  var names = [RECORD_SHEET, "[" + RECORD_SHEET + "]", "학습기록", "[학습기록]", "학습 기록", "[학습 기록]"];
+  var names = [RECORD_SHEET, "[" + RECORD_SHEET + "]", "학습기록", "[학습기록]"];
   for (var i = 0; i &lt; names.length; i++) {
     var cand = ss.getSheetByName(names[i]);
     if (cand) return cand;
@@ -7696,10 +7696,10 @@ function showDailyBriefingModal() {
     </div>
   </div>
 
-  <script src="sheet-sim.js?v=2.3.9"></script>
+  <script src="sheet-sim.js?v=2.4.0"></script>
   <script src="api.js?v=2.3.9"></script>
   <script src="sms-manager.js?v=2.3.9"></script>
-  <script src="crm-manager.js?v=2.3.9"></script>
+  <script src="crm-manager.js?v=2.4.0"></script>
   <script src="dashboard-manager.js?v=2.3.9"></script>
   <script src="readtrack_bridge.js?v=1"></script>
   <script src="app.js?v=2.3.9"></script>

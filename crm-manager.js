@@ -2365,7 +2365,7 @@ class CRMManager {
       <div style="background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 1rem;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
           <span style="font-size:0.86rem; font-weight:700; color:#e2e8f0;">
-            📊 선택 기간(${this.escapeHtml(start.replace(/-/g, "."))} ~ ${this.escapeHtml(end.replace(/-/g, "."))}) [학습기록] 18열 실시간 집계
+            📊 선택 기간(${this.escapeHtml(start.replace(/-/g, "."))} ~ ${this.escapeHtml(end.replace(/-/g, "."))}) [학습기록] 23열 실시간 집계
           </span>
           <span style="font-size:0.75rem; color:#93c5fd; background:rgba(37,99,235,0.2); padding:0.18rem 0.6rem; border-radius:12px; font-weight:600;">
             총 ${agg.lessonDays}일 수업 데이터 연동됨

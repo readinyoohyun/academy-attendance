@@ -35,6 +35,12 @@ class SheetSimulator {
     return tab;
   }
 
+  // [학습기록] 정렬 기준: 날짜 최신순 → 같은 날짜는 시트의 행 번호 순서 유지 (서버가 시트 위쪽 1,500행을 최신순으로 보내므로 뒤집지 않음)
+  getLearningRecordDateKey(row) {
+    const m = String((row && row.date) || "").match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+    return m ? (Number(m[1]) * 10000 + Number(m[2]) * 100 + Number(m[3])) : 0;
+  }
+
   getNormalizedStatus(status) {
     if (!status) return "대기";
     const s = String(status).trim().replace(/\s+/g, "");
@@ -199,7 +205,7 @@ class SheetSimulator {
             <button class="sheet-tab-item ${this.activeTab === '교재단계관리' ? 'active' : ''}" data-tab="교재단계관리">교재단계관리 📚</button>
             <button class="sheet-tab-item ${this.activeTab === '학부모상담/채널발송' ? 'active' : ''}" data-tab="학부모상담/채널발송">학부모상담/채널발송 💬</button>
             <button class="sheet-tab-item ${this.activeTab === '월별상담내역' ? 'active' : ''}" data-tab="월별상담내역">월별상담내역 👤</button>
-            <button class="sheet-tab-item ${this.activeTab === '학습기록' ? 'active' : ''}" data-tab="학습기록">학습기록(18열) 📖</button>
+            <button class="sheet-tab-item ${this.activeTab === '학습기록' ? 'active' : ''}" data-tab="학습기록">학습기록(23열) 📖</button>
             <button class="sheet-tab-item ${this.activeTab === '출결보강관리' ? 'active' : ''}" data-tab="출결보강관리">출결보강관리 📅</button>
             <button class="sheet-tab-item ${this.activeTab === '학생수업관리' ? 'active' : ''}" data-tab="학생수업관리">학생수업관리 📝</button>
             <button class="sheet-tab-item ${this.activeTab === '교사' ? 'active' : ''}" data-tab="교사">교사 👩‍🏫</button>
@@ -209,7 +215,7 @@ class SheetSimulator {
             <button class="sheet-tab-item ${this.activeTab === '문해력교재관리' ? 'active' : ''}" data-tab="문해력교재관리">문해력교재관리 📚</button>
             <button class="sheet-tab-item ${this.activeTab === '상담내용/리포트발송/채널발송' ? 'active' : ''}" data-tab="상담내용/리포트발송/채널발송">상담내용/리포트발송/채널발송 💬</button>
             <button class="sheet-tab-item ${this.activeTab === '회원 분석/레벨변동/전화상담' ? 'active' : ''}" data-tab="회원 분석/레벨변동/전화상담">회원 분석/레벨변동/전화상담 👤</button>
-            <button class="sheet-tab-item ${this.activeTab === '학습기록' ? 'active' : ''}" data-tab="학습기록">학습기록(18열) 📖</button>
+            <button class="sheet-tab-item ${this.activeTab === '학습기록' ? 'active' : ''}" data-tab="학습기록">학습기록(23열) 📖</button>
             <button class="sheet-tab-item ${this.activeTab === '오늘 출석부' ? 'active' : ''}" data-tab="오늘 출석부">오늘 출석부 📅</button>
             <button class="sheet-tab-item ${this.activeTab === '한명 검색' ? 'active' : ''}" data-tab="한명 검색">한명 검색 🔍</button>
           `}
@@ -1249,7 +1255,10 @@ class SheetSimulator {
         });
         if (recs.length === 0) return `<tr><td colspan="25" style="text-align:center; padding:2rem; color:var(--text-muted);">23열 학습기록 데이터가 없습니다. [구글시트 불러오기]를 눌러 동기화하세요.</td></tr>`;
 
-        const sortedRecs = [...recs].reverse().slice(0, 150);
+        // 최신 날짜가 맨 위, 같은 날짜는 시트 행 순서 (검색은 불러온 전체에서, 표시는 최근 150행)
+        const sortedRecs = [...recs].sort((a, b) =>
+          (this.getLearningRecordDateKey(b) - this.getLearningRecordDateKey(a)) || ((a.row || 0) - (b.row || 0))
+        ).slice(0, 150);
         return sortedRecs.map((row, idx) => {
           const rowNum = row.row || (idx + 2);
           return `
@@ -1325,7 +1334,8 @@ class SheetSimulator {
       case "학습기록":
         return `
           <div class="sheet-capacity-legend" style="font-size:0.85rem; color:var(--text-secondary); padding:0.5rem 0;">
-            <div>📖 <strong>학습기록 (18열 A~R):</strong> 학생앱(독서기록·어휘퀴즈)에서 제출한 숙제·도서·어휘·진단점수·트레이닝·발자국·틀린어휘가 날짜+이름 기준 첫 줄 가로 병합(초과 시 2·3번째 줄 확장) 방식으로 기록됩니다. 우측 <strong>[📨 브리핑]</strong> 버튼을 누르면 학부모 브리핑 문구가 즉시 생성됩니다.</div>
+            <div>📌 <strong>표시 기준:</strong> 날짜가 최신인 기록부터 최대 150행을 보여 줍니다. 구글 시트에서 불러온 ${(this.dataMap.learningRecords || []).length}행 전체를 이름·날짜·도서·트레이닝으로 검색할 수 있습니다.</div>
+            <div>📖 <strong>학습기록 (23열 A~W):</strong> 학생앱(독서기록·어휘퀴즈)에서 제출한 숙제·도서·어휘·진단점수·트레이닝·발자국·틀린어휘가 날짜+이름 기준 첫 줄 가로 병합(초과 시 2·3번째 줄 확장) 방식으로 기록됩니다. 우측 <strong>[📨 브리핑]</strong> 버튼을 누르면 학부모 브리핑 문구가 즉시 생성됩니다.</div>
           </div>
         `;
       case "전체시간표":
