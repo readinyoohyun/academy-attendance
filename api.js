@@ -32,7 +32,7 @@ class SheetAPI {
     if (!widget) return;
 
     const APP_VERSION = "v2.4.0";
-    const REQUIRED_GAS_VERSION = "2026.10.30-v1";
+    const REQUIRED_GAS_VERSION = "2026.10.31-v1";
     const isGasOutdated = status === 'success' && gasVer !== REQUIRED_GAS_VERSION;
     // 시트 스크립트가 알려준 경고(날짜 전환 보류·헤더 불일치 등): '시스템알림' 시트에 자세한 기록이 있음
     const warnMsg = (syncWarning && syncWarning.msg) ? String(syncWarning.msg) : '';

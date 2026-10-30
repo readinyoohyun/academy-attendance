@@ -6,8 +6,8 @@
  */
 (function (root) {
   'use strict';
-  var INDEX_KEY = 'vocab_index_v3';
-  var LEVEL_KEY = 'vocab_level_v3_';
+  var INDEX_KEY = 'vocab_index_v4';
+  var LEVEL_KEY = 'vocab_level_v4_';
   var PENDING_KEY = 'vocab_pending_v1';
   var TTL = 12 * 60 * 60 * 1000;   // 어휘 사본을 기기에 저장해 두는 시간 (시트 수정은 '어휘 갱신' 후 최대 12시간 내 반영)
   var B = {};
@@ -321,23 +321,45 @@
     }
   };
 
+  // 내장 어휘 DB에서 도서·단어 수 집계 (국립국어원 학년별 어휘는 별도 집계)
+  function vocabStats() {
+    var db = root.VOCAB_DB;
+    if (!db || !Array.isArray(db.books)) return null;
+    var st = { levelBooks: 0, storyBooks: 0, bookWords: 0, gradeWords: 0 };
+    db.books.forEach(function (b) {
+      var n = (b.words || []).length;
+      var lv = String(b.level == null ? '' : b.level);
+      if (/^(초|중)/.test(lv)) { st.gradeWords += n; return; }
+      st.bookWords += n;
+      if (/^단편/.test(lv)) st.storyBooks++; else st.levelBooks++;
+    });
+    return st;
+  }
+  function fmtNum(n) { try { return Number(n).toLocaleString('ko-KR'); } catch (e) { return String(n); } }
+
   B.openGradePicker = function (selectedTab) {
     var tab = selectedTab || defaultGradeBand();
-    var bookLevels = ['기초', '1레벨', '2레벨', '3레벨', '4레벨', '5레벨', '6레벨'];
+    var bookLevels = ['기초', '1레벨', '2레벨', '3레벨', '4레벨', '5레벨', '6레벨', '7레벨'];
+    var storyLevels = ['단편4', '단편5', '단편6', '단편7', '단편8'];
     var grades = ['초1~2', '초3~4', '초5~6', '중1~3'];
+    var stats = vocabStats();
     var isGradeTab = grades.indexOf(tab) >= 0;
     var box = openOverlay();
     loadLevel(tab).then(function (data) {
       var sessions = (data && data.books) || [];
       var results = (state && state.missions && state.missions.vocabResults) || [];
-      var levelTabsHtml = bookLevels.map(function (lv) {
+      var tabBtn = function (lv, color) {
         var on = lv === tab;
-        return '<button type="button" onclick="VocabBridge.openGradePicker(\'' + lv + '\')" style="padding:8px 12px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid ' + (on ? '#059669' : '#cbd5e1') + ';background:' + (on ? '#059669' : '#fff') + ';color:' + (on ? '#fff' : '#334155') + '">' + lv + '</button>';
-      }).join(' ');
-      var gradeTabsHtml = grades.map(function (g) {
-        var on = g === tab;
-        return '<button type="button" onclick="VocabBridge.openGradePicker(\'' + g + '\')" style="padding:8px 12px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid ' + (on ? '#4f46e5' : '#cbd5e1') + ';background:' + (on ? '#4f46e5' : '#fff') + ';color:' + (on ? '#fff' : '#334155') + '">' + g + '</button>';
-      }).join(' ');
+        return '<button type="button" onclick="VocabBridge.openGradePicker(\'' + lv + '\')" style="padding:8px 12px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid ' + (on ? color : '#cbd5e1') + ';background:' + (on ? color : '#fff') + ';color:' + (on ? '#fff' : '#334155') + '">' + lv + '</button>';
+      };
+      var levelTabsHtml = bookLevels.map(function (lv) { return tabBtn(lv, '#059669'); }).join(' ');
+      var storyTabsHtml = storyLevels.map(function (lv) { return tabBtn(lv, '#b45309'); }).join(' ');
+      var gradeTabsHtml = grades.map(function (g) { return tabBtn(g, '#4f46e5'); }).join(' ');
+      var levelTitleTxt = '📖 레벨별 도서 어휘 (기초 ~ 7레벨' + (stats ? ' · ' + fmtNum(stats.levelBooks) + '권' : '') + ')';
+      var storyTitleTxt = '📕 단편 소설 어휘 (단편4 ~ 단편8' + (stats ? ' · ' + fmtNum(stats.storyBooks) + '권' : '') + ')';
+      var totalTxt = stats
+        ? '구글 시트 + 앱 내장 어휘 총 ' + fmtNum(stats.bookWords + stats.gradeWords) + '개 (도서 ' + fmtNum(stats.bookWords) + '개 · 국립국어원 ' + fmtNum(stats.gradeWords) + '개)'
+        : '구글 시트 + 앱 내장 어휘';
 
       var searchHtml = isGradeTab ? '' :
         '<div style="margin-bottom:12px"><input type="text" placeholder="🔍 ' + tab + ' 도서 제목 검색 (예: 만점짜리 도시락)" oninput="VocabBridge.filterPickerCards(this.value)" style="width:100%;padding:10px 14px;border-radius:12px;border:2px solid #10b981;font-size:14px;font-weight:700;outline:none" /></div>';
@@ -356,11 +378,15 @@
       box.innerHTML = '<div style="max-width:600px;margin:0 auto;padding:20px 16px 90px;font-family:Pretendard,system-ui,sans-serif">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
         '<div><div style="font-size:18px;font-weight:900;color:#0f172a">📚 레벨별 도서 어휘 & 🎓 학년별 필수 어휘</div>' +
-        '<div style="font-size:12px;color:#64748b">구글 시트 + 앱 내장 어휘 총 9,250개 (도서 8,250개 · 국립국어원 1,000개)</div></div>' +
+        '<div style="font-size:12px;color:#64748b">' + totalTxt + '</div></div>' +
         '<button type="button" onclick="VocabBridge.close()" style="padding:8px 14px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer">닫기 ✕</button></div>' +
         '<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:14px;padding:10px 12px;margin-bottom:10px">' +
-          '<div style="font-size:12px;font-weight:900;color:#065f46;margin-bottom:6px">📖 레벨별 도서 어휘 (기초 ~ 6레벨 · 879권)</div>' +
+          '<div style="font-size:12px;font-weight:900;color:#065f46;margin-bottom:6px">' + levelTitleTxt + '</div>' +
           '<div style="display:flex;gap:6px;flex-wrap:wrap">' + levelTabsHtml + '</div>' +
+        '</div>' +
+        '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:10px 12px;margin-bottom:10px">' +
+          '<div style="font-size:12px;font-weight:900;color:#92400e;margin-bottom:6px">' + storyTitleTxt + '</div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' + storyTabsHtml + '</div>' +
         '</div>' +
         '<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:14px;padding:10px 12px;margin-bottom:14px">' +
           '<div style="font-size:12px;font-weight:900;color:#3730a3;margin-bottom:6px">🎓 국립국어원 학년별 필수 어휘 (초1 ~ 중3 · 100회차)</div>' +

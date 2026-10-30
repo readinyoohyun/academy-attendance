@@ -1355,7 +1355,7 @@ function doGet(e) {
   }
 
   var responseObj = {
-    gasVersion: "2026.10.30-v1",
+    gasVersion: "2026.10.31-v1",
     syncWarning: syncWarningData,
     students: studentsData,
     dailyLogs: dailyLogsData,
@@ -3993,7 +3993,7 @@ var RECORD_HEADERS = [
   "나의 시간, 나의 기록", "틀린어휘",
   "독해문항수", "독해오답수", "어휘문항수", "어휘오답수", "문해력정답률"
 ];
-var VOCAB_LEVELS = ["기초", "1레벨", "2레벨", "3레벨", "4레벨", "5레벨", "6레벨", "초1~2", "초3~4", "초5~6", "중1~3"];
+var VOCAB_LEVELS = ["기초", "1레벨", "2레벨", "3레벨", "4레벨", "5레벨", "6레벨", "7레벨", "단편4", "단편5", "단편6", "단편7", "단편8", "초1~2", "초3~4", "초5~6", "중1~3"];
 var HW_STATUS_LIST = ["숙제완료", "숙제미완", "미지참", "학원에서풀기"];
 var TRAINING_TYPE_LIST = ["읽기트레이닝", "독해트레이닝", "듣기트레이닝", "문해력트레이닝", "오답수정+선지분석", "독해밀도", "개념밀도"];
 var UNDERSTANDING_LIST = ["잘 이해했어요", "보통이에요", "아직 헷갈려요"];
@@ -4033,7 +4033,9 @@ function vocabNormLevel_(v) {
   var s = String(v || "").trim();
   if (!s) return "";
   if (/^기초/.test(s)) return "기초";
-  var m = s.match(/^([1-6])(?:-[1-4]|\s*레벨|L)?$/i);
+  var sm = s.match(/^단편\s*([4-8])(?:\s*레벨)?$/);
+  if (sm) return "단편" + sm[1];
+  var m = s.match(/^([1-7])(?:-[1-4]|\s*레벨|L)?$/i);
   if (m) return m[1] + "레벨";
   if (/^초\s*1\s*[~\-]\s*2/.test(s)) return "초1~2";
   if (/^초\s*3\s*[~\-]\s*4/.test(s)) return "초3~4";
@@ -7963,7 +7965,7 @@ function showDailyBriefingModal() {
   </div>
 
   <script src="sheet-sim.js?v=2.4.0"></script>
-  <script src="api.js?v=2.4.1"></script>
+  <script src="api.js?v=2.4.2"></script>
   <script src="sms-manager.js?v=2.3.9"></script>
   <script src="crm-manager.js?v=2.4.0"></script>
   <script src="dashboard-manager.js?v=2.3.9"></script>
