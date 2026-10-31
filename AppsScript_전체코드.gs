@@ -5703,7 +5703,7 @@ function vocabGetModalInitData_(ss) {
   };
 
   // 1) [전체시간표] 원생 명단
-  var stSheet = ss.getSheetByName(SH.STUDENTS);
+  var stSheet = getStudentsSheet_(ss);
   if (stSheet && stSheet.getLastRow() >= 3) {
     var stVals = stSheet.getRange(3, 2, stSheet.getLastRow() - 2, 2).getValues();
     for (var i = 0; i < stVals.length; i++) {
