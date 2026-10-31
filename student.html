@@ -1139,6 +1139,10 @@
           if (state.currentStudent && window.ReadTrackBridge && typeof ReadTrackBridge.issueStudentSessionTag === 'function') {
             ReadTrackBridge.issueStudentSessionTag(state.currentStudent);
           }
+          if (state.currentStudent) {
+            try { if (typeof renderBookList === 'function') renderBookList(); } catch (e) {}
+            try { if (window.VocabBridge && typeof VocabBridge.renderBanner === 'function') VocabBridge.renderBanner(); } catch (e) {}
+          }
 
           // [자가복구] 오전 6시~오후 5시 59분 사이에 오늘 출석부 날짜가 이전 날짜(어제 등)로 멈춰 있으면 자동으로 누적 백업 및 오늘 출석부 생성 실행
           try {
@@ -1887,6 +1891,7 @@
           }
           restoreTodayLearningRecordsFromSheet(student);
           checkInProgressBookFromPreviousSession(student);
+          try { if (window.VocabBridge && typeof VocabBridge.renderBanner === "function") VocabBridge.renderBanner(); } catch (e) {}
         }
 
         const viewLogin = document.getElementById("viewLogin");
@@ -6012,7 +6017,7 @@
   <script src="vocab_db.js?v=8"></script>
   <script src="vocab_engine.js?v=7"></script>
   <script src="vocab_ui.js?v=7"></script>
-  <script src="vocab_bridge.js?v=11"></script>
+  <script src="vocab_bridge.js?v=12"></script>
   <!-- 서랍 4: 독해밀도(ReadTrack) 151권 교재 & OMR 자동채점 & 문해력 전용 분석표 브릿지 -->
   <script src="readtrack_bridge.js?v=2"></script>
 

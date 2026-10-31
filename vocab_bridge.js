@@ -9,6 +9,7 @@
   var INDEX_KEY = 'vocab_index_v4';
   var LEVEL_KEY = 'vocab_level_v4_';
   var PENDING_KEY = 'vocab_pending_v1';
+  var DONE_HISTORY_KEY = 'vocab_done_history_v1_';
   var TTL = 12 * 60 * 60 * 1000;   // 어휘 사본을 기기에 저장해 두는 시간 (시트 수정은 '어휘 갱신' 후 최대 12시간 내 반영)
   var B = {};
   var indexMap = null;
@@ -139,34 +140,335 @@
     return label + '/학습' + r.total + '개/오답' + wrongCnt + '개/재학습' + retryCnt + '개/';
   };
 
+  function formatShortDate(dStr) {
+    var s = String(dStr || '').trim();
+    if (!s) return '';
+    var mIso = s.match(/^\d{4}-(\d{1,2})-(\d{1,2})/);
+    if (mIso) return parseInt(mIso[1], 10) + '/' + parseInt(mIso[2], 10);
+    var mMd = s.match(/(\d{1,2})[\/\.](\d{1,2})/);
+    if (mMd) return parseInt(mMd[1], 10) + '/' + parseInt(mMd[2], 10);
+    return s;
+  }
+
+  function parseGradeSessionKey(titleOrId, levelHint) {
+    var s = String(titleOrId || '').trim();
+    if (!s) return null;
+    var mId = s.match(/^grade_(초1~2|초3~4|초5~6|중1~3)_(\d+)/);
+    if (mId) return { band: mId[1], sessionNum: parseInt(mId[2], 10) };
+    var mTitle = s.match(/(초1~2|초3~4|초5~6|중1~3).*?(\d+)\s*회차/);
+    if (mTitle) return { band: mTitle[1], sessionNum: parseInt(mTitle[2], 10) };
+    var lv = String(levelHint || '').trim();
+    if (/^(초1~2|초3~4|초5~6|중1~3)$/.test(lv)) {
+      var mNum = s.match(/(\d+)\s*회차/);
+      if (mNum) return { band: lv, sessionNum: parseInt(mNum[1], 10) };
+    }
+    return null;
+  }
+
+  function saveLocalDoneRecord(studentName, entry) {
+    if (!studentName || !entry || !entry.title) return;
+    try {
+      var key = DONE_HISTORY_KEY + studentName;
+      var arr = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!Array.isArray(arr)) arr = [];
+      var nt = norm(entry.title);
+      var gk = parseGradeSessionKey(entry.bookId || entry.title, entry.gradeBand || entry.level);
+      arr = arr.filter(function (x) {
+        if (!x) return false;
+        if (nt && norm(x.title) === nt) return false;
+        if (gk) {
+          var xGk = parseGradeSessionKey(x.bookId || x.title, x.gradeBand || x.level);
+          if (xGk && xGk.band === gk.band && xGk.sessionNum === gk.sessionNum) return false;
+        }
+        return true;
+      });
+      arr.push({
+        bookId: entry.bookId || '',
+        title: entry.title,
+        level: entry.level || '',
+        gradeBand: entry.gradeBand || '',
+        total: entry.total || 0,
+        firstCorrect: entry.firstCorrect || 0,
+        wrongCount: entry.wrongCount || 0,
+        retryCount: entry.retryCount || 0,
+        rate: entry.rate != null ? entry.rate : 100,
+        date: entry.date || today()
+      });
+      if (arr.length > 300) arr = arr.slice(arr.length - 300);
+      localStorage.setItem(key, JSON.stringify(arr));
+    } catch (e) {}
+  }
+
+  // 학생별 누적 어휘 학습 이력 통합 조회 ([학습기록] 시트 + 기기 캐시 + 오늘 출석부 + 당일 세션)
+  B.getStudentHistory = function (studentOpt) {
+    var st = studentOpt || (typeof state !== 'undefined' && state ? state.currentStudent : null);
+    var stName = cleanName(st);
+    var todayStr = today();
+    var byNormTitle = {};
+    var byGradeKey = {};
+    var orderedRecords = [];
+
+    function registerRec(rec) {
+      if (!rec || !rec.title) return;
+      var nt = norm(rec.title);
+      var gk = parseGradeSessionKey(rec.bookId || rec.title, rec.gradeBand || rec.level);
+      var total = Number(rec.total) || 0;
+      var firstCorr = rec.firstCorrect != null && rec.firstCorrect !== '' ? Number(rec.firstCorrect) : total;
+      var rate = rec.rate != null && rec.rate !== '' ? Number(rec.rate) : (total > 0 ? Math.round((firstCorr / total) * 100) : 100);
+      var wrongCnt = rec.wrongCount != null ? Number(rec.wrongCount) : Math.max(0, total - firstCorr);
+      var dStr = String(rec.date || '');
+      var item = {
+        bookId: rec.bookId || (gk ? ('grade_' + gk.band + '_' + gk.sessionNum) : rec.title),
+        title: String(rec.title).trim(),
+        normTitle: nt,
+        level: rec.level || (gk ? gk.band : ''),
+        gradeBand: rec.gradeBand || rec.level || (gk ? gk.band : ''),
+        total: total,
+        firstCorrect: firstCorr,
+        wrongCount: wrongCnt,
+        retryCount: rec.retryCount != null ? Number(rec.retryCount) : wrongCnt,
+        rate: rate,
+        date: dStr,
+        shortDate: formatShortDate(dStr),
+        isToday: !!rec.isToday,
+         isGrade: !!gk,
+        gradeBandKey: gk ? gk.band : '',
+        sessionNum: gk ? gk.sessionNum : 0
+      };
+      if (nt) byNormTitle[nt] = item;
+      if (gk) byGradeKey[gk.band + '_' + gk.sessionNum] = item;
+      orderedRecords.push(item);
+    }
+
+    if (stName) {
+      // 1) 로컬 누적 완료 캐시 로드
+      try {
+        var locArr = JSON.parse(localStorage.getItem(DONE_HISTORY_KEY + stName) || '[]');
+        if (Array.isArray(locArr)) {
+          locArr.forEach(function (x) {
+            if (x && x.title) registerRec(Object.assign({}, x, { isToday: x.date === todayStr }));
+          });
+        }
+      } catch (e) {}
+
+      // 2) 구글 시트 [출석부] K열 수업내용 내 과거 [어휘] 기록 보조 스캔
+      try {
+        var dLogs = (typeof state !== 'undefined' && state && Array.isArray(state.dailyLogs)) ? state.dailyLogs : [];
+        dLogs.forEach(function (l) {
+          if (!l || cleanName({ name: l.name }) !== stName) return;
+          var txt = String(l.contents || '');
+          if (txt.indexOf('[어휘]') === -1) return;
+          var rgx = /\[어휘\]\s*([^\/]+)\/학습(\d+)개\/오답(\d+)개\/재학습(\d+)개\/\s*『([^』]+)』/g;
+          var m;
+          while ((m = rgx.exec(txt)) !== null) {
+            var tot = parseInt(m[2], 10) || 0;
+            var wrg = parseInt(m[3], 10) || 0;
+            var cor = Math.max(0, tot - wrg);
+            registerRec({
+              title: m[5],
+              level: m[1].trim(),
+              gradeBand: m[1].trim(),
+              total: tot,
+              firstCorrect: cor,
+              wrongCount: wrg,
+              retryCount: parseInt(m[4], 10) || wrg,
+              rate: tot > 0 ? Math.round((cor / tot) * 100) : 100,
+              date: l.date || ''
+            });
+          }
+        });
+      } catch (e) {}
+
+      // 3) 구글 시트 [학습기록] (state.learningRecords, 최대 1,500행 실시간 동기화) 스캔
+      try {
+        var lRecs = (typeof state !== 'undefined' && state && Array.isArray(state.learningRecords)) ? state.learningRecords : [];
+        // 오래된 순서부터 등록하여 최신 기록이 최종 덮어쓰도록 처리
+        for (var i = lRecs.length - 1; i >= 0; i--) {
+          var r = lRecs[i];
+          if (!r || cleanName({ name: r.name }) !== stName) continue;
+          var hasVocab = (r.vocabTotal !== undefined && r.vocabTotal !== '' && Number(r.vocabTotal) > 0) ||
+                         (r.vocabRate !== undefined && r.vocabRate !== '') ||
+                         parseGradeSessionKey(r.book, r.level);
+          if (!hasVocab || !r.book) continue;
+          var vTot = Number(r.vocabTotal) || 10;
+          var vCor = (r.vocabCorrect !== undefined && r.vocabCorrect !== '') ? Number(r.vocabCorrect) : vTot;
+          var vRate = (r.vocabRate !== undefined && r.vocabRate !== '') ? Number(r.vocabRate) : (vTot > 0 ? Math.round((vCor / vTot) * 100) : 100);
+          registerRec({
+            title: r.book,
+            level: r.level || '',
+            gradeBand: r.level || '',
+            total: vTot,
+            firstCorrect: vCor,
+            wrongCount: Math.max(0, vTot - vCor),
+            rate: vRate,
+            date: r.date || '',
+            isToday: r.date === todayStr
+          });
+        }
+      } catch (e) {}
+    }
+
+    // 4) 오늘 현재 세션의 완료 목록 (state.missions.vocabResults)
+    try {
+      var todayList = (typeof state !== 'undefined' && state && state.missions && Array.isArray(state.missions.vocabResults)) ? state.missions.vocabResults : [];
+      todayList.forEach(function (r) {
+        if (r && r.title) registerRec(Object.assign({}, r, { date: todayStr, isToday: true }));
+      });
+    } catch (e) {}
+
+    function gradeProgress(band) {
+      var b = band || defaultGradeBand();
+      var doneCount = 0;
+      var nextSessionNum = null;
+      var lastDone = null;
+      for (var s = 1; s <= 25; s++) {
+        var hit = byGradeKey[b + '_' + s];
+        if (hit) {
+          doneCount++;
+          lastDone = hit;
+        } else if (nextSessionNum === null) {
+          nextSessionNum = s;
+        }
+      }
+      return {
+        band: b,
+        total: 25,
+        doneCount: doneCount,
+        nextSessionNum: nextSessionNum,
+        nextIdx: nextSessionNum !== null ? (nextSessionNum - 1) : null,
+        lastDone: lastDone
+      };
+    }
+
+    function levelDoneInfo(lv) {
+      var loc = localLevelData(lv);
+      var books = (loc && loc.books) || [];
+      var doneCnt = 0;
+      books.forEach(function (b) {
+        if (byNormTitle[norm(b.title)]) doneCnt++;
+      });
+      return { level: lv, total: books.length, doneCount: doneCnt };
+    }
+
+    var completedBooks = [];
+    var seenBookNorm = {};
+    for (var k = orderedRecords.length - 1; k >= 0; k--) {
+      var it = orderedRecords[k];
+      if (it.isGrade || !it.normTitle || seenBookNorm[it.normTitle]) continue;
+      seenBookNorm[it.normTitle] = true;
+      completedBooks.push(it);
+    }
+
+    return {
+      byNormTitle: byNormTitle,
+      byGradeKey: byGradeKey,
+      gradeProgress: gradeProgress,
+      levelDoneInfo: levelDoneInfo,
+      completedBooks: completedBooks
+    };
+  };
+
   B.renderBanner = function () {
     try {
       var list = (state && state.missions && state.missions.vocabResults) || [];
+      var hist = B.getStudentHistory();
+      var defBand = defaultGradeBand();
+      var gp = hist.gradeProgress(defBand);
+      // 만약 학생 기본 학년군 외에 다른 학년군에서 진행한 이력이 있으면 가장 최근 학습 학년군도 함께 확인
+      var allBands = ['초1~2', '초3~4', '초5~6', '중1~3'];
+      if (gp.doneCount === 0) {
+        for (var bi = 0; bi < allBands.length; bi++) {
+          var altGp = hist.gradeProgress(allBands[bi]);
+          if (altGp.doneCount > 0) { gp = altGp; break; }
+        }
+      }
+
       var banner = document.getElementById('vocabCompletedBanner');
       if (banner) {
+        var htmlParts = [];
+
+        // 1) 오늘 완료한 어휘 학습
         if (list.length) {
-          banner.innerHTML = '<div class="flex flex-col gap-1.5">' +
-            '<div class="text-xs font-extrabold text-rose-800 flex items-center gap-1.5"><span>✅</span><span>오늘 완료한 어휘 학습</span></div>' +
-            list.map(function (r) {
-              var fmt = B.formatResult(r);
-              return '<div class="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-rose-200">' +
-                '<span class="font-black text-rose-700 text-xs sm:text-sm">' + fmt + '</span>' +
-                '<span class="text-xs font-bold text-slate-600">『' + r.title + '』 (' + r.rate + '%)</span>' +
-              '</div>';
-            }).join('') +
+          htmlParts.push(
+            '<div class="flex flex-col gap-1.5">' +
+              '<div class="text-xs font-extrabold text-rose-800 flex items-center gap-1.5"><span>✅</span><span>오늘 완료한 어휘 학습 (' + list.length + '건)</span></div>' +
+              list.map(function (r) {
+                var fmt = B.formatResult(r);
+                return '<div class="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-rose-200">' +
+                  '<span class="font-black text-rose-700 text-xs sm:text-sm">' + fmt + '</span>' +
+                  '<span class="text-xs font-bold text-slate-600">『' + r.title + '』 (' + r.rate + '%)</span>' +
+                '</div>';
+              }).join('') +
+            '</div>'
+          );
+        }
+
+        // 2) 누적 어휘 학습 진행 상황 표시 (다음 로그인 시 중복 학습 원천 방지)
+        var hasPastBooks = hist.completedBooks.length > 0;
+        var hasGradeHistory = gp.doneCount > 0;
+        if (state && state.currentStudent && (hasGradeHistory || hasPastBooks || list.length === 0)) {
+          var nextBtnHtml = '';
+          if (gp.nextIdx !== null) {
+            var btnLabel = gp.doneCount > 0
+              ? ('👉 이어서 ' + gp.nextSessionNum + '회차 바로 시작 ▶')
+              : ('👉 ' + gp.band + ' 1회차 시작 ▶');
+            nextBtnHtml = '<button type="button" onclick="VocabBridge.startGrade(\'' + gp.band + '\',' + gp.nextIdx + ')" ' +
+              'class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-xs transition active:scale-95 whitespace-nowrap">' +
+              btnLabel + '</button>';
+          } else {
+            nextBtnHtml = '<span class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 font-extrabold text-xs">🎉 25회차 전 과정 완료!</span>';
+          }
+
+          var recentBookChips = '';
+          if (hasPastBooks) {
+            var topBooks = hist.completedBooks.slice(0, 6).map(function (bk) {
+              var dtTxt = bk.isToday ? '오늘' : (bk.shortDate || '완료');
+              return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">' +
+                '<span>✔ ' + bk.title + '</span>' +
+                '<span class="text-emerald-600 font-semibold">(' + dtTxt + '·' + bk.rate + '%)</span>' +
+              '</span>';
+            }).join(' ');
+            var moreCnt = hist.completedBooks.length > 6 ? (' <span class="text-[11px] font-bold text-slate-500">외 ' + (hist.completedBooks.length - 6) + '권 완료</span>') : '';
+            recentBookChips = '<div class="mt-1 pt-1.5 border-t border-rose-100">' +
+              '<div class="text-[11px] font-extrabold text-slate-600 mb-1">📚 완료한 도서 어휘 (누적 ' + hist.completedBooks.length + '권 완료 · 선택 창에서 ✔ 표시됨)</div>' +
+              '<div class="flex flex-wrap gap-1">' + topBooks + moreCnt + '</div>' +
             '</div>';
+          }
+
+          htmlParts.push(
+            '<div class="flex flex-col gap-1.5 bg-white/90 px-3 py-2.5 rounded-xl border border-indigo-200">' +
+              '<div class="flex flex-wrap items-center justify-between gap-2">' +
+                '<div class="text-xs font-extrabold text-indigo-950 flex items-center gap-1.5 flex-wrap">' +
+                  '<span>📊 나의 어휘 진행 현황:</span>' +
+                  '<span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 font-black">🎓 ' + gp.band + ' 필수어휘 ' + gp.doneCount + ' / ' + gp.total + '회차 완료</span>' +
+                '</div>' +
+                nextBtnHtml +
+              '</div>' +
+              recentBookChips +
+            '</div>'
+          );
+        }
+
+        if (htmlParts.length) {
+          banner.innerHTML = '<div class="flex flex-col gap-2">' + htmlParts.join('') + '</div>';
           banner.classList.remove('hidden');
         } else {
           banner.innerHTML = '';
           banner.classList.add('hidden');
         }
       }
+
       var gradeBtnBadge = document.getElementById('gradeVocabBtnBadge');
       if (gradeBtnBadge) {
-        var gradeDone = list.filter(function (r) { return String(r.bookId || '').indexOf('grade_') === 0; });
-        if (gradeDone.length) {
-          var lastG = gradeDone[gradeDone.length - 1];
-          gradeBtnBadge.textContent = '✔ ' + B.formatResult(lastG);
+        if (list.length) {
+          var lastDoneToday = list[list.length - 1];
+          gradeBtnBadge.textContent = '✔ 오늘 완료: ' + B.formatResult(lastDoneToday);
+          gradeBtnBadge.classList.remove('hidden');
+        } else if (gp.doneCount > 0 || hist.completedBooks.length > 0) {
+          var summaryParts = [];
+          if (hist.completedBooks.length > 0) summaryParts.push('도서 ' + hist.completedBooks.length + '권 완료');
+          if (gp.doneCount > 0) summaryParts.push(gp.band + ' ' + gp.doneCount + '/25회차 완료' + (gp.nextSessionNum ? ' (다음:' + gp.nextSessionNum + '회차)' : ''));
+          gradeBtnBadge.textContent = '📊 ' + summaryParts.join(' · ');
           gradeBtnBadge.classList.remove('hidden');
         } else {
           gradeBtnBadge.textContent = '';
@@ -178,15 +480,33 @@
 
   B.buttonHtml = function (b) {
     if (!B.hasVocab(b)) return '';
-    var res = null;
+    var todayRes = null;
+    var pastRes = null;
     try {
-      var list = (state.missions.vocabResults || []).filter(function (r) { return r.bookId === b.id; });
-      if (list.length) res = list[list.length - 1];
+      var list = (state.missions.vocabResults || []).filter(function (r) { return r.bookId === b.id || norm(r.title) === norm(b.title); });
+      if (list.length) todayRes = list[list.length - 1];
+      if (!todayRes) {
+        var hist = B.getStudentHistory();
+        pastRes = hist.byNormTitle[norm(b.title)] || null;
+      }
     } catch (e) { /* 무시 */ }
-    var badge = res ? ' <span class="text-emerald-700">✔ ' + B.formatResult(res) + '</span>' : '';
+
+    if (todayRes) {
+      return '<button type="button" onclick="VocabBridge.start(\'' + b.id + '\')" ' +
+        'class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ' +
+        'bg-emerald-50 text-emerald-800 border-emerald-400 hover:bg-emerald-100 font-extrabold shadow-sm">' +
+        '<span>✔ 오늘 어휘 완료</span> <span class="text-emerald-700">(' + B.formatResult(todayRes) + ')</span></button>';
+    }
+    if (pastRes) {
+      var dtLabel = pastRes.shortDate ? (pastRes.shortDate + ' · ') : '';
+      return '<button type="button" onclick="VocabBridge.start(\'' + b.id + '\')" ' +
+        'class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ' +
+        'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-sm">' +
+        '<span>✔ 어휘 완료됨 (' + dtLabel + pastRes.rate + '%)</span> <span class="text-xs text-emerald-600 font-bold">복습 ▶</span></button>';
+    }
     return '<button type="button" onclick="VocabBridge.start(\'' + b.id + '\')" ' +
       'class="px-2.5 py-1 rounded-xl border text-xs sm:text-sm transition-all active:scale-95 flex items-center gap-1 ' +
-      'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm"><span>어휘 확인 학습 ▶</span>' + badge + '</button>';
+      'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm"><span>어휘 확인 학습 ▶</span></button>';
   };
 
   // ---------- 퀴즈 열기 (내장 DB 즉시 반환 → 0초 로딩, 시트 연결 시 백그라운드 갱신 + 내장 예문/유의어 자동 보강) ----------
@@ -260,9 +580,20 @@
     }
   }
 
-  B.start = function (bookId) {
+  B.start = function (bookId, skipConfirm) {
     var b = (state.missions.books || []).filter(function (x) { return x.id === bookId; })[0];
     if (!b) return;
+    if (!skipConfirm) {
+      try {
+        var hist = B.getStudentHistory();
+        var prev = hist.byNormTitle[norm(b.title)];
+        if (prev) {
+          var prevWhen = prev.isToday ? '오늘' : (prev.shortDate || '이전 수업');
+          var ok = confirm('✅ 이미 어휘 학습을 완료한 도서입니다!\n\n• 도서명: ' + b.title + '\n• 완료 기록: ' + prevWhen + ' (' + prev.rate + '% · ' + B.formatResult(prev) + ')\n\n중복 학습입니다. 복습으로 다시 풀까요?');
+          if (!ok) return;
+        }
+      } catch (e) {}
+    }
     var entry = findEntry(b);
     var targetLv = (entry && entry.l) ? entry.l : levelLabel(b.level);
     var box = openOverlay();
@@ -279,7 +610,7 @@
           onFinish(b, target, r, targetLv);
         },
         onExit: function () { closeOverlay(); },
-        onRestart: function () { B.start(bookId); }
+        onRestart: function () { B.start(bookId, true); }
       });
     }).catch(function () {
       closeOverlay();
@@ -344,34 +675,84 @@
     var grades = ['초1~2', '초3~4', '초5~6', '중1~3'];
     var stats = vocabStats();
     var isGradeTab = grades.indexOf(tab) >= 0;
+    var hist = B.getStudentHistory();
     var box = openOverlay();
     loadLevel(tab).then(function (data) {
       var sessions = (data && data.books) || [];
       var results = (state && state.missions && state.missions.vocabResults) || [];
-      var tabBtn = function (lv, color) {
+      var tabBtn = function (lv, color, isGradeBtn) {
         var on = lv === tab;
-        return '<button type="button" onclick="VocabBridge.openGradePicker(\'' + lv + '\')" style="padding:8px 12px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid ' + (on ? color : '#cbd5e1') + ';background:' + (on ? color : '#fff') + ';color:' + (on ? '#fff' : '#334155') + '">' + lv + '</button>';
+        var cntLabel = '';
+        if (isGradeBtn) {
+          var gpInfo = hist.gradeProgress(lv);
+          if (gpInfo.doneCount > 0) cntLabel = ' (' + gpInfo.doneCount + '/25)';
+        } else {
+          var lvInfo = hist.levelDoneInfo(lv);
+          if (lvInfo.doneCount > 0) cntLabel = ' (✔' + lvInfo.doneCount + ')';
+        }
+        return '<button type="button" onclick="VocabBridge.openGradePicker(\'' + lv + '\')" style="padding:8px 12px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid ' + (on ? color : '#cbd5e1') + ';background:' + (on ? color : '#fff') + ';color:' + (on ? '#fff' : '#334155') + '">' + lv + cntLabel + '</button>';
       };
-      var levelTabsHtml = bookLevels.map(function (lv) { return tabBtn(lv, '#059669'); }).join(' ');
-      var storyTabsHtml = storyLevels.map(function (lv) { return tabBtn(lv, '#b45309'); }).join(' ');
-      var gradeTabsHtml = grades.map(function (g) { return tabBtn(g, '#4f46e5'); }).join(' ');
+      var levelTabsHtml = bookLevels.map(function (lv) { return tabBtn(lv, '#059669', false); }).join(' ');
+      var storyTabsHtml = storyLevels.map(function (lv) { return tabBtn(lv, '#b45309', false); }).join(' ');
+      var gradeTabsHtml = grades.map(function (g) { return tabBtn(g, '#4f46e5', true); }).join(' ');
       var levelTitleTxt = '📖 레벨별 도서 어휘 (기초 ~ 7레벨' + (stats ? ' · ' + fmtNum(stats.levelBooks) + '권' : '') + ')';
       var storyTitleTxt = '📕 단편 소설 어휘 (단편4 ~ 단편8' + (stats ? ' · ' + fmtNum(stats.storyBooks) + '권' : '') + ')';
       var totalTxt = stats
         ? '구글 시트 + 앱 내장 어휘 총 ' + fmtNum(stats.bookWords + stats.gradeWords) + '개 (도서 ' + fmtNum(stats.bookWords) + '개 · 국립국어원 ' + fmtNum(stats.gradeWords) + '개)'
         : '구글 시트 + 앱 내장 어휘';
 
+      var gpCur = isGradeTab ? hist.gradeProgress(tab) : null;
+      var progressNoticeHtml = '';
+      if (isGradeTab && gpCur) {
+        var nextActionBtn = gpCur.nextIdx !== null
+          ? '<button type="button" onclick="VocabBridge.startGrade(\'' + tab + '\',' + gpCur.nextIdx + ')" style="padding:6px 12px;border-radius:9px;background:#4f46e5;color:#fff;font-weight:800;font-size:12px;border:none;cursor:pointer">👉 오늘 할 차례: ' + gpCur.nextSessionNum + '회차 바로 시작 ▶</button>'
+          : '<span style="padding:4px 10px;border-radius:8px;background:#dcfce7;color:#166534;font-weight:800;font-size:12px">🎉 25회차 전 과정 완료!</span>';
+        progressNoticeHtml = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#f8fafc;border:1.5px solid #94a3b8;border-radius:12px;padding:10px 12px;margin-bottom:12px">' +
+          '<div style="font-size:13px;font-weight:800;color:#1e293b">📊 나의 [' + tab + '] 진행 현황: <span style="color:#059669">완료 ' + gpCur.doneCount + '회</span> / 전체 25회차</div>' +
+          nextActionBtn +
+        '</div>';
+      } else {
+        var tabDoneCnt = 0;
+        sessions.forEach(function (s) { if (hist.byNormTitle[norm(s.title)]) tabDoneCnt++; });
+        if (tabDoneCnt > 0) {
+          progressNoticeHtml = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:12px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:800;color:#065f46">' +
+            '<span>✅ [' + tab + ']에서 이미 완료한 도서 어휘: ' + tabDoneCnt + '권 / 전체 ' + sessions.length + '권 (완료된 도서는 초록색 ✔ 표시로 중복을 방지합니다)</span>' +
+          '</div>';
+        }
+      }
+
       var searchHtml = isGradeTab ? '' :
         '<div style="margin-bottom:12px"><input type="text" placeholder="🔍 ' + tab + ' 도서 제목 검색 (예: 만점짜리 도시락)" oninput="VocabBridge.filterPickerCards(this.value)" style="width:100%;padding:10px 14px;border-radius:12px;border:2px solid #10b981;font-size:14px;font-weight:700;outline:none" /></div>';
 
       var cardsHtml = sessions.map(function (s, idx) {
         var sid = 'grade_' + tab + '_' + (idx + 1);
-        var doneList = results.filter(function (r) { return r.bookId === sid || norm(r.title) === norm(s.title); });
-        var last = doneList.length ? doneList[doneList.length - 1] : null;
-        var badge = last ? '<span style="color:#be123c;font-weight:800;font-size:11px">✔ ' + B.formatResult(last) + '</span>' : '<span style="color:' + (isGradeTab ? '#6366f1' : '#059669') + ';font-weight:700;font-size:12px">' + (s.words || []).length + '어휘 ▶</span>';
+        var todayDoneList = results.filter(function (r) { return r.bookId === sid || norm(r.title) === norm(s.title); });
+        var todayLast = todayDoneList.length ? todayDoneList[todayDoneList.length - 1] : null;
+        var pastRec = isGradeTab ? (hist.byGradeKey[tab + '_' + (idx + 1)] || hist.byNormTitle[norm(s.title)]) : hist.byNormTitle[norm(s.title)];
+        var isNextGradeTurn = isGradeTab && gpCur && gpCur.nextIdx === idx && !todayLast && !pastRec;
+
+        var borderCol = '#e2e8f0';
+        var bgCol = '#fff';
+        var badge = '<span style="color:' + (isGradeTab ? '#6366f1' : '#059669') + ';font-weight:700;font-size:12px">' + (s.words || []).length + '어휘 ▶</span>';
+
+        if (todayLast) {
+          borderCol = '#fda4af';
+          bgCol = '#fff1f2';
+          badge = '<span style="color:#be123c;font-weight:800;font-size:11px">✔ 오늘완료 · ' + B.formatResult(todayLast) + '</span>';
+        } else if (pastRec) {
+          borderCol = '#6ee7b7';
+          bgCol = '#ecfdf5';
+          var dtTxt = pastRec.shortDate ? (pastRec.shortDate + ' · ') : '';
+          badge = '<span style="color:#047857;font-weight:800;font-size:11px">✔ 완료 (' + dtTxt + pastRec.rate + '%)</span>';
+        } else if (isNextGradeTurn) {
+          borderCol = '#4f46e5';
+          bgCol = '#eef2ff';
+          badge = '<span style="background:#4f46e5;color:#fff;padding:2px 7px;border-radius:6px;font-weight:800;font-size:11px">👉 오늘 할 차례 ▶</span>';
+        }
+
         var sampleWords = (s.words || []).slice(0, 4).map(function (w) { return w.w; }).join(', ');
         var cardTitle = isGradeTab ? ((idx + 1) + '회차') : s.title;
-        return '<button type="button" data-norm="' + norm(s.title) + '" onclick="VocabBridge.startGrade(\'' + tab + '\',' + idx + ')" style="text-align:left;padding:12px 14px;border-radius:14px;border:1px solid ' + (last ? '#fda4af' : '#e2e8f0') + ';background:' + (last ? '#fff1f2' : '#fff') + ';cursor:pointer;display:flex;flex-direction:column;gap:4px">' +
+        return '<button type="button" data-norm="' + norm(s.title) + '" onclick="VocabBridge.startGrade(\'' + tab + '\',' + idx + ')" style="text-align:left;padding:12px 14px;border-radius:14px;border:' + (isNextGradeTurn ? '2px' : '1px') + ' solid ' + borderCol + ';background:' + bgCol + ';cursor:pointer;display:flex;flex-direction:column;gap:4px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-weight:800;font-size:14px;color:#0f172a">' + cardTitle + '</span>' + badge + '</div>' +
           '<div style="font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + sampleWords + ' 등</div></button>';
       }).join('');
@@ -388,10 +769,11 @@
           '<div style="font-size:12px;font-weight:900;color:#92400e;margin-bottom:6px">' + storyTitleTxt + '</div>' +
           '<div style="display:flex;gap:6px;flex-wrap:wrap">' + storyTabsHtml + '</div>' +
         '</div>' +
-        '<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:14px;padding:10px 12px;margin-bottom:14px">' +
+        '<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:14px;padding:10px 12px;margin-bottom:12px">' +
           '<div style="font-size:12px;font-weight:900;color:#3730a3;margin-bottom:6px">🎓 국립국어원 학년별 필수 어휘 (초1 ~ 중3 · 100회차)</div>' +
           '<div style="display:flex;gap:6px;flex-wrap:wrap">' + gradeTabsHtml + '</div>' +
         '</div>' +
+        progressNoticeHtml +
         searchHtml +
         '<div id="vocabPickerGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">' + cardsHtml + '</div>' +
         (isGradeTab ? '<div style="margin-top:16px;font-size:11px;color:#94a3b8;text-align:center">출처: 국립국어원 「국어 기초 어휘 선정 및 어휘 등급화 목록」(공공누리 제1유형)</div>' : '') +
@@ -404,13 +786,35 @@
 
   B.close = function () { closeOverlay(); };
 
-  B.startGrade = function (grade, idx) {
-    var box = openOverlay();
+  B.startGrade = function (grade, idx, skipConfirm) {
     var isGrade = /^(초|중)/.test(String(grade || ''));
+    if (!skipConfirm) {
+      try {
+        var hist = B.getStudentHistory();
+        var prevG = isGrade ? hist.byGradeKey[grade + '_' + (idx + 1)] : null;
+        if (prevG) {
+          var whenG = prevG.isToday ? '오늘' : (prevG.shortDate || '이전 수업');
+          var okG = confirm('✅ 이미 완료한 필수 어휘 회차입니다!\n\n• 항목: ' + grade + ' ' + (idx + 1) + '회차\n• 완료 기록: ' + whenG + ' (' + prevG.rate + '% · ' + B.formatResult(prevG) + ')\n\n중복 학습입니다. 복습으로 다시 풀까요?');
+          if (!okG) return;
+        }
+      } catch (e) {}
+    }
+    var box = openOverlay();
     loadLevel(grade).then(function (data) {
       var books = (data.books || []).map(function (x, i) { return { id: 'G' + i, level: grade, title: x.title, source: isGrade ? '국립국어원' : '어휘지', words: x.words }; });
       var target = books[idx];
       if (!target) throw new Error('no grade session');
+      if (!skipConfirm && !isGrade) {
+        try {
+          var hist2 = B.getStudentHistory();
+          var prevB = hist2.byNormTitle[norm(target.title)];
+          if (prevB) {
+            var whenB = prevB.isToday ? '오늘' : (prevB.shortDate || '이전 수업');
+            var okB = confirm('✅ 이미 어휘 학습을 완료한 도서입니다!\n\n• 도서명: ' + target.title + '\n• 완료 기록: ' + whenB + ' (' + prevB.rate + '% · ' + B.formatResult(prevB) + ')\n\n중복 학습입니다. 복습으로 다시 풀까요?');
+            if (!okB) { B.openGradePicker(grade); return; }
+          }
+        } catch (e) {}
+      }
       // 만약 오늘 등록된 도서 중 같은 제목의 책이 있으면 그 도서 카드와도 자동 연동!
       var matchedBook = ((state && state.missions && state.missions.books) || []).filter(function (b) { return norm(b.title) === norm(target.title); })[0];
       var pseudoBook = matchedBook || { id: 'grade_' + grade + '_' + (idx + 1), level: grade, title: target.title };
@@ -423,7 +827,7 @@
           onFinish(pseudoBook, target, r, gb);
         },
         onExit: function () { B.openGradePicker(grade); },
-        onRestart: function () { B.startGrade(grade, idx); }
+        onRestart: function () { B.startGrade(grade, idx, true); }
       });
     });
   };
@@ -484,6 +888,7 @@
     };
     state.missions.vocabResults = state.missions.vocabResults.filter(function (x) { return x.bookId !== b.id; });
     state.missions.vocabResults.push(entry);
+    saveLocalDoneRecord(name, Object.assign({ date: date }, entry));
     try { B.renderBanner(); } catch (e) { /* 무시 */ }
     try { if (typeof updateProgress === 'function') updateProgress(500); else if (typeof saveActiveSession === 'function') saveActiveSession(); } catch (e) { /* 무시 */ }
     var hwStatus = normalizeHwStatus(state.missions.hwStatus);
