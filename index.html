@@ -6517,16 +6517,29 @@ function vocabGetModalInitData_(ss) {
   var rs = getRecordSheetReadOnly_(ss);
   var defaultName = "";
   var now = new Date();
-  var defaultStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  var defaultEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  var thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  var thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  var prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  var prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+  var defaultStart = thisMonthStart;
+  var defaultEnd = thisMonthEnd;
   var hideInternal = false;
+  var hasManualPeriod = false;
 
   if (as) {
     defaultName = normName_(as.getRange("B2").getValue());
-    var sVal = as.getRange("E2").getValue();
-    var eVal = as.getRange("E3").getValue();
-    if (sVal instanceof Date &amp;&amp; !isNaN(sVal.getTime())) defaultStart = sVal;
-    if (eVal instanceof Date &amp;&amp; !isNaN(eVal.getTime())) defaultEnd = eVal;
+    var b5Val = as.getRange("B5").getValue();
+    var b6Val = as.getRange("B6").getValue();
+    if (b5Val instanceof Date &amp;&amp; !isNaN(b5Val.getTime()) &amp;&amp; b6Val instanceof Date &amp;&amp; !isNaN(b6Val.getTime())) {
+      defaultStart = b5Val;
+      defaultEnd = b6Val;
+      hasManualPeriod = true;
+    } else {
+      var sVal = as.getRange("E2").getValue();
+      var eVal = as.getRange("E3").getValue();
+      if (sVal instanceof Date &amp;&amp; !isNaN(sVal.getTime())) defaultStart = sVal;
+      if (eVal instanceof Date &amp;&amp; !isNaN(eVal.getTime())) defaultEnd = eVal;
+    }
     hideInternal = !!as.getRange("G3").getValue();
   }
 
@@ -6560,6 +6573,13 @@ function vocabGetModalInitData_(ss) {
   }
 
   // 3) [학습기록] 명단 및 오답 어휘 보유 건수 집계 (1회 Bulk)
+  var defStartMs = new Date(defaultStart.getFullYear(), defaultStart.getMonth(), defaultStart.getDate()).getTime();
+  var defEndMs = new Date(defaultEnd.getFullYear(), defaultEnd.getMonth(), defaultEnd.getDate() + 1).getTime();
+  var prevStartMs = new Date(prevMonthStart.getFullYear(), prevMonthStart.getMonth(), prevMonthStart.getDate()).getTime();
+  var prevEndMs = new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), prevMonthEnd.getDate() + 1).getTime();
+  var defPeriodRecCount = 0;
+  var prevMonthRecCount = 0;
+
   if (rs &amp;&amp; rs.getLastRow() &gt;= 2) {
     var rVals = rs.getRange(2, 1, rs.getLastRow() - 1, Math.min(Math.max(rs.getLastColumn(), 18), 23)).getValues();
     for (var r = 0; r &lt; rVals.length; r++) {
@@ -6571,7 +6591,19 @@ function vocabGetModalInitData_(ss) {
       if (wrg) {
         studentMap[rNm].wrongWordCount += wrg.split(",").length;
       }
+      var rDate = vocabParseDate_(rVals[r][0]);
+      var rMs = rDate.getTime();
+      if (!isNaN(rMs)) {
+        if (rMs &gt;= defStartMs &amp;&amp; rMs &lt; defEndMs) defPeriodRecCount++;
+        if (rMs &gt;= prevStartMs &amp;&amp; rMs &lt; prevEndMs) prevMonthRecCount++;
+      }
     }
+  }
+
+  // 월초(1일 등)에 이번달 학습기록이 아직 0건이고 지난달 기록이 있으면 자동으로 지난달 전체를 기본 기간으로 세팅
+  if (!hasManualPeriod &amp;&amp; defPeriodRecCount === 0 &amp;&amp; prevMonthRecCount &gt; 0) {
+    defaultStart = prevMonthStart;
+    defaultEnd = prevMonthEnd;
   }
 
   var studentList = Object.keys(studentMap).map(function (k) { return studentMap[k]; });
@@ -6588,6 +6620,10 @@ function vocabGetModalInitData_(ss) {
     defaultName: defaultName,
     defaultStartStr: vocabFmtDate_(defaultStart),
     defaultEndStr: vocabFmtDate_(defaultEnd),
+    thisMonthStartStr: vocabFmtDate_(thisMonthStart),
+    thisMonthEndStr: vocabFmtDate_(thisMonthEnd),
+    prevMonthStartStr: vocabFmtDate_(prevMonthStart),
+    prevMonthEndStr: vocabFmtDate_(prevMonthEnd),
     hideInternal: hideInternal,
     students: studentList
   };
@@ -6608,12 +6644,12 @@ function vocabGenerateReviewPdfFromModal(name, startStr, endStr) {
     return { ok: false, message: "기간(시작일 ~ 종료일)을 정확히 선택해 주세요." };
   }
 
-  // [학생분석표] 시트의 B2, E2, E3에도 선택한 학생과 기간을 자동 동기화
+  // [학생분석표] 시트의 B2(학생명), B5(시작일), B6(종료일)에 선택값 동기화 (E2:E3 수식 보존)
   if (as) {
     try {
       as.getRange("B2").setValue(name);
-      as.getRange("E2").setValue(start);
-      as.getRange("E3").setValue(end);
+      as.getRange("B5").setValue(start);
+      as.getRange("B6").setValue(end);
     } catch (e) {}
   }
 
@@ -6705,6 +6741,10 @@ function vocabMakeReviewPdf() {
             optionsHtml +
           "&lt;/select&gt;" +
         "&lt;/div&gt;" +
+        "&lt;div style='display:flex;gap:6px;margin-bottom:6px'&gt;" +
+          "&lt;button type='button' onclick=\"setMonthRange('" + vocabEsc_(initData.prevMonthStartStr) + "','" + vocabEsc_(initData.prevMonthEndStr) + "')\" style='flex:1;background:#eff6ff;color:#1e40af;border:1px solid #93c5fd;border-radius:6px;padding:5px 8px;font-size:11.5px;font-weight:bold;cursor:pointer'&gt;📅 지난달 전체&lt;/button&gt;" +
+          "&lt;button type='button' onclick=\"setMonthRange('" + vocabEsc_(initData.thisMonthStartStr) + "','" + vocabEsc_(initData.thisMonthEndStr) + "')\" style='flex:1;background:#f8fafc;color:#334155;border:1px solid #cbd5e1;border-radius:6px;padding:5px 8px;font-size:11.5px;font-weight:bold;cursor:pointer'&gt;📅 이번달 전체&lt;/button&gt;" +
+        "&lt;/div&gt;" +
         "&lt;div style='display:flex;gap:8px;align-items:center'&gt;" +
           "&lt;div style='flex:1'&gt;" +
             "&lt;label style='display:block;font-size:12px;font-weight:bold;color:#334155;margin-bottom:4px'&gt;📅 시작일&lt;/label&gt;" +
@@ -6721,6 +6761,7 @@ function vocabMakeReviewPdf() {
       "&lt;div id='resultBox' style='padding:4px 2px;font-size:13px;color:#475569'&gt;학생과 기간을 선택한 뒤 위 버튼을 눌러 주세요.&lt;/div&gt;" +
     "&lt;/div&gt;" +
     "&lt;script&gt;" +
+      "function setMonthRange(s,e){document.getElementById('startInput').value=s;document.getElementById('endInput').value=e;}" +
       "function generatePdf(){" +
         "var name=document.getElementById('stSelect').value;" +
         "var s=document.getElementById('startInput').value;" +
@@ -6745,106 +6786,231 @@ function vocabMakeReviewPdf() {
         "}).vocabGenerateReviewPdfFromModal(name,s,e);" +
       "}" +
     "&lt;/script&gt;"
-  ).setWidth(480).setHeight(390);
+  ).setWidth(480).setHeight(420);
   ui.showModalDialog(modalHtml, "📝 어휘 오답 복습지 PDF");
 }
 
-// ---------- 메뉴 10번: 📊 학부모 발송용 학생 분석표 PDF 만들기 (학생분석표 B2 학생 · E2~E3 기간 기준) ----------
-function vocabRenderAnalysisReportHtml_(d) {
-  var css =
-    "@page{size:A4;margin:12mm 13mm 12mm 13mm}" +
-    "body{font-family:'Malgun Gothic','Nanum Gothic',sans-serif;color:#1e293b;margin:0;padding:0;font-size:9.2pt;line-height:1.45}" +
-    ".hd{border-bottom:3px solid #1e3a8a;padding-bottom:8px;margin-bottom:11px;display:table;width:100%}" +
-    ".hd-l{display:table-cell;vertical-align:bottom}.hd-r{display:table-cell;vertical-align:bottom;text-align:right;font-size:8.5pt;color:#475569}" +
-    ".sub{font-size:8.5pt;color:#2563eb;font-weight:bold;letter-spacing:0.5px}" +
-    ".ttl{font-size:16.5pt;font-weight:bold;color:#0f172a;margin-top:2px}" +
-    ".badge{display:inline-block;background:#1e3a8a;color:#ffffff;padding:3px 10px;border-radius:12px;font-weight:bold;font-size:9pt;margin-bottom:3px}" +
-    ".cards{width:100%;border-collapse:separate;border-spacing:6px 0;margin:0 -6px 12px -6px;table-layout:fixed}" +
-    ".card{border-radius:8px;padding:8px 10px;vertical-align:top}" +
+// ---------- 메뉴 10번: 📊 학부모 발송용 학생 분석표 PDF 만들기 (학생분석표 B2 학생 · B5~B6/E2~E3 기간 기준) ----------
+
+// 도서명·레벨 정제 헬퍼 (F열에 섞인 '3-4 도서명', '3-재독 도서명', '품띠', '/ [어휘]...' 등 자동 분리·정제)
+function vocabCleanBookTitleAndLevel_(rawLevel, rawBook) {
+  var lv = String(rawLevel || "").trim();
+  if (lv === "-") lv = "";
+  var bk = String(rawBook || "").trim();
+  if (bk === "-") bk = "";
+  var isReread = false;
+
+  // 1) 출석부/상담 요약 텍스트('/ [어휘]...')가 도서명 뒤에 붙은 경우 제거
+  bk = bk.replace(/\s*\/?\s*\[어휘\][\s\S]*$/g, "").trim();
+
+  // 2) 도서명 앞에 '3-4 ', '3-재독 ' 같은 레벨·호수 접두어가 포함된 경우 레벨 추출
+  var m = bk.match(/^(\d+)\s*-\s*(\d+|재독)\s+(.+)$/);
+  if (m) {
+    if (!lv || lv === "-") lv = m[1] + "레벨";
+    if (m[2] === "재독") isReread = true;
+    bk = m[3].trim();
+  }
+
+  // 3) 도서명 끝에 붙은 '품띠' 또는 단순 점수 나열(' 70 90') 제거
+  bk = bk.replace(/\s+품띠$/g, "").replace(/\s+\d{2,3}(\s+\d{2,3})+$/g, "").trim();
+
+  // 4) 레벨 표기 통일 (숫자만 있으면 'N레벨')
+  if (/^\d+$/.test(lv)) lv = lv + "레벨";
+
+  return { level: lv, book: bk, isReread: isReread };
+}
+
+// 학생 다짐·발자국 메모에서 무의미한 오타('다다다다ㅏㅜㅜㅜ', 'ㅇㅇ점', 'good', '-') 필터링
+function vocabIsMeaningfulReflection_(str) {
+  var s = String(str || "").trim();
+  if (!s || s === "-" || s.toLowerCase() === "good") return false;
+  if (/^[ㄱ-ㅎㅏ-ㅣ\s]+$/.test(s)) return false;
+  if (/^다+[ㄱ-ㅎㅏ-ㅣㅜㅠ\s]*$/.test(s)) return false;
+  if (/^ㅇ+점?$/.test(s)) return false;
+  return true;
+}
+
+function vocabCleanFootprintMemo_(str) {
+  var s = String(str || "").trim();
+  if (!s || s === "-") return "";
+  s = s.replace(/\s*\/?\s*\[어휘\][\s\S]*$/g, "").trim();
+  if (!vocabIsMeaningfulReflection_(s)) return "";
+  return s;
+}
+
+// 1. 이달의 종합 총평 단일 문단 자동 생성 헬퍼
+function vocabBuildMonthlyReviewParagraph_(d) {
+  var monthLabel = d.monthNum ? (d.monthNum + "월 한 달간") : "이번 분석 기간 동안";
+  var lvList = d.levelSetList || [];
+  var mainLvStr = lvList.length &gt; 0 ? (lvList.join("·") + " ") : "";
+  var bookCntStr = d.bookCount &gt; 0 ? ("필독서(" + d.bookCount + "권)") : "독서·어휘 과정";
+  var s1 = d.name + " 학생은 " + monthLabel + " 총 " + d.lessonDays + "일 출석하여 " + mainLvStr + bookCntStr + " 학습을 성실히 수행하였습니다.";
+
+  var s2Parts = [];
+  if (d.vocabCount &gt; 0) {
+    if (Number(d.vocabAvg) &gt;= 95 &amp;&amp; d.vocabWrongTotal === 0) {
+      s2Parts.push("어휘 확인 학습 " + d.vocabCount + "회 모두 " + d.vocabAvg + "%(만점)를 기록하여 어휘 습득력이 매우 우수하며");
+    } else {
+      s2Parts.push("어휘 확인 학습 " + d.vocabCount + "회 평균 " + d.vocabAvg + "%(최고 " + d.vocabMax + ")를 달성하며 어휘력을 탄탄히 다졌고");
+    }
+  }
+  if (d.diagCount &gt; 0) {
+    var topBooksStr = (d.topDiagBooks &amp;&amp; d.topDiagBooks.length &gt; 0) ? (d.topDiagBooks.slice(0, 2).join(", ") + " 등 ") : "";
+    s2Parts.push("독서이해도 진단에서도 " + topBooksStr + "평균 " + d.diagAvg + "점(최고 " + d.diagMax + ")의 의미 있는 성취를 보여주었습니다.");
+  } else if (s2Parts.length &gt; 0) {
+    s2Parts[s2Parts.length - 1] = s2Parts[s2Parts.length - 1].replace(/우수하며$/, "우수합니다.").replace(/다졌고$/, "다졌습니다.");
+  }
+  var s2 = s2Parts.join(", ");
+
+  var s3 = "";
+  var cleanCoach = String(d.coachingText || "").trim();
+  // 내부 메모형 텍스트('&lt;재독 리스트&gt;', '[어휘]', 줄바꿈 나열 등)는 제외하고 정제된 문장만 반영
+  if (cleanCoach &amp;&amp; cleanCoach.indexOf("&lt;") === -1 &amp;&amp; cleanCoach.indexOf("[어휘]") === -1 &amp;&amp; cleanCoach.indexOf("학생 맞춤형 독서") === -1 &amp;&amp; cleanCoach.length &lt;= 110) {
+    s3 = cleanCoach;
+    if (!/[.!?]$/.test(s3)) s3 += ".";
+  } else if (d.trSummary &amp;&amp; d.trSummary.length &gt; 0) {
+    var trNames = d.trSummary.map(function (t) { return t.type; }).join("·");
+    s3 = trNames + " 과정(총 " + d.trTotalCount + "회) 또한 차분히 절차에 맞춰 정확히 해결하고 있으므로, 다음 달에는 완독 후 줄거리 요약과 추론형 독해 훈련을 더해 문해력을 한층 더 깊이 있게 확장해 나가겠습니다.";
+  } else {
+    s3 = "다음 달에도 다양한 주제의 독서와 어휘 확장, 추론형 독해 훈련을 통해 문해력을 한층 더 깊이 있게 키워 나가겠습니다.";
+  }
+
+  return [s1, s2, s3].filter(function (x) { return !!x; }).join(" ");
+}
+
+function vocabAnalysisReportCss_() {
+  return (
+    "@page{size:A4;margin:14mm 13mm 14mm 13mm}" +
+    "body{font-family:'Malgun Gothic','Nanum Gothic',sans-serif;color:#1e293b;margin:0;padding:0;font-size:9.1pt;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
+    ".page1{page-break-after:always}" +
+    ".page2{page-break-before:always}" +
+    ".hd{border-bottom:2.5px solid #1e3a8a;padding-bottom:8px;margin-bottom:10px;display:table;width:100%}" +
+    ".hd-l{display:table-cell;vertical-align:middle;white-space:nowrap}" +
+    ".hd-r{display:table-cell;vertical-align:bottom;text-align:right;font-size:8.6pt;color:#475569;white-space:nowrap}" +
+    ".brand-top{font-size:9pt;color:#2563eb;font-weight:400;letter-spacing:0.3px;margin-bottom:2px}" +
+    ".badge{display:inline-block;background:#dbeafe;color:#1e3a8a;border:1.5px solid #93c5fd;padding:4px 16px;border-radius:18px;font-weight:800;font-size:12.5pt;white-space:nowrap;vertical-align:middle;margin-right:10px}" +
+    ".ttl{display:inline-block;font-size:18.5pt;font-weight:800;color:#0f172a;letter-spacing:-0.4px;white-space:nowrap;vertical-align:middle}" +
+    ".cards{width:100%;border-collapse:separate;border-spacing:6px 0;margin:0 -6px 10px -6px;table-layout:fixed}" +
+    ".card{border-radius:8px;padding:8px 10px;vertical-align:top;overflow:hidden}" +
     ".c-em{background:#ecfdf5;border:1.5px solid #6ee7b7}" +
     ".c-bl{background:#eff6ff;border:1.5px solid #93c5fd}" +
     ".c-vi{background:#f5f3ff;border:1.5px solid #c4b5fd}" +
     ".c-am{background:#fffbeb;border:1.5px solid #fcd34d}" +
-    ".card-k{font-size:8pt;font-weight:bold;margin-bottom:3px}" +
-    ".card-v{font-size:12.5pt;font-weight:bold;color:#0f172a}" +
-    ".card-s{font-size:7.6pt;color:#475569;margin-top:4px}" +
-    ".gbar-bg{width:100%;height:7px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-top:5px}" +
-    ".gbar-fill{height:7px;border-radius:4px}" +
-    ".sec{margin-top:11px;margin-bottom:5px;font-size:10.2pt;font-weight:bold;color:#1e3a8a;border-left:4px solid #2563eb;padding-left:7px;background:#f8fafc;padding-top:3px;padding-bottom:3px}" +
+    ".card-k{font-size:8pt;font-weight:bold;margin-bottom:3px;white-space:nowrap}" +
+    ".card-v{font-size:12.2pt;font-weight:bold;color:#0f172a;white-space:nowrap}" +
+    ".card-s-tb{width:100%;border-collapse:collapse;margin-top:5px;table-layout:fixed}" +
+    ".card-s-tb td{font-size:7.6pt;color:#334155;padding:0;border:none;background:transparent !important;white-space:nowrap;overflow:hidden}" +
+    ".card-s-tb td.r{text-align:right;font-weight:bold}" +
+    ".gbar-bg{width:100%;height:8px;background:#e2e8f0;border-radius:5px;overflow:hidden;margin-top:5px;box-sizing:border-box}" +
+    ".gbar-bg-partial{background:#ffffff;border:1.5px solid #475569}" +
+    ".gbar-fill{height:100%;border-radius:3px}" +
+    ".sec{margin-top:9px;margin-bottom:5px;font-size:10pt;font-weight:bold;color:#1e3a8a;border-left:4px solid #2563eb;padding-left:7px;background:#f1f5f9;padding-top:3px;padding-bottom:3px}" +
     "table.tb{width:100%;border-collapse:collapse;margin-bottom:8px;table-layout:fixed}" +
-    "table.tb th{background:#1e293b;color:#ffffff;font-size:8.2pt;font-weight:bold;padding:5px 6px;border:1px solid #cbd5e1;text-align:center}" +
-    "table.tb td{font-size:8.3pt;padding:5px 6px;border:1px solid #cbd5e1;vertical-align:middle;word-wrap:break-word}" +
-    "table.tb tr:nth-child(even) td{background:#f8fafc}" +
+    "table.tb th{background:#dbeafe;color:#1e3a8a;font-size:8.1pt;font-weight:bold;padding:5px 5px;border:1px solid #93c5fd;text-align:center}" +
+    "table.tb td{font-size:8.2pt;padding:4.5px 6px;border:1px solid #cbd5e1;vertical-align:middle;word-wrap:break-word}" +
+    "table.tb tbody tr:nth-child(even) td{background:#f8fafc}" +
+    "table.tb tfoot tr.sum-row td{background:#eff6ff !important;color:#1e3a8a;font-weight:bold;border-top:2px solid #60a5fa;padding:5.5px 6px;font-size:8.2pt}" +
     ".c{text-align:center}.r{text-align:right}" +
-    ".box{background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:8.6pt}" +
-    ".lv-pill{display:inline-block;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;border-radius:4px;padding:1px 5px;font-size:7.8pt;font-weight:bold}" +
-    ".sc-pill{display:inline-block;border-radius:4px;padding:1px 6px;font-size:8pt;font-weight:bold}" +
-    ".wchip{display:inline-block;background:#fff7ed;border:1px solid #fdba74;border-radius:5px;padding:3px 7px;margin:2px 3px 2px 0;font-size:8.2pt}" +
+    ".box{background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:8px 11px;margin-bottom:8px;font-size:8.6pt;line-height:1.55}" +
+    ".lv-pill{display:inline-block;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;border-radius:4px;padding:1px 5px;font-size:7.6pt;font-weight:bold;white-space:nowrap}" +
+    ".sc-pill{display:inline-block;border-radius:4px;padding:1px 6px;font-size:7.8pt;font-weight:bold;white-space:nowrap}" +
+    ".wchip{display:inline-block;background:#fff7ed;border:1px solid #fdba74;border-radius:5px;padding:3px 7px;margin:2px 4px 2px 0;font-size:8.2pt}" +
     ".wchip b{color:#c2410c}" +
-    ".ft{margin-top:12px;border-top:1px dashed #94a3b8;padding-top:6px;font-size:7.8pt;color:#64748b;text-align:center}";
+    ".ft{margin-top:10px;border-top:1px solid #cbd5e1;padding-top:6px;font-size:9.5pt;font-weight:bold;color:#1e3a8a;text-align:center;letter-spacing:0.5px}" +
+    ".ft-msg{font-size:7.7pt;font-weight:normal;color:#64748b;margin-bottom:3px;letter-spacing:0}" +
+    "[contenteditable='true']:hover{outline:1.5px dashed #3b82f6;background:#eff6ff;cursor:text}" +
+    "[contenteditable='true']:focus{outline:2px solid #2563eb;background:#ffffff}" +
+    ".del-row-btn{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:bold;cursor:pointer;margin-left:4px}"
+  );
+}
+
+function vocabRenderAnalysisReportHtml_(d, forEditModal) {
+  var css = vocabAnalysisReportCss_();
+  var editAttr = forEditModal ? " contenteditable='true'" : "";
 
   var hwPct = d.lessonDays &gt; 0 ? Math.min(100, Math.round((d.hwDoneCount / d.lessonDays) * 100)) : 0;
   var vPct = (typeof d.vocabAvg === "number" &amp;&amp; !isNaN(d.vocabAvg)) ? Math.min(100, Math.max(0, Math.round(d.vocabAvg))) : 0;
   var dPct = (typeof d.diagAvg === "number" &amp;&amp; !isNaN(d.diagAvg)) ? Math.min(100, Math.max(0, Math.round(d.diagAvg))) : 0;
   var undTotal = (d.undGood || 0) + (d.undMid || 0) + (d.undLow || 0);
-  var trPct = undTotal &gt; 0 ? Math.min(100, Math.round(((d.undGood + d.undMid * 0.8) / undTotal) * 100)) : (d.trTotalCount &gt; 0 ? 85 : 0);
+  var trPct = undTotal &gt; 0 ? Math.min(100, Math.round(((d.undGood + d.undMid * 0.8) / undTotal) * 100)) : (d.trTotalCount &gt; 0 ? 100 : 0);
+
+  function renderGaugeBar(pct, colorHex, heightPx) {
+    var n = Math.min(100, Math.max(0, Math.round(Number(pct) || 0)));
+    var hStyle = heightPx ? ("height:" + heightPx + "px;") : "";
+    var cls = n &lt; 100 ? "gbar-bg gbar-bg-partial" : "gbar-bg";
+    return "&lt;div class='" + cls + "' style='" + hStyle + "'&gt;&lt;div class='gbar-fill' style='width:" + n + "%;background:" + colorHex + "'&gt;&lt;/div&gt;&lt;/div&gt;";
+  }
 
   function renderInlineScoreBar(numVal, suffix, mode) {
-    if (numVal === "" || numVal === "-" || numVal === undefined || numVal === null || isNaN(Number(numVal))) return "-";
+    if (numVal === "" || numVal === "-" || numVal === undefined || numVal === null || isNaN(Number(numVal))) return "&lt;div class='c'&gt;-&lt;/div&gt;";
     var n = Math.min(100, Math.max(0, Math.round(Number(numVal))));
     var col = "#10b981", bg = "#dcfce7", tx = "#166534";
     if (n &lt; 80) { col = "#f59e0b"; bg = "#fef3c7"; tx = "#92400e"; }
     else if (n &lt; 90) { col = (mode === "diag" ? "#7c3aed" : "#2563eb"); bg = (mode === "diag" ? "#ede9fe" : "#dbeafe"); tx = (mode === "diag" ? "#5b21b6" : "#1e40af"); }
+    var barCls = n &lt; 100 ? "gbar-bg gbar-bg-partial" : "gbar-bg";
     return "&lt;div style='text-align:left'&gt;" +
-      "&lt;span class='sc-pill' style='background:" + bg + ";color:" + tx + "'&gt;" + numVal + suffix + "&lt;/span&gt;" +
-      "&lt;div class='gbar-bg' style='height:5px;margin-top:3px'&gt;&lt;div class='gbar-fill' style='width:" + n + "%;height:5px;background:" + col + "'&gt;&lt;/div&gt;&lt;/div&gt;" +
+      "&lt;span class='sc-pill' style='background:" + bg + ";color:" + tx + "'" + editAttr + "&gt;" + numVal + suffix + "&lt;/span&gt;" +
+      "&lt;div class='" + barCls + "' style='height:7px;margin-top:3px'&gt;&lt;div class='gbar-fill' style='width:" + n + "%;background:" + col + "'&gt;&lt;/div&gt;&lt;/div&gt;" +
       "&lt;/div&gt;";
   }
 
-  var h = "&lt;html&gt;&lt;head&gt;&lt;meta charset='utf-8'&gt;&lt;style&gt;" + css + "&lt;/style&gt;&lt;/head&gt;&lt;body&gt;";
-  h += "&lt;div class='hd'&gt;&lt;div class='hd-l'&gt;&lt;div class='sub'&gt;독서와국어 · 데이터 시각화 맞춤형 문해력 성장 리포트&lt;/div&gt;" +
-       "&lt;div class='ttl'&gt;" + vocabEsc_(d.title) + "&lt;/div&gt;&lt;/div&gt;" +
-       "&lt;div class='hd-r'&gt;&lt;span class='badge'&gt;" + vocabEsc_(d.name) + (d.grade ? " (" + vocabEsc_(d.grade) + ")" : "") + "&lt;/span&gt;&lt;br&gt;" +
-       "분석 기간: &lt;b&gt;" + vocabEsc_(d.period) + "&lt;/b&gt;&lt;/div&gt;&lt;/div&gt;";
-
-  // 1) 4대 핵심 지표 컬러 카드 + 가로 게이지 그래프
-  h += "&lt;table class='cards'&gt;&lt;tr&gt;" +
-       "&lt;td class='card c-em'&gt;&lt;div class='card-k' style='color:#047857'&gt;✅ 출석 · 숙제 성실도&lt;/div&gt;" +
-       "&lt;div class='card-v'&gt;수업 " + d.lessonDays + "일 / 완료 " + d.hwDoneCount + "회&lt;/div&gt;" +
-       "&lt;div class='gbar-bg'&gt;&lt;div class='gbar-fill' style='width:" + hwPct + "%;background:#10b981'&gt;&lt;/div&gt;&lt;/div&gt;" +
-       "&lt;div class='card-s'&gt;성실 수행률 &lt;b&gt;" + hwPct + "%&lt;/b&gt; · " + vocabEsc_(d.hwSubText) + "&lt;/div&gt;&lt;/td&gt;" +
-
-       "&lt;td class='card c-bl'&gt;&lt;div class='card-k' style='color:#1d4ed8'&gt;📗 어휘 확인 학습 성취도&lt;/div&gt;" +
-       "&lt;div class='card-v'&gt;" + (d.vocabCount &gt; 0 ? ("평균 " + d.vocabAvg + "%") : "기록 없음") + "&lt;/div&gt;" +
-       "&lt;div class='gbar-bg'&gt;&lt;div class='gbar-fill' style='width:" + vPct + "%;background:#2563eb'&gt;&lt;/div&gt;&lt;/div&gt;" +
-       "&lt;div class='card-s'&gt;퀴즈 " + d.vocabCount + "회 · 최고 " + d.vocabMax + " (오답 " + d.vocabWrongTotal + "개)&lt;/div&gt;&lt;/td&gt;" +
-
-       "&lt;td class='card c-vi'&gt;&lt;div class='card-k' style='color:#6d28d9'&gt;📘 독서이해도 진단 점수&lt;/div&gt;" +
-       "&lt;div class='card-v'&gt;" + (d.diagCount &gt; 0 ? ("평균 " + d.diagAvg + "점") : ("도서 " + d.bookCount + "권")) + "&lt;/div&gt;" +
-       "&lt;div class='gbar-bg'&gt;&lt;div class='gbar-fill' style='width:" + dPct + "%;background:#7c3aed'&gt;&lt;/div&gt;&lt;/div&gt;" +
-       "&lt;div class='card-s'&gt;진단 " + d.diagCount + "회 · 최고 " + d.diagMax + " · 학습도서 " + d.bookCount + "권&lt;/div&gt;&lt;/td&gt;" +
-
-       "&lt;td class='card c-am'&gt;&lt;div class='card-k' style='color:#b45309'&gt;✏️ 4단계 집중 트레이닝&lt;/div&gt;" +
-       "&lt;div class='card-v'&gt;총 " + d.trTotalCount + "회 실시&lt;/div&gt;" +
-       "&lt;div class='gbar-bg'&gt;&lt;div class='gbar-fill' style='width:" + trPct + "%;background:#f59e0b'&gt;&lt;/div&gt;&lt;/div&gt;" +
-       "&lt;div class='card-s'&gt;잘 이해 " + d.undGood + "회 · 보통 " + d.undMid + "회 (성취도 " + trPct + "%)&lt;/div&gt;&lt;/td&gt;" +
-       "&lt;/tr&gt;&lt;/table&gt;";
-
-  // 2) 이달의 학습 목표 &amp; 코칭 가이드 (과거 발송 브리핑 consultText 완전 제외)
-  if (d.goalText || d.coachingText) {
-    h += "&lt;div class='sec'&gt;1. 이달의 중점 학습 목표 및 코칭 방향&lt;/div&gt;&lt;div class='box' style='background:#eff6ff;border-color:#bfdbfe'&gt;";
-    if (d.goalText) h += "&lt;div&gt;&lt;b style='color:#1e40af'&gt;• 중점 목표 / 요약:&lt;/b&gt; " + vocabEsc_(d.goalText).replace(/\n/g, " &amp;nbsp;|&amp;nbsp; ") + "&lt;/div&gt;";
-    if (d.coachingText) h += "&lt;div style='margin-top:4px'&gt;&lt;b style='color:#1e40af'&gt;• 코칭 방향:&lt;/b&gt; " + vocabEsc_(d.coachingText).replace(/\n/g, " ") + "&lt;/div&gt;";
-    h += "&lt;/div&gt;";
+  function renderTopHeaderHtml() {
+    return "&lt;div class='hd'&gt;" +
+      "&lt;div class='hd-l'&gt;" +
+        "&lt;span class='badge'" + editAttr + "&gt;" + vocabEsc_(d.name) + (d.grade ? " (" + vocabEsc_(d.grade) + ")" : "") + "&lt;/span&gt;" +
+        "&lt;span class='ttl'" + editAttr + "&gt;" + vocabEsc_(d.title) + "&lt;/span&gt;" +
+      "&lt;/div&gt;" +
+      "&lt;div class='hd-r'&gt;" +
+        "&lt;div class='brand-top'" + editAttr + "&gt;독서밀도 국어밀도&lt;/div&gt;" +
+        "&lt;div&gt;분석 기간: &lt;b" + editAttr + "&gt;" + vocabEsc_(d.period) + "&lt;/b&gt;&lt;/div&gt;" +
+      "&lt;/div&gt;" +
+    "&lt;/div&gt;";
   }
 
-  // 3) 도서별 독서이해도 진단 &amp; 어휘 학습 결과 (컬러 막대 그래프 포함)
-  h += "&lt;div class='sec'&gt;2. 도서별 독서이해도 진단 및 어휘 학습 성취도 (시각화 그래프)&lt;/div&gt;";
-  if (d.bookRows.length &gt; 0) {
-    h += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
-         "&lt;th style='width:11%'&gt;날짜&lt;/th&gt;&lt;th style='width:11%'&gt;레벨&lt;/th&gt;&lt;th style='width:29%'&gt;도서명 / 어휘학습&lt;/th&gt;" +
-         "&lt;th style='width:16%'&gt;어휘 정답률&lt;/th&gt;&lt;th style='width:15%'&gt;독서 진단점수&lt;/th&gt;&lt;th style='width:18%'&gt;독서발자국 / 틀린 어휘&lt;/th&gt;" +
-         "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
+  var bodyHtml = "";
+
+  // ==================== [1페이지 시작] ====================
+  bodyHtml += "&lt;div class='page1'&gt;";
+  bodyHtml += renderTopHeaderHtml();
+
+  // 4대 핵심 지표 컬러 카드 (하단 보조문구 좌·우 2열 테이블 배치로 줄바꿈/넘침 완벽 방지)
+  bodyHtml += "&lt;table class='cards'&gt;&lt;tr&gt;" +
+    "&lt;td class='card c-em'&gt;&lt;div class='card-k' style='color:#047857'&gt;✅ 출석 · 숙제 성실도&lt;/div&gt;" +
+      "&lt;div class='card-v'" + editAttr + "&gt;수업 " + d.lessonDays + "일 / 완료 " + d.hwDoneCount + "회&lt;/div&gt;" +
+      renderGaugeBar(hwPct, "#10b981") +
+      "&lt;table class='card-s-tb'&gt;&lt;tr&gt;&lt;td" + editAttr + "&gt;수행률 &lt;b&gt;" + hwPct + "%&lt;/b&gt;&lt;/td&gt;&lt;td class='r' style='color:#047857'" + editAttr + "&gt;성실 참여&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" +
+    "&lt;/td&gt;" +
+    "&lt;td class='card c-bl'&gt;&lt;div class='card-k' style='color:#1d4ed8'&gt;📗 어휘 확인 학습&lt;/div&gt;" +
+      "&lt;div class='card-v'" + editAttr + "&gt;" + (d.vocabCount &gt; 0 ? ("평균 " + d.vocabAvg + "%") : "기록 없음") + "&lt;/div&gt;" +
+      renderGaugeBar(vPct, "#2563eb") +
+      "&lt;table class='card-s-tb'&gt;&lt;tr&gt;&lt;td" + editAttr + "&gt;퀴즈 &lt;b&gt;" + d.vocabCount + "회&lt;/b&gt;&lt;/td&gt;&lt;td class='r' style='color:#1d4ed8'" + editAttr + "&gt;오답 " + d.vocabWrongTotal + "개&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" +
+    "&lt;/td&gt;" +
+    "&lt;td class='card c-vi'&gt;&lt;div class='card-k' style='color:#6d28d9'&gt;📘 독서이해도 진단&lt;/div&gt;" +
+      "&lt;div class='card-v'" + editAttr + "&gt;" + (d.diagCount &gt; 0 ? ("평균 " + d.diagAvg + "점") : ("도서 " + d.bookCount + "권")) + "&lt;/div&gt;" +
+      renderGaugeBar(dPct, "#7c3aed") +
+      "&lt;table class='card-s-tb'&gt;&lt;tr&gt;&lt;td" + editAttr + "&gt;진단 &lt;b&gt;" + d.diagCount + "회&lt;/b&gt;&lt;/td&gt;&lt;td class='r' style='color:#6d28d9'" + editAttr + "&gt;도서 " + d.bookCount + "권&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" +
+    "&lt;/td&gt;" +
+    "&lt;td class='card c-am'&gt;&lt;div class='card-k' style='color:#b45309'&gt;✏️ 집중 트레이닝&lt;/div&gt;" +
+      "&lt;div class='card-v'" + editAttr + "&gt;총 " + d.trTotalCount + "회 실시&lt;/div&gt;" +
+      renderGaugeBar(trPct, "#f59e0b") +
+      "&lt;table class='card-s-tb'&gt;&lt;tr&gt;&lt;td" + editAttr + "&gt;잘 이해 &lt;b&gt;" + d.undGood + "회&lt;/b&gt;&lt;/td&gt;&lt;td class='r' style='color:#b45309'" + editAttr + "&gt;성취 " + trPct + "%&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" +
+    "&lt;/td&gt;" +
+  "&lt;/tr&gt;&lt;/table&gt;";
+
+  // 1. 이달의 종합 총평 (단일 문단)
+  var reviewParagraph = d.reviewParagraph || vocabBuildMonthlyReviewParagraph_(d);
+  bodyHtml += "&lt;div class='sec'&gt;1. 이달의 종합 총평&lt;/div&gt;" +
+    "&lt;div class='box' style='background:#eff6ff;border-color:#bfdbfe;color:#1e293b'" + editAttr + "&gt;" +
+      vocabEsc_(reviewParagraph) +
+    "&lt;/div&gt;";
+
+  // 2. 도서별 독서이해도 진단 및 어휘 학습 성취도 (날짜 오름차순 + 최하단 합계/평균 행)
+  bodyHtml += "&lt;div class='sec'&gt;2. 도서별 독서이해도 진단 및 어휘 학습 성취도&lt;/div&gt;";
+  if (d.bookRows &amp;&amp; d.bookRows.length &gt; 0) {
+    bodyHtml += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
+      "&lt;th style='width:9%'&gt;날짜&lt;/th&gt;&lt;th style='width:11%'&gt;레벨&lt;/th&gt;&lt;th style='width:31%'&gt;도서명 / 어휘학습&lt;/th&gt;" +
+      "&lt;th style='width:16%'&gt;어휘 정답률&lt;/th&gt;&lt;th style='width:14%'&gt;독서 진단점수&lt;/th&gt;&lt;th style='width:19%'&gt;독서발자국 / 틀린 어휘&lt;/th&gt;" +
+      "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
     for (var b = 0; b &lt; d.bookRows.length; b++) {
       var br = d.bookRows[b];
       var vCell = br.vTotal !== "" ? renderInlineScoreBar(br.vRate, "% (" + br.vCorr + "/" + br.vTotal + ")", "vocab") : "&lt;div class='c'&gt;-&lt;/div&gt;";
@@ -6852,105 +7018,139 @@ function vocabRenderAnalysisReportHtml_(d) {
       var memoArr = [];
       if (br.step2) memoArr.push(br.step2);
       if (br.wrong) memoArr.push("오답: " + br.wrong);
-      h += "&lt;tr&gt;&lt;td class='c'&gt;" + vocabEsc_(br.date) + "&lt;/td&gt;" +
-           "&lt;td class='c'&gt;" + (br.level ? "&lt;span class='lv-pill'&gt;" + vocabEsc_(br.level) + "&lt;/span&gt;" : "-") + "&lt;/td&gt;" +
-           "&lt;td&gt;&lt;b&gt;" + vocabEsc_(br.book || "어휘 학습") + "&lt;/b&gt;&lt;/td&gt;" +
-           "&lt;td&gt;" + vCell + "&lt;/td&gt;" +
-           "&lt;td&gt;" + dCell + "&lt;/td&gt;" +
-           "&lt;td&gt;" + vocabEsc_(memoArr.join(" / ") || "-") + "&lt;/td&gt;&lt;/tr&gt;";
+      var delBtn = forEditModal ? "&lt;button type='button' class='del-row-btn no-print-edit' onclick='this.closest(\"tr\").remove()' title='이 행 삭제'&gt;✕&lt;/button&gt;" : "";
+      bodyHtml += "&lt;tr&gt;" +
+        "&lt;td class='c'" + editAttr + "&gt;" + vocabEsc_(br.date) + "&lt;/td&gt;" +
+        "&lt;td class='c'&gt;" + (br.level ? "&lt;span class='lv-pill'" + editAttr + "&gt;" + vocabEsc_(br.level) + "&lt;/span&gt;" : "-") + "&lt;/td&gt;" +
+        "&lt;td" + editAttr + "&gt;&lt;b&gt;" + vocabEsc_(br.book || "어휘 학습") + "&lt;/b&gt;&lt;/td&gt;" +
+        "&lt;td&gt;" + vCell + "&lt;/td&gt;" +
+        "&lt;td&gt;" + dCell + "&lt;/td&gt;" +
+        "&lt;td&gt;&lt;span" + editAttr + "&gt;" + vocabEsc_(memoArr.join(" · ") || "-") + "&lt;/span&gt;" + delBtn + "&lt;/td&gt;" +
+      "&lt;/tr&gt;";
     }
-    h += "&lt;/tbody&gt;&lt;/table&gt;";
+    bodyHtml += "&lt;/tbody&gt;&lt;tfoot&gt;&lt;tr class='sum-row'&gt;" +
+      "&lt;td colspan='2' class='c'" + editAttr + "&gt;합계 / 평균&lt;/td&gt;" +
+      "&lt;td" + editAttr + "&gt;도서 총 " + d.bookCount + "권 / 어휘 학습 " + d.vocabCount + "회&lt;/td&gt;" +
+      "&lt;td class='c'" + editAttr + "&gt;" + (d.vocabCount &gt; 0 ? ("평균 " + d.vocabAvg + "%") : "-") + "&lt;/td&gt;" +
+      "&lt;td class='c'" + editAttr + "&gt;" + (d.diagCount &gt; 0 ? ("평균 " + d.diagAvg + "점") : "-") + "&lt;/td&gt;" +
+      "&lt;td class='c'" + editAttr + "&gt;오답 총 " + d.vocabWrongTotal + "개&lt;/td&gt;" +
+    "&lt;/tr&gt;&lt;/tfoot&gt;&lt;/table&gt;";
   } else {
-    h += "&lt;div class='box'&gt;선택한 기간 내 도서·어휘 학습 기록이 없습니다.&lt;/div&gt;";
+    bodyHtml += "&lt;div class='box'" + editAttr + "&gt;선택한 기간 내 도서·어휘 학습 기록이 없습니다.&lt;/div&gt;";
   }
 
-  // 4) 기간 내 틀린 어휘 및 뜻 정리 (복습 대상)
-  h += "&lt;div class='sec'&gt;3. 기간 내 집중 복습 어휘 목록 (틀린 어휘 &amp; 뜻 정리)&lt;/div&gt;";
-  if (d.wrongWordList.length &gt; 0) {
-    h += "&lt;div class='box' style='background:#fffbeb;border-color:#fde68a'&gt;";
+  bodyHtml += "&lt;div class='ft'&gt;유현리드인 한그루역사&lt;/div&gt;";
+  bodyHtml += "&lt;/div&gt;"; // 1페이지 끝
+
+  // ==================== [2페이지 시작] ====================
+  bodyHtml += "&lt;div class='page2'&gt;";
+  bodyHtml += renderTopHeaderHtml();
+
+  // 3. 복습 어휘 목록
+  bodyHtml += "&lt;div class='sec'&gt;3. 복습 어휘 목록&lt;/div&gt;";
+  if (d.wrongWordList &amp;&amp; d.wrongWordList.length &gt; 0) {
+    bodyHtml += "&lt;div class='box' style='background:#fffbeb;border-color:#fde68a'" + editAttr + "&gt;";
     for (var w = 0; w &lt; d.wrongWordList.length; w++) {
       var ww = d.wrongWordList[w];
-      h += "&lt;span class='wchip'&gt;&lt;b&gt;" + vocabEsc_(ww.word) + "&lt;/b&gt;" +
-           (ww.meaning ? ": " + vocabEsc_(ww.meaning) : "") +
-           (ww.book ? " &lt;span style='color:#64748b'&gt;(" + vocabEsc_(ww.book) + ")&lt;/span&gt;" : "") + "&lt;/span&gt;";
+      bodyHtml += "&lt;span class='wchip'&gt;&lt;b&gt;" + vocabEsc_(ww.word) + "&lt;/b&gt;" +
+        (ww.meaning ? ": " + vocabEsc_(ww.meaning) : "") +
+        (ww.book ? " &lt;span style='color:#64748b'&gt;(" + vocabEsc_(ww.book) + ")&lt;/span&gt;" : "") + "&lt;/span&gt;";
     }
-    h += "&lt;/div&gt;";
+    bodyHtml += "&lt;/div&gt;";
   } else {
-    h += "&lt;div class='box' style='background:#ecfdf5;border-color:#a7f3d0;color:#065f46'&gt;기간 내 틀린 어휘가 없거나 모든 어휘를 첫 시도에 정확히 맞혔습니다! 👏&lt;/div&gt;";
+    bodyHtml += "&lt;div class='box' style='background:#ecfdf5;border-color:#a7f3d0;color:#065f46;font-weight:bold'" + editAttr + "&gt;" +
+      "👏 기간 내 틀린 어휘가 없거나 모든 어휘 확인 학습(" + d.vocabCount + "회)을 첫 시도에 정확히 맞혔습니다!" +
+    "&lt;/div&gt;";
   }
 
-  // 5) 4단계 집중 트레이닝 영역별 성취도 &amp; 이해도 3색 비율 그래프
-  h += "&lt;div class='sec'&gt;4. 4단계 집중 트레이닝 영역별 성취도 및 이해도 분포 그래프&lt;/div&gt;";
+  // 4. 집중 트레이닝 영역별 성취도 및 이해도 분포 그래프
+  bodyHtml += "&lt;div class='sec'&gt;4. 집중 트레이닝 영역별 성취도 및 이해도 분포 그래프&lt;/div&gt;";
   if (undTotal &gt; 0) {
     var gPct = Math.round((d.undGood / undTotal) * 100);
     var mPct = Math.round((d.undMid / undTotal) * 100);
     var lPct = Math.max(0, 100 - gPct - mPct);
-    h += "&lt;div class='box' style='margin-bottom:6px'&gt;" +
-         "&lt;div style='font-size:8.2pt;font-weight:bold;margin-bottom:4px;color:#334155'&gt;📊 자기주도 학습 이해도 비율: " +
-         "&lt;span style='color:#059669'&gt;● 잘 이해했어요 " + d.undGood + "회(" + gPct + "%)&lt;/span&gt; &amp;nbsp; " +
-         "&lt;span style='color:#2563eb'&gt;● 보통이에요 " + d.undMid + "회(" + mPct + "%)&lt;/span&gt; &amp;nbsp; " +
-         "&lt;span style='color:#d97706'&gt;● 아직 헷갈려요 " + d.undLow + "회(" + lPct + "%)&lt;/span&gt;&lt;/div&gt;" +
-         "&lt;table style='width:100%;border-collapse:collapse;height:10px;border-radius:5px;overflow:hidden'&gt;&lt;tr&gt;" +
-         (gPct &gt; 0 ? "&lt;td style='width:" + gPct + "%;background:#10b981;height:10px'&gt;&lt;/td&gt;" : "") +
-         (mPct &gt; 0 ? "&lt;td style='width:" + mPct + "%;background:#3b82f6;height:10px'&gt;&lt;/td&gt;" : "") +
-         (lPct &gt; 0 ? "&lt;td style='width:" + lPct + "%;background:#f59e0b;height:10px'&gt;&lt;/td&gt;" : "") +
-         "&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;";
+    bodyHtml += "&lt;div class='box' style='margin-bottom:7px'&gt;" +
+      "&lt;div style='font-size:8.2pt;font-weight:bold;margin-bottom:5px;color:#334155'" + editAttr + "&gt;📊 자기주도 학습 이해도 비율: " +
+        "&lt;span style='color:#059669'&gt;● 잘 이해했어요 " + d.undGood + "회(" + gPct + "%)&lt;/span&gt; &amp;nbsp; " +
+        "&lt;span style='color:#2563eb'&gt;● 보통이에요 " + d.undMid + "회(" + mPct + "%)&lt;/span&gt; &amp;nbsp; " +
+        "&lt;span style='color:#d97706'&gt;● 아직 헷갈려요 " + d.undLow + "회(" + lPct + "%)&lt;/span&gt;" +
+      "&lt;/div&gt;" +
+      "&lt;table style='width:100%;border-collapse:collapse;height:9px;border-radius:5px;overflow:hidden'&gt;&lt;tr&gt;" +
+        (gPct &gt; 0 ? "&lt;td style='width:" + gPct + "%;background:#10b981;height:9px'&gt;&lt;/td&gt;" : "") +
+        (mPct &gt; 0 ? "&lt;td style='width:" + mPct + "%;background:#3b82f6;height:9px'&gt;&lt;/td&gt;" : "") +
+        (lPct &gt; 0 ? "&lt;td style='width:" + lPct + "%;background:#f59e0b;height:9px'&gt;&lt;/td&gt;" : "") +
+      "&lt;/tr&gt;&lt;/table&gt;" +
+    "&lt;/div&gt;";
   }
-  if (d.trSummary.length &gt; 0) {
-    var maxTrCnt = 1;
-    for (var mc = 0; mc &lt; d.trSummary.length; mc++) {
-      if (d.trSummary[mc].count &gt; maxTrCnt) maxTrCnt = d.trSummary[mc].count;
-    }
-    h += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
-         "&lt;th style='width:22%'&gt;트레이닝 영역&lt;/th&gt;&lt;th style='width:24%'&gt;학습 비중 그래프 (횟수)&lt;/th&gt;&lt;th style='width:14%'&gt;평균 오답 수&lt;/th&gt;&lt;th style='width:40%'&gt;주요 학습 교재 · 권수/차시&lt;/th&gt;" +
-         "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
+  if (d.trSummary &amp;&amp; d.trSummary.length &gt; 0) {
+    var totalTrCnt = 0;
+    for (var mc = 0; mc &lt; d.trSummary.length; mc++) totalTrCnt += d.trSummary[mc].count;
+    bodyHtml += "&lt;table class='tb' style='margin-bottom:7px'&gt;&lt;thead&gt;&lt;tr&gt;" +
+      "&lt;th style='width:19%'&gt;트레이닝 영역&lt;/th&gt;&lt;th style='width:18%'&gt;학습 비중 (횟수)&lt;/th&gt;&lt;th style='width:13%'&gt;평균 오답 수&lt;/th&gt;&lt;th style='width:50%'&gt;주요 학습 교재 · 권수/차시&lt;/th&gt;" +
+      "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
     for (var ts = 0; ts &lt; d.trSummary.length; ts++) {
       var tItem = d.trSummary[ts];
-      var cntPct = Math.min(100, Math.max(12, Math.round((tItem.count / maxTrCnt) * 100)));
-      h += "&lt;tr&gt;&lt;td&gt;&lt;b&gt;" + vocabEsc_(tItem.type) + "&lt;/b&gt;&lt;/td&gt;" +
-           "&lt;td&gt;&lt;div style='font-weight:bold;color:#1e40af'&gt;" + tItem.count + "회 실시&lt;/div&gt;" +
-           "&lt;div class='gbar-bg' style='height:6px;margin-top:2px'&gt;&lt;div class='gbar-fill' style='width:" + cntPct + "%;height:6px;background:#3b82f6'&gt;&lt;/div&gt;&lt;/div&gt;&lt;/td&gt;" +
-           "&lt;td class='c'&gt;" + (tItem.avgErr !== "-" ? "&lt;span class='sc-pill' style='background:#fef3c7;color:#92400e'&gt;평균 " + tItem.avgErr + "개&lt;/span&gt;" : "&lt;span class='sc-pill' style='background:#dcfce7;color:#166534'&gt;완료&lt;/span&gt;") + "&lt;/td&gt;" +
-           "&lt;td&gt;" + vocabEsc_(tItem.details) + "&lt;/td&gt;&lt;/tr&gt;";
+      var sharePct = totalTrCnt &gt; 0 ? Math.round((tItem.count / totalTrCnt) * 100) : 100;
+      bodyHtml += "&lt;tr&gt;" +
+        "&lt;td class='c'" + editAttr + "&gt;&lt;b&gt;" + vocabEsc_(tItem.type) + "&lt;/b&gt;&lt;/td&gt;" +
+        "&lt;td class='c'" + editAttr + "&gt;&lt;b style='color:#1e40af'&gt;" + tItem.count + "회 실시 (" + sharePct + "%)&lt;/b&gt;&lt;/td&gt;" +
+        "&lt;td class='c'&gt;" + (tItem.avgErr !== "-" ? "&lt;span class='sc-pill' style='background:#fef3c7;color:#92400e'" + editAttr + "&gt;평균 " + tItem.avgErr + "개&lt;/span&gt;" : "&lt;span class='sc-pill' style='background:#dcfce7;color:#166534'" + editAttr + "&gt;완료&lt;/span&gt;") + "&lt;/td&gt;" +
+        "&lt;td" + editAttr + "&gt;" + vocabEsc_(tItem.details) + "&lt;/td&gt;" +
+      "&lt;/tr&gt;";
     }
-    h += "&lt;/tbody&gt;&lt;/table&gt;";
+    bodyHtml += "&lt;/tbody&gt;&lt;/table&gt;";
   }
-  if (d.trRows.length &gt; 0) {
-    h += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
-         "&lt;th style='width:12%'&gt;날짜&lt;/th&gt;&lt;th style='width:19%'&gt;트레이닝 영역&lt;/th&gt;&lt;th style='width:24%'&gt;권수 / 차시&lt;/th&gt;" +
-         "&lt;th style='width:10%'&gt;오답 수&lt;/th&gt;&lt;th style='width:16%'&gt;자기 이해도&lt;/th&gt;&lt;th style='width:19%'&gt;문해력발자국&lt;/th&gt;" +
-         "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
+  if (d.trRows &amp;&amp; d.trRows.length &gt; 0) {
+    // 2페이지 칼럼 여백 최적화: 날짜(8%) | 트레이닝 영역(14%) | 권수/차시(41%) | 오답 수(8%) | 자기 이해도(12%) | 문해력발자국(17%)
+    bodyHtml += "&lt;table class='tb'&gt;&lt;thead&gt;&lt;tr&gt;" +
+      "&lt;th style='width:8%'&gt;날짜&lt;/th&gt;&lt;th style='width:14%'&gt;트레이닝 영역&lt;/th&gt;&lt;th style='width:41%'&gt;권수 / 차시&lt;/th&gt;" +
+      "&lt;th style='width:8%'&gt;오답 수&lt;/th&gt;&lt;th style='width:12%'&gt;자기 이해도&lt;/th&gt;&lt;th style='width:17%'&gt;문해력발자국&lt;/th&gt;" +
+      "&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;";
     for (var tr = 0; tr &lt; d.trRows.length; tr++) {
       var rowT = d.trRows[tr];
       var undBadge = rowT.und || "-";
-      if (rowT.und === "잘 이해했어요") undBadge = "&lt;span class='sc-pill' style='background:#dcfce7;color:#166534'&gt;잘 이해했어요&lt;/span&gt;";
-      else if (rowT.und === "보통이에요") undBadge = "&lt;span class='sc-pill' style='background:#dbeafe;color:#1e40af'&gt;보통이에요&lt;/span&gt;";
-      else if (rowT.und === "아직 헷갈려요") undBadge = "&lt;span class='sc-pill' style='background:#fef3c7;color:#92400e'&gt;아직 헷갈려요&lt;/span&gt;";
-      h += "&lt;tr&gt;&lt;td class='c'&gt;" + vocabEsc_(rowT.date) + "&lt;/td&gt;&lt;td class='c'&gt;&lt;b&gt;" + vocabEsc_(rowT.type) + "&lt;/b&gt;&lt;/td&gt;" +
-           "&lt;td&gt;" + vocabEsc_(rowT.detail || "-") + "&lt;/td&gt;&lt;td class='c'&gt;" + (rowT.err !== "" ? rowT.err + "개" : "-") + "&lt;/td&gt;" +
-           "&lt;td class='c'&gt;" + undBadge + "&lt;/td&gt;&lt;td&gt;" + vocabEsc_(rowT.memo || "-") + "&lt;/td&gt;&lt;/tr&gt;";
+      if (rowT.und === "잘 이해했어요") undBadge = "&lt;span class='sc-pill' style='background:#dcfce7;color:#166534'" + editAttr + "&gt;잘 이해했어요&lt;/span&gt;";
+      else if (rowT.und === "보통이에요") undBadge = "&lt;span class='sc-pill' style='background:#dbeafe;color:#1e40af'" + editAttr + "&gt;보통이에요&lt;/span&gt;";
+      else if (rowT.und === "아직 헷갈려요") undBadge = "&lt;span class='sc-pill' style='background:#fef3c7;color:#92400e'" + editAttr + "&gt;아직 헷갈려요&lt;/span&gt;";
+      var trDelBtn = forEditModal ? "&lt;button type='button' class='del-row-btn no-print-edit' onclick='this.closest(\"tr\").remove()' title='이 행 삭제'&gt;✕&lt;/button&gt;" : "";
+      bodyHtml += "&lt;tr&gt;" +
+        "&lt;td class='c'" + editAttr + "&gt;" + vocabEsc_(rowT.date) + "&lt;/td&gt;" +
+        "&lt;td class='c'" + editAttr + "&gt;&lt;b&gt;" + vocabEsc_(rowT.type) + "&lt;/b&gt;&lt;/td&gt;" +
+        "&lt;td" + editAttr + "&gt;" + vocabEsc_(rowT.detail || "-") + "&lt;/td&gt;" +
+        "&lt;td class='c'" + editAttr + "&gt;" + (rowT.err !== "" ? rowT.err + "개" : "-") + "&lt;/td&gt;" +
+        "&lt;td class='c'&gt;" + undBadge + "&lt;/td&gt;" +
+        "&lt;td&gt;&lt;span" + editAttr + "&gt;" + vocabEsc_(rowT.memo || "-") + "&lt;/span&gt;" + trDelBtn + "&lt;/td&gt;" +
+      "&lt;/tr&gt;";
     }
-    h += "&lt;/tbody&gt;&lt;/table&gt;";
-  } else if (!d.trSummary.length) {
-    h += "&lt;div class='box'&gt;선택한 기간 내 트레이닝 기록이 없습니다.&lt;/div&gt;";
+    bodyHtml += "&lt;/tbody&gt;&lt;/table&gt;";
+  } else if (!d.trSummary || !d.trSummary.length) {
+    bodyHtml += "&lt;div class='box'" + editAttr + "&gt;선택한 기간 내 트레이닝 기록이 없습니다.&lt;/div&gt;";
   }
 
-  // 6) 나의 시간, 나의 기록 (성실발자국 &amp; 학생 한줄 다짐)
-  if (d.reflections.length &gt; 0) {
-    h += "&lt;div class='sec'&gt;5. 나의 시간, 나의 기록 (학생 스스로 남긴 수업 다짐 &amp; 성실발자국)&lt;/div&gt;&lt;div class='box' style='background:#f0fdf4;border-color:#bbf7d0'&gt;";
+  // 5. 나의 시간, 나의 기록 (학생 스스로 남긴 수업 다짐 &amp; 성실발자국)
+  bodyHtml += "&lt;div class='sec'&gt;5. 나의 시간, 나의 기록 (학생 스스로 남긴 수업 다짐 &amp; 성실발자국)&lt;/div&gt;";
+  bodyHtml += "&lt;div class='box' style='background:#f0fdf4;border-color:#bbf7d0'" + editAttr + "&gt;";
+  if (d.reflections &amp;&amp; d.reflections.length &gt; 0) {
     for (var rf = 0; rf &lt; d.reflections.length; rf++) {
       var rItem = d.reflections[rf];
-      h += "&lt;div style='margin-bottom:3px'&gt;🌱 &lt;b&gt;[" + vocabEsc_(rItem.date) + "]&lt;/b&gt; " + vocabEsc_(rItem.text) + "&lt;/div&gt;";
+      bodyHtml += "&lt;div style='margin-bottom:4px'&gt;🌱 &lt;b&gt;[" + vocabEsc_(rItem.date) + "]&lt;/b&gt; " + vocabEsc_(rItem.text) + "&lt;/div&gt;";
     }
-    h += "&lt;/div&gt;";
+  } else {
+    bodyHtml += "&lt;div&gt;🌱 매 수업 시간마다 정해진 독서와 어휘·문해력 트레이닝 과제를 성실히 수행하였습니다.&lt;/div&gt;";
   }
+  bodyHtml += "&lt;/div&gt;";
 
-  h += "&lt;div class='ft'&gt;본 리포트는 학원 수업 및 학생 자기주도 학습 기록을 바탕으로 발행되었습니다. 가정에서도 따뜻한 격려와 칭찬 부탁드립니다. 🌿&lt;/div&gt;";
-  h += "&lt;/body&gt;&lt;/html&gt;";
-  return h;
+  bodyHtml += "&lt;div class='ft'&gt;&lt;div class='ft-msg'&gt;본 리포트는 학원 수업 및 학생 자기주도 학습 기록을 바탕으로 발행되었습니다. 가정에서도 따뜻한 격려와 칭찬 부탁드립니다.&lt;/div&gt;유현리드인 한그루역사&lt;/div&gt;";
+  bodyHtml += "&lt;/div&gt;"; // 2페이지 끝
+
+  if (forEditModal) {
+    return "&lt;style&gt;" + css + "&lt;/style&gt;&lt;div id='reportEditableBody'&gt;" + bodyHtml + "&lt;/div&gt;";
+  }
+  return "&lt;html&gt;&lt;head&gt;&lt;meta charset='utf-8'&gt;&lt;style&gt;" + css + "&lt;/style&gt;&lt;/head&gt;&lt;body&gt;" + bodyHtml + "&lt;/body&gt;&lt;/html&gt;";
 }
 
-function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal) {
+// 학생 학습 분석표 데이터 1회 Bulk 수집·정제·오름차순 정렬 공통 함수
+function vocabCollectAnalysisReportData_(name, startStr, endStr, hideInternal) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var as = ss.getSheetByName(ANALYSIS_SHEET);
   var rs = getRecordSheetReadOnly_(ss);
@@ -6967,11 +7167,12 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
   }
   hideInternal = !!hideInternal;
 
+  // [학생분석표] 시트 B2(학생명), B5(시작일), B6(종료일), G3(내부메모 숨김)에 동기화 (E2:E3 수식 보존)
   if (as) {
     try {
       as.getRange("B2").setValue(name);
-      as.getRange("E2").setValue(start);
-      as.getRange("E3").setValue(end);
+      as.getRange("B5").setValue(start);
+      as.getRange("B6").setValue(end);
       as.getRange("G3").setValue(hideInternal);
     } catch (e) {}
   }
@@ -6980,7 +7181,7 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
   var endMs = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1).getTime();
   var periodStr = vocabFmtDate_(start) + " ~ " + vocabFmtDate_(end);
 
-  // 1) [회원 분석]에서 학년·목표·코칭방향만 1회 Bulk 조회
+  // 1) [회원 분석]에서 학년·목표·코칭방향 1회 Bulk 조회
   var grade = "", coachingText = "", goalText = "";
   var sheetMember = getMemberAnalysisSheet(ss);
   if (sheetMember &amp;&amp; sheetMember.getLastRow() &gt;= 2) {
@@ -6988,7 +7189,7 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
     for (var m = 0; m &lt; mVals.length; m++) {
       if (normName_(mVals[m][1]) === name) {
         grade = String(mVals[m][2] || "").trim();
-        coachingText = hideInternal ? "학생 맞춤형 독서·어휘·문해력 집중 코칭 진행 중" : String(mVals[m][5] || "").trim();
+        coachingText = hideInternal ? "" : String(mVals[m][5] || "").trim();
         goalText = String(mVals[m][6] || "").trim();
         break;
       }
@@ -7003,12 +7204,12 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
     if (vRow.w &amp;&amp; !meaningMap[vRow.w]) meaningMap[vRow.w] = vRow.m;
   }
 
-  // 3) [학습기록] 23열(A~W열) 1회 Bulk 조회 및 집계
+  // 3) [학습기록] 23열(A~W열) 1회 Bulk 조회 및 정제
   var dateSet = {};
   var hwDoneCount = 0, hwOtherCount = 0;
   var vocabRates = [], vocabWrongTotal = 0;
-  var diagScores = [];
-  var bookSet = {};
+  var diagScores = [], topDiagBooks = [], topDiagSeen = {};
+  var bookSet = {}, levelSet = {};
   var bookRows = [];
   var wrongWordsSeen = {}, wrongWordList = [];
   var trByType = {}, trOrder = [], trRows = [];
@@ -7027,23 +7228,33 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
       dateSet[dStr] = true;
 
       var hw = vocabNormHwStatus_(v[2]);
-      var lv = String(v[4] || "").trim();
-      var bk = String(v[5] || "").trim();
-      var step1 = String(v[3] || "").trim();
-      if (step1 &amp;&amp; bk &amp;&amp; step1 === bk) step1 = "";
       if (hw === "숙제 완료" || hw === "숙제완료") hwDoneCount++;
       else if (hw) hwOtherCount++;
+
+      var cleanedBk = vocabCleanBookTitleAndLevel_(v[4], v[5]);
+      var lv = cleanedBk.level;
+      var bk = cleanedBk.book;
+      if (lv) levelSet[lv] = true;
+
+      var rawStep1 = String(v[3] || "").trim();
+      var step1Clean = vocabCleanBookTitleAndLevel_("", rawStep1).book;
+      if (step1Clean &amp;&amp; bk &amp;&amp; step1Clean === bk) step1Clean = "";
+      if (!vocabIsMeaningfulReflection_(step1Clean)) step1Clean = "";
 
       var gTot = vocabNum_(v[6]);
       var hCor = vocabNum_(v[7]);
       var iRate = vocabNum_(v[8]);
       var jScore = vocabNum_(v[9]);
-      var kStep2 = String(v[10] || "").trim();
       var mDetRaw = String(v[12] || "").trim();
+      var kStep2 = vocabCleanFootprintMemo_(v[10]);
       if (kStep2 &amp;&amp; mDetRaw &amp;&amp; kStep2 === mDetRaw) kStep2 = "";
+      if (cleanedBk.isReread &amp;&amp; !kStep2) kStep2 = "재독 완료";
       var rWrong = vocabCleanWrongWordsStr_(v[17]);
 
-      if (bk) bookSet[vocabNormBook_(bk) || bk] = true;
+      // '초5~6 필수어휘' 등 어휘교재는 도서 권수 집계에서 제외하고 실제 도서만 집계
+      if (bk &amp;&amp; bk.indexOf("필수어휘") === -1) {
+        bookSet[vocabNormBook_(bk) || bk] = true;
+      }
       if (gTot !== "" &amp;&amp; gTot &gt; 0) {
         var rateVal = iRate !== "" ? iRate : (hCor !== "" ? Math.round((hCor / gTot) * 100) : "");
         if (rateVal !== "") vocabRates.push(rateVal);
@@ -7051,9 +7262,14 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
       }
       if (jScore !== "" &amp;&amp; jScore &gt; 0) {
         diagScores.push(jScore);
+        if (jScore &gt;= 90 &amp;&amp; bk &amp;&amp; !topDiagSeen[bk]) {
+          topDiagSeen[bk] = true;
+          topDiagBooks.push("『" + bk + "』(" + jScore + "점)");
+        }
       }
       if (bk || gTot !== "" || jScore !== "" || kStep2 || rWrong) {
         bookRows.push({
+          fullDate: dStr,
           date: dStr.substring(5),
           level: lv,
           book: bk,
@@ -7083,9 +7299,8 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
       var mDet = mDetRaw;
       var nErr = vocabParseErrorNum_(v[13]);
       var oUnd = vocabNormUnderstanding_(v[14]);
-      var pMemo = String(v[15] || "").trim();
+      var pMemo = vocabCleanFootprintMemo_(v[15]);
 
-      // [23열 S~W열 반영] S(18):독해문항, T(19):독해오답, U(20):어휘문항, V(21):어휘오답, W(22):문해력정답률
       var sReadTot = vocabNum_(v[18]);
       var tReadWrg = vocabNum_(v[19]);
       var uVocTot = vocabNum_(v[20]);
@@ -7115,6 +7330,7 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
         else if (oUnd === "아직 헷갈려요") undLow++;
 
         trRows.push({
+          fullDate: dStr,
           date: dStr.substring(5),
           type: lTr,
           detail: detailDisplay,
@@ -7124,12 +7340,13 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
         });
       }
 
-      var qRefl = String(v[16] || "").trim();
-      if (step1 || qRefl) {
+      var rawRefl = String(v[16] || "").trim();
+      var qRefl = vocabIsMeaningfulReflection_(rawRefl) ? rawRefl : "";
+      if (step1Clean || qRefl) {
         var rParts = [];
-        if (step1) rParts.push("[성실발자국] " + step1);
+        if (step1Clean) rParts.push("[성실발자국] " + step1Clean);
         if (qRefl) rParts.push("\"" + qRefl + "\"");
-        reflections.push({ date: dStr.substring(5), text: rParts.join(" — ") });
+        reflections.push({ fullDate: dStr, date: dStr.substring(5), text: rParts.join(" — ") });
       }
     }
   }
@@ -7138,43 +7355,49 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
   if (lessonDays === 0) {
     return {
       ok: false,
-      message: name + " 학생의 " + periodStr + " 기간에 저장된 [학습기록]이 없습니다. 기간이나 학생을 확인해 주세요."
+      message: name + " 학생의 " + periodStr + " 기간에 저장된 [학습기록]이 없습니다. 상단 [📅 지난달 전체] 버튼이나 기간을 확인해 주세요."
     };
   }
 
+  // 모든 표·기록 날짜 오름차순(과거 -&gt; 최신순) 정렬
+  bookRows.sort(function (a, b) { return a.fullDate.localeCompare(b.fullDate); });
+  trRows.sort(function (a, b) { return a.fullDate.localeCompare(b.fullDate); });
+  reflections.sort(function (a, b) { return a.fullDate.localeCompare(b.fullDate); });
+
   var vocabCount = vocabRates.length;
-  var vocabAvg = vocabCount ? (Math.round((vocabRates.reduce(function(a, b) { return a + b; }, 0) / vocabCount) * 10) / 10) : "-";
+  var vocabAvg = vocabCount ? (Math.round((vocabRates.reduce(function (a, b) { return a + b; }, 0) / vocabCount) * 10) / 10) : "-";
   var vocabMax = vocabCount ? (Math.max.apply(null, vocabRates) + "%") : "-";
   var vocabMin = vocabCount ? (Math.min.apply(null, vocabRates) + "%") : "-";
 
   var diagCount = diagScores.length;
-  var diagAvg = diagCount ? (Math.round((diagScores.reduce(function(a, b) { return a + b; }, 0) / diagCount) * 10) / 10) : "-";
+  var diagAvg = diagCount ? (Math.round((diagScores.reduce(function (a, b) { return a + b; }, 0) / diagCount) * 10) / 10) : "-";
   var diagMax = diagCount ? (Math.max.apply(null, diagScores) + "점") : "-";
 
   var trSummary = [];
   for (var tIdx = 0; tIdx &lt; trOrder.length; tIdx++) {
     var tg = trByType[trOrder[tIdx]];
-    var avgE = tg.errs.length ? (Math.round((tg.errs.reduce(function(a, b) { return a + b; }, 0) / tg.errs.length) * 10) / 10) : "-";
+    var avgE = tg.errs.length ? (Math.round((tg.errs.reduce(function (a, b) { return a + b; }, 0) / tg.errs.length) * 10) / 10) : "-";
     trSummary.push({
       type: tg.type,
       count: tg.count,
       avgErr: avgE,
-      details: tg.details.join(", ") || "-"
+      details: tg.details.join(" · ") || "-"
     });
   }
 
   var mm = start.getMonth() + 1;
-  var sameMonth = (start.getFullYear() === end.getFullYear() &amp;&amp; start.getMonth() === end.getMonth() &amp;&amp; start.getDate() === 1);
-  var reportTitle = (sameMonth ? (start.getFullYear() + "년 " + mm + "월 ") : "") + "학생 종합 학습 분석표";
+  var reportTitle = mm + "월 문해력 성장 리포트";
 
-  var htmlDoc = vocabRenderAnalysisReportHtml_({
+  var reportData = {
     name: name,
     grade: grade,
     title: reportTitle,
+    monthNum: mm,
     period: periodStr,
+    startStr: vocabFmtDate_(start),
+    endStr: vocabFmtDate_(end),
     lessonDays: lessonDays,
     hwDoneCount: hwDoneCount,
-    hwSubText: hwDoneCount &gt; 0 ? ("숙제 완료율 우수 · 성실 참여") : ("수업 기록 " + lessonDays + "일 기준"),
     vocabCount: vocabCount,
     vocabAvg: vocabAvg,
     vocabMax: vocabMax,
@@ -7183,22 +7406,58 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
     diagCount: diagCount,
     diagAvg: diagAvg,
     diagMax: diagMax,
+    topDiagBooks: topDiagBooks,
     bookCount: Object.keys(bookSet).length,
+    levelSetList: Object.keys(levelSet),
     trTotalCount: trRows.length,
     undGood: undGood,
     undMid: undMid,
     undLow: undLow,
     goalText: goalText,
     coachingText: coachingText,
-    bookRows: bookRows.slice(0, 20),
+    bookRows: bookRows.slice(0, 22),
     wrongWordList: wrongWordList.slice(0, 30),
     trSummary: trSummary,
     trRows: trRows.slice(0, 15),
     reflections: reflections.slice(0, 10)
-  });
+  };
+  reportData.reviewParagraph = vocabBuildMonthlyReviewParagraph_(reportData);
 
-  var fileName = name + "_" + vocabFmtDate_(start) + "~" + vocabFmtDate_(end) + "_학생학습분석표.pdf";
-  var pdfBlob = Utilities.newBlob(htmlDoc, "text/html", "analysis_report.html").getAs("application/pdf").setName(fileName);
+  return { ok: true, data: reportData };
+}
+
+// 모달에서 [1단계: 분석표 불러오기 (내용 수정·미리보기)] 클릭 시 호출
+function vocabPreviewAnalysisReportFromModal(name, startStr, endStr, hideInternal) {
+  var collected = vocabCollectAnalysisReportData_(name, startStr, endStr, hideInternal);
+  if (!collected.ok) return collected;
+  var d = collected.data;
+  var editableHtml = vocabRenderAnalysisReportHtml_(d, true);
+  return {
+    ok: true,
+    name: d.name,
+    period: d.period,
+    lessonDays: d.lessonDays,
+    bookCount: d.bookCount,
+    vocabCount: d.vocabCount,
+    diagCount: d.diagCount,
+    trCount: d.trTotalCount,
+    editableHtml: editableHtml
+  };
+}
+
+// 모달에서 내용 수정 후 [2단계: 수정한 내용으로 PDF 만들기] 클릭 시 호출
+function vocabSaveEditedAnalysisPdfFromModal(name, startStr, endStr, editedBodyHtml) {
+  name = normName_(name);
+  if (!name) return { ok: false, message: "학생을 선택해 주세요." };
+  var start = vocabParseDate_(startStr);
+  var end = vocabParseDate_(endStr);
+  var sFmt = !isNaN(start.getTime()) ? vocabFmtDate_(start) : String(startStr || "");
+  var eFmt = !isNaN(end.getTime()) ? vocabFmtDate_(end) : String(endStr || "");
+  var periodStr = sFmt + " ~ " + eFmt;
+
+  var fullHtml = "&lt;html&gt;&lt;head&gt;&lt;meta charset='utf-8'&gt;&lt;style&gt;" + vocabAnalysisReportCss_() + "&lt;/style&gt;&lt;/head&gt;&lt;body&gt;" + editedBodyHtml + "&lt;/body&gt;&lt;/html&gt;";
+  var fileName = name + "_" + sFmt + "~" + eFmt + "_학생학습분석표.pdf";
+  var pdfBlob = Utilities.newBlob(fullHtml, "text/html", "analysis_report.html").getAs("application/pdf").setName(fileName);
   var folder = getOrCreateFolder_("학생 학습 분석표");
   var file = folder.createFile(pdfBlob);
 
@@ -7206,11 +7465,31 @@ function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal)
     ok: true,
     name: name,
     period: periodStr,
-    lessonDays: lessonDays,
-    bookCount: Object.keys(bookSet).length,
-    vocabCount: vocabCount,
-    diagCount: diagCount,
-    trCount: trRows.length,
+    url: file.getUrl()
+  };
+}
+
+// 모달 또는 외부에서 즉시 PDF를 생성할 때 호출
+function vocabGenerateAnalysisPdfFromModal(name, startStr, endStr, hideInternal) {
+  var collected = vocabCollectAnalysisReportData_(name, startStr, endStr, hideInternal);
+  if (!collected.ok) return collected;
+  var d = collected.data;
+  var htmlDoc = vocabRenderAnalysisReportHtml_(d, false);
+
+  var fileName = d.name + "_" + d.startStr + "~" + d.endStr + "_학생학습분석표.pdf";
+  var pdfBlob = Utilities.newBlob(htmlDoc, "text/html", "analysis_report.html").getAs("application/pdf").setName(fileName);
+  var folder = getOrCreateFolder_("학생 학습 분석표");
+  var file = folder.createFile(pdfBlob);
+
+  return {
+    ok: true,
+    name: d.name,
+    period: d.period,
+    lessonDays: d.lessonDays,
+    bookCount: d.bookCount,
+    vocabCount: d.vocabCount,
+    diagCount: d.diagCount,
+    trCount: d.trTotalCount,
     url: file.getUrl()
   };
 }
@@ -7235,61 +7514,115 @@ function vocabMakeAnalysisReportPdf() {
   }).join("");
 
   var modalHtml = HtmlService.createHtmlOutput(
-    "&lt;div style='font-family:Malgun Gothic,Pretendard,sans-serif;line-height:1.6;padding:8px 6px;color:#0f172a'&gt;" +
-      "&lt;div style='background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:12px 14px;margin-bottom:12px'&gt;" +
-        "&lt;div style='margin-bottom:10px'&gt;" +
-          "&lt;label style='display:block;font-size:12px;font-weight:bold;color:#334155;margin-bottom:4px'&gt;👤 학생 선택&lt;/label&gt;" +
-          "&lt;select id='stSelect' style='width:100%;padding:8px 10px;border:1.5px solid #16a34a;border-radius:8px;font-size:13.5px;font-weight:bold;color:#0f172a;background:#fff'&gt;" +
-            optionsHtml +
-          "&lt;/select&gt;" +
-        "&lt;/div&gt;" +
-        "&lt;div style='display:flex;gap:8px;align-items:center;margin-bottom:8px'&gt;" +
-          "&lt;div style='flex:1'&gt;" +
-            "&lt;label style='display:block;font-size:12px;font-weight:bold;color:#334155;margin-bottom:4px'&gt;📅 시작일&lt;/label&gt;" +
-            "&lt;input type='date' id='startInput' value='" + vocabEsc_(initData.defaultStartStr) + "' style='width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;box-sizing:border-box'&gt;" +
+    "&lt;div style='font-family:Malgun Gothic,Pretendard,sans-serif;line-height:1.5;padding:6px;color:#0f172a'&gt;" +
+      "&lt;div style='background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:10px 14px;margin-bottom:10px'&gt;" +
+        "&lt;div style='display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap'&gt;" +
+          "&lt;div style='flex:1.4;min-width:180px'&gt;" +
+            "&lt;label style='display:block;font-size:12px;font-weight:bold;color:#334155;margin-bottom:3px'&gt;👤 학생 선택&lt;/label&gt;" +
+            "&lt;select id='stSelect' style='width:100%;padding:7px 10px;border:1.5px solid #16a34a;border-radius:8px;font-size:13px;font-weight:bold;color:#0f172a;background:#fff'&gt;" +
+              optionsHtml +
+            "&lt;/select&gt;" +
           "&lt;/div&gt;" +
-          "&lt;div style='padding-top:18px;font-weight:bold;color:#64748b'&gt;~&lt;/div&gt;" +
-          "&lt;div style='flex:1'&gt;" +
-            "&lt;label style='display:block;font-size:12px;font-weight:bold;color:#334155;margin-bottom:4px'&gt;📅 종료일&lt;/label&gt;" +
-            "&lt;input type='date' id='endInput' value='" + vocabEsc_(initData.defaultEndStr) + "' style='width:100%;padding:7px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;box-sizing:border-box'&gt;" +
+          "&lt;div style='flex:1;min-width:130px'&gt;" +
+            "&lt;label style='display:block;font-size:12px;font-weight:bold;color:#334155;margin-bottom:3px'&gt;📅 시작일&lt;/label&gt;" +
+            "&lt;input type='date' id='startInput' value='" + vocabEsc_(initData.defaultStartStr) + "' style='width:100%;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;box-sizing:border-box'&gt;" +
+          "&lt;/div&gt;" +
+          "&lt;div style='padding-bottom:6px;font-weight:bold;color:#64748b'&gt;~&lt;/div&gt;" +
+          "&lt;div style='flex:1;min-width:130px'&gt;" +
+            "&lt;label style='display:block;font-size:12px;font-weight:bold;color:#334155;margin-bottom:3px'&gt;📅 종료일&lt;/label&gt;" +
+            "&lt;input type='date' id='endInput' value='" + vocabEsc_(initData.defaultEndStr) + "' style='width:100%;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;box-sizing:border-box'&gt;" +
+          "&lt;/div&gt;" +
+          "&lt;div style='display:flex;gap:4px;padding-bottom:2px'&gt;" +
+            "&lt;button type='button' onclick=\"setMonthRange('" + vocabEsc_(initData.prevMonthStartStr) + "','" + vocabEsc_(initData.prevMonthEndStr) + "')\" style='background:#eff6ff;color:#1e40af;border:1px solid #93c5fd;border-radius:6px;padding:6px 9px;font-size:11.5px;font-weight:bold;cursor:pointer'&gt;지난달&lt;/button&gt;" +
+            "&lt;button type='button' onclick=\"setMonthRange('" + vocabEsc_(initData.thisMonthStartStr) + "','" + vocabEsc_(initData.thisMonthEndStr) + "')\" style='background:#ffffff;color:#334155;border:1px solid #cbd5e1;border-radius:6px;padding:6px 9px;font-size:11.5px;font-weight:bold;cursor:pointer'&gt;이번달&lt;/button&gt;" +
           "&lt;/div&gt;" +
         "&lt;/div&gt;" +
-        "&lt;label style='display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;cursor:pointer;margin-top:4px'&gt;" +
-          "&lt;input type='checkbox' id='hideInternal'" + (initData.hideInternal ? " checked" : "") + "&gt;" +
-          "&lt;span&gt;학부모 발송용 (내부 코칭메모 숨김)&lt;/span&gt;" +
-        "&lt;/label&gt;" +
-        "&lt;button id='btnGen' type='button' onclick='generateReport()' style='margin-top:10px;width:100%;background:#15803d;color:#fff;border:none;padding:10px 14px;border-radius:8px;font-size:13.5px;font-weight:bold;cursor:pointer'&gt;📊 선택한 학생의 학습 분석표 PDF 만들기&lt;/button&gt;" +
+        "&lt;div style='display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px;flex-wrap:wrap'&gt;" +
+          "&lt;label style='display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;cursor:pointer'&gt;" +
+            "&lt;input type='checkbox' id='hideInternal'" + (initData.hideInternal ? " checked" : "") + "&gt;" +
+            "&lt;span&gt;학부모 발송용 (내부 코칭메모 숨김)&lt;/span&gt;" +
+          "&lt;/label&gt;" +
+          "&lt;div style='display:flex;gap:8px'&gt;" +
+            "&lt;button id='btnPreview' type='button' onclick='loadEditablePreview()' style='background:#2563eb;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:bold;cursor:pointer'&gt;🔍 1단계: 내용 불러오기 (수정·미리보기)&lt;/button&gt;" +
+            "&lt;button id='btnSavePdf' type='button' onclick='saveEditedPdf()' style='background:#15803d;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12.5px;font-weight:bold;cursor:pointer'&gt;📊 2단계: 현재 내용으로 PDF 만들기&lt;/button&gt;" +
+          "&lt;/div&gt;" +
+        "&lt;/div&gt;" +
       "&lt;/div&gt;" +
-      "&lt;div id='resultBox' style='padding:4px 2px;font-size:13px;color:#475569'&gt;학생과 기간을 선택한 뒤 위 버튼을 눌러 주세요.&lt;/div&gt;" +
+      "&lt;div id='resultBox' style='margin-bottom:8px;font-size:12.5px;color:#475569'&gt;" +
+        "💡 &lt;b&gt;[1단계: 내용 불러오기]&lt;/b&gt;를 누르면 아래에서 총평·표·어휘·다짐 문구를 직접 클릭해 수정하거나 불필요한 행(✕)을 지운 뒤 &lt;b&gt;[2단계: PDF 만들기]&lt;/b&gt;로 출력할 수 있습니다." +
+      "&lt;/div&gt;" +
+      "&lt;div id='previewWrap' style='border:1.5px solid #94a3b8;border-radius:10px;background:#ffffff;padding:14px;max-height:510px;overflow-y:auto;display:none'&gt;&lt;/div&gt;" +
     "&lt;/div&gt;" +
     "&lt;script&gt;" +
-      "function generateReport(){" +
+      "var isLoaded=false;" +
+      "function setMonthRange(s,e){document.getElementById('startInput').value=s;document.getElementById('endInput').value=e;}" +
+      "function loadEditablePreview(){" +
         "var name=document.getElementById('stSelect').value;" +
         "var s=document.getElementById('startInput').value;" +
         "var e=document.getElementById('endInput').value;" +
         "var h=document.getElementById('hideInternal').checked;" +
-        "var btn=document.getElementById('btnGen');" +
+        "var btn=document.getElementById('btnPreview');" +
+        "var box=document.getElementById('resultBox');" +
+        "var wrap=document.getElementById('previewWrap');" +
+        "if(!name){alert('학생을 선택해 주세요.');return;}" +
+        "btn.disabled=true;btn.style.opacity='0.6';btn.textContent='⏳ 분석표 불러오는 중...';" +
+        "box.innerHTML='&lt;div style=\"color:#2563eb;font-weight:bold\"&gt;&lt;b&gt;'+name+'&lt;/b&gt; 학생의 분석표를 불러오고 있습니다...&lt;/div&gt;';" +
+        "google.script.run.withSuccessHandler(function(res){" +
+          "btn.disabled=false;btn.style.opacity='1';btn.textContent='🔍 1단계: 내용 불러오기 (수정·미리보기)';" +
+          "if(!res||!res.ok){isLoaded=false;wrap.style.display='none';box.innerHTML='&lt;div style=\"background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:10px;border-radius:8px;font-size:12.5px\"&gt;⚠️ '+(res&amp;&amp;res.message?res.message:'불러오기 실패')+'&lt;/div&gt;';return;}" +
+          "isLoaded=true;wrap.style.display='block';wrap.innerHTML=res.editableHtml;" +
+          "box.innerHTML='&lt;div style=\"background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;padding:8px 12px;border-radius:8px;font-size:12px\"&gt;✏️ &lt;b&gt;편집 모드 활성화됨:&lt;/b&gt; 아래 리포트의 모든 글자(총평, 도서명, 점수, 합계/평균, 발자국 등)를 마우스로 클릭해 자유롭게 수정하신 뒤 &lt;b&gt;[📊 2단계: 현재 내용으로 PDF 만들기]&lt;/b&gt; 버튼을 눌러 주세요.&lt;/div&gt;';" +
+        "}).withFailureHandler(function(err){" +
+          "btn.disabled=false;btn.style.opacity='1';btn.textContent='🔍 1단계: 내용 불러오기 (수정·미리보기)';" +
+          "box.innerHTML='&lt;div style=\"color:#b91c1c\"&gt;오류: '+(err&amp;&amp;err.message?err.message:err)+'&lt;/div&gt;';" +
+        "}).vocabPreviewAnalysisReportFromModal(name,s,e,h);" +
+      "}" +
+      "function saveEditedPdf(){" +
+        "var name=document.getElementById('stSelect').value;" +
+        "var s=document.getElementById('startInput').value;" +
+        "var e=document.getElementById('endInput').value;" +
+        "var h=document.getElementById('hideInternal').checked;" +
+        "var btn=document.getElementById('btnSavePdf');" +
         "var box=document.getElementById('resultBox');" +
         "if(!name){alert('학생을 선택해 주세요.');return;}" +
-        "btn.disabled=true;btn.style.opacity='0.6';btn.textContent='⏳ 학습 분석표 PDF 생성 중...';" +
-        "box.innerHTML='&lt;div style=\"color:#15803d;font-weight:bold\"&gt;&lt;b&gt;'+name+'&lt;/b&gt; 학생의 데이터를 분석하고 PDF를 만들고 있습니다...&lt;/div&gt;';" +
-        "google.script.run.withSuccessHandler(function(res){" +
-          "btn.disabled=false;btn.style.opacity='1';btn.textContent='📊 선택한 학생의 학습 분석표 PDF 만들기';" +
-          "if(!res||!res.ok){box.innerHTML='&lt;div style=\"background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:10px;border-radius:8px;font-size:12.5px\"&gt;⚠️ '+(res&amp;&amp;res.message?res.message:'PDF 생성 실패')+'&lt;/div&gt;';return;}" +
-          "box.innerHTML='&lt;div style=\"background:#f0fdf4;border:1px solid #bbf7d0;padding:12px;border-radius:10px\"&gt;'+" +
-            "'&lt;b&gt;'+res.name+'&lt;/b&gt; 학생의 &lt;b&gt;학부모 발송용 학습 분석표 PDF&lt;/b&gt;를 만들었어요!&lt;br&gt;'+" +
-            "'• 분석 기간: '+res.period+' (수업 '+res.lessonDays+'일)&lt;br&gt;'+" +
-            "'• 요약: 도서 '+res.bookCount+'권 · 어휘퀴즈 '+res.vocabCount+'회 · 독서진단 '+res.diagCount+'회 · 트레이닝 '+res.trCount+'회&lt;br&gt;&lt;br&gt;'+" +
-            "'&lt;a href=\"'+res.url+'\" target=\"_blank\" style=\"display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:9px 18px;border-radius:7px;font-weight:bold\"&gt;▶ 학습 분석표 PDF 열기 / 다운로드&lt;/a&gt;'+" +
-            "'&lt;div style=\"margin-top:8px;font-size:11px;color:#64748b\"&gt;※ 구글 드라이브 \\'학생 학습 분석표\\' 폴더에 자동 저장되었습니다.&lt;/div&gt;&lt;/div&gt;';" +
-        "}).withFailureHandler(function(err){" +
-          "btn.disabled=false;btn.style.opacity='1';btn.textContent='📊 선택한 학생의 학습 분석표 PDF 만들기';" +
-          "box.innerHTML='&lt;div style=\"color:#b91c1c\"&gt;오류: '+(err&amp;&amp;err.message?err.message:err)+'&lt;/div&gt;';" +
-        "}).vocabGenerateAnalysisPdfFromModal(name,s,e,h);" +
+        "var editRoot=document.getElementById('reportEditableBody');" +
+        "btn.disabled=true;btn.style.opacity='0.6';btn.textContent='⏳ PDF 생성 중...';" +
+        "if(isLoaded &amp;&amp; editRoot){" +
+          "var clone=editRoot.cloneNode(true);" +
+          "var delBtns=clone.querySelectorAll('.no-print-edit');" +
+          "for(var i=0;i&lt;delBtns.length;i++){delBtns[i].parentNode.removeChild(delBtns[i]);}" +
+          "var edits=clone.querySelectorAll('[contenteditable]');" +
+          "for(var j=0;j&lt;edits.length;j++){edits[j].removeAttribute('contenteditable');}" +
+          "box.innerHTML='&lt;div style=\"color:#15803d;font-weight:bold\"&gt;&lt;b&gt;'+name+'&lt;/b&gt; 학생의 수정된 리포트로 PDF를 만들고 있습니다...&lt;/div&gt;';" +
+          "google.script.run.withSuccessHandler(function(res){" +
+            "btn.disabled=false;btn.style.opacity='1';btn.textContent='📊 2단계: 현재 내용으로 PDF 만들기';" +
+            "if(!res||!res.ok){box.innerHTML='&lt;div style=\"background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:10px;border-radius:8px;font-size:12.5px\"&gt;⚠️ '+(res&amp;&amp;res.message?res.message:'PDF 생성 실패')+'&lt;/div&gt;';return;}" +
+            "box.innerHTML='&lt;div style=\"background:#f0fdf4;border:1px solid #bbf7d0;padding:10px 14px;border-radius:10px\"&gt;'+" +
+              "'✅ &lt;b&gt;'+res.name+'&lt;/b&gt; 학생의 수정본 &lt;b&gt;학습 분석표 PDF&lt;/b&gt;가 완성되었습니다! &amp;nbsp; '+" +
+              "'&lt;a href=\"'+res.url+'\" target=\"_blank\" style=\"display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:6px 14px;border-radius:6px;font-weight:bold\"&gt;▶ 학습 분석표 PDF 열기 / 다운로드&lt;/a&gt;'+" +
+              "'&lt;div style=\"margin-top:4px;font-size:11px;color:#64748b\"&gt;※ 구글 드라이브 \\'학생 학습 분석표\\' 폴더에 자동 저장되었습니다.&lt;/div&gt;&lt;/div&gt;';" +
+          "}).withFailureHandler(function(err){" +
+            "btn.disabled=false;btn.style.opacity='1';btn.textContent='📊 2단계: 현재 내용으로 PDF 만들기';" +
+            "box.innerHTML='&lt;div style=\"color:#b91c1c\"&gt;오류: '+(err&amp;&amp;err.message?err.message:err)+'&lt;/div&gt;';" +
+          "}).vocabSaveEditedAnalysisPdfFromModal(name,s,e,clone.innerHTML);" +
+        "}else{" +
+          "box.innerHTML='&lt;div style=\"color:#15803d;font-weight:bold\"&gt;&lt;b&gt;'+name+'&lt;/b&gt; 학생의 데이터를 분석하고 PDF를 만들고 있습니다...&lt;/div&gt;';" +
+          "google.script.run.withSuccessHandler(function(res){" +
+            "btn.disabled=false;btn.style.opacity='1';btn.textContent='📊 2단계: 현재 내용으로 PDF 만들기';" +
+            "if(!res||!res.ok){box.innerHTML='&lt;div style=\"background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:10px;border-radius:8px;font-size:12.5px\"&gt;⚠️ '+(res&amp;&amp;res.message?res.message:'PDF 생성 실패')+'&lt;/div&gt;';return;}" +
+            "box.innerHTML='&lt;div style=\"background:#f0fdf4;border:1px solid #bbf7d0;padding:10px 14px;border-radius:10px\"&gt;'+" +
+              "'✅ &lt;b&gt;'+res.name+'&lt;/b&gt; 학생의 &lt;b&gt;학습 분석표 PDF&lt;/b&gt;가 완성되었습니다! &amp;nbsp; '+" +
+              "'&lt;a href=\"'+res.url+'\" target=\"_blank\" style=\"display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:6px 14px;border-radius:6px;font-weight:bold\"&gt;▶ 학습 분석표 PDF 열기 / 다운로드&lt;/a&gt;&lt;/div&gt;';" +
+          "}).withFailureHandler(function(err){" +
+            "btn.disabled=false;btn.style.opacity='1';btn.textContent='📊 2단계: 현재 내용으로 PDF 만들기';" +
+            "box.innerHTML='&lt;div style=\"color:#b91c1c\"&gt;오류: '+(err&amp;&amp;err.message?err.message:err)+'&lt;/div&gt;';" +
+          "}).vocabGenerateAnalysisPdfFromModal(name,s,e,h);" +
+        "}" +
       "}" +
+      "window.onload=function(){loadEditablePreview();};" +
     "&lt;/script&gt;"
-  ).setWidth(480).setHeight(420);
-  ui.showModalDialog(modalHtml, "📊 학부모 발송용 학생 학습 분석표 PDF");
+  ).setWidth(920).setHeight(740);
+  ui.showModalDialog(modalHtml, "📊 학부모 발송용 학생 문해력 성장 리포트 (내용 수정 · PDF 출력)");
 }
 
 // 틀린어휘 문자열에서 '(짝짓기)' 또는 '짝짓기' 같은 문제유형 꼬리표 제거
